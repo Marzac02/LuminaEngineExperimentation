@@ -124,6 +124,7 @@ cd lumina
 python Setup.py
 
 # 3. Run Reflector in Shipping (MUST BE SHIPPING)
+This is a temporary step, but it must be built prior to attempting to build anything else, and only in shipping.
 
 # 4. Build and run the Editor
 Set Editor as startup project → Build → Run
