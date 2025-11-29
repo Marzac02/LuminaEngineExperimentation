@@ -211,48 +211,6 @@ def run_generate():
         sys.exit(1)
 
 
-def run_reflection():
-    """Run the reflection build."""
-    script_path = os.path.join("Scripts", "Reflection.py")
-
-    if not os.path.exists(script_path):
-        print(Fore.RED + Style.BRIGHT + f"Reflection script not found: {script_path}")
-        sys.exit(1)
-
-    print(Fore.CYAN + Style.BRIGHT + f"Running reflection build...")
-    print(Fore.YELLOW + "   Building and running Reflector project...\n")
-
-    try:
-        # Add Scripts directory to path so we can import
-        scripts_dir = os.path.join(os.getcwd(), "Scripts")
-        if scripts_dir not in sys.path:
-            sys.path.insert(0, scripts_dir)
-        
-        # Import and run the reflection module
-        import Reflection
-        
-        # Build the reflector
-        output_dir = Reflection.build_reflector(
-            solution_path="Lumina.sln",
-            project_name="Reflector",
-            configuration="Release",
-            platform="x64"
-        )
-
-        time.sleep(1.0)
-        
-        # Run the reflector
-        Reflection.run_reflector(output_dir, "Reflector")
-        
-        print(Fore.GREEN + Style.BRIGHT + "Reflection complete!")
-        
-    except Exception as e:
-        print(Fore.RED + Style.BRIGHT + f"Reflection failed: {e}")
-        import traceback
-        traceback.print_exc()
-        sys.exit(1)
-
-
 def cleanup_archive(archive_filename):
     """Remove the downloaded archive file."""
     if os.path.exists(archive_filename):
@@ -291,21 +249,8 @@ if __name__ == '__main__':
         run_generate()
         time.sleep(0.5)
 
-        # Step 4: Reflection Build
-        print_step(4, total_steps, "Building Reflector")
-        run_reflection()
-        time.sleep(0.5)
-
-        print_step(5, total_steps, "Building Editor")
-        run_reflection
-
-        # Step 5: Final Project Generation
-        print_step(5, total_steps, "Generating Project Files (Final)")
-        run_generate()
-        time.sleep(0.5)
-
         # Step 6: Cleanup
-        print_step(6, total_steps, "Cleaning Up")
+        print_step(4, total_steps, "Cleaning Up")
         cleanup_archive(archive_filename)
 
         # Success message
