@@ -105,6 +105,9 @@ Lumina is a modern C++ game engine designed for learning and experimentation wit
 Lumina's installation is being worked on, at the moment a majority of it's steps are compiled down into just running Setup.py.
 However I've noticed some issues with UTF-8 chars on Window's terminals, if the terminal opens and closes quickly, keep trying.
 
+During the setup process, Lumina will attempt to download from Dropbox, if for some reason this fails. You can get the .7z file here, and extract it yourself into the engine install directory
+https://www.dropbox.com/scl/fi/suigjbqj75pzcpxcqm6hv/External.7z?rlkey=ebu8kiw4gswtvj5mclg6wa1lu&st=759m2aj0&dl=0
+
 ```bash
 # 1. Clone the repository
 git clone https://github.com/mrdrelliot/lumina.git
