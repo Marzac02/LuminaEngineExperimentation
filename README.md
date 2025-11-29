@@ -18,41 +18,48 @@
 
 ---
 
-## 🎯 About
+## About
 
 Lumina is a modern C++ game engine designed for learning and experimentation with real-world engine architecture. Built from the ground up with Vulkan, it demonstrates professional engine design patterns including reflection systems, ECS architecture, and advanced rendering techniques.
 
 **Perfect for:**
-- 🎓 Learning modern game engine architecture
-- 🔬 Experimenting with Vulkan rendering techniques
-- 🛠️ Building prototypes with a clean, modular codebase
-- 📚 Understanding how engines like Unreal and Godot work under the hood
+- Learning modern game engine architecture
+- Experimenting with Vulkan rendering techniques
+- Building prototypes with a clean, modular codebase
+- Understanding how engines like Unreal and Godot work under the hood
 
 > **Note:** Lumina is an educational project in active development. APIs may change, and some features are experimental. If you encounter build issues, please reach out on [Discord](https://discord.gg/xQSB7CRzQE) for assistance.
 
 ---
 
-## ✨ Key Features
+## Key Features
 
-### 🎨 **Advanced Rendering**
+### **Advanced Rendering**
 - **Vulkan-powered renderer** with automatic resource tracking and barrier placement
 - **Deferred rendering pipeline** with clustered lighting for efficient multi-light scenes
 - **PBR materials** with full GLTF/GLB support
 
-### 🏗️ **Modern Architecture**
+### **Modern Architecture**
 - **Entity Component System (ECS)** using EnTT for high-performance gameplay code
 - **Reflection system** for automatic serialization and editor integration
 - **Modular design** with clean separation of concerns
 
-### 🖥️ **Professional Editor**
+### **Professional Editor**
 - **ImGui-based editor** with real-time scene manipulation
 - **Visual hierarchy** for easy entity management
 - **Component inspector** with automatic UI generation via reflection
 
-### ⚡ **Performance First**
+### **Performance First**
 - **Multi-threaded task system** with EnkiTS
 - **Custom memory allocators** using RPMalloc for optimal performance
 - **Built-in profiling** with Tracy integration
+
+### **Lua Scripting**
+
+Full ECS access from Lua - Create systems, query entities, modify components
+Hot-reloadable scripts - Iterate on gameplay without recompiling
+Automatic binding generation - C++ components instantly available in Lua through reflection
+Performance profiling - Built-in Lua script profiling with Tracy
 
 ---
 
@@ -105,6 +112,9 @@ Lumina is a modern C++ game engine designed for learning and experimentation wit
 Lumina's installation is being worked on, at the moment a majority of it's steps are compiled down into just running Setup.py.
 However I've noticed some issues with UTF-8 chars on Window's terminals, if the terminal opens and closes quickly, keep trying.
 
+During the setup process, Lumina will attempt to download from Dropbox, if for some reason this fails. You can get the .7z file here, and extract it yourself into the engine install directory
+https://www.dropbox.com/scl/fi/suigjbqj75pzcpxcqm6hv/External.7z?rlkey=ebu8kiw4gswtvj5mclg6wa1lu&st=759m2aj0&dl=0
+
 ```bash
 # 1. Clone the repository
 git clone https://github.com/mrdrelliot/lumina.git
@@ -133,7 +143,7 @@ setx LUMINA_DIR "C:\path\to\lumina"
 
 ---
 
-## 📦 Project Structure
+## Project Structure
 
 ```
 Lumina/
@@ -167,7 +177,7 @@ Lumina/
 
 ---
 
-## 🛠️ Technology Stack
+## Technology Stack
 
 <table>
 <tr>
@@ -247,27 +257,27 @@ Game Loop → ECS Update → Render Graph → Vulkan Commands → Present
 
 ---
 
-## 🗺️ Roadmap
+## Roadmap
 
 ### Current Focus
-- 🔄 **Refactoring to dynamic libraries** - Better modularity and faster iteration
-- 🔄 **Scene batched rendering** - Improved draw call efficiency
-- 🔄 **Documentation expansion** - API docs and tutorials
+- **Refactoring to dynamic libraries** - Better modularity and faster iteration
+- **Scene batched rendering** - Improved draw call efficiency
+- **Documentation expansion** - API docs and tutorials
 
 ### Upcoming Features
-- ⏳ **Multi-threaded renderer** - Parallel command buffer generation
-- ⏳ **Plugin system** - Hot-reloadable game code
-- ⏳ **Animation system** - Skeletal animation support
-- ⏳ **Physics integration** - Rigid body dynamics
-- ⏳ **Audio system** - 3D spatial audio
+- **Multi-threaded renderer** - Parallel command buffer generation
+- **Plugin system** - Hot-reloadable game code
+- **Animation system** - Skeletal animation support
+- **Physics integration** - Rigid body dynamics
+- **Audio system** - 3D spatial audio
 
 ### Future Platforms
-- 📋 **macOS support** - Metal backend
-- 📋 **Linux support** - Native Vulkan
+- **macOS support** - Metal backend
+- **Linux support** - Native Vulkan
 
 ---
 
-## 🤝 Contributing
+## Contributing
 
 Contributions are welcome! Whether it's bug fixes, features, or documentation improvements.
 
@@ -324,11 +334,11 @@ limitations under the License.
 
 ---
 
-## 🔗 Connect
+## Connect
 
-- 🌐 **Blog**: [dr-elliot.com](https://www.dr-elliot.com)
-- 💬 **Discord**: [Join our community](https://discord.gg/xQSB7CRzQE)
-- 🐙 **GitHub**: [mrdrelliot/lumina](https://github.com/mrdrelliot/lumina)
+- **Blog**: [dr-elliot.com](https://www.dr-elliot.com)
+- **Discord**: [Join our community](https://discord.gg/xQSB7CRzQE)
+- **GitHub**: [mrdrelliot/lumina](https://github.com/mrdrelliot/lumina)
 
 ---
 
