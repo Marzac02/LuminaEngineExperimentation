@@ -18,6 +18,7 @@ project "ImGui"
 		".",
 		"backends",
 		"%{LuminaEngineDirectory}/Lumina/Engine/ThirdParty/glfw/include/",
+		"%{LuminaEngineDirectory}/Lumina/Engine/ThirdParty/volk/",
 		"%{VULKAN_SDK}/Include/",
 	}
 
