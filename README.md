@@ -54,7 +54,7 @@ Lumina is a modern C++ game engine designed for learning and experimentation wit
 - **Custom memory allocators** using RPMalloc for optimal performance
 - **Built-in profiling** with Tracy integration
 
-### **Lua Scripting
+### **Lua Scripting**
 
 Full ECS access from Lua - Create systems, query entities, modify components
 Hot-reloadable scripts - Iterate on gameplay without recompiling
