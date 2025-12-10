@@ -17,11 +17,9 @@
 #include "Tools/WorldEditorTool.h"
 #include "Tools/AssetEditors/MaterialEditor/MaterialEditorTool.h"
 #include "Tools/UI/ImGui/imfilebrowser.h"
-#include <Assets/AssetHeader.h>
 #include <client/TracyProfiler.hpp>
 #include "implot.h"
 #include "LuminaEditor.h"
-#include "assets/assettypes/archetype/archetype.h"
 #include "Assets/AssetTypes/Material/Material.h"
 #include "Assets/AssetTypes/Material/MaterialInstance.h"
 #include "Assets/AssetTypes/Mesh/StaticMesh/StaticMesh.h"
@@ -945,9 +943,9 @@ namespace Lumina
         Memory::Delete(Tool);
     }
 
-    void FEditorUI::PushModal(const FString& Title, ImVec2 Size, TFunction<bool(const FUpdateContext&)> DrawFunction)
+    void FEditorUI::PushModal(const FString& Title, ImVec2 Size, TMoveOnlyFunction<bool(const FUpdateContext&)> DrawFunction)
     {
-        ModalManager.CreateDialogue(Title, Size, DrawFunction);
+        ModalManager.CreateDialogue(Title, Size, Move(DrawFunction));
     }
 
     void FEditorUI::OpenScriptEditor(FStringView ScriptPath)
@@ -993,10 +991,6 @@ namespace Lumina
         else if (InAsset->IsA<CMaterialInstance>())
         {
             NewTool = CreateTool<FMaterialInstanceEditorTool>(this, InAsset);
-        }
-        else if (InAsset->IsA<CArchetype>())
-        {
-            NewTool = CreateTool<FArchetypeEditorTool>(this, InAsset);
         }
         else if (InAsset->IsA<CWorld>())
         {

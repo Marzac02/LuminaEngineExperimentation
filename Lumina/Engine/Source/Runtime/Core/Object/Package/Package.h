@@ -144,7 +144,7 @@ namespace Lumina
         int64 Size;
 
         /** The object which may have been loaded into the package */
-        TWeakObjectPtr<CObject> Object = nullptr;
+        TWeakObjectPtr<CObject> Object;
 
         FORCEINLINE friend FArchive& operator << (FArchive& Ar, FObjectExport& Data)
         {
@@ -172,7 +172,7 @@ namespace Lumina
         FName ClassName;
 
         /** Runtime-resolved pointer after import is loaded */
-        TWeakObjectPtr<CObject> Object = nullptr;
+        TWeakObjectPtr<CObject> Object;
 
         FORCEINLINE friend FArchive& operator << (FArchive& Ar, FObjectImport& Data)
         {
@@ -226,7 +226,6 @@ namespace Lumina
             return Ar;
         }
     };
-
     static_assert(std::is_standard_layout_v<FPackageHeader>, "FPackageHeader must only contain trivial data members");
     static_assert(std::is_trivially_copyable_v<FPackageHeader>, "FPackageHeader must only contain trivial data members");
     
@@ -243,16 +242,16 @@ namespace Lumina
         FObjectPackageIndex() : Index(0) {}
 
         // Construct from raw index (Import: -(i+1), Export: i+1)
-        explicit FObjectPackageIndex(int64 InIndex) : Index(InIndex) {}
+        explicit FObjectPackageIndex(int32 InIndex) : Index(InIndex) {}
 
         // Construct an import index from array index
-        static FObjectPackageIndex FromImport(int64 ImportArrayIndex)
+        static FObjectPackageIndex FromImport(int32 ImportArrayIndex)
         {
             return FObjectPackageIndex(-(ImportArrayIndex + 1));
         }
 
         // Construct an export index from array index
-        static FObjectPackageIndex FromExport(int64 ExportArrayIndex)
+        static FObjectPackageIndex FromExport(int32 ExportArrayIndex)
         {
             return FObjectPackageIndex(ExportArrayIndex + 1);
         }
@@ -276,7 +275,7 @@ namespace Lumina
         }
 
         // Get the raw internal value
-        int64 GetRaw() const
+        int32 GetRaw() const
         {
             return Index;
         }
@@ -303,7 +302,8 @@ namespace Lumina
         }
         
     private:
-        int64 Index;
+        
+        int32 Index;
     };
 
     //---------------------------------------------------------------------------------
@@ -335,6 +335,8 @@ namespace Lumina
          * @return 
          */
         LUMINA_API static bool DestroyPackage(const FString& PackageName);
+
+        LUMINA_API static bool DestroyPackage(CPackage* PackageToDestroy);
 
         /**
          * Will load the package and create the package loader. If called twice, nothing will happen.

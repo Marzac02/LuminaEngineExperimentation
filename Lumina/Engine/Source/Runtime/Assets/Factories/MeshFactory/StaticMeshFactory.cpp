@@ -356,7 +356,7 @@ namespace Lumina
             CStaticMesh* NewMesh = Cast<CStaticMesh>(TryCreateNew(QualifiedPath));
             NewMesh->SetFlag(OF_NeedsPostLoad);
 
-            NewMesh->MeshResources = eastl::move(MeshResource);
+            NewMesh->MeshResources = Move(MeshResource);
 
             if (ImportedData.Textures.empty())
             {
@@ -394,10 +394,10 @@ namespace Lumina
 
             for (SIZE_T i = 0; i < ImportedData.Materials[Counter].size(); ++i)
             {
-                const Import::Mesh::GLTF::FGLTFMaterial& Material = ImportedData.Materials[Counter][i];
-                FName MaterialName = (i == 0) ? FString(FileName + "_Material").c_str() : FString(FileName + "_Material" + eastl::to_string(i)).c_str();
-                //CMaterial* NewMaterial = NewObject<CMaterial>(NewPackage, MaterialName.c_str());
-                NewMesh->Materials.push_back(nullptr);
+                //const Import::Mesh::GLTF::FGLTFMaterial& Material = ImportedData.Materials[Counter][i];
+                //FName MaterialName = (i == 0) ? FString(FileName + "_Material").c_str() : FString(FileName + "_Material" + eastl::to_string(i)).c_str();
+                ////CMaterial* NewMaterial = NewObject<CMaterial>(NewPackage, MaterialName.c_str());
+                //NewMesh->Materials.push_back(nullptr);
             }
             
             Counter++;

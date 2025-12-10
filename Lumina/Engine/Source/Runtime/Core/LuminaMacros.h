@@ -20,6 +20,32 @@ enum class EName : uint32
     INTRINSIC_NAMES
 #undef REGISTER_NAME
 
+#define BIT(x) (1 << (x))
+#define BIT64(x) (1ULL << (x))
+
+#ifndef OFFSETOF
+    #define OFFSETOF(type, member) offsetof(type, member)
+#endif
+
+
+// Tiny float threshold used for comparisons
+#define LE_SMALL_NUMBER        1e-8f
+#define LE_KINDA_SMALL_NUMBER  1e-4f
+
+// Numeric limits that come up constantly
+#define LE_BIG_NUMBER          3.4e+38f      // safe-ish max float range
+#define LE_MAX_FLOAT           3.402823466e+38f
+#define LE_MIN_FLOAT           1.175494351e-38f
+
+// Pi-related
+#define LE_PI                  3.14159265358979323846
+#define LE_TWO_PI              (2.0 * LE_PI)
+#define LE_HALF_PI             (0.5 * LE_PI)
+
+// Degrees ↔ Radians
+#define LE_DEG2RAD(x)          ((x) * (LE_PI / 180.0))
+#define LE_RAD2DEG(x)          ((x) * (180.0 / LE_PI))
+
 
 #define STRINGIFY_DETAIL(x) #x
 #define STRINGIFY(x) STRINGIFY_DETAIL(x)

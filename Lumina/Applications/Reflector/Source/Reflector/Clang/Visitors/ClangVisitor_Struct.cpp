@@ -374,7 +374,7 @@ namespace Lumina::Reflection::Visitor
             return CXChildVisit_Break;
         }
         
-        FReflectedStruct* ReflectedStruct = Context->ReflectionDatabase.GetOrCreateReflectedType<FReflectedStruct>(FStringHash(FullyQualifiedCursorName));
+        eastl::shared_ptr<FReflectedStruct> ReflectedStruct = Context->ReflectionDatabase.GetOrCreateReflectedType<FReflectedStruct>(FStringHash(FullyQualifiedCursorName));
         ReflectedStruct->DisplayName = CursorName;
         ReflectedStruct->Project = Context->Project->Name;
         ReflectedStruct->Type = FReflectedType::EType::Structure;
@@ -388,11 +388,9 @@ namespace Lumina::Reflection::Visitor
             ReflectedStruct->Namespace = Context->CurrentNamespace;
         }
         
-        Context->LastReflectedType = ReflectedStruct;
-        
         FReflectedType* PreviousType = Context->ParentReflectedType;
-        Context->ParentReflectedType = ReflectedStruct;
-        Context->LastReflectedType = ReflectedStruct;
+        Context->ParentReflectedType = ReflectedStruct.get();
+        Context->LastReflectedType = ReflectedStruct.get();
 
         if (!Context->bInitialPass)
         {
@@ -430,7 +428,7 @@ namespace Lumina::Reflection::Visitor
             return CXChildVisit_Break;
         }
         
-        FReflectedClass* ReflectedClass = Context->ReflectionDatabase.GetOrCreateReflectedType<FReflectedClass>(FStringHash(FullyQualifiedCursorName));
+        eastl::shared_ptr<FReflectedClass> ReflectedClass = Context->ReflectionDatabase.GetOrCreateReflectedType<FReflectedClass>(FStringHash(FullyQualifiedCursorName));
         ReflectedClass->DisplayName = CursorName;
         ReflectedClass->Project = Context->Project->Name;
         ReflectedClass->Type = FReflectedType::EType::Class;
@@ -446,8 +444,8 @@ namespace Lumina::Reflection::Visitor
     
 
         FReflectedType* PreviousType = Context->ParentReflectedType;
-        Context->ParentReflectedType = ReflectedClass;
-        Context->LastReflectedType = ReflectedClass;
+        Context->ParentReflectedType = ReflectedClass.get();
+        Context->LastReflectedType = ReflectedClass.get();
 
         if (!Context->bInitialPass)
         {

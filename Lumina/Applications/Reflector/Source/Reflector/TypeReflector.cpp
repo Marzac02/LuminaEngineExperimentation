@@ -75,9 +75,11 @@ namespace Lumina::Reflection
             // Convert backslashes to forward slashes for consistency
             eastl::replace(ProjectRelativePath.begin(), ProjectRelativePath.end(), '\\', '/');
             
+            
             eastl::string ProjectPath = Solution.GetParentPath() + "/" + ProjectRelativePath;
             
-            if (std::filesystem::exists(ProjectPath.c_str()))
+            
+            if (ProjectPath.find("thirdparty") == eastl::string::npos && std::filesystem::exists(ProjectPath.c_str()))
             {
                 std::cout << "Found Project: " << ProjectPath.c_str() << "\n";
                 ProjectFilePaths.push_back(std::move(ProjectPath));
@@ -101,9 +103,9 @@ namespace Lumina::Reflection
         // Parse each project
         for (const eastl::string& FilePath : ProjectFilePaths)
         {
-            FReflectedProject Project(Solution.GetPath(), FilePath);
+            eastl::shared_ptr<FReflectedProject> Project = eastl::make_shared<FReflectedProject>(Solution.GetPath(), FilePath);
             
-            if (Project.Parse())
+            if (Project->Parse())
             {
                 Solution.AddReflectedProject(std::move(Project));
             }
@@ -122,33 +124,31 @@ namespace Lumina::Reflection
         Parser.ParsingContext.bInitialPass = true;
         
         // Initial Pass. Register types only.
-        eastl::vector<FReflectedProject> Projects;
-        Solution.GetProjects(Projects);
-        
-        for (FReflectedProject& Project : Projects)
+        eastl::vector<eastl::shared_ptr<FReflectedProject>> Projects = Solution.GetProjects();
+        for (eastl::shared_ptr<FReflectedProject>& Project : Projects)
         {
             Parser.ParsingContext.ReflectionDatabase.AddReflectedProject(Project);
             
-            if (!Parser.Parse(Project.SolutionPath, Project.Headers, Project))
+            if (!Parser.Parse(Project->SolutionPath, Project->Headers, Project))
             {
-                std::cout << "No files to parse in " << Project.Name.c_str() << "\n";
+                std::cout << "No files to parse in " << Project->Name.c_str() << "\n";
             }
         }
 
         Parser.ParsingContext.bInitialPass = false;
 
         // Second Pass. Traverse children and finish building types.
-        for (FReflectedProject& Project : Projects)
+        for (eastl::shared_ptr<FReflectedProject>& Project : Projects)
         {
-            if (!Parser.Parse(Project.SolutionPath, Project.Headers, Project))
+            if (!Parser.Parse(Project->SolutionPath, Project->Headers, Project))
             {
-                std::cout << "No files to parse in " << Project.Name.c_str() << "\n";
+                std::cout << "No files to parse in " << Project->Name.c_str() << "\n";
             }
         }
 
-        for (FReflectedProject& Project : Projects)
+        for (eastl::shared_ptr<FReflectedProject>& Project : Projects)
         {
-            Parser.Dispose(Project);
+            Parser.Dispose(*Project);
         }
 
         std::cout << "[Reflection] Number of headers reflected: " << Parser.ParsingContext.NumHeadersReflected << "\n";
@@ -170,33 +170,18 @@ namespace Lumina::Reflection
         return true;
     }
 
-    void FTypeReflector::Bump()
+    bool FTypeReflector::IsAnyProjectDirty() const
     {
-#if 0
-        try
+        for (const eastl::shared_ptr<FReflectedProject>& Project : Solution.GetProjects())
         {
-            std::filesystem::current_path(Solution.GetParentPath().c_str());
-
-            eastl::string PremakeFile = Solution.GetParentPath() + "/Tools/premake5.exe";
-            eastl::string Command = "\"" + PremakeFile + "\" vs2022";
-
-            int result = std::system(Command.c_str());  // NOLINT(concurrency-mt-unsafe)
-            if (result == -1)
+            if (Project->bDirty)
             {
-                std::cerr << "Failed to launch premake (system() error).\n";
-            }
-            else if (result != 0)
-            {
-                std::cerr << "Premake failed with exit code " << result << "\n";
+                return true;
             }
         }
-        catch (const std::filesystem::filesystem_error& e)
-        {
-            std::cerr << "Filesystem error while setting working directory: " << e.what() << "\n";
-        }
-#endif
+        return false;
     }
-    
+
     bool FTypeReflector::WriteGeneratedFiles(const FClangParser& Parser)
     {
         FCodeGenerator Generator(Solution, Parser.ParsingContext.ReflectionDatabase);

@@ -144,13 +144,9 @@ namespace Lumina
             }
             
             FAssetManager* Manager = GEngine->GetEngineSubsystem<FAssetManager>();
-            FAssetRequest* Request = Manager->LoadAsset(NameAsString);
-            Request->AddListener([&FoundObject](CObject* LoadedObject)
-            {
-                FoundObject = LoadedObject;
-            });
-            
-            Request->WaitForTask();
+            TSharedPtr<FAssetRequest> Request = Manager->LoadAsset(NameAsString);
+            Manager->FlushAsyncLoading();
+            return Request->GetPendingObject();
         }
         
         return FoundObject;

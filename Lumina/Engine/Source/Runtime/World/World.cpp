@@ -1,6 +1,5 @@
 #include "pch.h"
 #include "World.h"
-
 #include "WorldManager.h"
 #include "Core/Delegates/CoreDelegates.h"
 #include "Core/Engine/Engine.h"
@@ -37,94 +36,7 @@ namespace Lumina
     void CWorld::Serialize(FArchive& Ar)
     {
         CObject::Serialize(Ar);
-        using namespace entt::literals;
-        
-        if (Ar.IsWriting())
-        {
-            EntityRegistry.compact<>();
-            auto View = EntityRegistry.view<entt::entity>(entt::exclude<FEditorComponent, FSingletonEntityTag>);
-
-            int64 PreSerializePos = Ar.Tell();
-    
-            int32 NumEntitiesSerialized = 0;
-            Ar << NumEntitiesSerialized;
-
-            View.each([&](entt::entity Entity)
-            {
-                int64 PreEntityPos = Ar.Tell();
-        
-                int64 EntitySaveSize = 0;
-                Ar << EntitySaveSize;
-
-                bool bSuccess = ECS::Utils::SerializeEntity(Ar, EntityRegistry, Entity);
-                if (!bSuccess)
-                {
-                    // Rewind to before this entity's data and continue with next entity
-                    Ar.Seek(PreEntityPos);
-                    return;
-                }
-
-                NumEntitiesSerialized++;
-
-                int64 PostEntityPos = Ar.Tell();
-
-                // Calculate actual size written (excluding the size field itself)
-                EntitySaveSize = PostEntityPos - PreEntityPos - sizeof(int64);
-        
-                // Go back and write the correct size
-                Ar.Seek(PreEntityPos);
-                Ar << EntitySaveSize;
-        
-                // Return to end position to continue with next entity
-                Ar.Seek(PostEntityPos);
-            });
-    
-            int64 PostSerializePos = Ar.Tell();
-
-            // Go back and write the actual number of successfully serialized entities
-            Ar.Seek(PreSerializePos);
-            Ar << NumEntitiesSerialized;
-
-            // Return to end of all serialized data
-            Ar.Seek(PostSerializePos);
-        }
-        else if (Ar.IsReading())
-        {
-            int32 NumEntitiesSerialized = 0;
-            Ar << NumEntitiesSerialized;
-
-            for (int32 i = 0; i < NumEntitiesSerialized; ++i)
-            {
-                int64 EntitySaveSize = 0;
-                Ar << EntitySaveSize;
-        
-                int64 PreEntityPos = Ar.Tell();
-
-                entt::entity NewEntity = entt::null;
-                bool bSuccess = ECS::Utils::SerializeEntity(Ar, EntityRegistry, NewEntity);
-                
-                if (!bSuccess || NewEntity == entt::null)
-                {
-                    // Skip to the next entity using the saved size
-                    LOG_ERROR("Failed to serialize entity: {}", (int)NewEntity);
-                    Ar.Seek(PreEntityPos + EntitySaveSize);
-                    continue;
-                }
-
-                EntityRegistry.emplace_or_replace<FNeedsTransformUpdate>(NewEntity);
-        
-                // Verify we read the expected amount of data
-                int64 PostEntityPos = Ar.Tell();
-                int64 ActualBytesRead = PostEntityPos - PreEntityPos;
-        
-                if (ActualBytesRead != EntitySaveSize)
-                {
-                    // Data mismatch, seek to correct position to stay aligned
-                    LOG_ERROR("Entity Serialization Mismatch For {}: Expected: {} - Read: {}", (int)NewEntity, EntitySaveSize, ActualBytesRead);
-                    Ar.Seek(PreEntityPos + EntitySaveSize);
-                }
-            }
-        }
+        ECS::Utils::SerializeRegistry(Ar, EntityRegistry);
     }
 
     void CWorld::PreLoad()
@@ -147,7 +59,7 @@ namespace Lumina
         EntityRegistry.emplace<FHideInSceneOutliner>(SingletonEntity);
         EntityRegistry.emplace<FLuaScriptsContainerComponent>(SingletonEntity);
 
-        ScriptUpdatedDelegateHandle = Scripting::FScriptingContext::Get().OnScriptLoaded.AddLambda([this]()
+        ScriptUpdatedDelegateHandle = Scripting::FScriptingContext::Get().OnScriptLoaded.AddLambda([this]
         {
             bHasNewlyLoadedScripts = true;
         });
@@ -156,7 +68,12 @@ namespace Lumina
         PhysicsScene    = Physics::GetPhysicsContext()->CreatePhysicsScene(this);
         CameraManager   = MakeUniquePtr<FCameraManager>(this);
         RenderScene     = MakeUniquePtr<FForwardRenderScene>(this);
-        
+
+        EntityRegistry.ctx().emplace<Physics::IPhysicsScene*>(PhysicsScene.get());
+        EntityRegistry.ctx().emplace<FCameraManager*>(CameraManager.get());
+        EntityRegistry.ctx().emplace<IRenderScene*>(RenderScene.get());
+        EntityRegistry.ctx().emplace<entt::dispatcher&>(SingletonDispatcher);
+
         RenderScene->Init();
         
         TVector<TObjectPtr<CEntitySystem>> Systems;

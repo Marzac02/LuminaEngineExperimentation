@@ -3,6 +3,7 @@
 #include "StringHash.h"
 
 #include "EASTL/hash_map.h"
+#include "eastl/shared_ptr.h"
 #include "Reflector/Clang/Visitors/ClangTranslationUnit.h"
 
 namespace Lumina::Reflection
@@ -15,14 +16,15 @@ namespace Lumina::Reflection
 
         bool Parse();
         
-        eastl::string                                   Name;
-        eastl::string                                   Path;
-        eastl::string                                   SolutionPath;
-        eastl::string                                   ParentPath;
-        eastl::vector<FReflectedHeader>                 Headers;
-        eastl::hash_map<FStringHash, FReflectedHeader>  HeaderHashMap;
-        CXTranslationUnit                               TranslationUnit = nullptr;
-        CXIndex                                         ClangIndex = nullptr;
-    
+        eastl::string                                                       Name;
+        eastl::string                                                       Path;
+        eastl::string                                                       SolutionPath;
+        eastl::string                                                       ParentPath;
+        eastl::vector<eastl::shared_ptr<FReflectedHeader>>                  Headers;
+        eastl::hash_map<FStringHash, eastl::shared_ptr<FReflectedHeader>>   HeaderHashMap;
+        CXTranslationUnit                                                   TranslationUnit = nullptr;
+        CXIndex                                                             ClangIndex = nullptr;
+        bool                                                                bDirty = false;
+        
     };
 }

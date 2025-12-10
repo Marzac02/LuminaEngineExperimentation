@@ -1,8 +1,6 @@
 ﻿#pragma once
 #include "Containers/String.h"
 #include "Core/Delegates/Delegate.h"
-#include "Core/Singleton/Singleton.h"
-#include "Module/API.h"
 
 namespace Lumina
 {
@@ -12,11 +10,8 @@ namespace Lumina
     {
     public:
 
-        FProject()
-            : bHasProjectLoaded(false)
-        {}
-
-
+        LUMINA_API FProject();
+        
         struct FSettings
         {
             FString ProjectName;
@@ -34,6 +29,7 @@ namespace Lumina
         LUMINA_API FString GetProjectContentDirectory() const;
         LUMINA_API FString GetProjectGameDirectory() const;
         LUMINA_API FString GetProjectScriptsDirectory() const;
+        LUMINA_API FString GetProjectContentBinDirectory() const;
 
         FOnProjectLoaded OnProjectLoaded;
 

@@ -20,7 +20,7 @@ namespace Lumina
         IEditorToolContext() = default;
         virtual ~IEditorToolContext() = default;
         
-        virtual void PushModal(const FString& Title, ImVec2 Size, TFunction<bool(const FUpdateContext&)> DrawFunction) = 0;
+        virtual void PushModal(const FString& Title, ImVec2 Size, TMoveOnlyFunction<bool(const FUpdateContext&)> DrawFunction) = 0;
 
         virtual void OpenAssetEditor(CObject* InAsset) = 0;
 

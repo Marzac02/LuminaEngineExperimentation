@@ -9,6 +9,31 @@
 
 namespace Lumina
 {
+
+    static CFactoryRegistry* FactoryRegistry = nullptr;
+    
+    CFactoryRegistry& CFactoryRegistry::Get()
+    {
+        static std::once_flag Flag;
+        std::call_once(Flag, []()
+        {
+            FactoryRegistry = NewObject<CFactoryRegistry>();
+            FactoryRegistry->AddToRoot();
+        });
+
+        return *FactoryRegistry;
+    }
+
+    void CFactoryRegistry::RegistryFactory(CFactory* Factory)
+    {
+        Factories.push_back(Factory);
+    }
+
+    void CFactory::PostCreateCDO()
+    {
+        CFactoryRegistry::Get().RegistryFactory(this);
+    }
+
     CObject* CFactory::TryCreateNew(const FString& Path)
     {
         CPackage* Package = CPackage::CreatePackage(Path);

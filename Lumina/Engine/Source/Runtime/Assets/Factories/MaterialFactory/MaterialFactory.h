@@ -13,11 +13,12 @@ namespace Lumina
 		GENERATED_BODY()
 	public:
 
+		CObject* CreateNew(const FName& Name, CPackage* Package) override;
 
-		CClass* GetSupportedType() const override { return CMaterial::StaticClass(); }
 		FString GetAssetName() const override { return "Material"; }
 		FString GetDefaultAssetCreationName(const FString& InPath) override { return "NewMaterial"; }
+		FString GetAssetDescription() const override { return "A material."; }
+		CClass* GetAssetClass() const override { return CMaterial::StaticClass(); }
 
-		CObject* CreateNew(const FName& Name, CPackage* Package) override;
 	};
 }

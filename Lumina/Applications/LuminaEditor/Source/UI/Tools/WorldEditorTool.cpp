@@ -184,11 +184,11 @@ namespace Lumina
         if (CPackage::SavePackage(World->GetPackage(), FullPath.c_str()))
         {
             GetEngineSystem<FAssetRegistry>().AssetSaved(World);
-            ImGuiX::Notifications::NotifySuccess("Successfully saved package: \"%s\"", World->GetPathName().c_str());
+            ImGuiX::Notifications::NotifySuccess("Successfully saved package: \"{0}\"", World->GetPathName().c_str());
         }
         else
         {
-            ImGuiX::Notifications::NotifyError("Failed to save package: \"%s\"", World->GetPathName().c_str());
+            ImGuiX::Notifications::NotifyError("Failed to save package: \"{0}\"", World->GetPathName().c_str());
         }
     }
 
@@ -2023,7 +2023,7 @@ namespace Lumina
         }
         else
         {
-            ImGuiX::Notifications::NotifyError("Failed to remove component: %s", ComponentType->GetName().c_str());
+            ImGuiX::Notifications::NotifyError("Failed to remove component: {0}", ComponentType->GetName().c_str());
         }
     }
 

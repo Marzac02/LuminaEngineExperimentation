@@ -35,10 +35,6 @@ namespace Lumina::Logging
 #define LOG_ERROR(...) ::Lumina::Logging::GetLogger()->error(__VA_ARGS__)
 #define LOG_WARN(...) ::Lumina::Logging::GetLogger()->warn(__VA_ARGS__)
 #define LOG_TRACE(...) ::Lumina::Logging::GetLogger()->trace(__VA_ARGS__)
-#ifdef LE_DEBUG
 #define LOG_DEBUG(...) ::Lumina::Logging::GetLogger()->debug(__VA_ARGS__)
-#else
-#define LOG_DEBUG(...) // Empty definition; does nothing if LE_DEBUG is not defined
-#endif
 #define LOG_INFO(...) ::Lumina::Logging::GetLogger()->info(__VA_ARGS__)
 #define LOG_INFO_TAGGED(Tag, ...) ::Lumina::Logging::GetLogger()->info("[{}] {}", Tag, __VA_ARGS__)

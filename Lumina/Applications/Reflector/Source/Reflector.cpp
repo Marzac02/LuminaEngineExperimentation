@@ -198,6 +198,12 @@ int main(int argc, char* argv[])
         std::cout << "[Reflection] Solution parsing completed in " << parseTime << " seconds.\n";
     }
 
+    if (!TypeReflector.IsAnyProjectDirty())
+    {
+        std::cout << "[Reflection] Reflection not necessary, exiting";
+        std::exit(0);
+    }
+
     std::cout << "\n";
     
     Lumina::Reflection::FClangParser Parser;

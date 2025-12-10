@@ -5,7 +5,6 @@
 #include "Core/Engine/Engine.h"
 #include "Core/Object/Cast.h"
 #include "Core/Object/Class.h"
-#include "Core/Object/ObjectAllocator.h"
 #include "Core/Object/ObjectIterator.h"
 #include "Core/Object/ObjectRedirector.h"
 #include "Core/Object/Archive/ObjectReferenceReplacerArchive.h"
@@ -70,34 +69,32 @@ namespace Lumina
         
         return Package;
     }
-
+    
     bool CPackage::DestroyPackage(const FString& PackageName)
     {
-        // First we need to load the package before destroying it.*/
-        CPackage* Package = FindObject<CPackage>(nullptr, PackageName);
-        if (Package)
+        FString PackageVirtualPath = Paths::ConvertToVirtualPath(PackageName);
+        if (CPackage* Package = FindObject<CPackage>(nullptr, PackageVirtualPath))
         {
             LUM_ASSERT(Package->FullyLoad())
 
-            TVector<TObjectPtr<CObject>> ExportObjects;
-            ExportObjects.reserve(20);
-            GetObjectsWithPackage(Package, ExportObjects);
-        
-            for (CObject* ExportObject : ExportObjects)
+            for (const FObjectExport& Export : Package->ExportTable)
             {
-                if (ExportObject->IsAsset())
+                if (TObjectPtr<CObject> ExportObject = Export.Object.Lock())
                 {
-                    FObjectReferenceReplacerArchive Ar(ExportObject, nullptr);
-                    for (TObjectIterator<CObject> Itr; Itr; ++Itr)
+                    if (ExportObject->IsAsset())
                     {
-                        CObject* Object = *Itr;
-                        Object->Serialize(Ar);
+                        FObjectReferenceReplacerArchive Ar(ExportObject, nullptr);
+                        for (TObjectIterator<CObject> Itr; Itr; ++Itr)
+                        {
+                            CObject* Object = *Itr;
+                            Object->Serialize(Ar);
+                        }
                     }
-                }
             
-                if (ExportObject != Package)
-                {
-                    ExportObject->ConditionalBeginDestroy();
+                    if (ExportObject != Package)
+                    {
+                        ExportObject->ConditionalBeginDestroy();
+                    }
                 }
             }
         
@@ -106,12 +103,55 @@ namespace Lumina
             
             Package->RemoveFromRoot();
             Package->ConditionalBeginDestroy();
+
+            GEngine->GetEngineSubsystem<FAssetRegistry>()->AssetDeleted(PackageVirtualPath);
+
+            FString PathToRemove = PackageName;
+            Paths::AddPackageExtension(PathToRemove);
+            std::filesystem::remove(PathToRemove.c_str());
+
+            return true;
         }
-
-
-        GEngine->GetEngineSubsystem<FAssetRegistry>()->AssetDeleted(PackageName);
-
         
+        return false;
+    }
+    
+    bool CPackage::DestroyPackage(CPackage* PackageToDestroy)
+    {
+        LUM_ASSERT(PackageToDestroy->FullyLoad())
+
+        TVector<TObjectPtr<CObject>> ExportObjects;
+        ExportObjects.reserve(20);
+        GetObjectsWithPackage(PackageToDestroy, ExportObjects);
+        
+        for (CObject* ExportObject : ExportObjects)
+        {
+            if (ExportObject->IsAsset())
+            {
+                FObjectReferenceReplacerArchive Ar(ExportObject, nullptr);
+                for (TObjectIterator<CObject> Itr; Itr; ++Itr)
+                {
+                    CObject* Object = *Itr;
+                    Object->Serialize(Ar);
+                }
+            }
+        
+            if (ExportObject != PackageToDestroy)
+            {
+                ExportObject->ConditionalBeginDestroy();
+            }
+        }
+        
+        PackageToDestroy->ExportTable.clear();
+        PackageToDestroy->ImportTable.clear();
+
+        FName PackagePath = PackageToDestroy->GetFullPackageFilePath();
+        
+        PackageToDestroy->RemoveFromRoot();
+        PackageToDestroy->ConditionalBeginDestroy();
+
+        GEngine->GetEngineSubsystem<FAssetRegistry>()->AssetDeleted(PackagePath);
+
         return true;
     }
 
@@ -308,7 +348,7 @@ namespace Lumina
         for (size_t i = 0; i < ExportTable.size(); ++i)
         {
             FObjectExport& Export = ExportTable[i];
-            LUM_ASSERT(Export.Object != nullptr)
+            LUM_ASSERT(Export.Object.Get() != nullptr)
             
             Export.Offset = Ar.Tell();
             

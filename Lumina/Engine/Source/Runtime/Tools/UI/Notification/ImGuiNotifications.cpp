@@ -13,8 +13,8 @@ namespace Lumina::ImGuiX::Notifications
 
      class LUMINA_API FNotification
      {
-         constexpr static float s_defaultLifetime = 3.0f;
-         constexpr static float s_defaultFadeTime = 1.0f;
+         constexpr static float DefaultLifetime = 3.0f;
+         constexpr static float DefaultFadeTime = 1.0f;
 
      public:
 
@@ -48,9 +48,9 @@ namespace Lumina::ImGuiX::Notifications
 
      public:
 
-         FNotification(EType type, FInlineString&& Message)
+         FNotification(EType type, FString Message)
              : Type(type)
-             , Message(Message)
+             , Message(Move(Message))
          {
              CreationTime = glfwGetTime();
          }
@@ -61,15 +61,15 @@ namespace Lumina::ImGuiX::Notifications
          {
              float const elapsedTime = glfwGetTime() - CreationTime;
 
-             if ( elapsedTime > s_defaultFadeTime + Lifetime + s_defaultFadeTime )
+             if ( elapsedTime > DefaultFadeTime + Lifetime + DefaultFadeTime )
              {
                  return EPhase::Expired;
              }
-             else if ( elapsedTime > s_defaultFadeTime + Lifetime )
+             else if ( elapsedTime > DefaultFadeTime + Lifetime )
              {
                  return EPhase::FadeOut;
              }
-             else if ( elapsedTime > s_defaultFadeTime )
+             else if ( elapsedTime > DefaultFadeTime )
              {
                  return EPhase::Wait;
              }
@@ -86,11 +86,11 @@ namespace Lumina::ImGuiX::Notifications
 
              if ( phase == EPhase::FadeIn )
              {
-                 return elapsedTime / s_defaultFadeTime;
+                 return elapsedTime / DefaultFadeTime;
              }
              else if ( phase == EPhase::FadeOut )
              {
-                 return ( 1.f - ( ( elapsedTime - s_defaultFadeTime - Lifetime) / s_defaultFadeTime ) );
+                 return ( 1.f - ( ( elapsedTime - DefaultFadeTime - Lifetime) / DefaultFadeTime ) );
              }
 
              return 1.f;
@@ -175,13 +175,13 @@ namespace Lumina::ImGuiX::Notifications
          
      private:
 
-         EType                           Type = EType::None;
-         FInlineString                   Message;
-         float                           Lifetime = s_defaultLifetime;
-         double                          CreationTime = -1.0f;
+         EType                     Type = EType::None;
+         FString                   Message;
+         float                     Lifetime = DefaultLifetime;
+         double                    CreationTime = -1.0f;
      };
     
-    static TFixedVector<FNotification, 100> GNotifications;
+    static TFixedVector<FNotification, 10> GNotifications;
     
     void Initialize()
     {
@@ -290,44 +290,24 @@ namespace Lumina::ImGuiX::Notifications
         }
     }
 
-    LUMINA_API void NotifyInfo( const char* pFormat, ... )
+    LUMINA_API void NotifyInfoInternal(const FString& Msg)
     {
-        va_list args;
-        va_start( args, pFormat );
-        FInlineString str;
-        str.append_sprintf_va_list( pFormat, args );
-        GNotifications.emplace_back(FNotification::EType::Info, str.c_str());
-        va_end( args );
+        GNotifications.emplace_back(FNotification::EType::Info, Move(Msg));
     }
 
-    LUMINA_API void NotifySuccess( const char* pFormat, ... )
+    LUMINA_API void NotifySuccessInternal(const FString& Msg)
     {
-        va_list args;
-        va_start( args, pFormat );
-        FInlineString str;
-        str.append_sprintf_va_list( pFormat, args );
-        GNotifications.emplace_back(FNotification::EType::Success, str.c_str());
-        va_end( args );
+        GNotifications.emplace_back(FNotification::EType::Success, Move(Msg));
     }
 
-    LUMINA_API void NotifyWarning( const char* pFormat, ... )
+    LUMINA_API void NotifyWarningInternal(const FString& Msg)
     {
-        va_list args;
-        va_start( args, pFormat );
-        FInlineString str;
-        str.append_sprintf_va_list( pFormat, args );
-        GNotifications.emplace_back(FNotification::EType::Warning, str.c_str());
-        va_end( args );
+        GNotifications.emplace_back(FNotification::EType::Warning, Move(Msg));
     }
 
-    LUMINA_API void NotifyError( const char* pFormat, ... )
+    LUMINA_API void NotifyErrorInternal(const FString& Msg)
     {
-        va_list args;
-        va_start( args, pFormat );
-        FInlineString str;
-        str.append_sprintf_va_list( pFormat, args );
-        GNotifications.emplace_back(FNotification::EType::Error, str.c_str());
-        va_end( args );
+        GNotifications.emplace_back(FNotification::EType::Error, Move(Msg));
     }
     
 }

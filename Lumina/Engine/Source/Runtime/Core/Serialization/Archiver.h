@@ -37,8 +37,8 @@ namespace Lumina
     public:
     
         FArchive() = default;
-        FArchive(const FArchive&) = default;
-        FArchive& operator=(const FArchive& ArchiveToCopy) = default;
+        FArchive(const FArchive&) = delete;
+        FArchive& operator=(const FArchive& ArchiveToCopy) = delete;
         virtual ~FArchive() = default;
 
     

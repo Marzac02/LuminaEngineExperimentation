@@ -1,7 +1,10 @@
 ﻿#include "pch.h"
 #include "EntityUtils.h"
 
+#include "Components/DirtyComponent.h"
+#include "Components/EditorComponent.h"
 #include "Components/RelationshipComponent.h"
+#include "Components/SingletonEntityComponent.h"
 #include "components/tagcomponent.h"
 #include "Core/Object/Class.h"
 
@@ -137,14 +140,7 @@ namespace Lumina::ECS::Utils
                         if (entt::meta_type Meta = entt::resolve(HashString))
                         {
                             void* RegistryPtr = &Registry;
-                            
-                            if (entt::meta_any RetVal = Meta.invoke("addcomponent"_hs, {}, Entity, RegistryPtr))
-                            {
-                                if (void** Type = RetVal.try_cast<void*>())
-                                {
-                                    Struct->SerializeTaggedProperties(Ar, *Type);
-                                }
-                            }
+                            Meta.invoke("addcomponentwithmemory"_hs, {}, std::ref(Ar), Entity, RegistryPtr);
                         }
                     }
                 }
@@ -156,7 +152,100 @@ namespace Lumina::ECS::Utils
         
         return !Ar.HasError();
     }
+
+    bool SerializeRegistry(FArchive& Ar, FEntityRegistry& Registry)
+    {
+        using namespace entt::literals;
+        
+        if (Ar.IsWriting())
+        {
+            Registry.compact<>();
+            auto View = Registry.view<entt::entity>(entt::exclude<FEditorComponent, FSingletonEntityTag>);
+
+            int64 PreSerializePos = Ar.Tell();
     
+            int32 NumEntitiesSerialized = 0;
+            Ar << NumEntitiesSerialized;
+
+            View.each([&](entt::entity Entity)
+            {
+                int64 PreEntityPos = Ar.Tell();
+        
+                int64 EntitySaveSize = 0;
+                Ar << EntitySaveSize;
+
+                bool bSuccess = SerializeEntity(Ar, Registry, Entity);
+                if (!bSuccess)
+                {
+                    // Rewind to before this entity's data and continue with next entity
+                    Ar.Seek(PreEntityPos);
+                    return;
+                }
+
+                NumEntitiesSerialized++;
+
+                int64 PostEntityPos = Ar.Tell();
+
+                // Calculate actual size written (excluding the size field itself)
+                EntitySaveSize = PostEntityPos - PreEntityPos - sizeof(int64);
+        
+                // Go back and write the correct size
+                Ar.Seek(PreEntityPos);
+                Ar << EntitySaveSize;
+        
+                // Return to end position to continue with next entity
+                Ar.Seek(PostEntityPos);
+            });
+    
+            int64 PostSerializePos = Ar.Tell();
+
+            // Go back and write the actual number of successfully serialized entities
+            Ar.Seek(PreSerializePos);
+            Ar << NumEntitiesSerialized;
+
+            // Return to end of all serialized data
+            Ar.Seek(PostSerializePos);
+        }
+        else if (Ar.IsReading())
+        {
+            int32 NumEntitiesSerialized = 0;
+            Ar << NumEntitiesSerialized;
+
+            for (int32 i = 0; i < NumEntitiesSerialized; ++i)
+            {
+                int64 EntitySaveSize = 0;
+                Ar << EntitySaveSize;
+        
+                int64 PreEntityPos = Ar.Tell();
+
+                entt::entity NewEntity = entt::null;
+                bool bSuccess = ECS::Utils::SerializeEntity(Ar, Registry, NewEntity);
+                
+                if (!bSuccess || NewEntity == entt::null)
+                {
+                    // Skip to the next entity using the saved size
+                    LOG_ERROR("Failed to serialize entity: {}", (int)NewEntity);
+                    Ar.Seek(PreEntityPos + EntitySaveSize);
+                    continue;
+                }
+
+                Registry.emplace_or_replace<FNeedsTransformUpdate>(NewEntity);
+        
+                int64 PostEntityPos = Ar.Tell();
+                int64 ActualBytesRead = PostEntityPos - PreEntityPos;
+        
+                if (ActualBytesRead != EntitySaveSize)
+                {
+                    // Data mismatch, seek to correct position to stay aligned
+                    LOG_ERROR("Entity Serialization Mismatch For {}: Expected: {} - Read: {}", (int)NewEntity, EntitySaveSize, ActualBytesRead);
+                    Ar.Seek(PreEntityPos + EntitySaveSize);
+                }
+            }
+        }
+
+        return !Ar.HasError();
+    }
+
 
     bool EntityHasTag(FName Tag, FEntityRegistry& Registry, entt::entity Entity)
     {

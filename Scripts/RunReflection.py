@@ -10,10 +10,7 @@ def main():
         print("ERROR: LUMINA_DIR environment variable not set")
         return 1
     
-    reflector_exe = Path(lumina_dir) / "Binaries" / "Shipping-windows-x86_64" / "Reflector.exe"
-
-    if not os.path.exists(reflector_exe):
-        reflector_exe = Path(lumina_dir) / "Binaries" / "Development-windows-x86_64" / "Reflector.exe"
+    reflector_exe = Path(lumina_dir) / "Binaries" / "Development-windows-x86_64" / "Reflector.exe"
     
     if len(sys.argv) < 2:
         print("Usage: RunReflector.py <solution_path>")

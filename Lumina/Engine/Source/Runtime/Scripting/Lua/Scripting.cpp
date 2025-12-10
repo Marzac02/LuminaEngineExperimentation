@@ -1,5 +1,7 @@
 #include "pch.h"
 #include "Scripting.h"
+
+#include "Core/Math/Color.h"
 #include "Events/KeyCodes.h"
 #include "Input/InputProcessor.h"
 #include "Memory/SmartPtr.h"
@@ -453,6 +455,11 @@ namespace Lumina::Scripting
         GLMTable.set_function("QuatSlerp", [](glm::quat A, glm::quat B, float t) { return glm::slerp(A, B, t); });
 
 
+        sol::table ColorTable = State.create_named_table("Color");
+        ColorTable.set_function("RandomColor4", []() ->glm::vec4 { return FColor::MakeRandom(1); });
+        ColorTable.set_function("RandomColor3", []() ->glm::vec3 { return FColor::MakeRandom(1); });
+        
+        
         
         
         sol::table InputTable = State.create_named_table("Input");

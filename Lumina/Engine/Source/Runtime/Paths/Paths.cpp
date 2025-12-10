@@ -131,6 +131,11 @@ namespace Lumina::Paths
         return VirtualPath;
     }
 
+    bool CreateDirectories(FStringView Path)
+    {
+        return std::filesystem::create_directories(Path.data());
+    }
+
     bool IsUnderDirectory(const FString& ParentDirectory, const FString& Directory)
     {
         if (Directory.length() < ParentDirectory.length())

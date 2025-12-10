@@ -262,10 +262,10 @@ namespace Lumina::ImGuiX
         return GEngine->GetEngineSubsystem<FRenderManager>()->GetImGuiRenderer()->GetOrCreateImTexture(Path);
     }
 
-    FString FormatSize(size_t bytes)
+    FString FormatSize(size_t Bytes)
     {
         const char* suffixes[] = { "B", "KB", "MB", "GB" };
-        double size = static_cast<double>(bytes);
+        double size = static_cast<double>(Bytes);
         int suffix = 0;
 
         while (size >= 1024.0 && suffix < 3)
@@ -687,13 +687,13 @@ namespace Lumina::ImGuiX
 
         ImGui::BeginHorizontal("TitleBar");
 
-        if (ImGuiX::FlatButton(LE_ICON_WINDOW_MINIMIZE "##Min", ImVec2(s_windowControlButtonWidth, -1)))
+        if (ImGuiX::FlatButton(LE_ICON_WINDOW_MINIMIZE "##Min", ImVec2(WindowControlButtonWidth, -1)))
         {
             Window->Minimize();
         }
 
         
-        if (ImGuiX::FlatButton(LE_ICON_WINDOW_RESTORE "##Res", ImVec2(s_windowControlButtonWidth, -1)))
+        if (ImGuiX::FlatButton(LE_ICON_WINDOW_RESTORE "##Res", ImVec2(WindowControlButtonWidth, -1)))
         {
             if (Window->IsWindowMaximized())
             {
@@ -707,7 +707,7 @@ namespace Lumina::ImGuiX
 
 
         ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.7f, 0.1f, 0.1f, 1.0f));
-        if (ImGuiX::FlatButton(LE_ICON_WINDOW_CLOSE "##X", ImVec2(s_windowControlButtonWidth, -1)))
+        if (ImGuiX::FlatButton(LE_ICON_WINDOW_CLOSE "##X", ImVec2(WindowControlButtonWidth, -1)))
         {
             FApplication::RequestExit();
         }

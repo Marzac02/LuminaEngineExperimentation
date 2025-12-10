@@ -8,7 +8,6 @@ namespace Lumina::Reflection
     
     FReflectedHeader::FReflectedHeader(const eastl::string& Path)
         : HeaderPath(Path)
-        , bSkipCodeGen(0)
     {
         std::filesystem::path FilesystemPath = Path.c_str();
         FileName = FilesystemPath.stem().string().c_str();
@@ -45,5 +44,4 @@ namespace Lumina::Reflection
         }
         return false;
     }
-
 }

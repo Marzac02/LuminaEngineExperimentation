@@ -47,11 +47,11 @@ namespace Lumina
         if (CPackage::SavePackage(Asset->GetPackage(), FullPath.c_str()))
         {
             GetEngineSystem<FAssetRegistry>().AssetSaved(Asset);
-            ImGuiX::Notifications::NotifySuccess("Successfully saved package: \"%s\"", Asset->GetPathName().c_str());
+            ImGuiX::Notifications::NotifySuccess("Successfully saved package: \"{0}\"", Asset->GetPathName().c_str());
         }
         else
         {
-            ImGuiX::Notifications::NotifyError("Failed to save package: \"%s\"", Asset->GetPathName().c_str());
+            ImGuiX::Notifications::NotifyError("Failed to save package: \"{0}\"", Asset->GetPathName().c_str());
         }
     }
 

@@ -17,8 +17,7 @@ namespace Lumina
 
         
         FAssetRequest(const FString& InPath)
-            : Task(nullptr)
-            , AssetPath(InPath)
+            : AssetPath(InPath)
             , PendingObject(nullptr)
         {
         }
@@ -26,19 +25,14 @@ namespace Lumina
         FStringView GetAssetPath() const { return AssetPath; }
         CObject* GetPendingObject() const { return PendingObject; }
         void AddListener(const TFunction<void(CObject*)>& Functor) { Listeners.push_back(Functor); }
-
-        void WaitForTask();
-
+    
     private:
 
-        void SetTask(ITaskSet* InTask) { Task = InTask; }
         bool Process();
-        
         
     private:
 
         TVector<TFunction<void(CObject*)>>  Listeners;
-        ITaskSet*                           Task;
         FString                             AssetPath;
         CObject*                            PendingObject;
     };

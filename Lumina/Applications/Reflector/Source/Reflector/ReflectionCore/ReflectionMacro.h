@@ -12,7 +12,7 @@ namespace Lumina::Reflection
     public:
 
         FReflectionMacro() = default;
-        FReflectionMacro(FReflectedHeader* ReflectedHeader, const CXCursor& Cursor, const CXSourceRange& Range, EReflectionMacro InType);
+        FReflectionMacro(const eastl::string& HeaderPath, const CXCursor& Cursor, const CXSourceRange& Range, EReflectionMacro InType);
 
 
         EReflectionMacro        Type;

@@ -161,6 +161,7 @@ namespace Lumina
     private:
         
         FEntityRegistry                                 EntityRegistry;
+        entt::dispatcher                                SingletonDispatcher;
         entt::entity                                    SingletonEntity;
 
         FSystemContext                                  SystemContext;

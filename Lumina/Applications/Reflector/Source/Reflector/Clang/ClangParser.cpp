@@ -35,7 +35,7 @@ namespace Lumina::Reflection
         "/Lumina/Engine/ThirdParty/tracy/public",
     };
 
-    eastl::string ToLower(const eastl::string& Str)
+    static eastl::string ToLower(const eastl::string& Str)
     {
         eastl::string Lower;
         Lower.resize(Str.size());
@@ -47,110 +47,37 @@ namespace Lumina::Reflection
     {
     }
 
-    bool FClangParser::Parse(const eastl::string& SolutionPath, eastl::vector<FReflectedHeader>& Headers, FReflectedProject& Project)
+    bool FClangParser::Parse(const eastl::string& SolutionPath, eastl::vector<eastl::shared_ptr<FReflectedHeader>>& Headers, eastl::shared_ptr<FReflectedProject>& Project)
     {
         namespace fs = std::filesystem;
         
-        if (Project.TranslationUnit == nullptr)
+        if (Project->TranslationUnit == nullptr)
         {
             auto start = std::chrono::high_resolution_clock::now();
     
             ParsingContext.Solution = FProjectSolution(SolutionPath.c_str());
-            ParsingContext.Project = &Project;
+            ParsingContext.Project = Project;
     
-            const eastl::string ProjectReflectionDirectory = ParsingContext.Solution.GetParentPath() + "/Intermediates/Reflection/" + Project.Name;
-
-            if (!fs::exists(ProjectReflectionDirectory.c_str()))
-            {
-                fs::create_directories(ProjectReflectionDirectory.c_str());
-            }
-
-#if 0
-            eastl::vector<fs::path> ReflectionHeadersToDelete;
-
-            eastl::hash_set<eastl::string> CurrentHeaderNames;
-            for (const FReflectedHeader& Header : Headers)
-            {
-                CurrentHeaderNames.insert(ToLower(Header.FileName));
-            }
-
-            for (const auto& Entry : fs::directory_iterator(ProjectReflectionDirectory.c_str()))
-            {
-                if (Entry.is_regular_file())
-                {
-                    fs::path FilePath = Entry.path();
-                    eastl::string FileStem = FilePath.stem().string().c_str();
-                    
-                    const eastl::string Suffix = ".generated";
-                    if (FileStem.size() > Suffix.size() && FileStem.compare(FileStem.size() - Suffix.size(), Suffix.size(), Suffix) == 0)
-                    {
-                        FileStem.resize(FileStem.size() - Suffix.size());
-                    }
-
-                    FileStem = ToLower(FileStem);
-
-                    if (CurrentHeaderNames.find(FileStem) == CurrentHeaderNames.end())
-                    {
-                        ReflectionHeadersToDelete.push_back(FilePath);
-                    }
-                }
-            }
-
-            for (const fs::path& FileToDelete : ReflectionHeadersToDelete)
-            {
-                std::filesystem::remove(FileToDelete);
-            }
-
-            eastl::vector<FReflectedHeader> HeadersToParse;
-            if (std::filesystem::exists(ProjectReflectionDirectory.c_str()))
-            {
-                for (const FReflectedHeader& Header : Headers)
-                {
-                    fs::path PossibleReflectionFilePath = fs::path(ProjectReflectionDirectory.c_str()) / eastl::string(Header.FileName + ".generated.h").c_str();
-                    
-                    if (std::filesystem::exists(PossibleReflectionFilePath))
-                    {
-                        auto HeaderWriteTime = fs::last_write_time(Header.HeaderPath.c_str());
-                        auto ReflectionWriteTime = fs::last_write_time(PossibleReflectionFilePath.c_str());
-
-                        if (HeaderWriteTime > ReflectionWriteTime)
-                        {
-                            HeadersToParse.push_back(Header);
-                        }
-                    }
-                    else
-                    {
-                        HeadersToParse.push_back(Header);
-                    }
-                }
-            }
-
-
-            if (HeadersToParse.empty())
-            {
-                return false;
-            }
-#else
+            const eastl::string ProjectReflectionDirectory = ParsingContext.Solution.GetParentPath() + "/Intermediates/Reflection/" + Project->Name;
             
-            for (const auto& Entry : std::filesystem::directory_iterator(ProjectReflectionDirectory.c_str()))
-            {
-                std::error_code ec;
-                std::filesystem::remove_all(Entry, ec);
-                if (ec)
-                {
-                    std::cout << "Failed to delete: " << Entry.path() << " (" << ec.message() << ")\n";
-                }
-            }
-#endif
+            //for (const auto& Entry : std::filesystem::directory_iterator(ProjectReflectionDirectory.c_str()))
+            //{
+            //    std::error_code ec;
+            //    std::filesystem::remove_all(Entry, ec);
+            //    if (ec)
+            //    {
+            //        std::cout << "Failed to delete: " << Entry.path() << " (" << ec.message() << ")\n";
+            //    }
+            //}
             
             const eastl::string AmalgamationPath = ProjectReflectionDirectory + "/ReflectHeaders.gen.h";
             
             std::ofstream AmalgamationFile(AmalgamationPath.c_str());
             AmalgamationFile << "#pragma once\n\n";
 
-            for (const FReflectedHeader& Header : Headers)
+            for (const eastl::shared_ptr<FReflectedHeader>& Header : Headers)
             {
-                AmalgamationFile << "#include \"" << Header.HeaderPath.c_str() << "\"\n";
+                AmalgamationFile << "#include \"" << Header->HeaderPath.c_str() << "\"\n";
                 ParsingContext.NumHeadersReflected++;
             }
     
@@ -159,7 +86,7 @@ namespace Lumina::Reflection
             eastl::vector<eastl::string> FullIncludePaths;
             eastl::fixed_vector<const char*, 32> clangArgs;
     
-            eastl::string PrjPath = Project.ParentPath + "/Source/";
+            eastl::string PrjPath = Project->ParentPath + "/Source/";
             FullIncludePaths.push_back("-I" + PrjPath);
             clangArgs.push_back(FullIncludePaths.back().c_str());
     
@@ -217,7 +144,7 @@ namespace Lumina::Reflection
             clangArgs.emplace_back("-fno-spell-checking");
             clangArgs.emplace_back("-fno-delayed-template-parsing");
     
-            Project.ClangIndex = clang_createIndex(0, 0);
+            Project->ClangIndex = clang_createIndex(0, 0);
             
             constexpr uint32_t ClangOptions = 
                 CXTranslationUnit_DetailedPreprocessingRecord |
@@ -226,18 +153,18 @@ namespace Lumina::Reflection
                 CXTranslationUnit_IgnoreNonErrorsFromIncludedFiles;
         
             CXErrorCode Result = clang_parseTranslationUnit2(
-                Project.ClangIndex,
+                Project->ClangIndex,
                 AmalgamationPath.c_str(),
                 clangArgs.data(),
                 clangArgs.size(),
                 nullptr,
                 0,
                 ClangOptions,
-                &Project.TranslationUnit);
+                &Project->TranslationUnit);
     
             auto end = std::chrono::high_resolution_clock::now();
             std::chrono::duration<double> duration = end - start;
-            std::cout << "[Reflection] Parsed " << Project.Name.c_str() << " in " << duration.count() << "s\n";
+            std::cout << "[Reflection] Parsed " << Project->Name.c_str() << " in " << duration.count() << "s\n";
         
             if (Result != CXError_Success)
             {
@@ -260,13 +187,13 @@ namespace Lumina::Reflection
                     break;
                 }
     
-                clang_disposeIndex(Project.ClangIndex);
+                clang_disposeIndex(Project->ClangIndex);
                 return false;
             }
         }
         
-        ParsingContext.Project = &Project;
-        CXCursor Cursor = clang_getTranslationUnitCursor(Project.TranslationUnit);
+        ParsingContext.Project = Project;
+        CXCursor Cursor = clang_getTranslationUnitCursor(Project->TranslationUnit);
         clang_visitChildren(Cursor, VisitTranslationUnit, &ParsingContext);
         
         return true;

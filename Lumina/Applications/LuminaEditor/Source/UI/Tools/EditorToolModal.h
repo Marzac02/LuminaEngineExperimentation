@@ -41,10 +41,11 @@ namespace Lumina
         virtual ~FEditorToolModal() = default;
 
         FEditorToolModal(const FString& InTitle, ImVec2 InSize)
-            : DrawFunction()
-            , Title(InTitle)
+            : Title(InTitle)
             , Size(InSize)
-        {}
+            , bBlocking(false)
+        {
+        }
 
         /** Return true to indicate the modal is ready to close */
         bool DrawModal(const FUpdateContext& UpdateContext)

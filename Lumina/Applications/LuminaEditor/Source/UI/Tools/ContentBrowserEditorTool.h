@@ -205,11 +205,14 @@ namespace Lumina
         void TryImport(const FString& Path);
         
         ObjectRename::EObjectRenameResult HandleRenameEvent(const FString& OldPath, const FString& NewPath);
-        
-        void DrawDirectoryBrowser(const FUpdateContext& Contxt, bool bIsFocused, ImVec2 Size);
-        void DrawContentBrowser(const FUpdateContext& Contxt, bool bIsFocused, ImVec2 Size);
 
-        void DrawLuaScriptContextMenu(const FContentBrowserTileViewItem* ContentItem);
+        void PushRenameModal(FContentBrowserTileViewItem* ContentItem);
+        
+        void DrawDirectoryBrowser(const FUpdateContext& Context, bool bIsFocused, ImVec2 Size);
+        void DrawContentBrowser(const FUpdateContext& Context, bool bIsFocused, ImVec2 Size);
+
+        void DrawDirectoryContextMenu(FContentBrowserTileViewItem* ContentItem);
+        void DrawLuaScriptContextMenu(FContentBrowserTileViewItem* ContentItem);
         void DrawAssetContextMenu(FContentBrowserTileViewItem* ContentItem);
         
         void DrawScriptsDirectoryContextMenu();

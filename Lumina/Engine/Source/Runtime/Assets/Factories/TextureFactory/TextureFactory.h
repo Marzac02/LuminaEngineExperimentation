@@ -15,10 +15,13 @@ namespace Lumina
     public:
 
         CObject* CreateNew(const FName& Name, CPackage* Package) override;
-        CClass* GetSupportedType() const override { return CTexture::StaticClass(); }
+        CClass* GetAssetClass() const override { return CTexture::StaticClass(); }
         FString GetAssetName() const override { return "Texture"; }
         FString GetDefaultAssetCreationName(const FString& InPath) override { return "NewTexture"; }
 
+        bool IsExtensionSupported(const FString& Ext) override { return Ext == "png" || Ext == "jpg"; }
+        bool CanImport() override { return true; }
+        
         void TryImport(const FString& RawPath, const FString& DestinationPath) override;
 
     private:

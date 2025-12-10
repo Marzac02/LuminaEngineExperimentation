@@ -8,6 +8,7 @@ project "Reflector"
 	configmap 
 	{
 		["Debug"] 		= "Development",
+		["Shipping"]	= "Development",
 	}
 
 	disablewarnings

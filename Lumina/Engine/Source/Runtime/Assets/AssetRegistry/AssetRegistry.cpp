@@ -97,7 +97,7 @@ namespace Lumina
         GetOnAssetRegistryUpdated().Broadcast();
     }
 
-    void FAssetRegistry::AssetDeleted(FName Package)
+    void FAssetRegistry::AssetDeleted(const FName& Package)
     {
         FScopeLock Lock(AssetsMutex);
 
@@ -305,7 +305,7 @@ namespace Lumina
             DependencyMap[NewRef].insert(Asset);
         }
     }
-    LUMINA_DISABLE_OPTIMIZATION
+    
     void FAssetRegistry::ProcessPackagePath(FStringView Path)
     {
         FScopeLock Lock(AssetsMutex);
@@ -377,7 +377,7 @@ namespace Lumina
         }
         AssetsByPath[ParentPath].push_back(AssetData);
     }
-    LUMINA_ENABLE_OPTIMIZATION
+    
     void FAssetRegistry::ClearAssets()
     {
         FScopeLock Lock(AssetsMutex);

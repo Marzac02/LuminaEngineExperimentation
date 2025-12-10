@@ -10,11 +10,6 @@
 
 namespace Lumina
 {
-    void FAssetRequest::WaitForTask()
-    {
-        GTaskSystem->WaitForTask(Task);
-    }
-
     bool FAssetRequest::Process()
     {
         FString FullPath = Paths::RemoveExtension(AssetPath);

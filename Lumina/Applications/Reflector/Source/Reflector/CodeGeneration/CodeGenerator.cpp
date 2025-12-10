@@ -42,41 +42,45 @@ namespace Lumina::Reflection
 {
     
     FCodeGenerator::FCodeGenerator(const FProjectSolution& SlnPath, const FReflectionDatabase& Database)
-        : CurrentProject("", "")
-        , Solution(SlnPath)
+        : Solution(SlnPath)
         , ReflectionDatabase(&Database)
     {
     }
 
     void FCodeGenerator::GenerateCodeForSolution()
     {
-        for (const FReflectedProject& Project : ReflectionDatabase->ReflectedProjects)
+        for (const eastl::shared_ptr<FReflectedProject>& Project : ReflectionDatabase->ReflectedProjects)
         {
             SetProject(Project);
             GenerateCodeForProject(Project);    
         }
     }
 
-    void FCodeGenerator::GenerateCodeForProject(const FReflectedProject& Project)
+    void FCodeGenerator::GenerateCodeForProject(const eastl::shared_ptr<FReflectedProject>& Project)
     {
         eastl::string FinalOutput;
         FinalOutput += "#include \"pch.h\"\n";
         
-        for (const FReflectedHeader& Header : Project.Headers)
+        for (const eastl::shared_ptr<FReflectedHeader>& Header : Project->Headers)
         {
-            if (ReflectionDatabase->ReflectedTypes.find(FStringHash(Header.HeaderPath)) == ReflectionDatabase->ReflectedTypes.end())
+            if (ReflectionDatabase->ReflectedTypes.find(FStringHash(Header->HeaderPath)) == ReflectionDatabase->ReflectedTypes.end())
             {
                 continue;
             }
 
-            GenerateReflectionCodeForHeader(Header);
+            FinalOutput += "#include \"" + Header->FileName + ".generated.cpp\"" + "\n";
             
-            GenerateReflectionCodeForSource(Header);
+            if (Header->bSkipCodeGen)
+            {
+                continue;
+            }
             
-            FinalOutput += "#include \"" + Header.FileName + ".generated.cpp\"" + "\n";
+            GenerateReflectionCodeForHeader(*Header);
+            
+            GenerateReflectionCodeForSource(*Header);
         }
 
-        eastl::string ReflectionDataPath = Solution.GetParentPath() + R"(\Intermediates\Reflection\)" + CurrentProject.Name + R"(\)" + "ReflectionUnity.gen.cpp";
+        eastl::string ReflectionDataPath = Solution.GetParentPath() + R"(\Intermediates\Reflection\)" + CurrentProject->Name + R"(\)" + "ReflectionUnity.gen.cpp";
         std::filesystem::path outputPath(ReflectionDataPath.c_str());
         std::filesystem::create_directories(outputPath.parent_path());
         
@@ -96,7 +100,7 @@ namespace Lumina::Reflection
 
         GenerateCodeHeader(Stream, Header);
         
-        eastl::string OutFileName = Solution.GetParentPath() + R"(\Intermediates\Reflection\)" + CurrentProject.Name + R"(\)" + Header.FileName + ".generated.h";
+        eastl::string OutFileName = Solution.GetParentPath() + R"(\Intermediates\Reflection\)" + CurrentProject->Name + R"(\)" + Header.FileName + ".generated.h";
         std::filesystem::path outputPath(OutFileName.c_str());
         std::filesystem::create_directories(outputPath.parent_path());
         
@@ -116,7 +120,7 @@ namespace Lumina::Reflection
 
         GenerateCodeSource(Stream, Header);
         
-        eastl::string OutFileName = Solution.GetParentPath() + R"(\Intermediates\Reflection\)" + CurrentProject.Name + R"(\)" + Header.FileName + ".generated.cpp";
+        eastl::string OutFileName = Solution.GetParentPath() + R"(\Intermediates\Reflection\)" + CurrentProject->Name + R"(\)" + Header.FileName + ".generated.cpp";
         std::filesystem::path outputPath(OutFileName.c_str());
         std::filesystem::create_directories(outputPath.parent_path());
         
@@ -140,7 +144,7 @@ namespace Lumina::Reflection
     void FCodeGenerator::GenerateCodeHeader(eastl::string& Stream, const FReflectedHeader& Header)
     {
 
-        const eastl::vector<FReflectedType*>& ReflectedTypes = ReflectionDatabase->ReflectedTypes.at(FStringHash(Header.HeaderPath));
+        const eastl::vector<eastl::shared_ptr<FReflectedType>>& ReflectedTypes = ReflectionDatabase->ReflectedTypes.at(FStringHash(Header.HeaderPath));
 
         Stream += "#pragma once\n\n";
         GenerateFileWarning(Stream);
@@ -171,14 +175,14 @@ namespace Lumina::Reflection
 
         Stream += "\n\n\n";
         
-        for (FReflectedType* Type : ReflectedTypes)
+        for (const eastl::shared_ptr<FReflectedType>& Type : ReflectedTypes)
         {
             Type->DefineInitialHeader(Stream, FileID);
         }
 
         Stream += "\n\n\n//--------------------------------------------------------------------------------------\n\n\n";
         
-        for (FReflectedType* Type : ReflectedTypes)
+        for (const eastl::shared_ptr<FReflectedType>& Type : ReflectedTypes)
         {
             Type->DefineSecondaryHeader(Stream, FileID);
         }
@@ -194,7 +198,7 @@ namespace Lumina::Reflection
         Stream.clear();
         
         auto TypeIt = ReflectionDatabase->ReflectedTypes.find(FStringHash(Header.HeaderPath));
-        const eastl::vector<FReflectedType*>& ReflectedTypes = TypeIt->second;
+        const eastl::vector<eastl::shared_ptr<FReflectedType>>& ReflectedTypes = TypeIt->second;
     
         // Generate unique FileID from Header path
         eastl::string FileID = Header.HeaderPath;
@@ -216,11 +220,11 @@ namespace Lumina::Reflection
         Stream += "#include \"Runtime/Core/Object/Class.h\"\n";
         Stream += "\n\n";
 
-        eastl::string ProjectAPI = CurrentProject.Name + "_api";
+        eastl::string ProjectAPI = CurrentProject->Name + "_api";
         ProjectAPI.make_upper();
         // Cross-module references
         Stream += "// Begin Cross-Module References\n";
-        for (FReflectedType* Type : ReflectedTypes)
+        for (const eastl::shared_ptr<FReflectedType>& Type : ReflectedTypes)
         {
             if (ProjectAPI == "LUMINA_API")
             {
@@ -240,11 +244,11 @@ namespace Lumina::Reflection
             Stream += Type->DisplayName;
             Stream += "();\n";
 
-            if (FReflectedStruct* Struct = dynamic_cast<FReflectedStruct*>(Type))
+            if (FReflectedStruct* Struct = dynamic_cast<FReflectedStruct*>(Type.get()))
             {
                 for (auto& Property : Struct->Props)
                 {
-                    if (FReflectedType* PropType = ReflectionDatabase->GetReflectedType<FReflectedType>(FStringHash(Property->TypeName)))
+                    if (const eastl::shared_ptr<FReflectedType>& PropType = ReflectionDatabase->GetReflectedType<FReflectedType>(FStringHash(Property->TypeName)))
                     {
                         eastl::string PropProjectAPI = PropType->Project + "_api";
                         PropProjectAPI.make_upper();
@@ -265,7 +269,7 @@ namespace Lumina::Reflection
         Stream += "//*************************************************************************\n";
         Stream += "// Type Implementations. \n";
         Stream += "//*************************************************************************\n\n";
-        for (FReflectedType* Type : ReflectedTypes)
+        for (eastl::shared_ptr<FReflectedType> Type : ReflectedTypes)
         {
             Type->DeclareImplementation(Stream);
         }
@@ -282,7 +286,7 @@ namespace Lumina::Reflection
         bool bHasEnums = false;
         bool bHasClass = false;
         bool bHasStruct = false;
-        for (FReflectedType* Type : ReflectedTypes)
+        for (const eastl::shared_ptr<FReflectedType>& Type : ReflectedTypes)
         {
             if (Type->Type == FReflectedType::EType::Enum)
             {
@@ -303,7 +307,7 @@ namespace Lumina::Reflection
         if (bHasEnums)
         {
             Stream += "\tstatic constexpr Lumina::FEnumRegisterCompiledInInfo EnumInfo[] = {\n";
-            for (FReflectedType* Type : ReflectedTypes)
+            for (const eastl::shared_ptr<FReflectedType>& Type : ReflectedTypes)
             {
                 if (Type->Type == FReflectedType::EType::Enum)
                 {
@@ -316,7 +320,7 @@ namespace Lumina::Reflection
         if (bHasClass)
         {
             Stream += "\tstatic constexpr Lumina::FClassRegisterCompiledInInfo ClassInfo[] = {\n";
-            for (FReflectedType* Type : ReflectedTypes)
+            for (const eastl::shared_ptr<FReflectedType>& Type : ReflectedTypes)
             {
                 if (Type->Type == FReflectedType::EType::Class)
                 {
@@ -329,7 +333,7 @@ namespace Lumina::Reflection
         if (bHasStruct)
         {
             Stream += "\tstatic constexpr Lumina::FStructRegisterCompiledInInfo StructInfo[] = {\n";
-            for (FReflectedType* Type : ReflectedTypes)
+            for (const eastl::shared_ptr<FReflectedType>& Type : ReflectedTypes)
             {
                 if (Type->Type == FReflectedType::EType::Structure)
                 {
@@ -393,7 +397,7 @@ namespace Lumina::Reflection
         Stream += "static void " + FileID + "_" + "LuaRegistration(sol::state_view State)\n";
         Stream += "{\n";
 
-        for (FReflectedType* Type : ReflectedTypes)
+        for (const eastl::shared_ptr<FReflectedType>& Type : ReflectedTypes)
         {
             if (Type->Type != FReflectedType::EType::Structure)
             {

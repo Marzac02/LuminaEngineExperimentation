@@ -50,7 +50,8 @@ namespace Lumina
             
             FName GetName() const override
             {
-                return Registry.get<SNameComponent>(Entity).Name;
+                SNameComponent* NameComponent = Registry.try_get<SNameComponent>(Entity);
+                return NameComponent ? NameComponent->Name : eastl::to_string((uint32)Entity);
             }
 
             entt::entity GetEntity() const { return Entity; }

@@ -1,10 +1,7 @@
 #include "pch.h"
 #include "Texture.h"
-
-#include "Core/Engine/Engine.h"
 #include "Core/Object/Class.h"
 #include "Renderer/RenderContext.h"
-#include "Renderer/RenderManager.h"
 #include "Renderer/RHIGlobals.h"
 
 namespace Lumina
@@ -12,6 +9,12 @@ namespace Lumina
     void CTexture::Serialize(FArchive& Ar)
     {
         Super::Serialize(Ar);
+
+        if (!TextureResource)
+        {
+            TextureResource = MakeUniquePtr<FTextureResource>();
+        }
+        
         Ar << *TextureResource.get();
     }
 

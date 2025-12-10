@@ -1,10 +1,8 @@
 #pragma once
 
 #include "Module/API.h"
-#include <objbase.h> // For CoCreateGuid and related functions
 #include "Containers/Array.h"
 #include "Core/Serialization/Archiver.h"
-#include "Core/Templates/CanBulkSerialize.h"
 
 namespace Lumina
 {
@@ -12,10 +10,10 @@ namespace Lumina
     {
     public:
         
-        explicit FGuid(const TArray<unsigned char, 16> &bytes);
-        explicit FGuid(TArray<unsigned char, 16> &&bytes);
+        explicit FGuid(const TArray<uint8, 16>& InBytes);
+        explicit FGuid(TArray<uint8, 16>&& InBytes);
 
-        explicit FGuid(eastl::string_view fromString);
+        explicit FGuid(eastl::string_view FromString);
         FGuid();
 	
         FGuid(const FGuid &other) = default;
@@ -26,9 +24,9 @@ namespace Lumina
         bool operator==(const FGuid &other) const;
         bool operator!=(const FGuid &other) const;
 
-        FString String() const;
+        FString ToString() const;
         operator FString() const;
-        const TArray<unsigned char, 16>& Data() const;
+        const TArray<uint8, 16>& Data() const;
         void Swap(FGuid &other);
         bool IsValid() const;
 
@@ -44,15 +42,14 @@ namespace Lumina
         
         void Invalidate();
 
-        TArray<unsigned char, 16> Bytes;
+        TArray<uint8, 16> Bytes;
 
         friend std::ostream &operator<<(std::ostream &s, const FGuid &guid);
         friend bool operator<(const FGuid &lhs, const FGuid &rhs);
     };
-
     
     template<> struct TCanBulkSerialize<FGuid> { static constexpr bool Value = true; };
-    //template <> struct TIsPODType<FGuid> { enum { Value = true }; };
+    
 }
 
 
@@ -93,7 +90,7 @@ namespace fmt
         auto format(const Lumina::FGuid& guid, FormatContext& ctx) -> decltype(ctx.out())
         {
             // Use FGuid's ToString method to get a string representation
-            return fmt::format_to(ctx.out(), "{}", guid.String());
+            return fmt::format_to(ctx.out(), "{}", guid.ToString());
         }
     };
 }

@@ -5,23 +5,15 @@ namespace Lumina::Reflection
 {
     FReflectionDatabase::~FReflectionDatabase()
     {
-        for (const auto& Pair : ReflectedTypes)
-        {
-            for (FReflectedType* Type : Pair.second)
-            {
-                delete Type;
-            }
-        }
-
-        ReflectedTypes.clear();
+        
     }
 
-    void FReflectionDatabase::AddReflectedProject(const FReflectedProject& Project)
+    void FReflectionDatabase::AddReflectedProject(const eastl::shared_ptr<FReflectedProject>& Project)
     {
         ReflectedProjects.push_back(Project);
     }
 
-    void FReflectionDatabase::AddReflectedType(FReflectedType* Type)
+    void FReflectionDatabase::AddReflectedType(const eastl::shared_ptr<FReflectedType>& Type)
     {
         if(Type == nullptr || Type->DisplayName.empty())
         {
@@ -36,7 +28,7 @@ namespace Lumina::Reflection
             return;
         }
         
-        eastl::vector<FReflectedType*>* TypeVector = &ReflectedTypes[PathHash];
+        eastl::vector<eastl::shared_ptr<FReflectedType>>* TypeVector = &ReflectedTypes[PathHash];
         TypeVector->push_back(Type);
         
         TypeHashMap.insert_or_assign(NameHash, Type);

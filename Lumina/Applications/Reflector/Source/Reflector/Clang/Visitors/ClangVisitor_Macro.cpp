@@ -23,7 +23,7 @@ namespace Lumina::Reflection::Visitor
         auto It = MacroMap.find(CursorName);
         if (It != MacroMap.end())
         {
-            FReflectionMacro Macro(Context->ReflectedHeader, Cursor, Range, It->second);
+            FReflectionMacro Macro(Context->ReflectedHeader->HeaderPath, Cursor, Range, It->second);
             if (It->second == EReflectionMacro::GeneratedBody)
             {
                 Context->AddGeneratedBodyMacro(std::move(Macro));

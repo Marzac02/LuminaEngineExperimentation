@@ -30,15 +30,15 @@ namespace Lumina
 
             TObjectPtr<CObject> HardObject = Object.Lock();
 
-            const char* Label = HardObject.IsValid() ? Object->GetName().c_str() : "<None>";
+            const char* Label = HardObject.IsValid() ? Object.Get()->GetName().c_str() : "<None>";
             ImGui::BeginDisabled(Object == nullptr);
 
             TOptional<ImTextureRef> ButtonTexture;
             if (Object.IsValid())
             {
-                FString FullPath = Paths::ResolveVirtualPath(Object->GetPathName());
+                FString FullPath = Paths::ResolveVirtualPath(Object.Get()->GetPathName());
                 CThumbnailManager::Get().TryLoadThumbnailsForPackage(FullPath);
-                if (FRHIImage* Image = CThumbnailManager::GetThumbnailForPackage(Object->GetPackage())->LoadedImage)
+                if (FRHIImage* Image = CThumbnailManager::GetThumbnailForPackage(Object.Get()->GetPackage())->LoadedImage)
                 {
                     ButtonTexture = ImGuiX::ToImTextureRef(Image);
                 }
@@ -71,7 +71,7 @@ namespace Lumina
             
             const bool bHasObject = Object != nullptr;
 
-            FString PathString = bHasObject ? Object->GetPathName() : FString("<None>");
+            FString PathString = bHasObject ? Object.Get()->GetPathName() : FString("<None>");
             char PathBuffer[512];
             strncpy(PathBuffer, PathString.c_str(), sizeof(PathBuffer) - 1);
             PathBuffer[sizeof(PathBuffer) - 1] = '\0';

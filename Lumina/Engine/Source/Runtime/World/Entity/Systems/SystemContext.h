@@ -36,6 +36,12 @@ namespace Lumina
         {
             Dispatcher.trigger<T, TArgs...>(IDType, Forward<TArgs>(Args)...);
         }
+
+        template<typename T, typename ... TArgs>
+        void DispatchEvent(TArgs&&... Args)
+        {
+            Dispatcher.trigger<T, TArgs...>(Forward<TArgs>(Args)...);
+        }
         
         template<typename... Ts, typename... TArgs>
         auto CreateView(TArgs&&... Args) -> decltype(std::declval<entt::registry>().view<Ts...>(std::forward<TArgs>(Args)...))
@@ -67,6 +73,15 @@ namespace Lumina
             });
         }
 
+        auto GetRegistryContext() const
+        {
+            return Registry.ctx();
+        }
+
+        FEntityRegistry& GetRegistry() const
+        {
+            return Registry;
+        }
         
         template<typename... Ts, typename ... TArgs>
         auto CreateGroup(TArgs&&... Args)
@@ -142,7 +157,7 @@ namespace Lumina
         double              Time = 0.0;
 
         FEntityRegistry&    Registry;
-        entt::dispatcher    Dispatcher {};
+        entt::dispatcher&   Dispatcher;
     };
     
     

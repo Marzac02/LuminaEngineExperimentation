@@ -1,6 +1,7 @@
 ﻿#pragma once
 
 #include "ObjectFlags.h"
+#include "GUID/GUID.h"
 #include "Initializer/ObjectInitializer.h"
 #include "Memory/RefCounted.h"
 #include "Module/API.h"
@@ -85,7 +86,6 @@ namespace Lumina
         }
 
         LUMINA_API void GetPath(FString& OutPath) const;
-
         
         LUMINA_API FString GetPathName() const;
 
@@ -143,7 +143,7 @@ namespace Lumina
         int32                   InternalIndex = -1;
 
         /** Index into this object's package export map */
-        int64                   LoaderIndex = 0;
+        int32                   LoaderIndex = 0;
     };
 
 //---------------------------------------------------------------------------------------------------

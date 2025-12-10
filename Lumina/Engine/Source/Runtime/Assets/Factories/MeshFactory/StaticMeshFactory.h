@@ -15,9 +15,13 @@ namespace Lumina
     public:
 
         CObject* CreateNew(const FName& Name, CPackage* Package) override;
-        CClass* GetSupportedType() const override { return CStaticMesh::StaticClass(); }
         FString GetAssetName() const override { return "Static Mesh"; }
         FString GetDefaultAssetCreationName(const FString& InPath) override { return "NewMesh"; }
+
+        FString GetAssetDescription() const override { return "A static mesh."; }
+        CClass* GetAssetClass() const override { return CStaticMesh::StaticClass(); }
+        bool CanImport() override { return true; }
+        bool IsExtensionSupported(const FString& Ext) override { return Ext == "gltf" || Ext == "glb"; }
 
         bool HasImportDialogue() const override { return true; }
         bool DrawImportDialogue(const FString& RawPath, const FString& DestinationPath, bool& bShouldClose) override;

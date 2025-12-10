@@ -1,6 +1,10 @@
 #include "pch.h"
 #include "GUID.h"
 
+#if LE_PLATFORM_WINDOWS
+#include <objbase.h> // For CoCreateGuid and related functions
+#endif
+
 namespace Lumina
 {
 
@@ -46,27 +50,29 @@ namespace Lumina
     }
     
     
-    FGuid::FGuid(const TArray<unsigned char, 16>& bytes)
-        :Bytes(Bytes)
+    FGuid::FGuid(const TArray<uint8, 16>& InBytes)
+        :Bytes(InBytes)
     {
     }
 
-    FGuid::FGuid(TArray<unsigned char, 16>&& bytes)
-        :Bytes(eastl::move(bytes))
+    FGuid::FGuid(TArray<uint8, 16>&& InBytes)
+        :Bytes(eastl::move(InBytes))
     {
     }
 
-    FGuid::FGuid(eastl::string_view fromString)
+    FGuid::FGuid(eastl::string_view FromString)
     {
         char charOne = '\0';
         char charTwo = '\0';
         bool lookingForFirstChar = true;
         unsigned nextByte = 0;
 
-        for (const char &ch : fromString)
+        for (const char &ch : FromString)
         {
             if (ch == '-')
+            {
                 continue;
+            }
 
             if (nextByte >= 16 || !isValidHexChar(ch))
             {
@@ -111,7 +117,7 @@ namespace Lumina
         return !((*this) == other);
     }
 
-    FString FGuid::String() const
+    FString FGuid::ToString() const
     {
         char one[10], two[6], three[6], four[6], five[14];
 
@@ -134,10 +140,10 @@ namespace Lumina
 
     FGuid::operator eastl::basic_string<char>() const
     {
-        return String();
+        return ToString();
     }
 
-    const TArray<unsigned char, 16>& FGuid::Data() const
+    const TArray<uint8, 16>& FGuid::Data() const
     {
         return Bytes;
     }
@@ -159,36 +165,36 @@ namespace Lumina
         GUID WinGUID;
         CoCreateGuid(&WinGUID);
 
-        TArray<unsigned char, 16> bytes =
+        TArray<uint8, 16> bytes =
         {
-            (unsigned char)((WinGUID.Data1 >> 24) & 0xFF),
-            (unsigned char)((WinGUID.Data1 >> 16) & 0xFF),
-            (unsigned char)((WinGUID.Data1 >> 8) & 0xFF),
-            (unsigned char)((WinGUID.Data1) & 0xff),
+            (uint8)((WinGUID.Data1 >> 24) & 0xFF),
+            (uint8)((WinGUID.Data1 >> 16) & 0xFF),
+            (uint8)((WinGUID.Data1 >> 8) & 0xFF),
+            (uint8)((WinGUID.Data1) & 0xff),
 
-            (unsigned char)((WinGUID.Data2 >> 8) & 0xFF),
-            (unsigned char)((WinGUID.Data2) & 0xff),
+            (uint8)((WinGUID.Data2 >> 8) & 0xFF),
+            (uint8)((WinGUID.Data2) & 0xff),
 
-            (unsigned char)((WinGUID.Data3 >> 8) & 0xFF),
-            (unsigned char)((WinGUID.Data3) & 0xFF),
+            (uint8)((WinGUID.Data3 >> 8) & 0xFF),
+            (uint8)((WinGUID.Data3) & 0xFF),
 
-            (unsigned char)WinGUID.Data4[0],
-            (unsigned char)WinGUID.Data4[1],
-            (unsigned char)WinGUID.Data4[2],
-            (unsigned char)WinGUID.Data4[3],
-            (unsigned char)WinGUID.Data4[4],
-            (unsigned char)WinGUID.Data4[5],
-            (unsigned char)WinGUID.Data4[6],
-            (unsigned char)WinGUID.Data4[7]
+            (uint8)WinGUID.Data4[0],
+            (uint8)WinGUID.Data4[1],
+            (uint8)WinGUID.Data4[2],
+            (uint8)WinGUID.Data4[3],
+            (uint8)WinGUID.Data4[4],
+            (uint8)WinGUID.Data4[5],
+            (uint8)WinGUID.Data4[6],
+            (uint8)WinGUID.Data4[7]
         };
-
+ 
         return FGuid{eastl::move(bytes)};
     }
 #endif
 
     void FGuid::Invalidate()
     {
-        eastl::fill(Bytes.begin(), Bytes.end(), static_cast<unsigned char>(0));
+        eastl::fill(Bytes.begin(), Bytes.end(), static_cast<uint8>(0));
     }
 
     std::ostream& operator<<(std::ostream& s, const FGuid& guid)

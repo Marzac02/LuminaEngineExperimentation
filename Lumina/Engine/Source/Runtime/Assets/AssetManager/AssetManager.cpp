@@ -26,10 +26,10 @@ namespace Lumina
         FlushAsyncLoading();
     }
 
-    FAssetRequest* FAssetManager::LoadAsset(const FString& InAssetPath)
+    TSharedPtr<FAssetRequest> FAssetManager::LoadAsset(const FString& InAssetPath)
     {
         bool bAlreadyInQueue = false;
-        FAssetRequest* ActiveRequest = TryFindActiveRequest(InAssetPath, bAlreadyInQueue);
+        TSharedPtr<FAssetRequest> ActiveRequest = TryFindActiveRequest(InAssetPath, bAlreadyInQueue);
         
         if (!bAlreadyInQueue)
         {
@@ -39,12 +39,17 @@ namespace Lumina
         return ActiveRequest;
     }
 
-    void FAssetManager::NotifyAssetRequestCompleted(FAssetRequest* Request)
+    void FAssetManager::NotifyAssetRequestCompleted(const TSharedPtr<FAssetRequest>& Request)
     {
         auto It = eastl::find(ActiveRequests.begin(), ActiveRequests.end(), Request);
         Assert(It != ActiveRequests.end())
+
+        for (auto& Functor : Request->Listeners)
+        {
+            Functor(Request->PendingObject);
+        }
+        
         ActiveRequests.erase(It);
-        Memory::Delete(Request);
     }
 
     void FAssetManager::FlushAsyncLoading()
@@ -55,9 +60,9 @@ namespace Lumina
         }
     }
 
-    FAssetRequest* FAssetManager::TryFindActiveRequest(const FString& InAssetPath, bool& bAlreadyInQueue)
+    TSharedPtr<FAssetRequest> FAssetManager::TryFindActiveRequest(const FString& InAssetPath, bool& bAlreadyInQueue)
     {
-        auto It = eastl::find_if(ActiveRequests.begin(), ActiveRequests.end(), [&](const FAssetRequest* Request)
+        auto It = eastl::find_if(ActiveRequests.begin(), ActiveRequests.end(), [&](const TSharedPtr<FAssetRequest>& Request)
         {
             return Request->GetAssetPath() == InAssetPath;
         });
@@ -69,22 +74,22 @@ namespace Lumina
         }
 
         bAlreadyInQueue = false;
-        FAssetRequest* NewRequest = Memory::New<FAssetRequest>(InAssetPath);
-        ActiveRequests.push_back(NewRequest);
+        auto NewRequest = MakeSharedPtr<FAssetRequest>(InAssetPath);
+        ActiveRequests.emplace(NewRequest);
         return NewRequest;
         
     }
 
-    void FAssetManager::SubmitAssetRequest(FAssetRequest* Request)
+    void FAssetManager::SubmitAssetRequest(const TSharedPtr<FAssetRequest>& Request)
     {
-        ++OutstandingTasks;
+        OutstandingTasks.fetch_add(1, eastl::memory_order_relaxed);
 
         struct FAssetTask : ITaskSet
         {
             FAssetManager* Manager;
-            FAssetRequest* Request;
+            TSharedPtr<FAssetRequest> Request;
 
-            FAssetTask(FAssetManager* InManager, FAssetRequest* InRequest)
+            FAssetTask(FAssetManager* InManager, const TSharedPtr<FAssetRequest>& InRequest)
                 : Manager(InManager), Request(InRequest)
             {
                 m_SetSize = 1;
@@ -94,11 +99,6 @@ namespace Lumina
             {
                 if (Request->Process())
                 {
-                    for (auto& Functor : Request->Listeners)
-                    {
-                        Functor(Request->PendingObject);
-                    }
-                    
                     Manager->NotifyAssetRequestCompleted(Request);
                 }
 
@@ -107,7 +107,6 @@ namespace Lumina
         };
 
         auto* Task = Memory::New<FAssetTask>(this, Request);
-        Request->SetTask(Task);
         GTaskSystem->ScheduleTask(Task);
     }
     

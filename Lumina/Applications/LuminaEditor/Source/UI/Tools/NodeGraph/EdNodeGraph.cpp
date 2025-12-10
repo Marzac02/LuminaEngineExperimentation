@@ -133,7 +133,7 @@ namespace Lumina
                     Links.emplace_back(TPair(InputPin, Connection));
                 }
                 
-                NodeBuilder.Input(InputPin->GetGUID());
+                NodeBuilder.Input(InputPin->GetPinGUID());
     
                 ImGui::PushID(InputPin);
                 {
@@ -159,7 +159,7 @@ namespace Lumina
             
             for (CEdNodeGraphPin* OutputPin : Node->GetOutputPins())
             {
-                NodeBuilder.Output(OutputPin->GetGUID());
+                NodeBuilder.Output(OutputPin->GetPinGUID());
                 
                 ImGui::PushID(OutputPin);
                 {
@@ -224,7 +224,7 @@ namespace Lumina
         uint32 LinkID = 1;
         for (auto& [Start, End] : Links)
         {
-            NodeEditor::Link(LinkID++, Start->GetGUID(), End->GetGUID());
+            NodeEditor::Link(LinkID++, Start->GetPinGUID(), End->GetPinGUID());
         }
         
         // Handle link creation

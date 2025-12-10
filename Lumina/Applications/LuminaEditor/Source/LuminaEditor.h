@@ -3,14 +3,9 @@
 #include "Core/Application/Application.h"
 #include "Memory/SmartPtr.h"
 
-
 namespace Lumina
 {
     class FProject;
-}
-
-namespace Lumina
-{
     class FCamera;
     class FEditorSettings;
     class FEditorLayer;

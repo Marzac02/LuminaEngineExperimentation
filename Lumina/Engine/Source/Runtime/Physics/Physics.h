@@ -10,6 +10,8 @@ namespace Lumina
 
 namespace Lumina::Physics
 {
+    static constexpr float GEarthGravity = -9.81f;
+    
     class IPhysicsScene;
 
     class IPhysicsContext

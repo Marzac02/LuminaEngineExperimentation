@@ -7,30 +7,55 @@
 
 namespace Lumina
 {
+
+    REFLECT()
+    class LUMINA_API CFactoryRegistry : public CObject
+    {
+        GENERATED_BODY()
+    public:
+
+        static CFactoryRegistry& Get();
+        
+        void RegistryFactory(CFactory* Factory);
+
+        const TVector<CFactory*>& GetFactories() const { return Factories; }
+
+        // CDOs are always rooted.
+        TVector<CFactory*> Factories;
+    };
+    
+    
+    
     REFLECT()
     class LUMINA_API CFactory : public CObject
     {
         GENERATED_BODY()
 
     public:
-        
-        virtual FString GetAssetName() const { return ""; }
+
+        void PostCreateCDO() override;
         
         CObject* TryCreateNew(const FString& Path);
         
+        virtual FString GetAssetName() const { return ""; }
+        virtual FString GetAssetDescription() const { return ""; }
+        virtual CClass* GetAssetClass() const { return nullptr; }
+        virtual FString GetDefaultAssetCreationName(const FString& InPath) { return "New_Asset"; }
+        
         virtual CObject* CreateNew(const FName& Name, CPackage* Package) { return nullptr; }
         
-        virtual FString GetDefaultAssetCreationName(const FString& InPath) { return "New_Asset"; }
+        virtual bool CanImport() { return false; }
+        virtual void TryImport(const FString& ImportFilePath, const FString& DestinationPath) { }
+        
 
-        virtual void TryImport(const FString& RawPath, const FString& DestinationPath) { }
-
-        virtual CClass* GetSupportedType() const { return nullptr; }
-
+        virtual bool IsExtensionSupported(const FString& Ext) { return false; }
+        
         static bool ShowImportDialogue(CFactory* Factory, const FString& RawPath, const FString& DestinationPath);
         static bool ShowCreationDialogue(CFactory* Factory, const FString& Path);
 
         virtual bool HasImportDialogue() const { return false; }
         virtual bool HasCreationDialogue() const { return false; }
+        
     protected:
         
         virtual bool DrawImportDialogue(const FString& RawPath, const FString& DestinationPath, bool& bShouldClose) { return true; }

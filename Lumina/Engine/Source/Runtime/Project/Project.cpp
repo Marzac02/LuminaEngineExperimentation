@@ -13,6 +13,11 @@
 
 namespace Lumina
 {
+    FProject::FProject()
+        : bHasProjectLoaded(false)
+    {
+    }
+
     void FProject::LoadProject(const FString& ProjectPath)
     {
         if(!Paths::Exists(ProjectPath))
@@ -67,7 +72,7 @@ namespace Lumina
         Path = Path.parent_path() / "Game" / "Content";
         FString StringPath(Path.string().c_str());
 
-        StringUtils::ReplaceAllOccurrencesInPlace(StringPath, "\\", "/");
+        Paths::NormalizePath(StringPath);
         
         return StringPath;
     }
@@ -78,8 +83,7 @@ namespace Lumina
         Path = Path.parent_path() / "Game";
         FString StringPath(Path.string().c_str());
 
-        StringUtils::ReplaceAllOccurrencesInPlace(StringPath, "\\", "/");
-        
+        Paths::NormalizePath(StringPath);
         return StringPath;
     }
 
@@ -89,8 +93,13 @@ namespace Lumina
         Path = Path.parent_path() / "Game" / "Scripts";
         FString StringPath(Path.string().c_str());
 
-        StringUtils::ReplaceAllOccurrencesInPlace(StringPath, "\\", "/");
+        Paths::NormalizePath(StringPath);
         
         return StringPath;
+    }
+
+    FString FProject::GetProjectContentBinDirectory() const
+    {
+        return GetProjectContentDirectory() + "/Bin";
     }
 }

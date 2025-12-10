@@ -48,7 +48,7 @@ namespace Lumina
 
         bool IsSingleInput() const { return bSingleInput; }
         bool HasConnection() const { return !Connections.empty(); }
-        uint16 GetGUID() const { return PinID; }
+        uint16 GetPinGUID() const { return PinID; }
         CEdGraphNode* GetOwningNode() const { return OwningNode; }
 
         bool ShouldDrawEditor() const { return bDrawPinEditor; }

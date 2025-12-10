@@ -322,11 +322,11 @@ namespace Lumina
         // Deallocate an object slot
         void DeallocateObject(int32 Index)
         {
-            LUM_ASSERT(bInitialized && "Object pool not initialized!");
+            LUM_ASSERT(bInitialized && "Object pool not initialized!")
             
             FCObjectEntry* Item = ChunkedArray.GetItem(Index);
-            LUM_ASSERT(Item != nullptr);
-            LUM_ASSERT(Item->GetObj() != nullptr);
+            LUM_ASSERT(Item != nullptr)
+            LUM_ASSERT(Item->GetObj() != nullptr)
     
             Item->SetObj(nullptr);
     
@@ -337,6 +337,7 @@ namespace Lumina
         }
     
         // Resolve a handle to an object pointer
+        LUMINA_DISABLE_OPTIMIZATION
         CObjectBase* ResolveHandle(const FObjectHandle& Handle) const
         {
             if (!Handle.IsValid())
@@ -350,28 +351,15 @@ namespace Lumina
                 return nullptr;
             }
     
-            // Stable snapshot pattern: gen1 -> obj -> gen2
-            const int32 Gen1 = Item->GetGeneration();
-            if (Gen1 != Handle.Generation)
+            const int32 Generation = Item->GetGeneration();
+            if (Generation != Handle.Generation)
             {
                 return nullptr;
             }
     
-            CObjectBase* Obj = Item->GetObj();
-            if (!Obj)
-            {
-                return nullptr;
-            }
-    
-            const int32 Gen2 = Item->GetGeneration();
-            if (Gen2 != Gen1)
-            {
-                return nullptr;
-            }
-    
-            return Obj;
+            return Item->GetObj();
         }
-    
+        LUMINA_ENABLE_OPTIMIZATION
         CObjectBase* GetObjectByIndex(int32 Index) const
         {
             const FCObjectEntry* Item = ChunkedArray.GetItem(Index);

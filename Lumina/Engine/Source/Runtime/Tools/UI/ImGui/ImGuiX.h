@@ -1,4 +1,6 @@
 #pragma once
+
+#include <format>
 #include "imgui.h"
 #include "Assets/AssetRegistry/AssetRegistry.h"
 #include "Containers/Array.h"
@@ -54,7 +56,7 @@ namespace Lumina::ImGuiX
     LUMINA_API ImTextureRef ToImTextureRef(FRHIImage* Image);
     LUMINA_API ImTextureRef ToImTextureRef(const FString& Path);
 
-    LUMINA_API FString FormatSize(size_t bytes);
+    LUMINA_API FString FormatSize(size_t Bytes);
 
     LUMINA_API void RenderWindowOuterBorders(ImGuiWindow* Window);
     LUMINA_API bool UpdateWindowManualResize(ImGuiWindow* Window, ImVec2& NewSize, ImVec2& NewPosition);
@@ -143,10 +145,39 @@ namespace Lumina::ImGuiX
 
     namespace Notifications
     {
-        LUMINA_API void NotifyInfo( const char* format, ... );
-        LUMINA_API void NotifySuccess( const char* format, ... );
-        LUMINA_API void NotifyWarning( const char* format, ... );
-        LUMINA_API void NotifyError( const char* format, ... );
+
+        LUMINA_API void NotifyInfoInternal(const FString& Msg);
+        LUMINA_API void NotifySuccessInternal(const FString& Msg);
+        LUMINA_API void NotifyWarningInternal(const FString& Msg);
+        LUMINA_API void NotifyErrorInternal(const FString& Msg);
+        
+        template <typename... TArgs>
+        void NotifyInfo(std::format_string<TArgs...> fmt, TArgs&&... Args)
+        {
+            std::string Msg = std::format(fmt, std::forward<TArgs>(Args)...);
+            NotifyInfoInternal(Msg.c_str());
+        }
+
+        template <typename... TArgs>
+        void NotifySuccess(std::format_string<TArgs...> fmt, TArgs&&... Args)
+        {
+            std::string Msg = std::format(fmt, Forward<TArgs>(Args)...);
+            NotifySuccessInternal(Msg.c_str());
+        }
+
+        template <typename... TArgs>
+        void NotifyWarning(std::format_string<TArgs...> fmt, TArgs&&... Args)
+        {
+            std::string Msg = std::format(fmt, Forward<TArgs>(Args)...);
+            NotifyWarningInternal(Msg.c_str());
+        }
+
+        template <typename... TArgs>
+        void NotifyError(std::format_string<TArgs...> fmt, TArgs&&... Args)
+        {
+            std::string Msg = std::format(fmt, Forward<TArgs>(Args)...);
+            NotifyErrorInternal(Msg.c_str());
+        }
     }
 
     namespace MessageBoxes
@@ -156,11 +187,11 @@ namespace Lumina::ImGuiX
     
     struct LUMINA_API ApplicationTitleBar
     {
-        constexpr static float s_windowControlButtonWidth = 45;
+        constexpr static float WindowControlButtonWidth = 45;
         constexpr static float s_minimumDraggableGap = 24; // Minimum open gap left open to allow dragging
         constexpr static float s_sectionPadding = 8; // Padding between the window frame/window controls and the menu/control sections
 
-        static inline float GetWindowsControlsWidth() { return s_windowControlButtonWidth * 3; }
+        static inline float GetWindowsControlsWidth() { return WindowControlButtonWidth * 3; }
         static void DrawWindowControls();
 
     public:

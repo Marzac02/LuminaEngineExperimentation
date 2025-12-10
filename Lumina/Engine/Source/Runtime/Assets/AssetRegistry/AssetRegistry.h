@@ -60,7 +60,7 @@ namespace Lumina
 		void OnInitialDiscoveryCompleted();
 
 		void AssetCreated(CObject* Asset);
-		void AssetDeleted(FName Package);
+		void AssetDeleted(const FName& Package);
 		void AssetRenamed(CObject* Asset, const FString& OldPackagePath);
 		void AssetSaved(CObject* Asset);
 

@@ -51,8 +51,8 @@ namespace Lumina::Reflection
         mutable eastl::string                                       WarningMessage;
         
         FProjectSolution                                            Solution;
-        FReflectedProject*                                          Project = nullptr;
-        FReflectedHeader*                                           ReflectedHeader = nullptr;
+        eastl::shared_ptr<FReflectedProject>                        Project = nullptr;
+        eastl::shared_ptr<FReflectedHeader>                         ReflectedHeader = nullptr;
         
         eastl::hash_map<uint64, eastl::vector<FReflectionMacro>>    ReflectionMacros;
         eastl::hash_map<uint64, eastl::queue<FReflectionMacro>>     GeneratedBodyMacros;

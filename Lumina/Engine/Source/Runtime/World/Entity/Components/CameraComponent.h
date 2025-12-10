@@ -11,7 +11,7 @@
 
 namespace Lumina
 {
-    PROPERTY()
+    REFLECT()
     struct LUMINA_API SCameraComponent
     {
         GENERATED_BODY()
@@ -53,6 +53,9 @@ namespace Lumina
 
         PROPERTY(Editable, Category = "Camera")
         float FOV = 0.0f;
+
+        PROPERTY(Editable, Category = "Camera")
+        bool bAutoActivate = false;
         
     private:
         
@@ -60,8 +63,92 @@ namespace Lumina
     };
 
 
+    REFLECT()
+    struct LUMINA_API SCameraControllerComponent
+    {
+        GENERATED_BODY()
+        ENTITY_COMPONENT(SCameraControllerComponent)
+        
+        PROPERTY(Editable, Category = "Input")
+        float MouseSensitivity = 0.1f;
+        
+        PROPERTY(Editable, Category = "Input")
+        float MinPitch = -89.0f;
+        
+        PROPERTY(Editable, Category = "Input")
+        float MaxPitch = 89.0f;
+        
+        PROPERTY(Editable, Category = "Input")
+        bool bInvertY = false;
+        
+        float Yaw = 0.0f;
+        float Pitch = 0.0f;
+        
+        entt::entity TargetEntity = entt::null;
+    };
+    
+    REFLECT()
+    struct LUMINA_API SFirstPersonCameraComponent
+    {
+        GENERATED_BODY()
+        ENTITY_COMPONENT(SFirstPersonCameraComponent)
+        
+        PROPERTY(Editable, Category = "First Person")
+        float EyeHeight = 1.7f;
+    };
+    
+    REFLECT()
+    struct LUMINA_API SThirdPersonCameraComponent
+    {
+        GENERATED_BODY()
+        ENTITY_COMPONENT(SThirdPersonCameraComponent)
+        
+        PROPERTY(Editable, Category = "Third Person")
+        float Distance = 5.0f;
+        
+        PROPERTY(Editable, Category = "Third Person")
+        float MinDistance = 1.0f;
+        
+        PROPERTY(Editable, Category = "Third Person")
+        float MaxDistance = 10.0f;
+        
+        PROPERTY(Editable, Category = "Third Person")
+        glm::vec3 Offset = glm::vec3(0.0f, 2.0f, 0.0f); // Shoulder offset
+        
+        PROPERTY(Editable, Category = "Third Person")
+        float CollisionRadius = 0.3f; // For camera collision
+        
+        PROPERTY(Editable, Category = "Third Person")
+        float LerpSpeed = 10.0f; // Smooth follow
+    };
+    
+    REFLECT()
+    struct LUMINA_API SOrbitalCameraComponent
+    {
+        GENERATED_BODY()
+        ENTITY_COMPONENT(SOrbitalCameraComponent)
+        
+        PROPERTY(Editable, Category = "Orbital")
+        float Distance = 10.0f;
+        
+        PROPERTY(Editable, Category = "Orbital")
+        float MinDistance = 2.0f;
+        
+        PROPERTY(Editable, Category = "Orbital")
+        float MaxDistance = 50.0f;
+        
+        PROPERTY(Editable, Category = "Orbital")
+        float ZoomSpeed = 1.0f;
+        
+        PROPERTY(Editable, Category = "Orbital")
+        glm::vec3 FocusPoint;
+    };
+
     struct LUMINA_API FSwitchActiveCameraEvent
     {
         entt::entity NewActiveEntity;
     };
+
+
+    
 }

@@ -4,7 +4,6 @@
 #include "LuminaEditor.h"
 #include "Assets/AssetManager/AssetManager.h"
 #include "Assets/AssetRegistry/AssetRegistry.h"
-#include "Assets/Definition/AssetDefinition.h"
 #include "Assets/Factories/Factory.h"
 #include "Core/Engine/Engine.h"
 #include "Core/Object/ObjectIterator.h"
@@ -19,9 +18,9 @@
 #include "Platform/Process/PlatformProcess.h"
 #include "Project/Project.h"
 #include "TaskSystem/TaskSystem.h"
-#include "thumbnails/thumbnailmanager.h"
 #include "Tools/Dialogs/Dialogs.h"
 #include "Tools/Import/ImportHelpers.h"
+#include "Tools/UI/ImGui/ImGuiFonts.h"
 #include "Tools/UI/ImGui/ImGuiX.h"
 
 namespace Lumina
@@ -87,15 +86,12 @@ namespace Lumina
             SelectedPath = GEditorEngine->GetProject().GetProjectContentDirectory();
         }
 
-        for (TObjectIterator<CFactory> It; It; ++It)
+        const TVector<CFactory*>& Factories = CFactoryRegistry::Get().GetFactories();
+        for (CFactory* Factory : Factories)
         {
-            CFactory* Factory = *It;
-            if (Factory->HasAnyFlag(OF_DefaultObject))
+            if (CClass* AssetClass = Factory->GetAssetClass())
             {
-                if (CClass* AssetClass = Factory->GetSupportedType())
-                {
-                    FilterState.emplace(AssetClass->GetName().c_str(), true);
-                }
+                FilterState.emplace(AssetClass->GetName().c_str(), true);
             }
         }
 
@@ -156,10 +152,12 @@ namespace Lumina
                     }
                     else if (CPackage* Package = ContentItem->GetPackage())
                     {
-                        if (Package->GetPackageThumbnail()->LoadedImage)
-                        {
-                            ImTexture = ImGuiX::ToImTextureRef(Package->GetPackageThumbnail()->LoadedImage);
-                        }
+                        ImTexture = ImGuiX::ToImTextureRef(Paths::GetEngineResourceDirectory() + "/Textures/File.png");
+
+                        //if (Package->GetPackageThumbnail()->LoadedImage)
+                        //{
+                        //    ImTexture = ImGuiX::ToImTextureRef(Package->GetPackageThumbnail()->LoadedImage);
+                        //}
                     }
                 }
             }
@@ -253,6 +251,10 @@ namespace Lumina
                 {
                     DrawLuaScriptContextMenu(ContentItem);
                 }
+                else if (ContentItem->IsDirectory())
+                {
+                    DrawDirectoryContextMenu(ContentItem);
+                }
             }
         };
 
@@ -299,7 +301,7 @@ namespace Lumina
                     for (FAssetData* Asset : Assets)
                     {
                         FString PackageFullPath = Paths::ResolveVirtualPath(Asset->PackageName.ToString());
-                        CThumbnailManager::Get().TryLoadThumbnailsForPackage(PackageFullPath);
+                        //CThumbnailManager::Get().TryLoadThumbnailsForPackage(PackageFullPath);
                     }
 
                     for (FAssetData* Asset : Assets)
@@ -383,7 +385,7 @@ namespace Lumina
     {
         
     }
-
+    
     void FContentBrowserEditorTool::EndFrame()
     {
         bool bWroteSomething = false;
@@ -400,14 +402,81 @@ namespace Lumina
         
         for (FPendingRename& Rename : PendingRenames)
         {
-            if (HandleRenameEvent(Rename.OldName, Rename.NewName) == ObjectRename::EObjectRenameResult::Success)
+            if (Paths::IsDirectory(Rename.OldName))
             {
-                bWroteSomething = true;
-                ImGuiX::Notifications::NotifySuccess("Renamed to \"%s\"", Rename.NewName.c_str());
+                if (std::filesystem::is_empty(Rename.OldName.c_str()))
+                {
+                    try
+                    {
+                        std::filesystem::rename(Rename.OldName.c_str(), Rename.NewName.c_str());
+                    }
+                    catch (std::filesystem::filesystem_error& Er)
+                    {
+                        ImGuiX::Notifications::NotifyError("Failed to rename {}", Er.what());
+                    }
+                }
+                else
+                {
+                    TVector<FString> ObjectsToRename; 
+                    for (auto& Dir : std::filesystem::recursive_directory_iterator(Rename.OldName.c_str())) 
+                    { 
+                        if (Dir.is_directory()) 
+                        { 
+                            continue; 
+                        }
+ 
+                        if (Dir.path().extension() == ".lasset") 
+                        { 
+                            ObjectsToRename.push_back(Dir.path().generic_string().c_str()); 
+                        } 
+                    } 
+
+                    FString NormalizedOldPath = Rename.OldName;
+                    FString NormalizedNewPath = Rename.NewName;
+
+                    if (!NormalizedOldPath.empty() && NormalizedOldPath.back() != '/' && NormalizedOldPath.back() != '\\')
+                    {
+                        NormalizedOldPath += "/";
+                    }
+                    if (!NormalizedNewPath.empty() && NormalizedNewPath.back() != '/' && NormalizedNewPath.back() != '\\')
+                    {
+                        NormalizedNewPath += "/";
+                    }
+
+                    std::filesystem::rename(Rename.OldName.c_str(), Rename.NewName.c_str());
+
+                    bWroteSomething = true;
+                    
+                    for (const FString& ToRename : ObjectsToRename) 
+                    { 
+                        FString RenamePath = ToRename.c_str();
+    
+                        if (RenamePath.find(NormalizedOldPath) == 0)
+                        {
+                            RenamePath = NormalizedNewPath + RenamePath.substr(NormalizedOldPath.length());
+                            if (HandleRenameEvent(ToRename, RenamePath) == ObjectRename::EObjectRenameResult::Success)
+                            {
+                                ImGuiX::Notifications::NotifySuccess("Renamed to \"{0}\"", Rename.NewName.c_str());
+                            }
+                            else
+                            {
+                                ImGuiX::Notifications::NotifyError("Failed to rename asset");
+                            }
+                        }
+                    }
+                }
             }
             else
             {
-                ImGuiX::Notifications::NotifyError("Failed to rename asset");
+                if (HandleRenameEvent(Rename.OldName, Rename.NewName) == ObjectRename::EObjectRenameResult::Success)
+                {
+                    bWroteSomething = true;
+                    ImGuiX::Notifications::NotifySuccess("Renamed to \"{0}\"", Rename.NewName.c_str());
+                }
+                else
+                {
+                    ImGuiX::Notifications::NotifyError("Failed to rename asset");
+                }
             }
         }
 
@@ -419,7 +488,7 @@ namespace Lumina
         PendingDestroy.clear();
         PendingRenames.clear();
     }
-
+    
     void FContentBrowserEditorTool::InitializeDockingLayout(ImGuiID InDockspaceID, const ImVec2& InDockspaceSize) const
     {
         ImGuiID topDockID = 0, bottomLeftDockID = 0, bottomCenterDockID = 0, bottomRightDockID = 0;
@@ -465,15 +534,17 @@ namespace Lumina
                 try
                 {
                     std::filesystem::rename(SourcePath, DestPath.c_str());
-                    LOG_INFO("[ContentBrowser] Moved folder {0} -> {1}", SourcePath.string(), DestPath);
+                    ImGuiX::Notifications::NotifySuccess("Moved folder {0} \n {1}", SourcePath.string(), DestPath);
+                    RefreshContentBrowser();
                 }
                 catch (const std::filesystem::filesystem_error& e)
                 {
-                    LOG_ERROR("[ContentBrowser] Failed to move folder: {0}", e.what());
+                    ImGuiX::Notifications::NotifyError("Failed to move folder: {0}", e.what());
                 }
             }
             else
             {
+                
                 //...TODO Moving all assets in a folder :(
             }
         }
@@ -481,7 +552,7 @@ namespace Lumina
 
         if (!Payload->IsDirectory())
         {
-            FString OldPath = Payload->GetPath();
+            const FString& OldPath = Payload->GetPath();
             FString NewPath = Drop->GetPath() + "/" + Payload->GetAssetData().AssetName.ToString();
             PendingRenames.emplace_back(FPendingRename{OldPath, NewPath});
         }
@@ -527,23 +598,20 @@ namespace Lumina
 
     void FContentBrowserEditorTool::TryImport(const FString& Path)
     {
-        TVector<CAssetDefinition*> Definitions;
-        CAssetDefinitionRegistry::Get()->GetAssetDefinitions(Definitions);
-        for (CAssetDefinition* Definition : Definitions)
+        const TVector<CFactory*>& Factories = CFactoryRegistry::Get().GetFactories();
+        for (CFactory* Factory : Factories)
         {
-            if (!Definition->CanImport())
+            if (!Factory->CanImport())
             {
                 continue;
             }
         
             FString Ext = Paths::GetExtension(Path);
-            if (!Definition->IsExtensionSupported(Ext))
+            if (!Factory->IsExtensionSupported(Ext))
             {
                 continue;
             }
-        
-            CFactory* Factory = Definition->GetFactory();
-        
+            
             FString NoExtFileName = Paths::FileName(Path, true);
             FString PathString = Paths::Combine(SelectedPath.c_str(), NoExtFileName.c_str());
         
@@ -558,7 +626,7 @@ namespace Lumina
                     bool bShouldClose = CFactory::ShowImportDialogue(Factory, Path, PathString);
                     if (bShouldClose)
                     {
-                        ImGuiX::Notifications::NotifySuccess("Successfully Imported: \"%s\"", PathString.c_str());
+                        ImGuiX::Notifications::NotifySuccess("Successfully Imported: \"{0}\"", PathString.c_str());
                     }
             
                     return bShouldClose;
@@ -569,7 +637,7 @@ namespace Lumina
                 Task::AsyncTask(1, 1, [this, Factory, Path, PathString] (uint32, uint32, uint32)
                 {
                     Factory->TryImport(Path, PathString);
-                    ImGuiX::Notifications::NotifySuccess("Successfully Imported: \"%s\"", PathString.c_str());
+                    ImGuiX::Notifications::NotifySuccess("Successfully Imported: \"{0}\"", PathString.c_str());
                 });
             }
         }
@@ -580,8 +648,205 @@ namespace Lumina
     {
         return ObjectRename::RenameObject(OldPath, NewPath);
     }
-    
-    void FContentBrowserEditorTool::DrawDirectoryBrowser(const FUpdateContext& Contxt, bool bIsFocused, ImVec2 Size)
+
+    void FContentBrowserEditorTool::PushRenameModal(FContentBrowserTileViewItem* ContentItem)
+    {
+        TUniquePtr<FRenameModalState> RenameState = MakeUniquePtr<FRenameModalState>();
+        
+        ToolContext->PushModal("Rename", ImVec2(480.0f, 340.0f), [this, ContentItem, RenameState = Move(RenameState)](const FUpdateContext&) -> bool
+        {
+            RenameState->Initialize(ContentItem->GetFileName());
+            
+            const ImGuiStyle& style = ImGui::GetStyle();
+            const float ContentWidth = ImGui::GetContentRegionAvail().x;
+            
+            ImGuiX::Font::PushFont(ImGuiX::Font::EFont::MediumBold);
+            ImGui::TextColored(ImVec4(0.9f, 0.9f, 0.95f, 1.0f), LE_ICON_ARCHIVE_EDIT " Rename %s", ContentItem->IsDirectory() ? "Folder" : "Asset");
+            ImGuiX::Font::PopFont();
+            
+            ImGui::Spacing();
+            ImGui::Separator();
+            ImGui::Spacing();
+            ImGui::Spacing();
+            
+            ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.6f, 0.6f, 0.65f, 1.0f));
+            ImGui::Text("Current name:");
+            ImGui::PopStyleColor();
+            
+            ImGui::SameLine();
+            ImGui::TextColored(ImVec4(0.85f, 0.85f, 0.9f, 1.0f), "%s", ContentItem->GetFileName().c_str());
+            
+            ImGui::Spacing();
+            ImGui::Spacing();
+            
+            ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.6f, 0.6f, 0.65f, 1.0f));
+            ImGui::Text("New name:");
+            ImGui::PopStyleColor();
+            
+            ImGui::Spacing();
+            
+            ImGui::PushStyleColor(ImGuiCol_FrameBg, ImVec4(0.15f, 0.15f, 0.18f, 1.0f));
+            ImGui::PushStyleColor(ImGuiCol_FrameBgHovered, ImVec4(0.2f, 0.2f, 0.25f, 1.0f));
+            ImGui::PushStyleColor(ImGuiCol_FrameBgActive, ImVec4(0.25f, 0.25f, 0.3f, 1.0f));
+            ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(12.0f, 8.0f));
+            ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 4.0f);
+            
+            ImGui::SetNextItemWidth(-1);
+            
+            bool bSubmitted = ImGui::InputText("##RenameInput", RenameState->Buffer, sizeof(RenameState->Buffer), 
+                ImGuiInputTextFlags_CharsNoBlank | ImGuiInputTextFlags_EnterReturnsTrue);
+            
+            ImGui::PopStyleVar(2);
+            ImGui::PopStyleColor(3);
+            
+            ImGui::Spacing();
+            ImGui::Spacing();
+            
+            bool bIsValid = strlen(RenameState->Buffer) > 0;
+            bool bNameUnchanged = strcmp(RenameState->Buffer, ContentItem->GetFileName().c_str()) == 0;
+            FString ValidationMessage;
+            bool bHasError = false;
+            
+            if (strlen(RenameState->Buffer) > 0)
+            {
+                if (bNameUnchanged)
+                {
+                    ValidationMessage = "Name unchanged - please enter a different name";
+                    bHasError = true;
+                    bIsValid = false;
+                }
+                else if (!ContentItem->IsDirectory())
+                {
+                    FString TestAssetName = ContentItem->GetAssetData().PackageName.ToString() + "." + RenameState->Buffer;
+                    if (CObject* TestObject = FindObject<CObject>(nullptr, TestAssetName))
+                    {
+                        ValidationMessage = std::format("Asset already exists: {}", *TestObject->GetQualifiedName()).c_str();
+                        bHasError = true;
+                        bIsValid = false;
+                    }
+                }
+                else if (ContentItem->IsAsset())
+                {
+                    FString TestPath = ContentItem->GetPath() + "/" + RenameState->Buffer;
+                    if (std::filesystem::exists(TestPath.c_str()))
+                    {
+                        ValidationMessage = std::format("Path already exists: {}", TestPath.c_str()).c_str();
+                        bHasError = true;
+                        bIsValid = false;
+                    }
+                }
+            }
+            
+            if (bHasError && !ValidationMessage.empty())
+            {
+                ImGui::PushStyleColor(ImGuiCol_ChildBg, ImVec4(0.3f, 0.1f, 0.1f, 0.3f));
+                ImGui::PushStyleVar(ImGuiStyleVar_ChildRounding, 4.0f);
+                ImGui::PushStyleVar(ImGuiStyleVar_ChildBorderSize, 1.0f);
+                ImGui::PushStyleColor(ImGuiCol_Border, ImVec4(0.8f, 0.2f, 0.2f, 0.4f));
+                
+                ImGui::BeginChild("##ValidationError", ImVec2(-1, 50.0f), true);
+                
+                ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 0.4f, 0.4f, 1.0f));
+                ImGui::Text(LE_ICON_ALERT_OCTAGON);
+                ImGui::SameLine();
+                ImGui::TextWrapped("%s", ValidationMessage.c_str());
+                ImGui::PopStyleColor();
+                
+                ImGui::EndChild();
+                ImGui::PopStyleColor(2);
+                ImGui::PopStyleVar(2);
+                
+                ImGui::Spacing();
+            }
+            
+            if (bSubmitted && bIsValid)
+            {
+                FString NewPath = Paths::Parent(ContentItem->GetPath()) + "/" + RenameState->Buffer;
+                PendingRenames.emplace_back(FPendingRename{ContentItem->GetPath(), NewPath});
+                RenameState->Reset();
+                return true;
+            }
+            
+            ImGui::Spacing();
+            
+            float remainingHeight = ImGui::GetContentRegionAvail().y - 40.0f;
+            if (remainingHeight > 0)
+            {
+                ImGui::Dummy(ImVec2(0, remainingHeight));
+            }
+            
+            ImGui::Separator();
+            ImGui::Spacing();
+
+            constexpr float ButtonHeight = 32.0f;
+            const float ButtonWidth = (ContentWidth - style.ItemSpacing.x) * 0.5f;
+            
+            if (!bIsValid)
+            {
+                ImGui::PushStyleVar(ImGuiStyleVar_Alpha, 0.5f);
+                ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
+            }
+            else
+            {
+                ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.2f, 0.5f, 0.9f, 1.0f));
+                ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.3f, 0.6f, 1.0f, 1.0f));
+                ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.15f, 0.45f, 0.85f, 1.0f));
+            }
+            
+            ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 4.0f);
+            
+            if (ImGui::Button(LE_ICON_CHECK " Rename", ImVec2(ButtonWidth, ButtonHeight)))
+            {
+                if (bIsValid)
+                {
+                    FString NewPath = Paths::Parent(ContentItem->GetPath()) + "/" + RenameState->Buffer;
+                    PendingRenames.emplace_back(FPendingRename{ContentItem->GetPath(), NewPath});
+                    RenameState->Reset();
+                    return true;
+                }
+            }
+            
+            ImGui::PopStyleVar();
+            
+            if (!bIsValid)
+            {
+                ImGui::PopItemFlag();
+                ImGui::PopStyleVar();
+            }
+            else
+            {
+                ImGui::PopStyleColor(3);
+            }
+            
+            // Cancel button
+            ImGui::SameLine();
+            
+            ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 4.0f);
+            ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.2f, 0.2f, 0.22f, 1.0f));
+            ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.25f, 0.25f, 0.27f, 1.0f));
+            ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.15f, 0.15f, 0.17f, 1.0f));
+            
+            if (ImGui::Button(LE_ICON_CANCEL " Cancel", ImVec2(ButtonWidth, ButtonHeight)))
+            {
+                RenameState->Reset();
+                return true;
+            }
+            
+            ImGui::PopStyleColor(3);
+            ImGui::PopStyleVar();
+            
+            // ESC to cancel
+            if (ImGui::IsKeyPressed(ImGuiKey_Escape))
+            {
+                RenameState->Reset();
+                return true;
+            }
+            
+            return false;
+        });
+    }
+
+    void FContentBrowserEditorTool::DrawDirectoryBrowser(const FUpdateContext& Context, bool bIsFocused, ImVec2 Size)
     {
         ImGui::BeginChild("Directories", Size);
 
@@ -699,21 +964,66 @@ namespace Lumina
     
     }
 
-    void FContentBrowserEditorTool::DrawLuaScriptContextMenu(const FContentBrowserTileViewItem* ContentItem)
+    void FContentBrowserEditorTool::DrawDirectoryContextMenu(FContentBrowserTileViewItem* ContentItem)
     {
-
-        if (ImGui::MenuItem(LE_ICON_OPEN_IN_APP " Open"))
-        {
-            Platform::LaunchURL(StringUtils::ToWideString(ContentItem->GetPath()).c_str());
-        }
+        ImGui::Separator();
         
         if (ImGui::MenuItem(LE_ICON_ARCHIVE_EDIT " Rename", "F2"))
         {
-            
+            PushRenameModal(ContentItem);
         }
         
+        if (ImGui::MenuItem(LE_ICON_FOLDER " Show in Explorer", nullptr, false))
+        {
+            FString ParentPath = ContentItem->GetPath();
+            ParentPath = Paths::Parent(ParentPath);
+            Platform::LaunchURL(StringUtils::ToWideString(ParentPath).c_str());
+        }
+
+        if (ImGui::MenuItem(LE_ICON_CONTENT_COPY " Copy Path", nullptr, false))
+        {
+            ImGui::SetClipboardText(ContentItem->GetPath().c_str());
+            ImGuiX::Notifications::NotifyInfo("Path copied to clipboard");
+        }
 
         ImGui::Separator();
+
+        ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(255, 100, 100, 255));
+        bool bDeleteClicked = ImGui::MenuItem(LE_ICON_ALERT_OCTAGON " Delete", "Del");
+        ImGui::PopStyleColor();
+
+        if (bDeleteClicked)
+        {
+            FString ConfirmMessage = std::format("Are you sure you want to delete \"{0}\"?\n\nThis action cannot be undone.", ContentItem->GetFileName().c_str()).c_str();
+            
+            if (Dialogs::Confirmation("Confirm Deletion", ConfirmMessage.c_str()))
+            {
+                if (std::filesystem::is_empty(ContentItem->GetPath().c_str()))
+                {
+                    try
+                    {
+                        std::filesystem::remove(ContentItem->GetPath().c_str());
+                        ImGuiX::Notifications::NotifySuccess("Deleted path");
+                        RefreshContentBrowser();
+                    }
+                    catch (const std::filesystem::filesystem_error& e)
+                    {
+                        LOG_ERROR("Failed to delete file: {0}", e.what());
+                        ImGuiX::Notifications::NotifyError("Deletion failed: {0}", e.what());
+                    }
+                }
+            }
+        }
+    }
+
+    void FContentBrowserEditorTool::DrawLuaScriptContextMenu(FContentBrowserTileViewItem* ContentItem)
+    {
+        ImGui::Separator();
+
+        if (ImGui::MenuItem(LE_ICON_ARCHIVE_EDIT " Rename", "F2"))
+        {
+            PushRenameModal(ContentItem);
+        }
         
         if (ImGui::MenuItem(LE_ICON_FOLDER " Show in Explorer", nullptr, false))
         {
@@ -751,8 +1061,7 @@ namespace Lumina
                         }
                         catch (const std::filesystem::filesystem_error& e)
                         {
-                            LOG_ERROR("Failed to delete file: {0}", e.what());
-                            ImGuiX::Notifications::NotifyError("Deletion failed: %s", e.what());
+                            ImGuiX::Notifications::NotifyError("Deletion failed: {0}", e.what());
                         }
                     }
                 }
@@ -765,8 +1074,7 @@ namespace Lumina
                     }
                     catch (const std::filesystem::filesystem_error& e)
                     {
-                        LOG_ERROR("Failed to delete file: {0}", e.what());
-                        ImGuiX::Notifications::NotifyError("Deletion failed: %s", e.what());
+                        ImGuiX::Notifications::NotifyError("Deletion failed: {0}", e.what());
                     }   
                 }
             }
@@ -777,90 +1085,7 @@ namespace Lumina
     {
         if (ImGui::MenuItem(LE_ICON_ARCHIVE_EDIT " Rename", "F2"))
         {
-            auto RenameState = MakeSharedPtr<FRenameModalState>();
-        
-            ToolContext->PushModal("Rename Asset", ImVec2(400.0f, 180.0f), [this, ContentItem, RenameState](const FUpdateContext&) -> bool
-            {
-                RenameState->Initialize(ContentItem->GetFileName());
-        
-                ImGui::TextColored(ImVec4(0.7f, 0.7f, 0.7f, 1.0f), "Enter new name:");
-                ImGui::Spacing();
-                
-                ImGui::SetKeyboardFocusHere();
-                ImGui::SetNextItemWidth(-1);
-                
-                bool bSubmitted = ImGui::InputText("##RenameInput", RenameState->Buffer, sizeof(RenameState->Buffer), 
-                    ImGuiInputTextFlags_CharsNoBlank | ImGuiInputTextFlags_EnterReturnsTrue);
-        
-                ImGui::Spacing();
-                
-                // Validation feedback
-                if (!ContentItem->IsDirectory() && strlen(RenameState->Buffer) > 0)
-                {
-                    FString TestAssetName = ContentItem->GetAssetData().PackageName.ToString() + "." + RenameState->Buffer;
-                    if (CObject* TestObject = FindObject<CObject>(nullptr, TestAssetName))
-                    {
-                        ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(255, 100, 100, 255));
-                        ImGui::TextWrapped(LE_ICON_ALERT_OCTAGON " Asset already exists: %s", *TestObject->GetQualifiedName());
-                        ImGui::PopStyleColor();
-                        
-                        ImGui::Spacing();
-                        if (ImGui::Button("Cancel", ImVec2(-1, 0)))
-                        {
-                            return true;
-                        }
-                        return false;
-                    }
-                }
-                
-                if (bSubmitted && strlen(RenameState->Buffer) > 0)
-                {
-                    FString NewPath = Paths::Parent(ContentItem->GetPath()) + "/" + RenameState->Buffer;
-
-                    PendingRenames.emplace_back(FPendingRename{ContentItem->GetPath(), NewPath});
-                    RenameState->Reset();
-                    return true;
-                }
-        
-                // Action buttons
-                ImGui::Spacing();
-                ImGui::Separator();
-                ImGui::Spacing();
-                
-                float buttonWidth = (ImGui::GetContentRegionAvail().x - ImGui::GetStyle().ItemSpacing.x) * 0.5f;
-                
-                bool bCanRename = strlen(RenameState->Buffer) > 0;
-                if (!bCanRename)
-                {
-                    ImGui::PushStyleVar(ImGuiStyleVar_Alpha, 0.5f);
-                    ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
-                }
-                
-                if (ImGui::Button("Rename", ImVec2(buttonWidth, 0)))
-                {
-                    if (bCanRename)
-                    {
-                        FString NewPath = Paths::Parent(ContentItem->GetPath()) + "/" + RenameState->Buffer;
-                        PendingRenames.emplace_back(FPendingRename{ContentItem->GetPath(), NewPath});
-                        RenameState->Reset();
-                        return true;
-                    }
-                }
-                
-                if (!bCanRename)
-                {
-                    ImGui::PopItemFlag();
-                    ImGui::PopStyleVar();
-                }
-                
-                ImGui::SameLine();
-                if (ImGui::Button("Cancel", ImVec2(buttonWidth, 0)))
-                {
-                    return true;
-                }
-
-                return false;
-            });
+            PushRenameModal(ContentItem);
         }
                     
         ImGui::Separator();
@@ -920,17 +1145,17 @@ namespace Lumina
         
                     if (bWasSuccessful)
                     {
-                        ImGuiX::Notifications::NotifySuccess("Deleted \"%s\"", ContentItem->GetFileName().c_str());
+                        ImGuiX::Notifications::NotifySuccess("Deleted \"{0}\"", ContentItem->GetFileName().c_str());
                     }
                     else
                     {
-                        ImGuiX::Notifications::NotifyError("Failed to delete \"%s\"", ContentItem->GetFileName().c_str());
+                        ImGuiX::Notifications::NotifyError("Failed to delete \"{0}\"", ContentItem->GetFileName().c_str());
                     }
                 }
                 catch (const std::filesystem::filesystem_error& e)
                 {
                     LOG_ERROR("Failed to delete file: {0}", e.what());
-                    ImGuiX::Notifications::NotifyError("Deletion failed: %s", e.what());
+                    ImGuiX::Notifications::NotifyError("Deletion failed: {0}", e.what());
                 }
             }
         }
@@ -995,19 +1220,17 @@ namespace Lumina
         
         if (ImGui::BeginMenu(FileName.c_str()))
         {
-            TVector<CAssetDefinition*> Definitions;
-            CAssetDefinitionRegistry::Get()->GetAssetDefinitions(Definitions);
-            for (CAssetDefinition* Definition : Definitions)
+            const TVector<CFactory*>& Factories = CFactoryRegistry::Get().GetFactories();
+            for (CFactory* Factory : Factories)
             {
-                if (Definition->CanImport())
+                if (Factory->CanImport() || Factory->GetAssetClass() == nullptr)
                 {
                     continue;
                 }
                 
-                FString DisplayName = Definition->GetAssetDisplayName();
+                FString DisplayName = Factory->GetAssetName();
                 if (ImGui::MenuItem(DisplayName.c_str()))
                 {
-                    CFactory* Factory = Definition->GetFactory();
                     FString PathString = Paths::Combine(SelectedPath.c_str(), Factory->GetDefaultAssetCreationName(PathString).c_str());
                     Paths::AddPackageExtension(PathString);
                     PathString = CPackage::MakeUniquePackagePath(PathString);
@@ -1020,7 +1243,7 @@ namespace Lumina
                             bool bShouldClose = CFactory::ShowCreationDialogue(Factory, PathString);
                             if (bShouldClose)
                             {
-                                ImGuiX::Notifications::NotifySuccess("Successfully Created: \"%s\"", PathString.c_str());
+                                ImGuiX::Notifications::NotifySuccess("Successfully Created: \"{0}\"", PathString.c_str());
                             }
                     
                             return bShouldClose;
@@ -1031,11 +1254,11 @@ namespace Lumina
                         CObject* Object = Factory->TryCreateNew(PathString);
                         if (Object)
                         {
-                            ImGuiX::Notifications::NotifySuccess("Successfully Created: \"%s\"", PathString.c_str());
+                            ImGuiX::Notifications::NotifySuccess("Successfully Created: \"{0}\"", PathString.c_str());
                         }
                         else
                         {
-                            ImGuiX::Notifications::NotifyError("Failed to create new: \"%s\"", PathString.c_str());
+                            ImGuiX::Notifications::NotifyError("Failed to create new: \"{0}\"", PathString.c_str());
         
                         }
                     }

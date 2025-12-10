@@ -11,12 +11,12 @@ namespace Lumina::Reflection
 
 
         void GenerateCodeForSolution();
-        void GenerateCodeForProject(const FReflectedProject& Project);
+        void GenerateCodeForProject(const eastl::shared_ptr<FReflectedProject>& Project);
 
         void GenerateReflectionCodeForHeader(const FReflectedHeader& Header);
         void GenerateReflectionCodeForSource(const FReflectedHeader& Header);
 
-        void SetProject(const FReflectedProject& Project) { CurrentProject = Project; }
+        void SetProject(const eastl::shared_ptr<FReflectedProject>& Project) { CurrentProject = Project; }
 
     private:
 
@@ -27,9 +27,9 @@ namespace Lumina::Reflection
     private:
 
         
-        FReflectedProject           CurrentProject;
-        FProjectSolution            Solution;
-        const FReflectionDatabase*  ReflectionDatabase;
+        eastl::shared_ptr<FReflectedProject>    CurrentProject;
+        FProjectSolution                        Solution;
+        const FReflectionDatabase*              ReflectionDatabase;
         
         
     };

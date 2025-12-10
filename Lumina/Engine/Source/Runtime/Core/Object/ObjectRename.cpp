@@ -11,79 +11,73 @@
 
 namespace Lumina::ObjectRename
 {
+    
     EObjectRenameResult RenameObject(const FString& OldPath, FString NewPath)
     {
         try
         {
-            bool bDirectory = Paths::IsDirectory(OldPath);
-            
-            if (!bDirectory)
-            {
-                NewPath += ".lasset";
-            }
-        
-            if (std::filesystem::exists(NewPath.c_str()))
+            FName VirtualName = Paths::ConvertToVirtualPath(NewPath);
+            if (FindObjectFast(nullptr, nullptr, VirtualName))
             {
                 LOG_ERROR("Destination path already exists: {0}", NewPath);
                 return EObjectRenameResult::Exists;
             }
             
-            if (!bDirectory)
+            if (!Paths::HasExtension(NewPath, "lasset"))
             {
-                if (CPackage* OldPackage = CPackage::LoadPackage(OldPath.c_str()))
+                NewPath += ".lasset";
+            }
+            
+            if (CPackage* OldPackage = CPackage::LoadPackage(OldPath))
+            {
+                // Make sure nothing is currently loading before executing this rename.
+                GEngine->GetEngineSubsystem<FAssetManager>()->FlushAsyncLoading();
+                
+                /** We need all objects to be loaded to rename a package */
+                LUM_ASSERT(OldPackage->FullyLoad())
+
+                bool bCreateRedirectors = false;
+                
+                FAssetRegistry* AssetRegistry = GEngine->GetEngineSubsystem<FAssetRegistry>();
+                const THashSet<FName>& Dependencies = AssetRegistry->GetDependencies(OldPackage->GetName());
+
+                for (const FName& Dependency : Dependencies)
                 {
-                    // Make sure nothing is currently loading before executing this rename.
-                    GEngine->GetEngineSubsystem<FAssetManager>()->FlushAsyncLoading();
-                    
-                    /** We need all objects to be loaded to rename a package */
-                    LUM_ASSERT(OldPackage->FullyLoad())
+                    FString FullPath = Paths::ResolveVirtualPath(Dependency.ToString());
+                    CPackage::LoadPackage(FullPath);
+                }
+                
+                FString OldAssetName = Paths::FileName(OldPath, true);
+                FString NewAssetName = Paths::FileName(NewPath, true);
 
-                    bool bCreateRedirectors = true;
-                    
-                    FAssetRegistry* AssetRegistry = GEngine->GetEngineSubsystem<FAssetRegistry>();
-                    const THashSet<FName>& Dependencies = AssetRegistry->GetDependencies(OldPackage->GetName());
+                CPackage* NewPackage = CPackage::CreatePackage(NewPath);
+                
+                TVector<TObjectPtr<CObject>> Objects;
+                GetObjectsWithPackage(OldPackage, Objects);
 
-                    if (Dependencies.empty())
+                for (CObject* Object : Objects)
+                {
+                    if (Object->IsAsset())
                     {
-                        bCreateRedirectors = false;
-                    }
-                    
-                    FString OldAssetName = Paths::FileName(OldPath, true);
-                    FString NewAssetName = Paths::FileName(NewPath, true);
-
-                    CPackage* NewPackage = CPackage::CreatePackage(NewPath);
-                    
-                    TVector<TObjectPtr<CObject>> Objects;
-                    GetObjectsWithPackage(OldPackage, Objects);
-
-                    for (CObject* Object : Objects)
-                    {
-                        if (Object->IsAsset())
-                        {
-                            Object->Rename(NewAssetName, NewPackage, bCreateRedirectors);
-                            AssetRegistry->AssetRenamed(Object, OldPath);
-                        }
-                        else
-                        {
-                            Object->Rename(Object->GetName(), NewPackage, false);
-                        }
-                    }
-
-                    CPackage::SavePackage(NewPackage, NewPath);
-
-                    if (bCreateRedirectors)
-                    {
-                        CPackage::SavePackage(OldPackage, OldPath);
+                        Object->Rename(NewAssetName, NewPackage, bCreateRedirectors);
+                        AssetRegistry->AssetRenamed(Object, OldPath);
                     }
                     else
                     {
-                        CPackage::DestroyPackage(OldPath);
+                        Object->Rename(Object->GetName(), NewPackage, false);
                     }
                 }
-            }
-            else
-            {
-                std::filesystem::rename(OldPath.c_str(), NewPath.c_str());
+
+                CPackage::SavePackage(NewPackage, NewPath);
+
+                if (bCreateRedirectors)
+                {
+                    CPackage::SavePackage(OldPackage, OldPath);
+                }
+                else
+                {
+                    CPackage::DestroyPackage(OldPath);
+                }
             }
             
             return EObjectRenameResult::Success;
@@ -94,4 +88,5 @@ namespace Lumina::ObjectRename
             return EObjectRenameResult::Failure;
         }
     }
+    
 }

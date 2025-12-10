@@ -270,7 +270,6 @@ namespace Lumina
             return Obj ? TObjectPtr<T>(Obj) : TObjectPtr<T>();
         }
 
-        // Get raw pointer (checks generation)
         T* Get() const
         {
             return (T*)GObjectArray.ResolveHandle(Handle);
@@ -293,7 +292,6 @@ namespace Lumina
             ReleaseWeakRefInternal();
         }
 
-        TObjectPtr<T> operator -> () { return Lock(); }
         bool operator==(const TWeakObjectPtr& Other) const { return Handle == Other.Handle; }
         bool operator!=(const TWeakObjectPtr& Other) const { return Handle != Other.Handle; }
         bool operator==(nullptr_t) const { return !IsValid(); }

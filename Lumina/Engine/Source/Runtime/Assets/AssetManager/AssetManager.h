@@ -4,6 +4,7 @@
 #include "Assets/AssetRequest.h"
 #include "Containers/Array.h"
 #include "Core/Threading/Thread.h"
+#include "Memory/SmartPtr.h"
 #include "Subsystems/Subsystem.h"
 
 
@@ -20,22 +21,21 @@ namespace Lumina
 
 		void Initialize() override;
 		void Deinitialize() override;
-		FAssetRequest* LoadAsset(const FString& InAssetPath);
+		TSharedPtr<FAssetRequest> LoadAsset(const FString& InAssetPath);
 
-		void NotifyAssetRequestCompleted(FAssetRequest* Request);
+		void NotifyAssetRequestCompleted(const TSharedPtr<FAssetRequest>& Request);
 
 		void FlushAsyncLoading();
 		
 	private:
 
-		FAssetRequest* TryFindActiveRequest(const FString& InAssetPath, bool& bAlreadyInQueue);
-		void SubmitAssetRequest(FAssetRequest* Request);
+		TSharedPtr<FAssetRequest> TryFindActiveRequest(const FString& InAssetPath, bool& bAlreadyInQueue);
+		void SubmitAssetRequest(const TSharedPtr<FAssetRequest>& Request);
 	
 	private:
 		
-		TVector<FAssetRequest*>									ActiveRequests;
-		
-		eastl::atomic<int32> OutstandingTasks{0};
+		THashSet<TSharedPtr<FAssetRequest>>	ActiveRequests;
+		eastl::atomic<int32>				OutstandingTasks{0};
 		
 	};
 	

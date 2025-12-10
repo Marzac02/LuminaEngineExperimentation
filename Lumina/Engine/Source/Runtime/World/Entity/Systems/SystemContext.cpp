@@ -10,6 +10,7 @@ namespace Lumina
 {
     FSystemContext::FSystemContext(CWorld* InWorld)
         : Registry(InWorld->EntityRegistry)
+        , Dispatcher(InWorld->SingletonDispatcher)
     {
         
     }

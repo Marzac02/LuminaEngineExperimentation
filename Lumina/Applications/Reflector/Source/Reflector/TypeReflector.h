@@ -13,7 +13,7 @@ namespace Lumina::Reflection
     {
     public:
 
-        FTypeReflector(const eastl::string& SolutionPath);
+        FTypeReflector(const eastl::string& ReflectionPath);
 
         /** Gathers all reflectable projects within a solution. */
         bool ParseSolution();
@@ -27,15 +27,12 @@ namespace Lumina::Reflection
         /** Creates and generates reflection code files */
         bool Generate(FClangParser& Parser);
 
-        /** Bumps the project files to trigger a reload of new reflection files */
-        void Bump();
-        
+        bool IsAnyProjectDirty() const;
 
     private:
 
         bool WriteGeneratedFiles(const FClangParser& Parser);
         
         FProjectSolution Solution;
-        bool bWroteFiles = false;
     };
 }

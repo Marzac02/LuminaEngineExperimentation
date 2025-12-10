@@ -1,16 +1,16 @@
 ﻿#include "ProjectSolution.h"
-
-#include <fstream>
-#include <iostream>
-
 #include "ReflectionCore/ReflectedProject.h"
 
 namespace Lumina::Reflection
 {
-    FProjectSolution::FProjectSolution(const std::filesystem::path& SlnPath)
-        : Path(SlnPath.string().c_str())
-        , ParentPath(SlnPath.parent_path().string().c_str())
+    FProjectSolution::FProjectSolution(const std::filesystem::path& ReflectionPath)
+        : Path(ReflectionPath.string().c_str())
+        , ParentPath(ReflectionPath.parent_path().string().c_str())
     {
     }
-   
+
+    void FProjectSolution::AddReflectedProject(eastl::shared_ptr<FReflectedProject>&& Project)
+    {
+        ReflectedProjects.push_back(eastl::move(Project));
+    }
 }

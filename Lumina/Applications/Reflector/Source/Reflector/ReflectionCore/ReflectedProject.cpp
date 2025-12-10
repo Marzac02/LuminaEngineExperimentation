@@ -1,17 +1,23 @@
 ﻿#include "ReflectedProject.h"
-
 #include <filesystem>
 #include <fstream>
 #include <iostream>
-
 #include "ReflectedHeader.h"
-#include "Reflector/Clang/Utils.h"
 
 namespace Lumina::Reflection
 {
+
+    static eastl::string ToLower(const eastl::string& Str)
+    {
+        eastl::string Lower;
+        Lower.resize(Str.size());
+        eastl::transform(Lower.begin(), Lower.end(), Lower.begin(), ::tolower);
+        return Lower;
+    }
+    
     FReflectedProject::FReflectedProject(const eastl::string& SlnPath, const eastl::string& ProjectPath)
-        : SolutionPath(SlnPath)
-        , Path(ProjectPath)
+        : Path(ProjectPath)
+        , SolutionPath(SlnPath)
         , ParentPath(std::filesystem::path(ProjectPath.c_str()).parent_path().string().c_str())
     {
     }
@@ -69,12 +75,12 @@ namespace Lumina::Reflection
 
                         eastl::replace(HeaderFileFullPath.begin(), HeaderFileFullPath.end(), '\\', '/');
                         HeaderFileFullPath.make_lower();
-                        FReflectedHeader Header(HeaderFileFullPath);
+                        eastl::shared_ptr<FReflectedHeader> Header = eastl::make_shared<FReflectedHeader>(HeaderFileFullPath);
 
-                        if (Header.Parse())
+                        if (Header->Parse())
                         {
                             Headers.push_back(Header);
-                            FStringHash Hash = FStringHash(Header.HeaderPath);
+                            FStringHash Hash = FStringHash(Header->HeaderPath);
                             HeaderHashMap.insert_or_assign(Hash, Header);
                         }
                     }
@@ -82,8 +88,82 @@ namespace Lumina::Reflection
             }
         }
 
-        ProjectFile.close();
+        namespace fs = std::filesystem;
+        
+        std::filesystem::path Parent = SolutionPath.c_str();
+        eastl::string ParentStringPath = Parent.parent_path().generic_string().c_str();
+        
+        const eastl::string ProjectReflectionDirectory = ParentStringPath + "/Intermediates/Reflection/" + Name;
 
+        if (!fs::exists(ProjectReflectionDirectory.c_str()))
+        {
+            fs::create_directories(ProjectReflectionDirectory.c_str());
+        }
+            
+        eastl::vector<fs::path> ReflectionFilesToDelete;
+
+        eastl::hash_set<eastl::string> CurrentHeaderNames;
+        for (const eastl::shared_ptr<FReflectedHeader>& Header : Headers)
+        {
+            CurrentHeaderNames.insert(ToLower(Header->FileName));
+        }
+
+        for (const auto& Entry : fs::directory_iterator(ProjectReflectionDirectory.c_str()))
+        {
+            if (Entry.is_regular_file())
+            {
+                const fs::path& FilePath = Entry.path();
+                eastl::string FileStem = FilePath.stem().string().c_str();
+                    
+                const eastl::string Suffix = ".generated";
+                if (FileStem.size() > Suffix.size() && FileStem.compare(FileStem.size() - Suffix.size(), Suffix.size(), Suffix) == 0)
+                {
+                    FileStem.resize(FileStem.size() - Suffix.size());
+                }
+
+                FileStem = ToLower(FileStem);
+
+                if (CurrentHeaderNames.find(FileStem) == CurrentHeaderNames.end())
+                {
+                    ReflectionFilesToDelete.push_back(FilePath);
+                }
+            }
+        }
+
+        for (const fs::path& FileToDelete : ReflectionFilesToDelete)
+        {
+            std::filesystem::remove(FileToDelete);
+            bDirty = true;
+        }
+        
+        eastl::vector<eastl::shared_ptr<FReflectedHeader>> HeadersToParse;
+        if (std::filesystem::exists(ProjectReflectionDirectory.c_str()))
+        {
+            for (const eastl::shared_ptr<FReflectedHeader>& Header : Headers)
+            {
+                fs::path PossibleReflectionFilePath = fs::path(ProjectReflectionDirectory.c_str()) / eastl::string(Header->FileName + ".generated.h").c_str();
+                
+                if (std::filesystem::exists(PossibleReflectionFilePath))
+                {
+                    auto HeaderWriteTime = fs::last_write_time(Header->HeaderPath.c_str());
+                    auto ReflectionWriteTime = fs::last_write_time(PossibleReflectionFilePath.c_str());
+
+                    if (HeaderWriteTime < ReflectionWriteTime)
+                    {
+                        Header->bSkipCodeGen = true;
+                    }
+                    else
+                    {
+                        bDirty = true;
+                    }
+                }
+                else
+                {
+                    bDirty = true;
+                }
+            }
+        }
+        
         return !Headers.empty();
     }
 }

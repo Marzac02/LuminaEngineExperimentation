@@ -31,7 +31,7 @@ namespace Lumina::Reflection
         
         GTranslationUnitsParsed++;
         
-        ParserContext->ReflectedHeader = &Iter->second;
+        ParserContext->ReflectedHeader = Iter->second;
         
         CXCursorKind CursorKind = clang_getCursorKind(Cursor);
         eastl::string CursorName = ClangUtils::GetCursorDisplayName(Cursor);

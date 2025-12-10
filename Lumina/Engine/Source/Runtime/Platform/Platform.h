@@ -44,6 +44,28 @@
 
 #define NODISCARD [[nodiscard]]
 
+#ifndef ALIGNOF
+    #define ALIGNOF(type) alignof(type)
+#endif
+
+#ifndef ALIGN
+    #if defined(_MSC_VER)
+        #define ALIGN(n) __declspec(align(n))
+    #else
+        #define ALIGN(n) __attribute__((aligned(n)))
+    #endif
+#endif
+
+#ifndef CACHE_LINE_SIZE
+    #define CACHE_LINE_SIZE 64
+#endif
+
+#if defined(_MSC_VER)
+    #define LUMINA_NOVTABLE __declspec(novtable)
+#else
+    #define LUMINA_NOVTABLE
+#endif
+
 // If we don't have a platform-specific define for the TEXT macro, define it now.
 //#if !defined(TEXT)
 //    #if PLATFORM_TCHAR_IS_UTF8CHAR

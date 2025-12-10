@@ -126,6 +126,7 @@ namespace Lumina
         FName(const char* Str)
         {
             ID = GNameTable->GetOrCreateID(Str);
+            View = GNameTable->GetString(ID);
         }
         
         FName(const TCHAR* Str) : FName(StringUtils::FromWideString(Str)) {}
@@ -175,6 +176,8 @@ namespace Lumina
         }
 
     private:
+        
+        FStringView View;
         uint64 ID = 0;
     };
     

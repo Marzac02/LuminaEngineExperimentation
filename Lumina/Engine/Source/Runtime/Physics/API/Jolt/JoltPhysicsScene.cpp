@@ -8,15 +8,19 @@
 #include <algorithm>
 
 #include "JoltPhysics.h"
+#include "JoltUtils.h"
 #include "Core/Profiler/Profile.h"
 #include "Jolt/Physics/Body/BodyCreationSettings.h"
 #include "Jolt/Physics/Collision/Shape/BoxShape.h"
 #include "Jolt/Physics/Collision/Shape/SphereShape.h"
+#include "Renderer/RendererUtils.h"
 #include "World/Entity/Components/PhysicsComponent.h"
 #include "World/World.h"
 #include "World/Entity/Components/CharacterComponent.h"
+#include "World/Entity/Components/CharacterControllerComponent.h"
 #include "World/Entity/Components/DirtyComponent.h"
 #include "World/Entity/Components/TransformComponent.h"
+#include "world/entity/components/velocitycomponent.h"
 
 using namespace JPH::literals;
 
@@ -33,7 +37,7 @@ namespace Lumina::Physics
             case EBodyType::Dynamic:    return JPH::EMotionType::Dynamic;
         }
 
-        LUMINA_NO_ENTRY();
+        LUMINA_NO_ENTRY()
     }
 
     constexpr JPH::ObjectLayer ToJoltObjectType(EBodyType BodyType)
@@ -49,14 +53,15 @@ namespace Lumina::Physics
     class FObjectVsBroadPhaseLayerFilterImpl : public JPH::ObjectVsBroadPhaseLayerFilter
     {
     public:
-        virtual bool ShouldCollide(JPH::ObjectLayer inLayer1, JPH::BroadPhaseLayer inLayer2) const override
+        virtual bool ShouldCollide(JPH::ObjectLayer LayerA, JPH::BroadPhaseLayer LayerB) const override
         {
-            switch (inLayer1)
+            switch (LayerA)
             {
-            case Layers::NON_MOVING:    return inLayer2 == BroadPhaseLayers::MOVING;
-            case Layers::MOVING:        return true;
-            default:
-                JPH_ASSERT(false);
+                case Layers::NON_MOVING:    return LayerB == BroadPhaseLayers::MOVING;
+                case Layers::MOVING:        return true;
+
+                
+                default: JPH_ASSERT(false);
                 return false;
             }
         }
@@ -65,14 +70,16 @@ namespace Lumina::Physics
     class FObjectLayerPairFilterImpl : public JPH::ObjectLayerPairFilter
     {
     public:
-        virtual bool ShouldCollide(JPH::ObjectLayer inObject1, JPH::ObjectLayer inObject2) const override
+        
+        bool ShouldCollide(JPH::ObjectLayer ObjectA, JPH::ObjectLayer ObjectB) const override
         {
-            switch (inObject1)
+            switch (ObjectA)
             {
-            case Layers::NON_MOVING: return inObject2 == Layers::MOVING; // Non moving only collides with moving
-            case Layers::MOVING: return true; // Moving collides with everything
-            default:
-                JPH_ASSERT(false);
+                case Layers::NON_MOVING:    return ObjectB == Layers::MOVING;   // Non-moving only collides with moving
+                case Layers::MOVING:        return true;                        // Moving collides with everything
+
+                
+                default: JPH_ASSERT(false);
                 return false;
             }
         }
@@ -112,7 +119,7 @@ namespace Lumina::Physics
         JoltInterfaceLayer = MakeUniquePtr<FLayerInterfaceImpl>();
         
         JoltSystem->Init(65536, 0, 131072, 262144, *JoltInterfaceLayer, GObjectVsBroadPhaseLayerFilter, GObjectVsObjectLayerFilter);
-        JoltSystem->SetGravity(JPH::Vec3Arg(0.0f, -9.81f, 0.0f));
+        JoltSystem->SetGravity(JPH::Vec3Arg(0.0f, GEarthGravity, 0.0f));
 
         JPH::PhysicsSettings JoltSettings;
         JoltSystem->SetPhysicsSettings(JoltSettings);
@@ -141,61 +148,97 @@ namespace Lumina::Physics
 
                 if (Body.IsKinematic())
                 {
-                    JPH::Vec3 TargetPos(TransformComponent.GetLocation().x, TransformComponent.GetLocation().y, TransformComponent.GetLocation().z);
-    
-                    JPH::Quat TargetRot(TransformComponent.GetRotation().x, TransformComponent.GetRotation().y, TransformComponent.GetRotation().z, TransformComponent.GetRotation().w);
-                    
-                    BodyInterface.SetPositionAndRotationWhenChanged(BodyComponent.Body, TargetPos, TargetRot, JPH::EActivation::Activate);
+                    BodyInterface.SetPositionAndRotationWhenChanged(BodyComponent.Body,
+                        JoltUtils::ToJPHRVec3(TransformComponent.GetLocation()),
+                        JoltUtils::ToJPHQuat(TransformComponent.GetRotation()),
+                        JPH::EActivation::Activate);
                 }
             }
         });
         
-        
-        auto CharacterView = Registry.view<SCharacterComponent>();
-        CharacterView.each([&](SCharacterComponent& CharacterComponent)
+        auto View = Registry.view<SCharacterControllerComponent, SCharacterPhysicsComponent, SCharacterMovementComponent>();
+
+        View.each([&](SCharacterControllerComponent& Controller, const SCharacterPhysicsComponent& Physics, SCharacterMovementComponent& Movement)
         {
-            JPH::CharacterVirtual* Character = CharacterComponent.Character;
-            
-            JPH::CharacterVirtual::EGroundState GroundState = Character->GetGroundState();
-            CharacterComponent.bGrounded = (GroundState == JPH::CharacterVirtual::EGroundState::OnGround);
-
-            JPH::Vec3 CurrentVelocity(CharacterComponent.Velocity.x, CharacterComponent.Velocity.y, CharacterComponent.Velocity.z);
-
-            if (!CharacterComponent.bGrounded)
+            JPH::CharacterVirtual* Character = Physics.Character.GetPtr();
+            if (Character == nullptr)
             {
-                CharacterComponent.Velocity.y += CharacterComponent.Gravity * (float)DeltaTime;
+                return;
+            }
+
+            JPH::CharacterVirtual::EGroundState GroundState = Character->GetGroundState();
+            bool bWasGrounded = Movement.bGrounded;
+            Movement.bGrounded = (GroundState == JPH::CharacterVirtual::EGroundState::OnGround);
+
+            if (!bWasGrounded && Movement.bGrounded)
+            {
+                Movement.JumpCount = 0;
+            }
+
+            glm::vec3 DesiredDirection(0.0f);
+            if (glm::length(Controller.MoveInput) > 0.001f)
+            {
+                glm::vec3 Forward = RenderUtils::GetForwardVector(Controller.LookInput.x, 0.0f);
+                glm::vec3 Right = RenderUtils::GetRightVector(Controller.LookInput.x);
+
+                Forward = glm::normalize(glm::vec3(Forward.x, 0.0f, Forward.z));
+                Right = glm::normalize(glm::vec3(Right.x, 0.0f, Right.z));
+
+                DesiredDirection = Forward * Controller.MoveInput.y + Right * Controller.MoveInput.x;
+                DesiredDirection = glm::normalize(DesiredDirection);
+            }
+
+            float TargetSpeed = Movement.MoveSpeed;
+            glm::vec3 TargetVelocity = DesiredDirection * TargetSpeed;
+
+            glm::vec3 HorizontalVelocity(Movement.Velocity.x, 0.0f, Movement.Velocity.z);
+
+            float AccelerationRate = Movement.Acceleration;
+            float DecelerationRate = Movement.Deceleration;
+
+            if (glm::length(TargetVelocity) > 0.001f)
+            {
+                HorizontalVelocity = glm::mix(HorizontalVelocity, TargetVelocity, AccelerationRate * (float)DeltaTime);
             }
             else
             {
-                JPH::Vec3 GroundVelocity = Character->GetGroundVelocity();
-
-                CharacterComponent.Velocity.y = std::max(CharacterComponent.Velocity.y, 0.0f);
-
-                if (CharacterComponent.bWantsToJump)
-                {
-                    CharacterComponent.Velocity.y = CharacterComponent.JumpSpeed;
-                    CharacterComponent.bWantsToJump = false;
-                }
-
-                CurrentVelocity = JPH::Vec3(CharacterComponent.Velocity.x, CharacterComponent.Velocity.y, CharacterComponent.Velocity.z) + GroundVelocity;
+                float Friction = 1.0f - Movement.GroundFriction * (float)DeltaTime;
+                HorizontalVelocity *= glm::max(0.0f, Friction);
             }
 
-            Character->SetLinearVelocity(CurrentVelocity);
+            Movement.Velocity.x = HorizontalVelocity.x;
+            Movement.Velocity.z = HorizontalVelocity.z;
+
+            if (Movement.bGrounded)
+            {
+                JPH::Vec3 GroundVelocity = Character->GetGroundVelocity();
+                Movement.Velocity.x += GroundVelocity.GetX();
+                Movement.Velocity.z += GroundVelocity.GetZ();
+                Movement.Velocity.y = 0.0f;
+            }
+            else
+            {
+                Movement.Velocity.y += Movement.Gravity * (float)DeltaTime;
+            }
+            
+
+            Character->SetLinearVelocity(JoltUtils::ToJPHRVec3(Movement.Velocity));
 
             JPH::CharacterVirtual::ExtendedUpdateSettings UpdateSettings;
             UpdateSettings.mStickToFloorStepDown = JPH::Vec3(0.0f, -0.5f, 0.0f);
             UpdateSettings.mWalkStairsStepUp = JPH::Vec3(0.0f, 0.04f, 0.0f);
-            
 
             Character->ExtendedUpdate((float)DeltaTime,
-                Character->GetUp() * CharacterComponent.Gravity,
+                JPH::Vec3(0.0f, Movement.Gravity, 0.0f),
                 UpdateSettings,
                 JoltSystem->GetDefaultBroadPhaseLayerFilter(Layers::MOVING),
                 JoltSystem->GetDefaultLayerFilter(Layers::MOVING),
                 {},
                 {},
                 *FJoltPhysicsContext::GetAllocator());
-            
+
+            //JPH::Vec3 ActualVelocity = Character->GetLinearVelocity();
+            //Movement.Velocity = JoltUtils::FromJPHVec3(ActualVelocity);
         });
     }
 
@@ -216,23 +259,23 @@ namespace Lumina::Physics
                 return;
             }
             
-            auto Pos = Body->GetPosition();
-            auto Rot = Body->GetRotation();
+            JPH::Vec3 Pos = Body->GetPosition();
+            JPH::Quat Rot = Body->GetRotation();
         
-            TransformComponent.SetLocation(glm::vec3(Pos.GetX(), Pos.GetY(), Pos.GetZ()));
-            TransformComponent.SetRotation(glm::quat(Rot.GetW(), Rot.GetX(), Rot.GetY(), Rot.GetZ()));
+            TransformComponent.SetLocation(JoltUtils::FromJPHRVec3(Pos));
+            TransformComponent.SetRotation(JoltUtils::FromJPHQuat(Rot));
             
             Registry.emplace_or_replace<FNeedsTransformUpdate>(EntityID);   
         });
 
-        auto CharacterView = Registry.view<SCharacterComponent, STransformComponent>();
-        CharacterView.each([&](entt::entity Entity, const SCharacterComponent& CharacterComponent, STransformComponent& TransformComponent)
+        auto CharacterView = Registry.view<SCharacterPhysicsComponent, STransformComponent>();
+        CharacterView.each([&](entt::entity Entity, const SCharacterPhysicsComponent& CharacterComponent, STransformComponent& TransformComponent)
         {
-            auto Pos = CharacterComponent.Character->GetPosition();
-            auto Rot = CharacterComponent.Character->GetRotation();
+            JPH::Vec3 Pos = CharacterComponent.Character->GetPosition();
+            JPH::Quat Rot = CharacterComponent.Character->GetRotation();
         
-            TransformComponent.SetLocation(glm::vec3(Pos.GetX(), Pos.GetY(), Pos.GetZ()));
-            TransformComponent.SetRotation(glm::quat(Rot.GetW(), Rot.GetX(), Rot.GetY(), Rot.GetZ()));
+            TransformComponent.SetLocation(JoltUtils::FromJPHRVec3(Pos));
+            TransformComponent.SetRotation(JoltUtils::FromJPHQuat(Rot));
             
             Registry.emplace_or_replace<FNeedsTransformUpdate>(Entity);   
         });
@@ -282,19 +325,17 @@ namespace Lumina::Physics
             OnRigidBodyComponentConstructed(Registry, EntityID);
         });
 
-        auto CharacterView = Registry.view<SCharacterComponent>();
+        auto CharacterView = Registry.view<SCharacterPhysicsComponent>();
         
-        CharacterView.each([&] (entt::entity EntityID, SCharacterComponent&)
+        CharacterView.each([&] (entt::entity EntityID, SCharacterPhysicsComponent&)
         {
             OnCharacterComponentConstructed(Registry, EntityID);
         });
-
-        
         
         JoltSystem->OptimizeBroadPhase();
 
 
-        Registry.on_construct<SCharacterComponent>().connect<&FJoltPhysicsScene::OnCharacterComponentConstructed>(this);
+        Registry.on_construct<SCharacterPhysicsComponent>().connect<&FJoltPhysicsScene::OnCharacterComponentConstructed>(this);
         Registry.on_construct<SRigidBodyComponent>().connect<&FJoltPhysicsScene::OnRigidBodyComponentConstructed>(this);
         Registry.on_destroy<SRigidBodyComponent>().connect<&FJoltPhysicsScene::OnRigidBodyComponentDestroyed>(this);
     }
@@ -303,7 +344,7 @@ namespace Lumina::Physics
     {
         entt::registry& Registry = World->GetEntityRegistry();
 
-        Registry.on_construct<SCharacterComponent>().disconnect<&FJoltPhysicsScene::OnCharacterComponentConstructed>(this);
+        Registry.on_construct<SCharacterPhysicsComponent>().disconnect<&FJoltPhysicsScene::OnCharacterComponentConstructed>(this);
 
         
         Registry.on_construct<SRigidBodyComponent>().disconnect<&FJoltPhysicsScene::OnRigidBodyComponentConstructed>(this);
@@ -318,10 +359,11 @@ namespace Lumina::Physics
 
     void FJoltPhysicsScene::OnCharacterComponentConstructed(entt::registry& Registry, entt::entity Entity)
     {
-        SCharacterComponent& CharacterComponent = Registry.get<SCharacterComponent>(Entity);
+        SCharacterPhysicsComponent& CharacterComponent = Registry.get<SCharacterPhysicsComponent>(Entity);
         STransformComponent& TransformComponent = Registry.get<STransformComponent>(Entity);
 
         JPH::Ref<JPH::CharacterVirtualSettings> Settings = Memory::New<JPH::CharacterVirtualSettings>();
+        
         
         JPH::Ref<JPH::Shape> StandingShape = JPH::RotatedTranslatedShapeSettings(
             JPH::Vec3(0, CharacterComponent.HalfHeight, 0),
@@ -338,11 +380,11 @@ namespace Lumina::Physics
         Settings->mSupportingVolume = JPH::Plane(JPH::Vec3::sAxisY(), 0.0f);
 
         JPH::CharacterVirtual* Character = Memory::New<JPH::CharacterVirtual>(Settings,
-            JPH::RVec3(TransformComponent.GetLocation().x, TransformComponent.GetLocation().y, TransformComponent.GetLocation().z),
-            JPH::Quat(TransformComponent.GetRotation().x, TransformComponent.GetRotation().y, TransformComponent.GetRotation().z, TransformComponent.GetRotation().w),
+            JoltUtils::ToJPHRVec3(TransformComponent.GetLocation()),
+            JoltUtils::ToJPHQuat(TransformComponent.GetRotation()),
             0,
             JoltSystem.get());
-
+        
         CharacterComponent.Character = Character;
     }
 
@@ -361,30 +403,29 @@ namespace Lumina::Physics
 
         if (Registry.all_of<SBoxColliderComponent>(EntityID))
         {
-            auto& BC = Registry.get<SBoxColliderComponent>(EntityID);
-            JPH::BoxShapeSettings Settings(JPH::RVec3(BC.HalfExtent.x * TransformComponent.GetScale().x, BC.HalfExtent.y * TransformComponent.GetScale().y, BC.HalfExtent.z * TransformComponent.GetScale().z));
+            SBoxColliderComponent& BC = Registry.get<SBoxColliderComponent>(EntityID);
+            JPH::BoxShapeSettings Settings(JoltUtils::ToJPHVec3(BC.HalfExtent * TransformComponent.GetScale()));
             Settings.SetEmbedded();
             Shape = Settings.Create().Get();
         }
         else if (Registry.all_of<SSphereColliderComponent>(EntityID))
         {
-            auto& SC = Registry.get<SSphereColliderComponent>(EntityID);
+            SSphereColliderComponent& SC = Registry.get<SSphereColliderComponent>(EntityID);
             JPH::SphereShapeSettings Settings(SC.Radius * TransformComponent.MaxScale());
             Settings.SetEmbedded();
             Shape = Settings.Create().Get();
         }
 
-        JPH::ObjectLayer Layer = ToJoltObjectType(RigidBodyComponent.BodyType);
+        JPH::ObjectLayer Layer      = ToJoltObjectType(RigidBodyComponent.BodyType);
         JPH::EMotionType MotionType = ToJoltMotionType(RigidBodyComponent.BodyType);
 
-        glm::quat NormalizedRot = TransformComponent.GetRotation();
-        glm::vec3 Position = TransformComponent.GetLocation();
-        JPH::Quat JoltQuat = JPH::Quat(NormalizedRot.x, NormalizedRot.y, NormalizedRot.z, NormalizedRot.w);
+        glm::quat Rotation = TransformComponent.GetRotation();
+        glm::vec3 Position      = TransformComponent.GetLocation();
 
         JPH::BodyCreationSettings Settings(
             Shape,
-            JPH::Vec3(Position.x, Position.y, Position.z),
-            JoltQuat,
+            JoltUtils::ToJPHRVec3(Position),
+            JoltUtils::ToJPHQuat(Rotation),
             MotionType,
             Layer);
 
