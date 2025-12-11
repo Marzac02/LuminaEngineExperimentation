@@ -17,6 +17,7 @@ namespace Lumina
     
     FSystemContext::~FSystemContext()
     {
+        
     }
 
     void FSystemContext::RegisterWithLua(sol::state& Lua)
@@ -69,8 +70,7 @@ namespace Lumina
         if (entt::meta_type Meta = entt::resolve(HashedString))
         {
             using namespace entt::literals;
-            void* RegistryPointer = &Registry;
-            entt::meta_any NewComponent = Meta.invoke("addcomponent"_hs, {}, (entt::entity)Entity, RegistryPointer);
+            entt::meta_any NewComponent = Meta.invoke("addcomponent"_hs, {}, (entt::entity)Entity, entt::forward_as_meta(Registry));
             void* ComponentType = *NewComponent.try_cast<void*>();
                 
             return Scripting::FScriptingContext::Get().ConvertToSolObjectFromName(FName(ComponentName), Type.lua_state(), ComponentType);

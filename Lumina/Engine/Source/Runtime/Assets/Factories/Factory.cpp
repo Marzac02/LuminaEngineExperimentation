@@ -43,9 +43,17 @@ namespace Lumina
         Package->ExportTable.emplace_back(New);
         
         New->SetFlag(OF_Public);
-        GEngine->GetEngineSubsystem<FAssetRegistry>()->AssetCreated(New);
+        FAssetRegistry::Get().AssetCreated(New);
 
         return New;
+    }
+
+    void CFactory::Import(const FString& ImportFile, const FString& DestinationPath)
+    {
+        TryImport(ImportFile, DestinationPath);
+        
+        CPackage* Package = CPackage::FindPackageByPath(DestinationPath);
+        CPackage::SavePackage(Package, DestinationPath);
     }
 
     bool CFactory::ShowImportDialogue(CFactory* Factory, const FString& RawPath, const FString& DestinationPath)
@@ -55,7 +63,7 @@ namespace Lumina
         {
             Task::AsyncTask(1, 1, [Factory, RawPath, DestinationPath](uint32 Start, uint32 End, uint32 Thread)
             {
-                Factory->TryImport(RawPath, DestinationPath);
+                Factory->Import(RawPath, DestinationPath);
             });
         }
 
@@ -69,7 +77,9 @@ namespace Lumina
         {
             Task::AsyncTask(1, 1, [Factory, Path](uint32 Start, uint32 End, uint32 Thread)
             {
-                Factory->TryCreateNew(Path);    
+                Factory->TryCreateNew(Path);
+                CPackage* Package = CPackage::FindPackageByPath(Path);
+                CPackage::SavePackage(Package, Path);
             });
         }
 

@@ -13,26 +13,28 @@ namespace Lumina
         OF_None                 = 0,
 
         /** Should not be saved */
-        OF_Transient            = 1 << 0,
+        OF_Transient            = BIT(0),
+
+        /** This object is currently a part of the root set */
+        OF_Rooted               = BIT(1),
         
         /** Is this a default subobject of a class? */
-        OF_DefaultObject        = 1 << 1,
+        OF_DefaultObject        = BIT(2),
 
         /** Does this object need to be loaded after creation? */
-        OF_NeedsLoad            = 1 << 2,
+        OF_NeedsLoad            = BIT(3),
 
         /** Does this object need PostLoad called? This will not deserialize the object again. */
-        OF_NeedsPostLoad        = 1 << 3,
+        OF_NeedsPostLoad        = BIT(4),
 
         /** Was this object loaded from a package */
-        OF_WasLoaded            = 1 << 4,
+        OF_WasLoaded            = BIT(5),
 
         /** Object is public outside of it's package (assets and such) */
-        OF_Public               = 1 << 5,
+        OF_Public               = BIT(6),
 
         /** Object has already been marked to be destroyed */
-        OF_MarkedDestroy        = 1 << 6,
-        
+        OF_MarkedDestroy        = BIT(7),
     };
 
     ENUM_CLASS_FLAGS(EObjectFlags);
@@ -47,11 +49,13 @@ namespace Lumina
         }
 
         if (EnumHasAnyFlags(Flags, OF_Transient))       Result += "OF_Transient|";
+        if (EnumHasAnyFlags(Flags, OF_Rooted))          Result += "OF_Rooted|";
         if (EnumHasAnyFlags(Flags, OF_DefaultObject))   Result += "OF_DefaultObject|";
         if (EnumHasAnyFlags(Flags, OF_NeedsLoad))       Result += "OF_NeedsLoad|";
         if (EnumHasAnyFlags(Flags, OF_NeedsLoad))       Result += "OF_NeedsPostLoad|";
         if (EnumHasAnyFlags(Flags, OF_WasLoaded))       Result += "OF_WasLoaded|";
         if (EnumHasAnyFlags(Flags, OF_Public))          Result += "OF_Public|";
+        if (EnumHasAnyFlags(Flags, OF_MarkedDestroy))   Result += "OF_MarkedDestroy|";
 
         if (!Result.empty() && Result.back() == '|') Result.pop_back();
 

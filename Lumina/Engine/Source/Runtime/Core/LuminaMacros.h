@@ -1,5 +1,6 @@
 #pragma once
 
+#define FILE_EXTENSION ".lasset"
 
 #define REGISTER_NAME(num, name) name = num,
 

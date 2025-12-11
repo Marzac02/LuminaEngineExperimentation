@@ -2,6 +2,7 @@
 #include "imgui.h"
 #include "Core/UpdateContext.h"
 #include "Containers/Function.h"
+#include "GUID/GUID.h"
 
 namespace Lumina
 {
@@ -22,7 +23,7 @@ namespace Lumina
         
         virtual void PushModal(const FString& Title, ImVec2 Size, TMoveOnlyFunction<bool(const FUpdateContext&)> DrawFunction) = 0;
 
-        virtual void OpenAssetEditor(CObject* InAsset) = 0;
+        virtual void OpenAssetEditor(const FGuid& AssetGUID) = 0;
 
         virtual void OpenScriptEditor(FStringView ScriptPath) = 0;
 

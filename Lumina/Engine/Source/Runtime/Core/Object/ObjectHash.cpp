@@ -6,141 +6,71 @@
 
 namespace Lumina
 {
-    
     void FObjectHashTables::AddObject(CObjectBase* Object)
     {
         LUMINA_PROFILE_SCOPE();
 
-        FName Name = Object->GetName();
-        if (Name != NAME_None)
-        {
-            FScopeLock Lock(Mutex);
-            
-            FObjectHashBucket& NameHashSet = ObjectNameHash[Name];
-            if (NameHashSet.find(Object) != NameHashSet.end())
-            {
-                LOG_CRITICAL("Object {} already exists in hash! [Double Add]", Name);
-                LUM_ASSERT(0)
-            }
+        const FGuid& ObjectGUID = Object->GetGUID();
+        auto It = ObjectGUIDHash.find(ObjectGUID);
+        LUM_ASSERT(It == ObjectGUIDHash.end())
 
-            NameHashSet.emplace(Object);
-
-            if (Object->IsA(CPackage::StaticClass()))
-            {
-                ObjectPackageHash.insert((CPackage*)Object);
-            }
-
-            if (CPackage* Package = Object->GetPackage())
-            {
-                FObjectHashBucket& PackageHashSet = ObjectPackageHash[Package];
-                if (PackageHashSet.find(Object) != PackageHashSet.end())
-                {
-                    LOG_CRITICAL("Object {} already exists in package hash! [Double Add]", Name);
-                    LUM_ASSERT(0)
-                }
-
-                PackageHashSet.emplace(Object);
-            }
-
-            FObjectHashBucket& ClassHashSet = ObjectClassHash[Object->GetClass()];
-            if (ClassHashSet.find(Object) != ClassHashSet.end())
-            {
-                LOG_CRITICAL("Object {} already exists in class hash! [Double Add]", Name);
-                LUM_ASSERT(0)
-            }
-
-            ClassHashSet.emplace(Object);
-        }
+        ObjectGUIDHash.emplace(ObjectGUID, Object);
+        ObjectClassBucket[Object->GetClass()].emplace(Object);
     }
 
     void FObjectHashTables::RemoveObject(CObjectBase* Object)
     {
         LUMINA_PROFILE_SCOPE();
 
-        FName Name = Object->GetName();
-        if (Name != NAME_None)
-        {
-            FScopeLock Lock(Mutex);
-            
-            LUM_ASSERT(ObjectNameHash.find(Name) != ObjectNameHash.end())
-            
-            FObjectHashBucket& NameHashSet = ObjectNameHash.at(Name);
-            NameHashSet.erase(Object);
-            if (NameHashSet.empty())
-            {
-                ObjectNameHash.erase(Name);
-            }
+        const FGuid& ObjectGUID = Object->GetGUID();
+        auto It = ObjectGUIDHash.find(ObjectGUID);
+        LUM_ASSERT(It != ObjectGUIDHash.end())
 
-            if (CPackage* Package = Object->GetPackage())
-            {
-                LUM_ASSERT(ObjectPackageHash.find(Package) != ObjectPackageHash.end())
-                FObjectHashBucket& PackageHashSet = ObjectPackageHash[Package];
-                if (PackageHashSet.find(Object) == PackageHashSet.end())
-                {
-                    LOG_CRITICAL("Object {} does not exist in package hash {}! [Hash Failure]", Name, Package->GetName());
-                    LUM_ASSERT(0)
-                }
-
-                PackageHashSet.erase(Object);
-            }
-            
-            LUM_ASSERT(ObjectClassHash.find(Object->GetClass()) != ObjectClassHash.end())
-            FObjectHashBucket& ClassHashSet = ObjectClassHash[Object->GetClass()];
-            if (ClassHashSet.find(Object) == ClassHashSet.end())
-            {
-                LOG_CRITICAL("Object {} does not exist in class hash {}! [Hash Failure]", Name, Object->GetClass()->GetName());
-                LUM_ASSERT(0)
-            }
-
-            ClassHashSet.erase(Object);
-        }
+        ObjectGUIDHash.erase(It);
+        ObjectClassBucket[Object->GetClass()].erase(Object);
     }
 
-    CObjectBase* FObjectHashTables::FindObject(CClass* ObjectClass, CPackage* Package, const FName& ObjectName, bool bExactClass)
+    CObjectBase* FObjectHashTables::FindObject(const FGuid& GUID)
     {
         LUMINA_PROFILE_SCOPE();
         FScopeLock Lock(Mutex);
-    
-        FObjectHashBucket* Bucket = nullptr;
-    
-        if (Package != nullptr)
+
+        auto It = ObjectGUIDHash.find(GUID);
+        if (It == ObjectGUIDHash.end())
         {
-            LUM_ASSERT(ObjectPackageHash.find(Package) != ObjectPackageHash.end())
-            Bucket = &ObjectPackageHash[Package];
+            return nullptr;
         }
-        else
+
+        return It->second;
+    }
+
+    CObjectBase* FObjectHashTables::FindObject(const FName& Name, CClass* Class)
+    {
+        LUMINA_PROFILE_SCOPE();
+        FScopeLock Lock(Mutex);
+
+        auto It = ObjectClassBucket.find(Class);
+        if (It == ObjectClassBucket.end())
         {
-            Bucket = &ObjectNameHash[ObjectName];
+            return nullptr;
         }
-    
-        for (CObjectBase* Object : *Bucket)
+
+        for (CObjectBase* Object : It->second)
         {
-            if (Package != nullptr && Object->GetName() != ObjectName)
-            {
-                continue;
-            }
-            
-            if (Package == nullptr && Object->GetPackage() != nullptr)
-            {
-                continue;
-            }
-            
-            if (ObjectClass == nullptr || (bExactClass ? Object->GetClass() == ObjectClass : Object->IsA(ObjectClass)))
+            if (Object->GetName() == Name)
             {
                 return Object;
             }
         }
-    
+
         return nullptr;
     }
-    
+
 
     void FObjectHashTables::Clear()
     {
         FScopeLock Lock(Mutex);
-        
-        ObjectNameHash.clear();
-        ObjectPackageHash.clear();
-        ObjectClassHash.clear();
+
+        ObjectGUIDHash.clear();
     }
 }

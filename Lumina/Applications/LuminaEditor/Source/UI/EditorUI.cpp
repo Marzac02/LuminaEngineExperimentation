@@ -105,7 +105,7 @@ namespace Lumina
         EditorWindowClass.ParentViewportId = 0; // Top level window
         EditorWindowClass.DockingAlwaysTabBar = true;
 
-        CWorld* TemporaryWorld = NewObject<CWorld>(nullptr, NAME_None, OF_Transient);
+        CWorld* TemporaryWorld = NewObject<CWorld>(OF_Transient);
         WorldEditorTool = CreateTool<FWorldEditorTool>(this, TemporaryWorld);
         
         (void)WorldEditorTool->GetOnPreviewStartRequestedDelegate().AddLambda([this]
@@ -427,389 +427,7 @@ namespace Lumina
 
         if (bShowObjectDebug)
         {
-            // State management
-            static FString SearchFilter;
-            static FString ClassFilter;
-            static bool bSortByName = true;
-            static bool bShowOnlyActive = false;
-            static int SelectedObjectIndex = -1;
-            static FString SelectedPackage;
-            static char SearchBuffer[256] = "";
-            static char ClassFilterBuffer[256] = "";
-            
-            ImGui::SetNextWindowSize(ImVec2(1200.0f, 800.0f), ImGuiCond_FirstUseEver);
-            
-            // Custom styling
-            ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(12.0f, 12.0f));
-            ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(8.0f, 6.0f));
-            ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(8.0f, 8.0f));
-            ImGui::PushStyleColor(ImGuiCol_Header, ImVec4(0.26f, 0.59f, 0.98f, 0.25f));
-            ImGui::PushStyleColor(ImGuiCol_HeaderHovered, ImVec4(0.26f, 0.59f, 0.98f, 0.35f));
-            ImGui::PushStyleColor(ImGuiCol_HeaderActive, ImVec4(0.26f, 0.59f, 0.98f, 0.45f));
-            
-            FString TitleText = "Object Browser";
-            
-            if (ImGui::Begin(TitleText.c_str(), (bool*)&bShowObjectDebug, ImGuiWindowFlags_MenuBar))
-            {
-                uint32 TotalObjects = GObjectArray.GetNumAliveObjects();
-                
-                // Menu Bar
-                if (ImGui::BeginMenuBar())
-                {
-                    if (ImGui::BeginMenu("View"))
-                    {
-                        ImGui::MenuItem("Sort by Name", nullptr, &bSortByName);
-                        ImGui::MenuItem("Show Only Active", nullptr, &bShowOnlyActive);
-                        ImGui::EndMenu();
-                    }
-                    
-                    if (ImGui::BeginMenu("Tools"))
-                    {
-                        if (ImGui::MenuItem("Clear Filters"))
-                        {
-                            SearchBuffer[0] = '\0';
-                            ClassFilterBuffer[0] = '\0';
-                            SearchFilter = "";
-                            ClassFilter = "";
-                        }
-                        if (ImGui::MenuItem("Collapse All Packages"))
-                        {
-                            // Reset selection state
-                            SelectedPackage = "";
-                        }
-                        ImGui::EndMenu();
-                    }
-                    ImGui::EndMenuBar();
-                }
-                
-                // Top stats bar with gradient background
-                ImGui::PushStyleColor(ImGuiCol_ChildBg, ImVec4(0.12f, 0.14f, 0.18f, 1.0f));
-                ImGui::BeginChild("##StatsBar", ImVec2(0, 70.0f), true, ImGuiWindowFlags_NoScrollbar);
-                {
-                    ImGui::PushFont(ImGui::GetIO().Fonts->Fonts[0]); // Assume larger font
-                    
-                    // Stats display
-                    ImGui::Columns(3, nullptr, false);
-                    
-                    ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.4f, 0.8f, 1.0f, 1.0f));
-                    ImGui::TextWrapped("TOTAL OBJECTS");
-                    ImGui::PopStyleColor();
-                    ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 1.0f, 1.0f, 1.0f));
-                    ImGui::Text("%d", TotalObjects);
-                    ImGui::PopStyleColor();
-                    
-                    ImGui::NextColumn();
-                    
-                    ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.4f, 1.0f, 0.6f, 1.0f));
-                    ImGui::TextWrapped("PACKAGES");
-                    ImGui::PopStyleColor();
-                    
-                    // Count packages (will calculate below)
-                    static int PackageCount = 0;
-                    ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 1.0f, 1.0f, 1.0f));
-                    ImGui::Text("%d", PackageCount);
-                    ImGui::PopStyleColor();
-                    
-                    ImGui::NextColumn();
-                    
-                    ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 0.8f, 0.4f, 1.0f));
-                    ImGui::TextWrapped("FILTERED");
-                    ImGui::PopStyleColor();
-                    
-                    static int FilteredCount = 0;
-                    ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 1.0f, 1.0f, 1.0f));
-                    ImGui::Text("%d", FilteredCount);
-                    ImGui::PopStyleColor();
-                    
-                    ImGui::Columns(1);
-                    ImGui::PopFont();
-                }
-                ImGui::EndChild();
-                ImGui::PopStyleColor();
-                
-                ImGui::Spacing();
-                
-                // Filter panel
-                ImGui::PushStyleColor(ImGuiCol_ChildBg, ImVec4(0.10f, 0.12f, 0.15f, 1.0f));
-                ImGui::BeginChild("##FilterPanel", ImVec2(0, 90.0f), true, ImGuiWindowFlags_NoScrollbar);
-                {
-                    ImGui::Text("FILTERS");
-                    ImGui::Separator();
-                    
-                    ImGui::Columns(2, nullptr, false);
-                    
-                    // Search filter
-                    ImGui::SetNextItemWidth(-1);
-                    if (ImGui::InputTextWithHint("##Search", "Search objects...", SearchBuffer, IM_ARRAYSIZE(SearchBuffer)))
-                    {
-                        SearchFilter = SearchBuffer;
-                    }
-                    
-                    ImGui::NextColumn();
-                    
-                    // Class filter
-                    ImGui::SetNextItemWidth(-1);
-                    if (ImGui::InputTextWithHint("##ClassFilter", "Filter by class...", ClassFilterBuffer, IM_ARRAYSIZE(ClassFilterBuffer)))
-                    {
-                        ClassFilter = ClassFilterBuffer;
-                    }
-                    
-                    ImGui::Columns(1);
-                }
-                ImGui::EndChild();
-                ImGui::PopStyleColor();
-                
-                ImGui::Spacing();
-                
-                // Main content area - split view
-                ImGui::BeginChild("##MainContent", ImVec2(0, 0), false);
-                {
-                    // Left panel - Package tree
-                    ImGui::BeginChild("##PackageTree", ImVec2(ImGui::GetContentRegionAvail().x * 0.35f, 0), true);
-                    {
-                        ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.9f, 0.9f, 0.9f, 1.0f));
-                        ImGui::Text("PACKAGES");
-                        ImGui::PopStyleColor();
-                        ImGui::Separator();
-                        
-                        // Build package map with filtering
-                        THashMap<FString, TVector<CObject*>> PackageToObjects;
-                        uint32 FilteredCount = 0;
-                        
-                        for (TObjectIterator<CObject> It; It; ++It)
-                        {
-                            CObject* Object = *It;
-                            if (Object == nullptr)
-                            {
-                                continue;
-                            }
-
-                            // Apply filters
-                            FString ObjectName = Object->GetName().ToString();
-                            FString ClassName = Object->GetClass() ? Object->GetClass()->GetName().ToString() : "None";
-                            
-                            bool bPassesFilter = true;
-                            
-                            if (!SearchFilter.empty())
-                            {
-                                if (ObjectName.find(SearchFilter) == FString::npos)
-                                {
-                                    bPassesFilter = false;
-                                }
-                            }
-                            
-                            if (ClassFilter.empty() && bPassesFilter && ClassName.find(ClassFilter) == FString::npos)
-                            {
-                                bPassesFilter = false;
-                            }
-                            
-                            if (bShowOnlyActive && bPassesFilter)
-                            {
-                                // Add your active check logic here
-                            }
-                            
-                            if (bPassesFilter)
-                            {
-                                FString PackageName = Object->GetPackage() ? Object->GetPackage()->GetName().ToString() : "None";
-                                PackageToObjects[PackageName].push_back(Object);
-                                FilteredCount++;
-                            }
-                        }
-                        
-                        for (auto& Pair : PackageToObjects)
-                        {
-                            const FString& PackageName = Pair.first;
-                            TVector<CObject*>& Objects = Pair.second;
-                            
-                            if (bSortByName)
-                            {
-                                eastl::sort(Objects.begin(), Objects.end(), [](CObject* A, CObject* B)
-                                {
-                                    return A->GetName().ToString() < B->GetName().ToString();
-                                });
-                            }
-                            
-                            ImGui::PushStyleColor(ImGuiCol_Header, ImVec4(0.20f, 0.25f, 0.30f, 1.0f));
-                            ImGui::PushStyleColor(ImGuiCol_HeaderHovered, ImVec4(0.25f, 0.35f, 0.45f, 1.0f));
-                            
-                            FString NodeLabel = PackageName + " (" + eastl::to_string(Objects.size()) + ")";
-                            bool bIsSelected = (SelectedPackage == PackageName);
-                            
-                            if (ImGui::Selectable(NodeLabel.c_str(), bIsSelected, ImGuiSelectableFlags_AllowDoubleClick))
-                            {
-                                SelectedPackage = PackageName;
-                            }
-                            
-                            ImGui::PopStyleColor(2);
-                        }
-                    }
-                    ImGui::EndChild();
-                    
-                    ImGui::SameLine();
-                    
-                    // Right panel - Object details
-                    ImGui::BeginChild("##ObjectDetails", ImVec2(0, 0), true);
-                    {
-                        if (!SelectedPackage.empty())
-                        {
-                            ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.9f, 0.9f, 0.9f, 1.0f));
-                            ImGui::Text("OBJECTS IN: %s", SelectedPackage.c_str());
-                            ImGui::PopStyleColor();
-                            ImGui::Separator();
-                            
-                            // Build filtered objects for selected package
-                            THashMap<FString, TVector<CObject*>> PackageToObjects;
-                            
-                            for (TObjectIterator<CObject> It; It; ++It)
-                            {
-                                CObject* Object = *It;
-                                if (Object == nullptr)
-                                {
-                                    continue;
-                                }
-
-                                FString ObjectName = Object->GetName().ToString();
-                                FString ClassName = Object->GetClass() ? Object->GetClass()->GetName().ToString() : "None";
-                                
-                                bool bPassesFilter = true;
-                                
-                                if (!SearchFilter.empty() && ObjectName.find(SearchFilter) == FString::npos)
-                                {
-                                    bPassesFilter = false;
-                                }
-                                
-                                if (ClassFilter.empty() && bPassesFilter && ClassName.find(ClassFilter) == FString::npos)
-                                {
-                                    bPassesFilter = false;
-                                }
-                                
-                                if (bPassesFilter)
-                                {
-                                    FString PackageName = Object->GetPackage() ? Object->GetPackage()->GetName().ToString() : "None";
-                                    if (PackageName == SelectedPackage)
-                                    {
-                                        PackageToObjects[PackageName].push_back(Object);
-                                    }
-                                }
-                            }
-                            
-                            if (PackageToObjects.find(SelectedPackage) != PackageToObjects.end())
-                            {
-                                TVector<CObject*>& Objects = PackageToObjects[SelectedPackage];
-                                
-                                // Advanced table with alternating colors
-                                if (ImGui::BeginTable("##ObjectTable", 4, 
-                                    ImGuiTableFlags_RowBg | 
-                                    ImGuiTableFlags_Borders | 
-                                    ImGuiTableFlags_Resizable | 
-                                    ImGuiTableFlags_ScrollY |
-                                    ImGuiTableFlags_Sortable |
-                                    ImGuiTableFlags_SizingStretchProp))
-                                {
-                                    ImGui::TableSetupColumn("Name", ImGuiTableColumnFlags_DefaultSort | ImGuiTableColumnFlags_WidthStretch, 0.4f);
-                                    ImGui::TableSetupColumn("Class", ImGuiTableColumnFlags_WidthStretch, 0.25f);
-                                    ImGui::TableSetupColumn("Flags", ImGuiTableColumnFlags_WidthStretch, 0.25f);
-                                    ImGui::TableSetupColumn("Address", ImGuiTableColumnFlags_WidthStretch, 0.1f);
-                                    ImGui::TableSetupScrollFreeze(0, 1);
-                                    ImGui::TableHeadersRow();
-                                    
-                                    ImGuiListClipper Clipper;
-                                    Clipper.Begin(Objects.size());
-                                    
-                                    while (Clipper.Step())
-                                    {
-                                        for (int i = Clipper.DisplayStart; i < Clipper.DisplayEnd; i++)
-                                        {
-                                            CObject* Object = Objects[i];
-                                            ImGui::TableNextRow();
-                                            
-                                            bool bIsRowSelected = (SelectedObjectIndex == i);
-                                            
-                                            // Name column
-                                            ImGui::TableSetColumnIndex(0);
-                                            ImGuiSelectableFlags Flags = ImGuiSelectableFlags_SpanAllColumns | ImGuiSelectableFlags_AllowDoubleClick;
-                                            
-                                            if (ImGui::Selectable(Object->GetName().ToString().c_str(), bIsRowSelected, Flags))
-                                            {
-                                                SelectedObjectIndex = i;
-                                                
-                                                if (ImGui::IsMouseDoubleClicked(0))
-                                                {
-                                                    // Double-click action: copy to clipboard or jump to object
-                                                    ImGui::SetClipboardText(Object->GetName().ToString().c_str());
-                                                }
-                                            }
-                                            
-                                            // Context menu
-                                            if (ImGui::BeginPopupContextItem())
-                                            {
-                                                if (ImGui::MenuItem("Copy Name"))
-                                                {
-                                                    ImGui::SetClipboardText(Object->GetName().ToString().c_str());
-                                                }
-                                                if (ImGui::MenuItem("Copy Address"))
-                                                {
-                                                    char Buffer[32];
-                                                    snprintf(Buffer, sizeof(Buffer), "0x%p", Object);
-                                                    ImGui::SetClipboardText(Buffer);
-                                                }
-                                                ImGui::EndPopup();
-                                            }
-                                            
-                                            // Class column
-                                            ImGui::TableSetColumnIndex(1);
-                                            if (Object->GetClass())
-                                            {
-                                                ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.6f, 0.9f, 0.6f, 1.0f));
-                                                ImGui::TextUnformatted(Object->GetClass()->GetName().ToString().c_str());
-                                                ImGui::PopStyleColor();
-                                            }
-                                            else
-                                            {
-                                                ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.5f, 0.5f, 0.5f, 1.0f));
-                                                ImGui::TextUnformatted("None");
-                                                ImGui::PopStyleColor();
-                                            }
-                                            
-                                            // Flags column
-                                            ImGui::TableSetColumnIndex(2);
-                                            FInlineString FlagsStr = ObjectFlagsToString(Object->GetFlags());
-                                            ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.9f, 0.7f, 0.4f, 1.0f));
-                                            ImGui::TextUnformatted(FlagsStr.c_str());
-                                            ImGui::PopStyleColor();
-                                            
-                                            // Address column
-                                            ImGui::TableSetColumnIndex(3);
-                                            ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.6f, 0.6f, 0.6f, 1.0f));
-                                            ImGui::Text("0x%p", Object);
-                                            ImGui::PopStyleColor();
-                                        }
-                                    }
-                                    
-                                    ImGui::EndTable();
-                                }
-                            }
-                        }
-                        else
-                        {
-                            // No package selected
-                            ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.5f, 0.5f, 0.5f, 1.0f));
-                            ImVec2 TextSize = ImGui::CalcTextSize("Select a package to view objects");
-                            ImVec2 WindowSize = ImGui::GetWindowSize();
-                            ImGui::SetCursorPos(ImVec2((WindowSize.x - TextSize.x) * 0.5f, (WindowSize.y - TextSize.y) * 0.5f));
-                            ImGui::Text("Select a package to view objects");
-                            ImGui::PopStyleColor();
-                        }
-                    }
-                    ImGui::EndChild();
-                }
-                ImGui::EndChild();
-            }
-            
-            ImGui::End();
-            
-            ImGui::PopStyleColor(3);
-            ImGui::PopStyleVar(3);
+            DrawObjectList();
         }
 
         if (GEngine->IsCloseRequested())
@@ -953,14 +571,16 @@ namespace Lumina
         Platform::LaunchURL(StringUtils::ToWideString(ScriptPath.data()).c_str());
     }
 
-    void FEditorUI::OpenAssetEditor(CObject* InAsset)
+    void FEditorUI::OpenAssetEditor(const FGuid& AssetGUID)
     {
-        if (InAsset == nullptr)
+        CObject* Asset = LoadObject<CObject>(AssetGUID);
+        
+        if (Asset == nullptr)
         {
             return;
         }
 
-        auto Itr = ActiveAssetTools.find(InAsset);
+        auto Itr = ActiveAssetTools.find(Asset);
         if (Itr != ActiveAssetTools.end())
         {
             const char* Name = Itr->second->GetToolName().c_str();
@@ -968,7 +588,7 @@ namespace Lumina
             return;
         }
 
-        if (WorldEditorTool->GetWorld() == InAsset)
+        if (WorldEditorTool->GetWorld() == Asset)
         {
             const char* Name = WorldEditorTool->GetToolName().c_str();
             ImGui::SetWindowFocus(Name);
@@ -976,30 +596,30 @@ namespace Lumina
         }
         
         FEditorTool* NewTool = nullptr;
-        if (InAsset->IsA<CMaterial>())
+        if (Asset->IsA<CMaterial>())
         {
-            NewTool = CreateTool<FMaterialEditorTool>(this, InAsset);
+            NewTool = CreateTool<FMaterialEditorTool>(this, Asset);
         }
-        else if (InAsset->IsA<CTexture>())
+        else if (Asset->IsA<CTexture>())
         {
-            NewTool = CreateTool<FTextureEditorTool>(this, InAsset);
+            NewTool = CreateTool<FTextureEditorTool>(this, Asset);
         }
-        else if (InAsset->IsA<CStaticMesh>())
+        else if (Asset->IsA<CStaticMesh>())
         {
-            NewTool = CreateTool<FMeshEditorTool>(this, InAsset);
+            NewTool = CreateTool<FMeshEditorTool>(this, Asset);
         }
-        else if (InAsset->IsA<CMaterialInstance>())
+        else if (Asset->IsA<CMaterialInstance>())
         {
-            NewTool = CreateTool<FMaterialInstanceEditorTool>(this, InAsset);
+            NewTool = CreateTool<FMaterialInstanceEditorTool>(this, Asset);
         }
-        else if (InAsset->IsA<CWorld>())
+        else if (Asset->IsA<CWorld>())
         {
-            WorldEditorTool->SetWorld(Cast<CWorld>(InAsset));
+            WorldEditorTool->SetWorld(Cast<CWorld>(Asset));
         }
 
         if (NewTool)
         {
-            ActiveAssetTools.insert_or_assign(InAsset, NewTool);
+            ActiveAssetTools.insert_or_assign(Asset, NewTool);
         }
     }
 
@@ -1354,6 +974,391 @@ namespace Lumina
     void FEditorUI::DestroyGameViewportTool(const FUpdateContext& UpdateContext)
     {
         
+    }
+
+    void FEditorUI::DrawObjectList()
+    {
+        // State management
+        static FString SearchFilter;
+        static FString ClassFilter;
+        static bool bSortByName = true;
+        static bool bShowOnlyActive = false;
+        static int SelectedObjectIndex = -1;
+        static FString SelectedPackage;
+        static char SearchBuffer[256] = "";
+        static char ClassFilterBuffer[256] = "";
+        
+        ImGui::SetNextWindowSize(ImVec2(1200.0f, 800.0f), ImGuiCond_FirstUseEver);
+        
+        // Custom styling
+        ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(12.0f, 12.0f));
+        ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(8.0f, 6.0f));
+        ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(8.0f, 8.0f));
+        ImGui::PushStyleColor(ImGuiCol_Header, ImVec4(0.26f, 0.59f, 0.98f, 0.25f));
+        ImGui::PushStyleColor(ImGuiCol_HeaderHovered, ImVec4(0.26f, 0.59f, 0.98f, 0.35f));
+        ImGui::PushStyleColor(ImGuiCol_HeaderActive, ImVec4(0.26f, 0.59f, 0.98f, 0.45f));
+        
+        FString TitleText = "Object Browser";
+        
+        if (ImGui::Begin(TitleText.c_str(), (bool*)&bShowObjectDebug, ImGuiWindowFlags_MenuBar))
+        {
+            uint32 TotalObjects = GObjectArray.GetNumAliveObjects();
+            
+            // Menu Bar
+            if (ImGui::BeginMenuBar())
+            {
+                if (ImGui::BeginMenu("View"))
+                {
+                    ImGui::MenuItem("Sort by Name", nullptr, &bSortByName);
+                    ImGui::MenuItem("Show Only Active", nullptr, &bShowOnlyActive);
+                    ImGui::EndMenu();
+                }
+                
+                if (ImGui::BeginMenu("Tools"))
+                {
+                    if (ImGui::MenuItem("Clear Filters"))
+                    {
+                        SearchBuffer[0] = '\0';
+                        ClassFilterBuffer[0] = '\0';
+                        SearchFilter = "";
+                        ClassFilter = "";
+                    }
+                    if (ImGui::MenuItem("Collapse All Packages"))
+                    {
+                        // Reset selection state
+                        SelectedPackage = "";
+                    }
+                    ImGui::EndMenu();
+                }
+                ImGui::EndMenuBar();
+            }
+            
+            // Top stats bar with gradient background
+            ImGui::PushStyleColor(ImGuiCol_ChildBg, ImVec4(0.12f, 0.14f, 0.18f, 1.0f));
+            ImGui::BeginChild("##StatsBar", ImVec2(0, 70.0f), true, ImGuiWindowFlags_NoScrollbar);
+            {
+                ImGui::PushFont(ImGui::GetIO().Fonts->Fonts[0]); // Assume larger font
+                
+                // Stats display
+                ImGui::Columns(3, nullptr, false);
+                
+                ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.4f, 0.8f, 1.0f, 1.0f));
+                ImGui::TextWrapped("TOTAL OBJECTS");
+                ImGui::PopStyleColor();
+                ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 1.0f, 1.0f, 1.0f));
+                ImGui::Text("%d", TotalObjects);
+                ImGui::PopStyleColor();
+                
+                ImGui::NextColumn();
+                
+                ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.4f, 1.0f, 0.6f, 1.0f));
+                ImGui::TextWrapped("PACKAGES");
+                ImGui::PopStyleColor();
+                
+                // Count packages (will calculate below)
+                static int PackageCount = 0;
+                ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 1.0f, 1.0f, 1.0f));
+                ImGui::Text("%d", PackageCount);
+                ImGui::PopStyleColor();
+                
+                ImGui::NextColumn();
+                
+                ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 0.8f, 0.4f, 1.0f));
+                ImGui::TextWrapped("FILTERED");
+                ImGui::PopStyleColor();
+                
+                static int FilteredCount = 0;
+                ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 1.0f, 1.0f, 1.0f));
+                ImGui::Text("%d", FilteredCount);
+                ImGui::PopStyleColor();
+                
+                ImGui::Columns(1);
+                ImGui::PopFont();
+            }
+            ImGui::EndChild();
+            ImGui::PopStyleColor();
+            
+            ImGui::Spacing();
+            
+            // Filter panel
+            ImGui::PushStyleColor(ImGuiCol_ChildBg, ImVec4(0.10f, 0.12f, 0.15f, 1.0f));
+            ImGui::BeginChild("##FilterPanel", ImVec2(0, 90.0f), true, ImGuiWindowFlags_NoScrollbar);
+            {
+                ImGui::Text("FILTERS");
+                ImGui::Separator();
+                
+                ImGui::Columns(2, nullptr, false);
+                
+                // Search filter
+                ImGui::SetNextItemWidth(-1);
+                if (ImGui::InputTextWithHint("##Search", "Search objects...", SearchBuffer, IM_ARRAYSIZE(SearchBuffer)))
+                {
+                    SearchFilter = SearchBuffer;
+                }
+                
+                ImGui::NextColumn();
+                
+                // Class filter
+                ImGui::SetNextItemWidth(-1);
+                if (ImGui::InputTextWithHint("##ClassFilter", "Filter by class...", ClassFilterBuffer, IM_ARRAYSIZE(ClassFilterBuffer)))
+                {
+                    ClassFilter = ClassFilterBuffer;
+                }
+                
+                ImGui::Columns(1);
+            }
+            ImGui::EndChild();
+            ImGui::PopStyleColor();
+            
+            ImGui::Spacing();
+            
+            // Main content area - split view
+            ImGui::BeginChild("##MainContent", ImVec2(0, 0), false);
+            {
+                // Left panel - Package tree
+                ImGui::BeginChild("##PackageTree", ImVec2(ImGui::GetContentRegionAvail().x * 0.35f, 0), true);
+                {
+                    ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.9f, 0.9f, 0.9f, 1.0f));
+                    ImGui::Text("PACKAGES");
+                    ImGui::PopStyleColor();
+                    ImGui::Separator();
+                    
+                    // Build package map with filtering
+                    THashMap<FString, TVector<CObject*>> PackageToObjects;
+                    uint32 FilteredCount = 0;
+                    
+                    for (TObjectIterator<CObject> It; It; ++It)
+                    {
+                        CObject* Object = *It;
+                        if (Object == nullptr)
+                        {
+                            continue;
+                        }
+        
+                        // Apply filters
+                        FString ObjectName = Object->GetName().ToString();
+                        FString ClassName = Object->GetClass() ? Object->GetClass()->GetName().ToString() : "None";
+                        
+                        bool bPassesFilter = true;
+                        
+                        if (!SearchFilter.empty())
+                        {
+                            if (ObjectName.find(SearchFilter) == FString::npos)
+                            {
+                                bPassesFilter = false;
+                            }
+                        }
+                        
+                        if (ClassFilter.empty() && bPassesFilter && ClassName.find(ClassFilter) == FString::npos)
+                        {
+                            bPassesFilter = false;
+                        }
+                        
+                        if (bShowOnlyActive && bPassesFilter)
+                        {
+                            // Add your active check logic here
+                        }
+                        
+                        if (bPassesFilter)
+                        {
+                            FString PackageName = Object->GetPackage() ? Object->GetPackage()->GetName().ToString() : "None";
+                            PackageToObjects[PackageName].push_back(Object);
+                            FilteredCount++;
+                        }
+                    }
+                    
+                    for (auto& Pair : PackageToObjects)
+                    {
+                        const FString& PackageName = Pair.first;
+                        TVector<CObject*>& Objects = Pair.second;
+                        
+                        if (bSortByName)
+                        {
+                            eastl::sort(Objects.begin(), Objects.end(), [](CObject* A, CObject* B)
+                            {
+                                return A->GetName().ToString() < B->GetName().ToString();
+                            });
+                        }
+                        
+                        ImGui::PushStyleColor(ImGuiCol_Header, ImVec4(0.20f, 0.25f, 0.30f, 1.0f));
+                        ImGui::PushStyleColor(ImGuiCol_HeaderHovered, ImVec4(0.25f, 0.35f, 0.45f, 1.0f));
+                        
+                        FString NodeLabel = PackageName + " (" + eastl::to_string(Objects.size()) + ")";
+                        bool bIsSelected = (SelectedPackage == PackageName);
+                        
+                        if (ImGui::Selectable(NodeLabel.c_str(), bIsSelected, ImGuiSelectableFlags_AllowDoubleClick))
+                        {
+                            SelectedPackage = PackageName;
+                        }
+                        
+                        ImGui::PopStyleColor(2);
+                    }
+                }
+                ImGui::EndChild();
+                
+                ImGui::SameLine();
+                
+                // Right panel - Object details
+                ImGui::BeginChild("##ObjectDetails", ImVec2(0, 0), true);
+                {
+                    if (!SelectedPackage.empty())
+                    {
+                        ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.9f, 0.9f, 0.9f, 1.0f));
+                        ImGui::Text("OBJECTS IN: %s", SelectedPackage.c_str());
+                        ImGui::PopStyleColor();
+                        ImGui::Separator();
+                        
+                        // Build filtered objects for selected package
+                        THashMap<FString, TVector<CObject*>> PackageToObjects;
+                        
+                        for (TObjectIterator<CObject> It; It; ++It)
+                        {
+                            CObject* Object = *It;
+                            if (Object == nullptr)
+                            {
+                                continue;
+                            }
+        
+                            FString ObjectName = Object->GetName().ToString();
+                            FString ClassName = Object->GetClass() ? Object->GetClass()->GetName().ToString() : "None";
+                            
+                            bool bPassesFilter = true;
+                            
+                            if (!SearchFilter.empty() && ObjectName.find(SearchFilter) == FString::npos)
+                            {
+                                bPassesFilter = false;
+                            }
+                            
+                            if (ClassFilter.empty() && bPassesFilter && ClassName.find(ClassFilter) == FString::npos)
+                            {
+                                bPassesFilter = false;
+                            }
+                            
+                            if (bPassesFilter)
+                            {
+                                FString PackageName = Object->GetPackage() ? Object->GetPackage()->GetName().ToString() : "None";
+                                if (PackageName == SelectedPackage)
+                                {
+                                    PackageToObjects[PackageName].push_back(Object);
+                                }
+                            }
+                        }
+                        
+                        if (PackageToObjects.find(SelectedPackage) != PackageToObjects.end())
+                        {
+                            TVector<CObject*>& Objects = PackageToObjects[SelectedPackage];
+                            
+                            // Advanced table with alternating colors
+                            if (ImGui::BeginTable("##ObjectTable", 4, 
+                                ImGuiTableFlags_RowBg | 
+                                ImGuiTableFlags_Borders | 
+                                ImGuiTableFlags_Resizable | 
+                                ImGuiTableFlags_ScrollY |
+                                ImGuiTableFlags_Sortable |
+                                ImGuiTableFlags_SizingStretchProp))
+                            {
+                                ImGui::TableSetupColumn("Name", ImGuiTableColumnFlags_DefaultSort | ImGuiTableColumnFlags_WidthStretch, 0.20f);
+                                ImGui::TableSetupColumn("Class", ImGuiTableColumnFlags_WidthStretch, 0.20f);
+                                ImGui::TableSetupColumn("Flags", ImGuiTableColumnFlags_WidthStretch, 0.20f);
+                                ImGui::TableSetupColumn("GUID", ImGuiTableColumnFlags_WidthStretch, 0.25f);
+                                ImGui::TableSetupScrollFreeze(0, 1);
+                                ImGui::TableHeadersRow();
+                                
+                                ImGuiListClipper Clipper;
+                                Clipper.Begin((int)Objects.size());
+                                
+                                while (Clipper.Step())
+                                {
+                                    for (int i = Clipper.DisplayStart; i < Clipper.DisplayEnd; i++)
+                                    {
+                                        CObject* Object = Objects[i];
+                                        ImGui::TableNextRow();
+                                        
+                                        bool bIsRowSelected = (SelectedObjectIndex == i);
+                                        
+                                        // Name column
+                                        ImGui::TableSetColumnIndex(0);
+                                        ImGuiSelectableFlags Flags = ImGuiSelectableFlags_SpanAllColumns | ImGuiSelectableFlags_AllowDoubleClick;
+                                        
+                                        if (ImGui::Selectable(Object->GetName().ToString().c_str(), bIsRowSelected, Flags))
+                                        {
+                                            SelectedObjectIndex = i;
+                                            
+                                            if (ImGui::IsMouseDoubleClicked(0))
+                                            {
+                                                // Double-click action: copy to clipboard or jump to object
+                                                ImGui::SetClipboardText(Object->GetName().ToString().c_str());
+                                            }
+                                        }
+                                        
+                                        // Context menu
+                                        if (ImGui::BeginPopupContextItem())
+                                        {
+                                            if (ImGui::MenuItem("Copy Name"))
+                                            {
+                                                ImGui::SetClipboardText(Object->GetName().ToString().c_str());
+                                            }
+                                            if (ImGui::MenuItem("Copy GUID"))
+                                            {
+                                                ImGui::SetClipboardText(Object->GetGUID().ToString().c_str());
+                                            }
+                                            ImGui::EndPopup();
+                                        }
+                                        
+                                        // Class column
+                                        ImGui::TableSetColumnIndex(1);
+                                        if (Object->GetClass())
+                                        {
+                                            ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.6f, 0.9f, 0.6f, 1.0f));
+                                            ImGui::TextUnformatted(Object->GetClass()->GetName().ToString().c_str());
+                                            ImGui::PopStyleColor();
+                                        }
+                                        else
+                                        {
+                                            ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.5f, 0.5f, 0.5f, 1.0f));
+                                            ImGui::TextUnformatted("None");
+                                            ImGui::PopStyleColor();
+                                        }
+                                        
+                                        // Flags column
+                                        ImGui::TableSetColumnIndex(2);
+                                        FInlineString FlagsStr = ObjectFlagsToString(Object->GetFlags());
+                                        ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.9f, 0.7f, 0.4f, 1.0f));
+                                        ImGui::TextUnformatted(FlagsStr.c_str());
+                                        ImGui::PopStyleColor();
+                                        
+                                        // Address column
+                                        ImGui::TableSetColumnIndex(3);
+                                        ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.6f, 0.6f, 0.6f, 1.0f));
+                                        ImGui::TextUnformatted(Object->GetGUID().ToString().c_str());
+                                        ImGui::PopStyleColor();
+                                    }
+                                }
+                                
+                                ImGui::EndTable();
+                            }
+                        }
+                    }
+                    else
+                    {
+                        // No package selected
+                        ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.5f, 0.5f, 0.5f, 1.0f));
+                        ImVec2 TextSize = ImGui::CalcTextSize("Select a package to view objects");
+                        ImVec2 WindowSize = ImGui::GetWindowSize();
+                        ImGui::SetCursorPos(ImVec2((WindowSize.x - TextSize.x) * 0.5f, (WindowSize.y - TextSize.y) * 0.5f));
+                        ImGui::Text("Select a package to view objects");
+                        ImGui::PopStyleColor();
+                    }
+                }
+                ImGui::EndChild();
+            }
+            ImGui::EndChild();
+        }
+        
+        ImGui::End();
+        
+        ImGui::PopStyleColor(3);
+        ImGui::PopStyleVar(3);
     }
 
     void FEditorUI::DrawMemoryDialog()
@@ -2316,7 +2321,7 @@ namespace Lumina
                             FString SandboxProjectDirectory = Paths::GetEngineInstallDirectory() + "/Applications/Sandbox/Sandbox.lproject";
                             GEditorEngine->GetProject().LoadProject(SandboxProjectDirectory);
                             ContentBrowser->RefreshContentBrowser();
-                            GEngine->GetEngineSubsystem<FAssetRegistry>()->RunInitialDiscovery();
+                            FAssetRegistry::Get().RunInitialDiscovery();
                             bShouldClose = true;
                         }
 
@@ -2400,7 +2405,7 @@ namespace Lumina
                     {
                         GEditorEngine->GetProject().LoadProject(Project);
                         ContentBrowser->RefreshContentBrowser();
-                        GEngine->GetEngineSubsystem<FAssetRegistry>()->RunInitialDiscovery();
+                        FAssetRegistry::Get().RunInitialDiscovery();
                         bShouldClose = true;
                     }
                 }
@@ -2569,317 +2574,6 @@ namespace Lumina
     {
         ModalManager.CreateDialogue("Asset Registry", ImVec2(1400, 800), [this](const FUpdateContext& Ctx) -> bool
         {
-            // Static state variables
-            static char searchFilter[256] = "";
-            static int sortMode = 0; // 0=Name, 1=Type, 2=Path, 3=References
-            static bool sortAscending = true;
-            static FAssetData* selectedAsset = nullptr;
-            static int viewMode = 0; // 0=List, 1=Grid
-
-            FAssetRegistry* Registry = GEngine->GetEngineSubsystem<FAssetRegistry>();
-            const auto& AssetsByPath = Registry->GetAssetsByPath();
-
-            // Collect and filter assets
-            struct FAssetDisplay
-            {
-                FAssetData* Asset;
-                FString Path;
-                int32 RefCount;
-            };
-
-            static TVector<FAssetDisplay> filteredAssets;
-            static bool needsRefresh = true;
-
-            if (needsRefresh)
-            {
-                filteredAssets.clear();
-                for (auto& [Path, AssetVec] : AssetsByPath)
-                {
-                    for (auto* Asset : AssetVec)
-                    {
-                        FAssetDisplay display;
-                        display.Asset = Asset;
-                        display.Path = Path;
-                        display.RefCount = Registry->GetReferences(Asset->PackageName).size();
-                        filteredAssets.push_back(display);
-                    }
-                }
-                needsRefresh = false;
-            }
-
-            // Header
-            ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.9f, 0.9f, 0.9f, 1.0f));
-            ImGui::TextColored(ImVec4(0.4f, 0.7f, 1.0f, 1.0f), LE_ICON_DATABASE);
-            ImGui::SameLine();
-            ImGui::Text("Asset Registry Browser");
-            ImGui::PopStyleColor();
-
-            ImGui::SameLine(ImGui::GetWindowWidth() - 180);
-            ImGui::TextColored(ImVec4(0.6f, 0.6f, 0.6f, 1.0f), "%d Assets", (int)filteredAssets.size());
-
-            ImGui::Separator();
-            ImGui::Spacing();
-
-            // Toolbar
-            ImGui::BeginGroup();
-            {
-                // Search bar
-                ImGui::SetNextItemWidth(300);
-                if (ImGui::InputTextWithHint("##search", LE_ICON_BOOK_SEARCH " Search assets...", searchFilter, IM_ARRAYSIZE(searchFilter)))
-                {
-                    needsRefresh = true;
-                }
-
-                ImGui::SameLine();
-
-                // Sort dropdown
-                ImGui::SetNextItemWidth(150);
-                const char* sortItems[] = { "Name", "Type", "Path", "References" };
-                if (ImGui::Combo("##sort", &sortMode, sortItems, IM_ARRAYSIZE(sortItems)))
-                {
-                    // Sort assets
-                    eastl::sort(filteredAssets.begin(), filteredAssets.end(), [](const FAssetDisplay& a, const FAssetDisplay& b)
-                    {
-                        bool result = false;
-                        switch (sortMode)
-                        {
-                            case 0: result = a.Asset->PackageName.ToString() < b.Asset->PackageName.ToString(); break;
-                            case 1: result = a.Asset->AssetClass < b.Asset->AssetClass; break;
-                            case 2: result = a.Path < b.Path; break;
-                            case 3: result = a.RefCount < b.RefCount; break;
-                        }
-                        return sortAscending ? result : !result;
-                    });
-                }
-
-                ImGui::SameLine();
-                if (ImGui::Button(sortAscending ? LE_ICON_ARROW_UP : LE_ICON_ARROW_DOWN))
-                {
-                    sortAscending = !sortAscending;
-                    needsRefresh = true;
-                }
-
-                ImGui::SameLine();
-                ImGui::Separator();
-                ImGui::SameLine();
-
-                // View mode toggle
-                if (ImGui::Button(viewMode == 0 ? LE_ICON_LIST_BOX : LE_ICON_GRID))
-                {
-                    viewMode = (viewMode + 1) % 2;
-                }
-
-                ImGui::SameLine();
-                if (ImGui::Button(LE_ICON_REFRESH " Refresh"))
-                {
-                    needsRefresh = true;
-                }
-            }
-            ImGui::EndGroup();
-
-            ImGui::Spacing();
-
-            // Main content area with splitter
-            static float leftPanelWidth = 800.0f;
-
-            ImGui::BeginChild("LeftPanel", ImVec2(leftPanelWidth, -40), true);
-            {
-                // Column headers
-                ImGui::PushStyleColor(ImGuiCol_Header, ImVec4(0.2f, 0.3f, 0.4f, 1.0f));
-                ImGui::Columns(4, "AssetColumns", true);
-
-                if (ImGui::GetColumnWidth(0) > 10) // First time setup
-                {
-                    ImGui::SetColumnWidth(0, 300);
-                    ImGui::SetColumnWidth(1, 200);
-                    ImGui::SetColumnWidth(2, 200);
-                    ImGui::SetColumnWidth(3, 80);
-                }
-
-                ImGui::Separator();
-                ImGui::Text("Asset Name"); ImGui::NextColumn();
-                ImGui::Text("Type"); ImGui::NextColumn();
-                ImGui::Text("Path"); ImGui::NextColumn();
-                ImGui::Text("Refs"); ImGui::NextColumn();
-                ImGui::Separator();
-
-                // Asset list
-                ImGuiListClipper clipper;
-                clipper.Begin((int)filteredAssets.size());
-
-                while (clipper.Step())
-                {
-                    for (int i = clipper.DisplayStart; i < clipper.DisplayEnd; i++)
-                    {
-                        FAssetDisplay& assetDisplay = filteredAssets[i];
-                        FAssetData* asset = assetDisplay.Asset;
-
-                        // Apply search filter
-                        FString assetName = asset->PackageName.ToString();
-                        if (searchFilter[0] != '\0' &&
-                            assetName.find(searchFilter) == INDEX_NONE &&
-                            assetDisplay.Path.find(searchFilter) == INDEX_NONE)
-                        {
-                            continue;
-                        }
-
-                        ImGui::PushID(i);
-
-                        // Selection
-                        bool isSelected = (selectedAsset == asset);
-                        if (isSelected)
-                        {
-                            ImGui::PushStyleColor(ImGuiCol_Header, ImVec4(0.3f, 0.5f, 0.7f, 0.8f));
-                        }
-
-                        // Asset name with icon
-                        FString className = asset->AssetClass.ToString();
-                        const char* icon = LE_ICON_FILE;
-                        if (ImGui::Selectable((FString(icon) + " " + assetName).c_str(), isSelected, ImGuiSelectableFlags_SpanAllColumns))
-                        {
-                            selectedAsset = asset;
-                        }
-
-                        if (isSelected)
-                        {
-                            ImGui::PopStyleColor();
-                        }
-
-                        ImGui::NextColumn();
-
-                        // Type with color coding
-                        ImVec4 typeColor = ImVec4(0.7f, 0.7f, 0.7f, 1.0f);
-                        ImGui::TextColored(typeColor, "%s", className.c_str());
-                        ImGui::NextColumn();
-
-                        // Path
-                        ImGui::TextColored(ImVec4(0.6f, 0.6f, 0.6f, 1.0f), "%s", assetDisplay.Path.c_str());
-                        ImGui::NextColumn();
-
-                        // Reference count with badge
-                        if (assetDisplay.RefCount > 0)
-                        {
-                            ImGui::TextColored(ImVec4(0.9f, 0.7f, 0.3f, 1.0f), "%d", assetDisplay.RefCount);
-                        }
-                        else
-                        {
-                            ImGui::TextColored(ImVec4(0.5f, 0.5f, 0.5f, 1.0f), "0");
-                        }
-                        ImGui::NextColumn();
-
-                        ImGui::PopID();
-                    }
-                }
-
-                ImGui::Columns(1);
-                ImGui::PopStyleColor();
-            }
-            ImGui::EndChild();
-
-            // Splitter
-            ImGui::SameLine();
-            ImGui::Button("##splitter", ImVec2(4, -40));
-            if (ImGui::IsItemActive())
-            {
-                leftPanelWidth += ImGui::GetIO().MouseDelta.x;
-                leftPanelWidth = ImClamp(leftPanelWidth, 400.0f, 1100.0f);
-            }
-            if (ImGui::IsItemHovered())
-            {
-                ImGui::SetMouseCursor(ImGuiMouseCursor_ResizeEW);
-            }
-
-            ImGui::SameLine();
-
-            // Right panel - Asset details
-            ImGui::BeginChild("RightPanel", ImVec2(0, -40), true);
-            {
-                if (selectedAsset)
-                {
-                    ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.9f, 0.9f, 0.9f, 1.0f));
-                    ImGui::Text(LE_ICON_DETAILS " Asset Details");
-                    ImGui::PopStyleColor();
-                    ImGui::Separator();
-                    ImGui::Spacing();
-
-                    // Asset information
-                    ImGui::TextColored(ImVec4(0.7f, 0.7f, 0.7f, 1.0f), "Name:");
-                    ImGui::SameLine(120);
-                    ImGui::Text("%s", selectedAsset->PackageName.ToString().c_str());
-
-                    ImGui::TextColored(ImVec4(0.7f, 0.7f, 0.7f, 1.0f), "Type:");
-                    ImGui::SameLine(120);
-                    ImGui::Text("%s", selectedAsset->AssetClass.c_str());
-
-                    ImGui::TextColored(ImVec4(0.7f, 0.7f, 0.7f, 1.0f), "Package:");
-                    ImGui::SameLine(120);
-                    ImGui::Text("%s", selectedAsset->PackageName.ToString().c_str());
-
-                    ImGui::Spacing();
-                    ImGui::Separator();
-                    ImGui::Spacing();
-
-                    // References section
-                    const THashSet<FName>& references = Registry->GetReferences(selectedAsset->PackageName);
-
-                    ImGui::TextColored(ImVec4(0.9f, 0.7f, 0.3f, 1.0f), LE_ICON_LINK " References (%d)", references.size());
-                    ImGui::Separator();
-
-                    ImGui::BeginChild("References", ImVec2(0, 0), false);
-                    {
-                        if (!references.empty())
-                        {
-                            for (const FName& refName : references)
-                            {
-                                ImGui::BulletText("%s", refName.ToString().c_str());
-
-                                // Context menu for each reference
-                                if (ImGui::IsItemClicked(ImGuiMouseButton_Right))
-                                {
-                                    ImGui::OpenPopup("RefContext");
-                                }
-                            }
-                        }
-                        else
-                        {
-                            ImGui::TextColored(ImVec4(0.5f, 0.5f, 0.5f, 1.0f), "No references");
-                        }
-                    }
-                    ImGui::EndChild();
-                }
-                else
-                {
-                    // No selection placeholder
-                    ImGui::SetCursorPosY(ImGui::GetWindowHeight() / 2 - 40);
-                    ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.5f, 0.5f, 0.5f, 1.0f));
-
-                    float textWidth = ImGui::CalcTextSize("Select an asset to view details").x;
-                    ImGui::SetCursorPosX((ImGui::GetWindowWidth() - textWidth) / 2);
-                    ImGui::Text(LE_ICON_INFORMATION);
-
-                    ImGui::SetCursorPosX((ImGui::GetWindowWidth() - textWidth) / 2);
-                    ImGui::Text("Select an asset to view details");
-
-                    ImGui::PopStyleColor();
-                }
-            }
-            ImGui::EndChild();
-
-            ImGui::Spacing();
-
-            // Footer buttons
-            if (ImGui::Button("Close", ImVec2(120, 0)))
-            {
-                selectedAsset = nullptr;
-                return true;
-            }
-
-            ImGui::SameLine();
-            if (ImGui::Button("Export List", ImVec2(120, 0)))
-            {
-                // Export functionality could go here
-            }
-
             return false;
         }, false);
     }

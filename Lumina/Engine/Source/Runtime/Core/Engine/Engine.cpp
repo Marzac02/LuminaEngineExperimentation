@@ -25,7 +25,7 @@ namespace Lumina
     LUMINA_API FEngine* GEngine;
 
     // We put this here so we don't need to include render resources in engine.h
-    FRHIViewportRef EngineViewport;
+    static FRHIViewportRef EngineViewport;
 
     
     bool FEngine::Init(FApplication* App)
@@ -52,9 +52,7 @@ namespace Lumina
         ProcessNewlyLoadedCObjects();
         
         FEntityComponentRegistry::Get().RegisterAll();
-        
-        AssetRegistry = EngineSubsystems.AddSubsystem<FAssetRegistry>();
-        AssetManager = EngineSubsystems.AddSubsystem<FAssetManager>();
+
         WorldManager = EngineSubsystems.AddSubsystem<FWorldManager>();
         
         UpdateContext.SubsystemManager = &EngineSubsystems;
@@ -87,8 +85,6 @@ namespace Lumina
         #endif
 
         EngineSubsystems.RemoveSubsystem<FWorldManager>();
-        EngineSubsystems.RemoveSubsystem<FAssetManager>();
-        EngineSubsystems.RemoveSubsystem<FAssetRegistry>();
         
         ShutdownCObjectSystem();
         
@@ -225,7 +221,7 @@ namespace Lumina
 
             }
         }
-
+        
         UpdateContext.MarkFrameEnd(glfwGetTime());
 
         if (bApplicationWantsExit)

@@ -34,9 +34,9 @@ namespace Lumina
         friend CObject* StaticAllocateObject();
 
         DECLARE_CLASS(Lumina, CObject, CObject, "script://lumina", LUMINA_API)
-        DEFINE_DEFAULT_CONSTRUCTOR_CALL(CObject)
+        DEFINE_CLASS_FACTORY(CObject)
 
-        LUMINA_API CObject();
+        LUMINA_API CObject() = default;
         
         /** Internal constructor */
         LUMINA_API CObject(EObjectFlags InFlags)
@@ -44,8 +44,8 @@ namespace Lumina
         {}
 
         /** Internal constructor */
-        LUMINA_API CObject(CClass* InClass, EObjectFlags InFlags, CPackage* Package, const FName& InName)
-            :CObjectBase(InClass, InFlags, Package, InName)
+        LUMINA_API CObject(CClass* InClass, EObjectFlags InFlags, CPackage* Package, const FName& InName, const FGuid& GUID)
+            :CObjectBase(InClass, InFlags, Package, InName, GUID)
         {}
 
         /** Serializes object data. Can be overridden by derived classes. */
@@ -76,7 +76,7 @@ namespace Lumina
         LUMINA_API virtual void PostPropertyChange(FProperty* ChangedProperty) {}
 
         /** Renames this object, optionally changing its package */
-        LUMINA_API virtual bool Rename(const FName& NewName, CPackage* NewPackage = nullptr, bool bCreateRedirector = true);
+        LUMINA_API virtual bool Rename(const FName& NewName, CPackage* NewPackage = nullptr);
         
     private:
 

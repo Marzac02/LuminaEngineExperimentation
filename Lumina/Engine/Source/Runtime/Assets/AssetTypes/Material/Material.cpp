@@ -44,12 +44,12 @@ namespace Lumina
             FRHICommandListRef CommandList = GRenderContext->CreateCommandList(FCommandListInfo::Graphics());
             CommandList->Open();
             
-            Header.DebugName = GetQualifiedName().ToString() + "_VertexShader";
+            Header.DebugName = GetName().ToString() + "_VertexShader";
             Header.Hash = Hash::GetHash64(VertexShaderBinaries.data(), VertexShaderBinaries.size() * sizeof(uint32));
             Header.Binaries = VertexShaderBinaries;
             VertexShader = GRenderContext->CreateVertexShader(Header);
             
-            Header.DebugName = GetQualifiedName().ToString() + "_PixelShader";
+            Header.DebugName = GetName().ToString() + "_PixelShader";
             Header.Hash = Hash::GetHash64(PixelShaderBinaries.data(), PixelShaderBinaries.size() * sizeof(uint32));
             Header.Binaries = PixelShaderBinaries;
             PixelShader = GRenderContext->CreatePixelShader(Header);

@@ -1,8 +1,6 @@
 #include "pch.h"
 #include "Object.h"
 #include "Class.h"
-
-#include "ObjectRedirector.h"
 #include "Core/Reflection/Type/LuminaTypes.h"
 #include "Package/Package.h"
 
@@ -24,13 +22,6 @@ IMPLEMENT_CLASS(Lumina, CObject)
 
 namespace Lumina
 {
-
-    CObject::CObject()
-    {
-        FObjectInitializer* Initializer = FObjectInitializer::Get();
-        Initializer->Object = this;
-    };
-
     void CObject::Serialize(FArchive& Ar)
     {
         CClass* Class = GetClass();
@@ -55,36 +46,10 @@ namespace Lumina
         
     }
 
-    bool CObject::Rename(const FName& NewName, CPackage* NewPackage, bool bCreateRedirector)
+    bool CObject::Rename(const FName& NewName, CPackage* NewPackage)
     {
         FName SafeName = NewName;
-
-
-        bool bShouldCreateRedirector = false;
-        if (HasAnyFlag(OF_Public) && bCreateRedirector)
-        {
-            bool bPackage = GetClass() == CPackage::StaticClass();
-
-            bShouldCreateRedirector = (bPackage == false);
-        }
-
-        FName OldName = GetName();
-        CPackage* OldPackage = GetPackage();
-        
         HandleNameChange(SafeName, NewPackage);
-
-        if (bShouldCreateRedirector)
-        {
-            CObjectRedirector* Redirector = FindObject<CObjectRedirector>(OldPackage, OldName);
-
-            if (Redirector == nullptr)
-            {
-                Redirector = NewObject<CObjectRedirector>(OldPackage, OldName, OF_Public);
-            }
-
-            Redirector->RedirectionObject = this;
-        }
-        
         return true;
     }
 }

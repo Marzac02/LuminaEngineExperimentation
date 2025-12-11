@@ -25,7 +25,7 @@ namespace Lumina
 
     FName FAssetEditorTool::GetToolName() const
     {
-        return Asset->GetPathName();
+        return Asset->GetName();
     }
 
     void FAssetEditorTool::Update(const FUpdateContext& UpdateContext)
@@ -41,17 +41,17 @@ namespace Lumina
     {
         GenerateThumbnailOnLoad();
         
-        FString FullPath = Paths::ResolveVirtualPath(Asset->GetPathName());
+        FString FullPath = Paths::ResolveVirtualPath(Asset->GetPackage()->GetName().ToString());
         Paths::AddPackageExtension(FullPath);
         
         if (CPackage::SavePackage(Asset->GetPackage(), FullPath.c_str()))
         {
-            GetEngineSystem<FAssetRegistry>().AssetSaved(Asset);
-            ImGuiX::Notifications::NotifySuccess("Successfully saved package: \"{0}\"", Asset->GetPathName().c_str());
+            FAssetRegistry::Get().AssetSaved(Asset);
+            ImGuiX::Notifications::NotifySuccess("Successfully saved package: \"{0}\"", Asset->GetName().c_str());
         }
         else
         {
-            ImGuiX::Notifications::NotifyError("Failed to save package: \"{0}\"", Asset->GetPathName().c_str());
+            ImGuiX::Notifications::NotifyError("Failed to save package: \"{0}\"", Asset->GetName().c_str());
         }
     }
 

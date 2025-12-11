@@ -1,9 +1,7 @@
 #include "pch.h"
 
 #include "AssetManager.h"
-
 #include "TaskScheduler.h"
-#include "Core/Math/Hash/Hash.h"
 #include "TaskSystem/TaskSystem.h"
 
 namespace Lumina
@@ -13,23 +11,17 @@ namespace Lumina
         
     }
 
-    FAssetManager::~FAssetManager()
-    {
-    }
 
-    void FAssetManager::Initialize()
+    FAssetManager& FAssetManager::Get()
     {
+        static FAssetManager Instance;
+        return Instance;
     }
-
-    void FAssetManager::Deinitialize()
-    {
-        FlushAsyncLoading();
-    }
-
-    TSharedPtr<FAssetRequest> FAssetManager::LoadAsset(const FString& InAssetPath)
+    
+    TSharedPtr<FAssetRequest> FAssetManager::LoadAsset(const FString& PackagePath, const FGuid& RequestedAsset)
     {
         bool bAlreadyInQueue = false;
-        TSharedPtr<FAssetRequest> ActiveRequest = TryFindActiveRequest(InAssetPath, bAlreadyInQueue);
+        TSharedPtr<FAssetRequest> ActiveRequest = TryFindActiveRequest(PackagePath, RequestedAsset, bAlreadyInQueue);
         
         if (!bAlreadyInQueue)
         {
@@ -60,11 +52,11 @@ namespace Lumina
         }
     }
 
-    TSharedPtr<FAssetRequest> FAssetManager::TryFindActiveRequest(const FString& InAssetPath, bool& bAlreadyInQueue)
+    TSharedPtr<FAssetRequest> FAssetManager::TryFindActiveRequest(const FString& InAssetPath, const FGuid& GUID, bool& bAlreadyInQueue)
     {
         auto It = eastl::find_if(ActiveRequests.begin(), ActiveRequests.end(), [&](const TSharedPtr<FAssetRequest>& Request)
         {
-            return Request->GetAssetPath() == InAssetPath;
+            return Request->GetAssetPath() == InAssetPath && Request->RequestedGUID == GUID;
         });
 
         if (It != ActiveRequests.end())
@@ -74,7 +66,7 @@ namespace Lumina
         }
 
         bAlreadyInQueue = false;
-        auto NewRequest = MakeSharedPtr<FAssetRequest>(InAssetPath);
+        TSharedPtr<FAssetRequest> NewRequest = MakeSharedPtr<FAssetRequest>(InAssetPath, GUID);
         ActiveRequests.emplace(NewRequest);
         return NewRequest;
         

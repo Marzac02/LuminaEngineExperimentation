@@ -9,9 +9,8 @@ namespace Lumina
     static TFixedVector<FObjectInitializer*, 4> InitializerStack;
     static FRecursiveMutex Mutex;
     
-    FObjectInitializer::FObjectInitializer(CObject* Obj, CPackage* InPackage, const FConstructCObjectParams& InParams)
-        : Object(Obj)
-        , Package(InPackage)
+    FObjectInitializer::FObjectInitializer(CPackage* InPackage, const FConstructCObjectParams& InParams)
+        : Package(InPackage)
         , Params(InParams)
     {
         Construct();

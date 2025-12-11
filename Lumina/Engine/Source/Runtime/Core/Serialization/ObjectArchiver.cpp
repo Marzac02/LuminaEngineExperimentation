@@ -12,31 +12,31 @@ namespace Lumina
         {
             if (Obj)
             {
-                FString SavedString(Obj->GetQualifiedName().c_str());
-                InnerArchive << SavedString;
+                FGuid GUID = Obj->GetGUID();
+                InnerArchive << GUID;
             }
             else
             {
-                FString EmptyString;
-                InnerArchive << EmptyString;
+                FGuid GUID = FGuid::Invalid();
+                InnerArchive << GUID;
             }
         }
         else if (IsReading())
         {
-            FString LoadedString;
-            InnerArchive << LoadedString;
+            FGuid GUID;
+            InnerArchive << GUID;
 
-            if (LoadedString.empty())
+            if (!GUID.IsValid())
             {
                 Obj = nullptr;
                 return *this;
             }
 
-            Obj = FindObject<CObject>(nullptr, LoadedString);
+            Obj = FindObject<CObject>(GUID);
 
             if (!Obj && bLoadIfFindFails)
             {
-                Obj = LoadObject<CObject>(nullptr, LoadedString);
+                Obj = LoadObject<CObject>(GUID);
             }   
         }
 
@@ -49,31 +49,33 @@ namespace Lumina
         {
             if (Value.IsValid())
             {
-                FString SavedString(Value.Resolve()->GetQualifiedName().c_str());
-                InnerArchive << SavedString;
+                CObject* ResolvedObject = Value.Resolve();
+                
+                FGuid GUID = ResolvedObject->GetGUID();
+                InnerArchive << GUID;
             }
             else
             {
-                FString EmptyString;
-                InnerArchive << EmptyString;
+                FGuid GUID = FGuid::Invalid();
+                InnerArchive << GUID;
             }
         }
         else if (IsReading())
         {
-            FString LoadedString;
-            InnerArchive << LoadedString;
-
-            if (LoadedString.empty())
+            FGuid GUID;
+            InnerArchive << GUID;
+            
+            if (!GUID.IsValid())
             {
                 Value = nullptr;
                 return *this;
             }
 
-            Value = FindObject<CObject>(nullptr, LoadedString);
+            Value = FindObject<CObject>(GUID);
 
             if (!Value.IsValid() && bLoadIfFindFails)
             {
-                Value = LoadObject<CObject>(nullptr, LoadedString);
+                Value = LoadObject<CObject>(GUID);
             }   
         }
 

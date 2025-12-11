@@ -370,7 +370,7 @@ namespace Lumina::Reflection
         Stream += "\\\n";
         Stream += "public: \\\n";
         Stream += "\tDECLARE_CLASS(" + Namespace + ", " + DisplayName + ", " + Parent + ", \"" + PackageName.c_str() + "\", NO_API" + ") \\\n";
-        Stream += "\tDEFINE_DEFAULT_CONSTRUCTOR_CALL(" + Namespace + "::" + DisplayName + ") \\\n";
+        Stream += "\tDEFINE_CLASS_FACTORY(" + Namespace + "::" + DisplayName + ") \\\n";
         Stream += "\tDECLARE_SERIALIZER(" + Namespace + ", " + DisplayName + ") \\\n";
         Stream += "\n\n";
     }

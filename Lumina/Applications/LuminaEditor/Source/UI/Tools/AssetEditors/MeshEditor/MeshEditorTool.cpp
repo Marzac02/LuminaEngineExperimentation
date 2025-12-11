@@ -122,7 +122,7 @@ void FMeshEditorTool::OnInitialize()
                 const FGeometrySurface& Surface = Resource.GeometrySurfaces[i];
                 ImGui::PushID(static_cast<int>(i));
                 
-                FString headerLabel = "Surface " + eastl::to_string(i) + ": " + Surface.ID;
+                FString headerLabel = "Surface " + eastl::to_string(i) + ": " + Surface.ID.ToString();
                 if (ImGui::CollapsingHeader(headerLabel.c_str(), ImGuiTreeNodeFlags_DefaultOpen))
                 {
                     ImGui::Indent(16.0f);

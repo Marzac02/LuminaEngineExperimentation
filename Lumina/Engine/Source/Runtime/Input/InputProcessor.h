@@ -14,9 +14,7 @@ namespace Lumina
 		// IEventHandler interface
         bool OnEvent(FEvent& Event) override;
 		// End of IEventHandler interface
-
-    	void Reset();
-        
+    	
 		LUMINA_API FORCEINLINE double GetMouseX() const { return MouseX; }
 		LUMINA_API FORCEINLINE double GetMouseY() const { return MouseY; }
 		LUMINA_API FORCEINLINE double GetMouseDeltaX() const { return MouseDeltaX; }
@@ -35,7 +33,11 @@ namespace Lumina
 
 		LUMINA_API void SetCursorMode(int Mode);
 
+    	void EndFrame();
+
     private:
+
+    	int DesiredInputMode = GLFW_CURSOR_NORMAL;
 
         double MouseX = 0.0;
         double MouseY = 0.0;

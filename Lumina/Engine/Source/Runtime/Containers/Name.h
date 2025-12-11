@@ -163,7 +163,10 @@ namespace Lumina
         bool operator==(const FName& Other) const { return ID == Other.ID; }
         bool operator!=(const FName& Other) const { return ID != Other.ID; }
         bool operator<(const FName& Other) const { return ID < Other.ID; }
-        
+        bool operator<=(const FName& Other) const { return ID <= Other.ID; }
+        bool operator>(const FName& Other) const { return ID > Other.ID; }
+        bool operator>=(const FName& Other) const { return ID >= Other.ID; }
+    
         bool operator==(const EName) const { return ID == 0; }
         bool operator!=(const EName) const { return ID != 0; }
         
@@ -173,6 +176,75 @@ namespace Lumina
         const char* operator * () const
         {
             return c_str();
+        }
+
+        FName operator+(const FName& Other) const
+        {
+            return FString(c_str()) + FString(Other.c_str());
+        }
+    
+        FName operator+(const FString& Str) const
+        {
+            return FString(c_str()) + Str;
+        }
+    
+        FName operator+(const char* Str) const
+        {
+            return FString(c_str()) + FString(Str);
+        }
+    
+        FName operator+(char Ch) const
+        {
+            FString Result(c_str());
+            Result += Ch;
+            return Result;
+        }
+    
+        friend FName operator+(const FString& Lhs, const FName& Rhs)
+        {
+            return Lhs + FString(Rhs.c_str());
+        }
+    
+        friend FName operator+(const char* Lhs, const FName& Rhs)
+        {
+            return FString(Lhs) + FString(Rhs.c_str());
+        }
+    
+        friend FName operator+(char Lhs, const FName& Rhs)
+        {
+            FString Result;
+            Result += Lhs;
+            Result += Rhs.c_str();
+            return Result;
+        }
+
+        FName& operator+=(const FName& Other)
+        {
+            FString Combined = FString(c_str()) + FString(Other.c_str());
+            *this = FName(Combined);
+            return *this;
+        }
+    
+        FName& operator+=(const FString& Str)
+        {
+            FString Combined = FString(c_str()) + Str;
+            *this = FName(Combined);
+            return *this;
+        }
+    
+        FName& operator+=(const char* Str)
+        {
+            FString Combined = FString(c_str()) + FString(Str);
+            *this = FName(Combined);
+            return *this;
+        }
+    
+        FName& operator+=(char Ch)
+        {
+            FString Combined = FString(c_str());
+            Combined += Ch;
+            *this = FName(Combined);
+            return *this;
         }
 
     private:

@@ -1,25 +1,25 @@
 #pragma once
 
 #include "Containers/Name.h"
+#include "GUID/GUID.h"
 
 namespace Lumina
 {
     struct FAssetData
     {
-        /** Path of this asset in full form (project:://Package.ObjectName). */
-        FName FullPath;
+        /** Globally unique ID for this asset */
+        FGuid AssetGUID;
 
-        /** Name of the package owning this asset (project://package) */
-        FName PackageName;
+        /** Path of this asset on disk */
+        FString FilePath;
 
         /** Name of the asset without its package */
         FName AssetName;
-
-        /** Path of the asset's class (script://lumina.CStaticMesh) */
-        FName AssetClass;
-
-
-        LUMINA_API bool IsRedirector() const;
         
+        /** Name of the package owning this asset */
+        FName PackageName;
+
+        /** Path of the asset's class */
+        FName AssetClass;
     };
 }

@@ -26,53 +26,59 @@ namespace Lumina
     template<typename T>
     concept IsACObject = std::is_base_of_v<CObject, T>;
 
-    LUMINA_API FName MakeUniqueObjectName(CClass* Class, CPackage* Package, const FName& InBaseName = NAME_None);
-    LUMINA_API CObject* StaticAllocateObject(FConstructCObjectParams& Params);
+    LUMINA_API CObject* StaticAllocateObject(const FConstructCObjectParams& Params);
 
-    LUMINA_API CObject* FindObjectFast(CClass* InClass, CPackage* Package, const FName& Name, bool bExactClass = false);
-    LUMINA_API CObject* StaticLoadObject(CClass* InClass, CPackage* Package, const FName& Name, const FName& FileName = NAME_None);
-    
-    LUMINA_API FString GetPackageFromQualifiedObjectName(const FString& FullyQualifiedName);
-    LUMINA_API FString GetObjectNameFromQualifiedName(const FString& FullyQualifiedName);
-    LUMINA_API FString RemoveNumberSuffixFromObject(const FString& ObjectName);
-
-    LUMINA_API FName MakeFullyQualifiedObjectName(const CPackage* Package, const FName& ObjectName);
-    LUMINA_API void ResolveObjectName(FName& Name);
+    LUMINA_API CObject* FindObjectImpl(const FGuid& ObjectGUID);
+    LUMINA_API CObject* FindObjectImpl(const FName& Name, CClass* Class);
+    LUMINA_API CObject* StaticLoadObject(CClass* Class, const FGuid& GUID);
 
     LUMINA_API bool IsValid(const CObjectBase* Obj);
     LUMINA_API bool IsValid(CObjectBase* Obj);
     
     template<IsACObject T>
-    T* FindObject(CPackage* Package, const FName& Name, bool bExactClass = false)
+    T* FindObject(const FGuid& GUID)
     {
-        return (T*)FindObjectFast(T::StaticClass(), Package, Name, bExactClass);
-    }
-    
-    template<IsACObject T>
-    T* LoadObject(CPackage* Package, const FName& Name, const FName& Filename = NAME_None)
-    {
-        return (T*)StaticLoadObject(T::StaticClass(), Package, Name, Filename);
+        return static_cast<T*>(FindObjectImpl(GUID));
     }
 
     template<IsACObject T>
-    T* LoadObject(const FName& Name, const FName& Filename = NAME_None)
+    T* FindObject(const FName& Name)
     {
-        return (T*)StaticLoadObject(T::StaticClass(), nullptr, Name, Filename);
-    }
-    
-    LUMINA_API CObject* NewObject(CClass* InClass, const CPackage* Package = nullptr, const FName& Name = NAME_None, EObjectFlags Flags = OF_None);
-    LUMINA_API void GetObjectsWithPackage(CPackage* Package, TVector<TObjectPtr<CObject>>& OutObjects);
-    
-    template<IsACObject T>
-    T* NewObject(CPackage* Package = nullptr, FName Name = NAME_None, EObjectFlags Flags = OF_None)
-    {
-        return static_cast<T*>(NewObject(T::StaticClass(), Package, Name, Flags));
+        return static_cast<T*>(FindObjectImpl(Name, T::StaticClass()));
     }
 
     template<IsACObject T>
-    T* NewObject(CClass* InClass, CPackage* Package = nullptr, FName Name = NAME_None, EObjectFlags Flags = OF_None)
+    T* FindObject(CClass& Class, const FName& Name)
     {
-        return static_cast<T*>(NewObject(InClass, Package, Name, Flags));
+        return static_cast<T*>(FindObjectImpl(Name, &Class));
+    }
+
+    template<IsACObject T>
+    T* LoadObject(const FGuid& GUID)
+    {
+        return (T*)StaticLoadObject(T::StaticClass(), GUID);
+    }
+    
+    LUMINA_API CObject* NewObject(CClass* InClass, CPackage* Package = nullptr, const FName& Name = NAME_None, const FGuid& GUID = FGuid::New(), EObjectFlags Flags = OF_None);
+    LUMINA_API void GetObjectsWithPackage(const CPackage* Package, TVector<CObject*>& OutObjects);
+
+
+    template<IsACObject T>
+    T* NewObject(EObjectFlags Flags)
+    {
+        return static_cast<T*>(NewObject(T::StaticClass(), nullptr, NAME_None, FGuid::New(), Flags));
+    }
+    
+    template<IsACObject T>
+    T* NewObject(CPackage* Package = nullptr, const FName& Name = NAME_None, const FGuid& GUID = FGuid::New(), EObjectFlags Flags = OF_None)
+    {
+        return static_cast<T*>(NewObject(T::StaticClass(), Package, Name, GUID, Flags));
+    }
+
+    template<IsACObject T>
+    T* NewObject(CClass* InClass, CPackage* Package = nullptr, const FName& Name = NAME_None, const FGuid& GUID = FGuid::New(), EObjectFlags Flags = OF_None)
+    {
+        return static_cast<T*>(NewObject(InClass, Package, Name, GUID, Flags));
     }
 
     template<IsACObject T>

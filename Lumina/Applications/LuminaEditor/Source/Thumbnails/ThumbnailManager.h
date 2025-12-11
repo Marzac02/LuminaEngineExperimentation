@@ -2,7 +2,6 @@
 #include "Core/Object/ObjectMacros.h"
 #include "Core/Object/Object.h"
 #include "Core/Object/ObjectHandleTyped.h"
-#include "Core/Threading/Atomic.h"
 #include "ThumbnailManager.generated.h"
 
 namespace Lumina

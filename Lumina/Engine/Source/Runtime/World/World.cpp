@@ -389,7 +389,7 @@ namespace Lumina
         FMemoryReader Reader(Data);
         FObjectProxyArchiver ReaderProxy(Reader, true);
         
-        CWorld* PIEWorld = NewObject<CWorld>(nullptr, NAME_None, OF_Transient);
+        CWorld* PIEWorld = NewObject<CWorld>(OF_Transient);
         PIEWorld->InitializeWorld();
 
         

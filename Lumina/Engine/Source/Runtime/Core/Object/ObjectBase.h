@@ -21,8 +21,11 @@ namespace Lumina
         LUMINA_API CObjectBase();
         LUMINA_API virtual ~CObjectBase();
         
+        LUMINA_API virtual void ConstructInternal(const FObjectInitializer& OI);
+        
         LUMINA_API CObjectBase(EObjectFlags InFlags);
-        LUMINA_API CObjectBase(CClass* InClass, EObjectFlags InFlags, CPackage* Package, FName InName);
+        LUMINA_API CObjectBase(CClass* InClass, EObjectFlags InFlags, CPackage* Package, FName InName, const FGuid& GUID);
+
         
         LUMINA_API void BeginRegister();
         LUMINA_API void FinishRegister(CClass* InClass, const TCHAR* InName);
@@ -73,6 +76,12 @@ namespace Lumina
             return NamePrivate;
         }
 
+        /** Get the internal globally unique ID for this CObject */
+        const FGuid& GetGUID() const
+        {
+            return GUIDPrivate;
+        }
+
         /** Get the internal package this object came from (script, plugin, package, etc.). */
         CPackage* GetPackage() const
         {
@@ -84,13 +93,6 @@ namespace Lumina
         {
             return LoaderIndex;
         }
-
-        LUMINA_API void GetPath(FString& OutPath) const;
-        
-        LUMINA_API FString GetPathName() const;
-
-        /** Returns the name using this objects path name (package). (project://package.thisobject) */
-        LUMINA_API FName GetQualifiedName() const;
     
     private:
         
@@ -133,11 +135,14 @@ namespace Lumina
         /** Class this object belongs to */
         CClass*                 ClassPrivate = nullptr;
 
+        /** Package to represent on disk */
+        CPackage*               PackagePrivate = nullptr;
+        
         /** Logical name of this object. */
         FName                   NamePrivate;
 
-        /** Package to represent on disk */
-        CPackage*               PackagePrivate = nullptr;
+        /** Globally unique identifier for this object */
+        FGuid                   GUIDPrivate;
         
         /** Internal index into the global object array. */
         int32                   InternalIndex = -1;

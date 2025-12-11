@@ -114,27 +114,6 @@ public: \
         return StaticName; \
     } \
     inline static const TCHAR* StaticPackage() { return TEXT(TPackage); } \
-    inline void* operator new(const size_t InSize, EInternal InMem, Lumina::FName InName = NAME_None, Lumina::EObjectFlags InSetFlags = Lumina::OF_None) \
-    { \
-        Lumina::FConstructCObjectParams Params(StaticClass()); \
-        Params.Name = InName; \
-        Params.Flags = InSetFlags; \
-        Params.Package = StaticPackage(); \
-        return Lumina::StaticAllocateObject(Params); \
-    } \
-    inline void* operator new(const size_t InSize, EInternal* InMem) \
-    { \
-        return (void*)InMem; \
-    } \
-    /* Eliminate C4291 warning */ \
-    inline void operator delete(void* InMem) \
-    { \
-        ::operator delete(InMem); \
-    } \
-    inline void operator delete(void* InMem, EInternal* InMemTag) \
-    { \
-        ::operator delete(InMem); \
-    } \
 
 #define DECLARE_SERIALIZER(TNamespace, TClass) \
     public: \
@@ -145,8 +124,13 @@ public: \
     private:
 
 
-#define DEFINE_DEFAULT_CONSTRUCTOR_CALL(TClass) \
-    static void __DefaultConstructor(const Lumina::FObjectInitializer& OI) { new ((EInternal*)OI.GetObj())TClass; }
+#define DEFINE_CLASS_FACTORY(TClass) \
+    static CObject* __CreateInstance(void* Memory, const FObjectInitializer& OI) \
+    { \
+        TClass* NewInstance = new (Memory) TClass(); \
+        NewInstance->ConstructInternal(OI); \
+        return NewInstance; \
+    }
 
 #define IMPLEMENT_CLASS(TNamespace, TClass) \
     Lumina::FClassRegistrationInfo CONCAT4(Registration_Info_CClass_, TNamespace, _, TClass); \
@@ -161,7 +145,7 @@ public: \
                 sizeof(TNamespace::TClass), \
                 alignof(TNamespace::TClass), \
                 &TNamespace::TClass::Super::StaticClass, \
-                (Lumina::CClass::ClassConstructorType)Lumina::InternalConstructor<TNamespace::TClass>); \
+                &TNamespace::TClass::__CreateInstance); \
         } \
         return CONCAT4(Registration_Info_CClass_, TNamespace, _, TClass).InnerSingleton; \
     }

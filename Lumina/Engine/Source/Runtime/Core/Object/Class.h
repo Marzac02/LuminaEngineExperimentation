@@ -24,13 +24,13 @@ namespace Lumina
     public:
 
         DECLARE_CLASS(Lumina, CField, CObject, "script://lumina", LUMINA_API)
-        DEFINE_DEFAULT_CONSTRUCTOR_CALL(CField)
+        DEFINE_CLASS_FACTORY(CField)
         
         CField() = default;
         
         
         CField(CPackage* Package, const FName& InName, uint32 InSize, uint32 InAlignment, EObjectFlags InFlags)
-            : CObject(nullptr, InFlags, Package, InName)
+            : CObject(nullptr, InFlags, Package, InName, FGuid::New())
             , Size(InSize)
             , Alignment(InAlignment)
         {}
@@ -57,7 +57,7 @@ namespace Lumina
     public:
         
         DECLARE_CLASS(Lumina, CEnum, CField, "script://lumina", LUMINA_API)
-        DEFINE_DEFAULT_CONSTRUCTOR_CALL(CEnum)
+        DEFINE_CLASS_FACTORY(CEnum)
 
         CEnum()
         {}
@@ -85,7 +85,7 @@ namespace Lumina
     {
 
         DECLARE_CLASS(Lumina, CStruct, CField, "script://lumina", LUMINA_API)
-        DEFINE_DEFAULT_CONSTRUCTOR_CALL(CStruct)
+        DEFINE_CLASS_FACTORY(CStruct)
 
         CStruct() = default;
 
@@ -161,37 +161,28 @@ namespace Lumina
     public:
 
         DECLARE_CLASS(Lumina, CClass, CStruct, "script://lumina", LUMINA_API)
-        DEFINE_DEFAULT_CONSTRUCTOR_CALL(CClass)
+        DEFINE_CLASS_FACTORY(CClass)
 
-        typedef void (*ClassConstructorType) (const FObjectInitializer&);
+        using FactoryFunctionType = CObject*(*)(void*, const FObjectInitializer&);
         
-        ClassConstructorType ClassConstructor;
+
+        FactoryFunctionType FactoryFunction;
         
         CClass() = default;
 
         // Begin Internal Use Only Constructors 
-        CClass(CPackage* Package, FName InName, uint32 InSize, uint32 InAlignment, EObjectFlags InFlags, ClassConstructorType InConstructor)
+        CClass(CPackage* Package, const FName& InName, uint32 InSize, uint32 InAlignment, EObjectFlags InFlags, FactoryFunctionType InFactory)
             : CStruct(Package, InName, InSize, InAlignment, InFlags)
-            , ClassConstructor(InConstructor)
+            , FactoryFunction(InFactory)
         {}
         //~ End Internal Use Only Constructors
 
-        CClass* GetSuperClass() const
-        {
-            return (CClass*)GetSuperStruct();
-        }
+
+        LUMINA_API CObject* CreateInstance(void* Memory, const FObjectInitializer& Initializer) const;
         
-
-        LUMINA_API CObject* GetDefaultObject() const
-        {
-            if (ClassDefaultObject == nullptr)
-            {
-                CClass* MutableThis = const_cast<CClass*>(this);
-                MutableThis->CreateDefaultObject();
-            }
-
-            return ClassDefaultObject;
-        }
+        LUMINA_API CClass* GetSuperClass() const;
+        
+        LUMINA_API CObject* GetDefaultObject() const;
 
         template<typename T>
         T* GetDefaultObject() const
@@ -219,7 +210,13 @@ namespace Lumina
         T::__DefaultConstructor(IO);
     }
 
-    LUMINA_API void AllocateStaticClass(const TCHAR* Package, const TCHAR* Name, CClass** OutClass, uint32 Size, uint32 Alignment, CClass* (*SuperClassFn)(), CClass::ClassConstructorType InClassConstructor);
+    template<class T>
+    void InternalAllocator(const FObjectInitializer& IO)
+    { 
+        T::__DefaultAllocator(IO);
+    }
+
+    LUMINA_API void AllocateStaticClass(const TCHAR* Package, const TCHAR* Name, CClass** OutClass, uint32 Size, uint32 Alignment, CClass* (*SuperClassFn)(), CClass::FactoryFunctionType FactoryFunc);
     
 
     template<typename Class>

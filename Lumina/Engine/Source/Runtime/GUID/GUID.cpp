@@ -1,232 +1,289 @@
-#include "pch.h"
+#include "PCH.h"
 #include "GUID.h"
 
-#if LE_PLATFORM_WINDOWS
-#include <objbase.h> // For CoCreateGuid and related functions
+#include <algorithm>
+#include <iomanip>
+#include <sstream>
+#include <random>
+    
+#if defined(_WIN32)
+#include <objbase.h>
+#elif defined(__APPLE__)
+#include <CoreFoundation/CFUUID.h>
+#elif defined(__linux__) || defined(__unix__)
+#include <uuid/uuid.h>
 #endif
+    
 
 namespace Lumina
 {
-
-    // converts a single hex char to a number (0 - 15)
-    unsigned char hexDigitToChar(char ch)
+    // Static empty GUID
+    const FGuid& FGuid::Empty() noexcept
     {
-        // 0-9
-        if (ch > 47 && ch < 58)
-            return ch - 48;
-
-        // a-f
-        if (ch > 96 && ch < 103)
-            return ch - 87;
-
-        // A-F
-        if (ch > 64 && ch < 71)
-            return ch - 55;
-
-        return 0;
-    }
-
-    bool isValidHexChar(char ch)
-    {
-        // 0-9
-        if (ch > 47 && ch < 58)
-            return true;
-
-        // a-f
-        if (ch > 96 && ch < 103)
-            return true;
-
-        // A-F
-        if (ch > 64 && ch < 71)
-            return true;
-
-        return false;
-    }
-
-    // converts the two hexadecimal characters to an unsigned char (a byte)
-    unsigned char hexPairToChar(char a, char b)
-    {
-        return hexDigitToChar(a) * 16 + hexDigitToChar(b);
+        static const FGuid Empty;
+        return Empty;
     }
     
+    FGuid::FGuid(const ByteArray& bytes) noexcept
+        : Bytes(bytes)
+    {
+    }
     
-    FGuid::FGuid(const TArray<uint8, 16>& InBytes)
-        :Bytes(InBytes)
+    FGuid::FGuid(ByteArray&& bytes) noexcept
+        : Bytes(std::move(bytes))
     {
     }
-
-    FGuid::FGuid(TArray<uint8, 16>&& InBytes)
-        :Bytes(eastl::move(InBytes))
+    
+    FGuid FGuid::New()
     {
-    }
-
-    FGuid::FGuid(eastl::string_view FromString)
-    {
-        char charOne = '\0';
-        char charTwo = '\0';
-        bool lookingForFirstChar = true;
-        unsigned nextByte = 0;
-
-        for (const char &ch : FromString)
+    #if defined(_WIN32)
+        GUID WinGuid;
+        if (FAILED(CoCreateGuid(&WinGuid)))
         {
-            if (ch == '-')
+            return FGuid();
+        }
+        
+        ByteArray bytes =
+        {
+            static_cast<uint8>((WinGuid.Data1 >> 24) & 0xFF),
+            static_cast<uint8>((WinGuid.Data1 >> 16) & 0xFF),
+            static_cast<uint8>((WinGuid.Data1 >> 8) & 0xFF),
+            static_cast<uint8>(WinGuid.Data1 & 0xFF),
+            
+            static_cast<uint8>((WinGuid.Data2 >> 8) & 0xFF),
+            static_cast<uint8>(WinGuid.Data2 & 0xFF),
+            
+            static_cast<uint8>((WinGuid.Data3 >> 8) & 0xFF),
+            static_cast<uint8>(WinGuid.Data3 & 0xFF),
+            
+            WinGuid.Data4[0], WinGuid.Data4[1], WinGuid.Data4[2], WinGuid.Data4[3],
+            WinGuid.Data4[4], WinGuid.Data4[5], WinGuid.Data4[6], WinGuid.Data4[7]
+        };
+        
+        return FGuid(bytes);
+        
+    #elif defined(__APPLE__)
+        CFUUIDRef uuid = CFUUIDCreate(kCFAllocatorDefault);
+        CFUUIDBytes bytes = CFUUIDGetUUIDBytes(uuid);
+        CFRelease(uuid);
+        
+        ByteArray guidBytes = {
+            bytes.byte0, bytes.byte1, bytes.byte2, bytes.byte3,
+            bytes.byte4, bytes.byte5, bytes.byte6, bytes.byte7,
+            bytes.byte8, bytes.byte9, bytes.byte10, bytes.byte11,
+            bytes.byte12, bytes.byte13, bytes.byte14, bytes.byte15
+        };
+        
+        return FGuid(std::move(guidBytes));
+        
+    #elif defined(__linux__) || defined(__unix__)
+        uuid_t uuid;
+        uuid_generate(uuid);
+        
+        ByteArray bytes;
+        std::copy(std::begin(uuid), std::end(uuid), bytes.begin());
+        
+        return FGuid(std::move(bytes));
+        
+    #else
+        // Fallback to random generation (not cryptographically secure)
+        static std::random_device rd;
+        static std::mt19937_64 gen(rd());
+        static std::uniform_int_distribution<uint64_t> dis;
+        
+        ByteArray bytes;
+        uint64_t* ptr = reinterpret_cast<uint64_t*>(bytes.data());
+        ptr[0] = dis(gen);
+        ptr[1] = dis(gen);
+        
+        // Set version (4) and variant bits
+        bytes[6] = (bytes[6] & 0x0F) | 0x40;
+        bytes[8] = (bytes[8] & 0x3F) | 0x80;
+        
+        return FGuid(std::move(bytes));
+    #endif
+    }
+    
+    FGuid FGuid::NewDeterministic(FStringView seed)
+    {
+        eastl::hash<FStringView> hasher;
+        size_t hash = hasher(seed);
+        
+        ByteArray bytes{};
+        for (size_t i = 0; i < GUID_SIZE; ++i)
+        {
+            bytes[i] = static_cast<uint8_t>((hash >> (i * 8)) & 0xFF);
+        }
+        
+        bytes[6] = (bytes[6] & 0x0F) | 0x50;
+        bytes[8] = (bytes[8] & 0x3F) | 0x80;
+        
+        return FGuid(bytes);
+    }
+    
+    bool FGuid::TryParseInternal(FStringView str, ByteArray& outBytes)
+    {
+        if (str.length() >= 2 && str[0] == '{' && str.back() == '}')
+        {
+            str = str.substr(1, str.length() - 2);
+        }
+        
+        // Expected formats:
+        // XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX (36 chars)
+        // XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX (32 chars)
+        
+        auto isHex = [](char c) {
+            return (c >= '0' && c <= '9') || 
+                   (c >= 'a' && c <= 'f') || 
+                   (c >= 'A' && c <= 'F');
+        };
+        
+        auto hexValue = [](char c) -> uint8_t {
+            if (c >= '0' && c <= '9') return c - '0';
+            if (c >= 'a' && c <= 'f') return c - 'a' + 10;
+            if (c >= 'A' && c <= 'F') return c - 'A' + 10;
+            return 0;
+        };
+        
+        size_t byteIdx = 0;
+        size_t i = 0;
+        char firstNibble = 0;
+        bool hasFirstNibble = false;
+        
+        while (i < str.length() && byteIdx < GUID_SIZE)
+        {
+            char c = str[i++];
+            
+            if (c == '-') continue;
+            
+            if (!isHex(c))
             {
-                continue;
+                return false;
             }
-
-            if (nextByte >= 16 || !isValidHexChar(ch))
+            
+            if (!hasFirstNibble)
             {
-                Invalidate();
-                return;
-            }
-
-            if (lookingForFirstChar)
-            {
-                charOne = ch;
-                lookingForFirstChar = false;
+                firstNibble = c;
+                hasFirstNibble = true;
             }
             else
             {
-                charTwo = ch;
-                auto byte = hexPairToChar(charOne, charTwo);
-                Bytes[nextByte++] = byte;
-                lookingForFirstChar = true;
+                outBytes[byteIdx++] = (hexValue(firstNibble) << 4) | hexValue(c);
+                hasFirstNibble = false;
             }
         }
-
-        // If there were fewer than 16 bytes in the string then guid is bad
-        if (nextByte < 16)
-        {
-            Invalidate();
-            return;
-        }
+        
+        return byteIdx == GUID_SIZE && !hasFirstNibble;
     }
-
-    FGuid::FGuid()
-        :Bytes({0})
+    
+    FGuid FGuid::FromString(FStringView str)
     {
+        ByteArray bytes{};
+        if (TryParseInternal(str, bytes))
+        {
+            return FGuid(bytes);
+        }
+        return FGuid();
     }
-
-    bool FGuid::operator==(const FGuid& other) const
+    
+    TOptional<FGuid> FGuid::TryParse(FStringView str)
+    {
+        ByteArray bytes{};
+        if (TryParseInternal(str, bytes))
+        {
+            return FGuid(std::move(bytes));
+        }
+        return eastl::nullopt;
+    }
+    
+    bool FGuid::operator==(const FGuid& other) const noexcept
     {
         return Bytes == other.Bytes;
     }
-
-    bool FGuid::operator!=(const FGuid& other) const
+    
+    bool FGuid::operator!=(const FGuid& other) const noexcept
     {
-        return !((*this) == other);
+        return Bytes != other.Bytes;
     }
-
-    FString FGuid::ToString() const
+    
+    bool FGuid::operator<(const FGuid& other) const noexcept
     {
-        char one[10], two[6], three[6], four[6], five[14];
-
-        snprintf(one, 10, "%02X%02X%02X%02X", Bytes[0], Bytes[1], Bytes[2], Bytes[3]);
-        snprintf(two, 6, "%02X%02X", Bytes[4], Bytes[5]);
-        snprintf(three, 6, "%02X%02X", Bytes[6], Bytes[7]);
-        snprintf(four, 6, "%02X%02X", Bytes[8], Bytes[9]);
-        snprintf(five, 14, "%02X%02X%02X%02X%02X%02X", Bytes[10], Bytes[11], Bytes[12], Bytes[13], Bytes[14], Bytes[15]);
-
-        const std::string sep("-");
-        std::string out(one);
-
-        out += sep + two;
-        out += sep + three;
-        out += sep + four;
-        out += sep + five;
-
-        return out.c_str();
+        return Bytes < other.Bytes;
     }
-
-    FGuid::operator eastl::basic_string<char>() const
+    
+    bool FGuid::operator<=(const FGuid& other) const noexcept
     {
-        return ToString();
+        return Bytes <= other.Bytes;
     }
-
-    const TArray<uint8, 16>& FGuid::Data() const
+    
+    bool FGuid::operator>(const FGuid& other) const noexcept
     {
-        return Bytes;
+        return Bytes > other.Bytes;
     }
-
-    void FGuid::Swap(FGuid& other)
+    
+    bool FGuid::operator>=(const FGuid& other) const noexcept
+    {
+        return Bytes >= other.Bytes;
+    }
+    
+    FString FGuid::ToString(bool uppercase, bool includeDashes) const
+    {
+        std::ostringstream oss;
+        oss << std::hex << std::setfill('0');
+        
+        if (uppercase)
+        {
+            oss << std::uppercase;
+        }
+        
+        for (size_t i = 0; i < GUID_SIZE; ++i)
+        {
+            if (includeDashes && (i == 4 || i == 6 || i == 8 || i == 10))
+            {
+                oss << '-';
+            }
+            oss << std::setw(2) << static_cast<int>(Bytes[i]);
+        }
+        
+        return oss.str().c_str();
+    }
+    
+    FString FGuid::ToShortString() const
+    {
+        return ToString(false, false);
+    }
+    
+    bool FGuid::IsValid() const noexcept
+    {
+        return *this != Empty();
+    }
+    
+    void FGuid::Invalidate() noexcept
+    {
+        Bytes.fill(0);
+    }
+    
+    void FGuid::Swap(FGuid& other) noexcept
     {
         Bytes.swap(other.Bytes);
     }
-
-    bool FGuid::IsValid() const
+    
+    size_t FGuid::Hash() const noexcept
     {
-        FGuid Empty;
-        return *this != Empty;
+        return Hash::GetHash64(Bytes.data(), Bytes.size());
     }
     
-#if LE_PLATFORM_WINDOWS
-    FGuid FGuid::Generate()
+    std::ostream& operator<<(std::ostream& os, const FGuid& guid)
     {
-        GUID WinGUID;
-        CoCreateGuid(&WinGUID);
-
-        TArray<uint8, 16> bytes =
-        {
-            (uint8)((WinGUID.Data1 >> 24) & 0xFF),
-            (uint8)((WinGUID.Data1 >> 16) & 0xFF),
-            (uint8)((WinGUID.Data1 >> 8) & 0xFF),
-            (uint8)((WinGUID.Data1) & 0xff),
-
-            (uint8)((WinGUID.Data2 >> 8) & 0xFF),
-            (uint8)((WinGUID.Data2) & 0xff),
-
-            (uint8)((WinGUID.Data3 >> 8) & 0xFF),
-            (uint8)((WinGUID.Data3) & 0xFF),
-
-            (uint8)WinGUID.Data4[0],
-            (uint8)WinGUID.Data4[1],
-            (uint8)WinGUID.Data4[2],
-            (uint8)WinGUID.Data4[3],
-            (uint8)WinGUID.Data4[4],
-            (uint8)WinGUID.Data4[5],
-            (uint8)WinGUID.Data4[6],
-            (uint8)WinGUID.Data4[7]
-        };
- 
-        return FGuid{eastl::move(bytes)};
+        os << guid.ToString();
+        return os;
     }
-#endif
-
-    void FGuid::Invalidate()
+    
+    std::istream& operator>>(std::istream& is, FGuid& guid)
     {
-        eastl::fill(Bytes.begin(), Bytes.end(), static_cast<uint8>(0));
-    }
-
-    std::ostream& operator<<(std::ostream& s, const FGuid& guid)
-    {
-        std::ios_base::fmtflags f(s.flags());
-        s << std::hex << std::setfill('0')
-            << std::setw(2) << (int)guid.Bytes[0]
-            << std::setw(2) << (int)guid.Bytes[1]
-            << std::setw(2) << (int)guid.Bytes[2]
-            << std::setw(2) << (int)guid.Bytes[3]
-            << "-"
-            << std::setw(2) << (int)guid.Bytes[4]
-            << std::setw(2) << (int)guid.Bytes[5]
-            << "-"
-            << std::setw(2) << (int)guid.Bytes[6]
-            << std::setw(2) << (int)guid.Bytes[7]
-            << "-"
-            << std::setw(2) << (int)guid.Bytes[8]
-            << std::setw(2) << (int)guid.Bytes[9]
-            << "-"
-            << std::setw(2) << (int)guid.Bytes[10]
-            << std::setw(2) << (int)guid.Bytes[11]
-            << std::setw(2) << (int)guid.Bytes[12]
-            << std::setw(2) << (int)guid.Bytes[13]
-            << std::setw(2) << (int)guid.Bytes[14]
-            << std::setw(2) << (int)guid.Bytes[15];
-        s.flags(f);
-        return s;
-    }
-
-    bool operator<(const FGuid& lhs, const FGuid& rhs)
-    {
-        return lhs.Data() < rhs.Data();
+        std::string str;
+        is >> str;
+        guid = FGuid::FromString(str.c_str());
+        return is;
     }
 }

@@ -55,7 +55,7 @@ namespace Lumina::ECS::Utils
                         void** Type = ReturnValue.try_cast<void*>();
                         if (CStruct* StructType = *(CStruct**)Type)
                         {
-                            FName Name = StructType->GetQualifiedName();
+                            FName Name = StructType->GetName();
                             Ar << Name;
                             
                             int64 ComponentStart = Ar.Tell();
@@ -123,7 +123,7 @@ namespace Lumina::ECS::Utils
 
                 int64 ComponentStart = Ar.Tell();
 
-                if (CStruct* Struct = FindObject<CStruct>(nullptr, TypeName))
+                if (CStruct* Struct = FindObject<CStruct>(TypeName))
                 {
                     using namespace entt::literals;
 
@@ -139,8 +139,7 @@ namespace Lumina::ECS::Utils
                         entt::hashed_string HashString(Struct->GetName().c_str());
                         if (entt::meta_type Meta = entt::resolve(HashString))
                         {
-                            void* RegistryPtr = &Registry;
-                            Meta.invoke("addcomponentwithmemory"_hs, {}, std::ref(Ar), Entity, RegistryPtr);
+                            Meta.invoke("addcomponentwithmemory"_hs, {}, entt::forward_as_meta(Ar), Entity, entt::forward_as_meta(Registry));
                         }
                     }
                 }

@@ -1,13 +1,11 @@
 #include "pch.h"
 #include "Class.h"
 #include "Core/Reflection/Type/LuminaTypes.h"
-#include "glm/glm.hpp"
 #include "Package/Package.h"
 
 namespace Lumina
 {
-    
-    LUMINA_API void AllocateStaticClass(const TCHAR* Package, const TCHAR* Name, CClass** OutClass, uint32 Size, uint32 Alignment, CClass* (*SuperClassFn)(), CClass::ClassConstructorType InClassConstructor)
+    LUMINA_API void AllocateStaticClass(const TCHAR* Package, const TCHAR* Name, CClass** OutClass, uint32 Size, uint32 Alignment, CClass* (*SuperClassFn)(), CClass::FactoryFunctionType FactoryFunc)
     {
         Assert(*OutClass == nullptr)
         
@@ -15,15 +13,14 @@ namespace Lumina
 
         if (Package && Package[0] != '\0')
         {
-            PackageObject = FindObject<CPackage>(nullptr, Package);
+            PackageObject = FindObject<CPackage>(Package);
             if (PackageObject == nullptr)
             {
                 PackageObject = NewObject<CPackage>(nullptr, Package);
             }
         }
-        
-        *OutClass = (CClass*)Memory::Malloc(sizeof(CClass), alignof(CClass));
-        *OutClass = ::new (*OutClass) CClass(PackageObject, FName(Name), Size, Alignment, OF_None, InClassConstructor);
+
+        *OutClass = Memory::New<CClass>(PackageObject, FName(Name), Size, Alignment, OF_None, FactoryFunc);
         
         CClass* NewClass = *OutClass;
         CClass* SuperClass = SuperClassFn();
@@ -42,27 +39,47 @@ namespace Lumina
     IMPLEMENT_INTRINSIC_CLASS(CClass, CStruct, LUMINA_API)
 
     //-----------------------------------------------------------------------------------------------
-    
+
+
+    CObject* CClass::CreateInstance(void* Memory, const FObjectInitializer& Initializer) const
+    {
+        if (FactoryFunction)
+        {
+            return FactoryFunction(Memory, Initializer);
+        }
+        return nullptr;
+    }
+
+    CClass* CClass::GetSuperClass() const
+    {
+        return (CClass*)GetSuperStruct();
+    }
+
+    CObject* CClass::GetDefaultObject() const
+    {
+        if (ClassDefaultObject == nullptr)
+        {
+            CClass* MutableThis = const_cast<CClass*>(this);
+            MutableThis->CreateDefaultObject();
+        }
+
+        return ClassDefaultObject;
+    }
 
     CObject* CClass::CreateDefaultObject()
     {
         Assert(ClassDefaultObject == nullptr)
-
-
-        Link();
         
+        Link();
         
         FString DefaultObjectName = GetName().c_str();
         DefaultObjectName += "_CDO";
         
         FConstructCObjectParams Params(this);
-        Params.Flags |= OF_DefaultObject;
-        Params.Name = FName(DefaultObjectName);
-        
-        if (GetPackage())
-        {
-            Params.Package = GetPackage()->GetName();
-        }
+        Params.Flags    |= OF_DefaultObject;
+        Params.Name     = FName(DefaultObjectName);
+        Params.Package  = GetPackage();
+        Params.Guid     = FGuid::New();
         
         ClassDefaultObject = StaticAllocateObject(Params);
         ClassDefaultObject->AddToRoot();
@@ -78,9 +95,7 @@ namespace Lumina
 
     static CStruct* StaticGetBaseStructureInternal(const FName& Name)
     {
-        static CPackage* CoreObjectPackage = FindObject<CPackage>(nullptr, "script://lumina");
-        
-        CStruct* Result = (CStruct*)FindObjectFast(CStruct::StaticClass(), CoreObjectPackage, Name);
+        CStruct* Result = (CStruct*)FindObjectImpl(Name, CStruct::StaticClass());
         return Result;
     }
 

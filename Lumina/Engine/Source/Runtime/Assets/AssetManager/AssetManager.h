@@ -1,27 +1,23 @@
 #pragma once
 
-#include "EASTL/atomic.h"
 #include "Assets/AssetRequest.h"
 #include "Containers/Array.h"
-#include "Core/Threading/Thread.h"
 #include "Memory/SmartPtr.h"
-#include "Subsystems/Subsystem.h"
 
 
 namespace Lumina
 {
 	class FAssetRecord;
 	
-	class LUMINA_API FAssetManager : public ISubsystem
+	class LUMINA_API FAssetManager final
 	{
 	public:
 
 		FAssetManager();
-		~FAssetManager() override;
 
-		void Initialize() override;
-		void Deinitialize() override;
-		TSharedPtr<FAssetRequest> LoadAsset(const FString& InAssetPath);
+		static FAssetManager& Get();
+		
+		TSharedPtr<FAssetRequest> LoadAsset(const FString& PackagePath, const FGuid& RequestedAsset);
 
 		void NotifyAssetRequestCompleted(const TSharedPtr<FAssetRequest>& Request);
 
@@ -29,7 +25,7 @@ namespace Lumina
 		
 	private:
 
-		TSharedPtr<FAssetRequest> TryFindActiveRequest(const FString& InAssetPath, bool& bAlreadyInQueue);
+		TSharedPtr<FAssetRequest> TryFindActiveRequest(const FString& InAssetPath, const FGuid& GUID, bool& bAlreadyInQueue);
 		void SubmitAssetRequest(const TSharedPtr<FAssetRequest>& Request);
 	
 	private:

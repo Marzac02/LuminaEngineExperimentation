@@ -36,12 +36,12 @@ namespace Lumina
             TOptional<ImTextureRef> ButtonTexture;
             if (Object.IsValid())
             {
-                FString FullPath = Paths::ResolveVirtualPath(Object.Get()->GetPathName());
-                CThumbnailManager::Get().TryLoadThumbnailsForPackage(FullPath);
-                if (FRHIImage* Image = CThumbnailManager::GetThumbnailForPackage(Object.Get()->GetPackage())->LoadedImage)
-                {
-                    ButtonTexture = ImGuiX::ToImTextureRef(Image);
-                }
+                //FString FullPath = Paths::ResolveVirtualPath(Object.Get()->GetPathName());
+                //CThumbnailManager::Get().TryLoadThumbnailsForPackage(FullPath);
+                //if (FRHIImage* Image = CThumbnailManager::GetThumbnailForPackage(Object.Get()->GetPackage())->LoadedImage)
+                //{
+                //    ButtonTexture = ImGuiX::ToImTextureRef(Image);
+                //}
             }
 
 
@@ -71,7 +71,7 @@ namespace Lumina
             
             const bool bHasObject = Object != nullptr;
 
-            FString PathString = bHasObject ? Object.Get()->GetPathName() : FString("<None>");
+            FString PathString = bHasObject ? Object.Get()->GetName().ToString() : FString("<None>");
             char PathBuffer[512];
             strncpy(PathBuffer, PathString.c_str(), sizeof(PathBuffer) - 1);
             PathBuffer[sizeof(PathBuffer) - 1] = '\0';
@@ -105,12 +105,9 @@ namespace Lumina
                 
                 if (ImGui::BeginChild("##OptList", ChildSize, false, ImGuiChildFlags_NavFlattened))
                 {
-                    FARFilter Filter;
-                    Filter.ClassNames.push_back(ObjectProperty->GetPropertyClass()->GetName().ToString());
-
                     
                     TVector<FAssetData> Assets;
-                    GEngine->GetEngineSubsystem<FAssetRegistry>()->GetAssetsByClass(ObjectProperty->GetPropertyClass(), Assets);
+                    //GEngine->GetEngineSubsystem<FAssetRegistry>()->GetAssetsByClass(ObjectProperty->GetPropertyClass(), Assets);
                     for (const FAssetData& Asset : Assets)
                     {
                         if (!SearchFilter.PassFilter(Asset.AssetName.c_str()))
@@ -118,13 +115,13 @@ namespace Lumina
                             continue;
                         }
                         
-                        if (ImGui::Selectable(Asset.FullPath.c_str()))
-                        {
-                            Object = LoadObject<CObject>(nullptr, Asset.FullPath);
-                            ImGui::CloseCurrentPopup();
-                    
-                            bWasChanged = true;
-                        }
+                        //if (ImGui::Selectable(Asset.FullPath.c_str()))
+                        //{
+                        //    //Object = LoadObject<CObject>(nullptr, Asset.FullPath);
+                        //    ImGui::CloseCurrentPopup();
+                        //
+                        //    bWasChanged = true;
+                        //}
                     }
                 }
                 
@@ -135,7 +132,7 @@ namespace Lumina
             ImGui::BeginDisabled(Object == nullptr);
             if (ImGui::Button(LE_ICON_CONTENT_COPY "##Copy", GButtonSize))
             {
-                ImGui::SetClipboardText(HardObject->GetPathName().c_str());
+                ImGui::SetClipboardText(HardObject->GetName().c_str());
             }
 
             ImGui::SameLine();

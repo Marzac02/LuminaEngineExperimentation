@@ -209,12 +209,18 @@ namespace Lumina::Physics
             Movement.Velocity.x = HorizontalVelocity.x;
             Movement.Velocity.z = HorizontalVelocity.z;
 
+            if (Movement.bWantsToJump)
+            {
+                Movement.Velocity.y = Movement.JumpSpeed;
+                Movement.bWantsToJump = false;
+                Movement.JumpCount++;
+            }
+
             if (Movement.bGrounded)
             {
                 JPH::Vec3 GroundVelocity = Character->GetGroundVelocity();
                 Movement.Velocity.x += GroundVelocity.GetX();
                 Movement.Velocity.z += GroundVelocity.GetZ();
-                Movement.Velocity.y = 0.0f;
             }
             else
             {
@@ -237,8 +243,8 @@ namespace Lumina::Physics
                 {},
                 *FJoltPhysicsContext::GetAllocator());
 
-            //JPH::Vec3 ActualVelocity = Character->GetLinearVelocity();
-            //Movement.Velocity = JoltUtils::FromJPHVec3(ActualVelocity);
+            JPH::Vec3 ActualVelocity = Character->GetLinearVelocity();
+            Movement.Velocity = JoltUtils::FromJPHVec3(ActualVelocity);
         });
     }
 

@@ -3,6 +3,7 @@
 #include "Module/API.h"
 #include "Containers/Array.h"
 #include "Core/Serialization/Archiver.h"
+#include "Core/Templates/Optional.h"
 
 namespace Lumina
 {
@@ -10,42 +11,68 @@ namespace Lumina
     {
     public:
         
-        explicit FGuid(const TArray<uint8, 16>& InBytes);
-        explicit FGuid(TArray<uint8, 16>&& InBytes);
-
-        explicit FGuid(eastl::string_view FromString);
-        FGuid();
-	
-        FGuid(const FGuid &other) = default;
-        FGuid &operator=(const FGuid &other) = default;
-        FGuid(FGuid &&other) = default;
-        FGuid &operator=(FGuid &&other) = default;
-
-        bool operator==(const FGuid &other) const;
-        bool operator!=(const FGuid &other) const;
-
-        FString ToString() const;
-        operator FString() const;
-        const TArray<uint8, 16>& Data() const;
-        void Swap(FGuid &other);
-        bool IsValid() const;
-
-        FGuid static Generate();
-
-        friend FArchive& operator << (FArchive& Ar, FGuid& Guid)
+        static constexpr size_t GUID_SIZE = 16;
+        
+        using ByteArray = TArray<uint8, GUID_SIZE>;
+    
+        static FGuid New();
+        static FGuid NewDeterministic(FStringView seed);
+        static FGuid FromString(FStringView str);
+        static TOptional<FGuid> TryParse(FStringView str);
+        
+        static const FGuid& Empty() noexcept;
+        static const FGuid& Invalid() noexcept { return Empty(); }
+        
+        FGuid() noexcept = default;
+        explicit FGuid(const ByteArray& bytes) noexcept;
+        explicit FGuid(ByteArray&& bytes) noexcept;
+        
+        FGuid(const FGuid&) = default;
+        FGuid& operator=(const FGuid&) = default;
+        FGuid(FGuid&&) noexcept = default;
+        FGuid& operator=(FGuid&&) noexcept = default;
+        ~FGuid() = default;
+    
+        // Comparison operators
+        bool operator==(const FGuid& other) const noexcept;
+        bool operator!=(const FGuid& other) const noexcept;
+        bool operator<(const FGuid& other) const noexcept;
+        bool operator<=(const FGuid& other) const noexcept;
+        bool operator>(const FGuid& other) const noexcept;
+        bool operator>=(const FGuid& other) const noexcept;
+        std::strong_ordering operator<=>(const FGuid& other) const noexcept = default;
+    
+        FString ToString(bool uppercase = true, bool includeDashes = true) const;
+        FString ToShortString() const;
+        
+        bool IsValid() const noexcept;
+        explicit operator bool() const noexcept { return IsValid(); }
+        
+        const ByteArray& GetBytes() const noexcept { return Bytes; }
+        ByteArray& GetBytes() noexcept { return Bytes; }
+        const uint8_t* Data() const noexcept { return Bytes.data(); }
+        
+        void Invalidate() noexcept;
+        void Swap(FGuid& other) noexcept;
+        
+        size_t Hash() const noexcept;
+        
+        // Serialization
+        friend FArchive& operator<<(FArchive& Ar, FGuid& Guid)
         {
             Ar.Serialize(Guid.Bytes.data(), Guid.Bytes.size());
             return Ar;
         }
-
-    private:
         
-        void Invalidate();
-
-        TArray<uint8, 16> Bytes;
-
-        friend std::ostream &operator<<(std::ostream &s, const FGuid &guid);
-        friend bool operator<(const FGuid &lhs, const FGuid &rhs);
+        // Stream operators
+        friend std::ostream& operator<<(std::ostream& os, const FGuid& guid);
+        friend std::istream& operator>>(std::istream& is, FGuid& guid);
+    
+    private:
+        ByteArray Bytes{};
+        
+        // Helper for parsing
+        static bool TryParseInternal(FStringView str, ByteArray& outBytes);
     };
     
     template<> struct TCanBulkSerialize<FGuid> { static constexpr bool Value = true; };
@@ -60,15 +87,7 @@ namespace eastl
     {
         std::size_t operator()(const Lumina::FGuid& Guid) const noexcept
         {
-            const auto* data = reinterpret_cast<const uint8*>(Guid.Data().data());
-            std::size_t hashValue = 0;
-
-            for (size_t i = 0; i < 16; ++i)
-            {
-                hashValue = (hashValue << 8) | data[i];
-            }
-
-            return hashValue;
+            return Guid.Hash();
         }
     };
 }

@@ -51,6 +51,7 @@ namespace Lumina
         LUMINA_API void SetReadyToClose(bool bReadyToClose) { bEngineReadyToClose = bReadyToClose; }
         
         template<typename T>
+        requires(eastl::is_base_of_v<ISubsystem, T>)
         T* GetEngineSubsystem()
         {
             return EngineSubsystems.GetSubsystem<T>();
@@ -71,8 +72,6 @@ namespace Lumina
         #endif
 
         FSubsystemManager       EngineSubsystems;
-        FAssetManager*          AssetManager =          nullptr;
-        FAssetRegistry*         AssetRegistry =         nullptr;
         FWorldManager*          WorldManager =          nullptr;
         FRenderManager*         RenderManager =         nullptr;
         
@@ -84,6 +83,7 @@ namespace Lumina
     LUMINA_API extern FEngine* GEngine;
     
     template<typename T>
+    requires(eastl::is_base_of_v<ISubsystem, T>)
     static T& GetEngineSystem()
     {
         return *GEngine->GetEngineSubsystem<T>();

@@ -1,10 +1,8 @@
 #pragma once
 #include "Containers/Array.h"
-#include "Containers/Name.h"
-#include "Core/Assertions/Assert.h"
-#include "Core/Profiler/Profile.h"
 #include "Core/Singleton/Singleton.h"
 #include "Core/Threading/Thread.h"
+#include "GUID/GUID.h"
 
 
 namespace Lumina
@@ -30,13 +28,13 @@ namespace Lumina
 
         void RemoveObject(CObjectBase* Object);
 
-        CObjectBase* FindObject(CClass* ObjectClass, CPackage* Package, const FName& ObjectName, bool bExactClass = false);
+        CObjectBase* FindObject(const FGuid& GUID);
+        CObjectBase* FindObject(const FName& Name, CClass* Class);
 
         void Clear();
 
-        mutable FMutex Mutex;
-        TObjectHashMap<FName>  ObjectNameHash;
-        TObjectHashMap<CPackage*>  ObjectPackageHash;
-        TObjectHashMap<CClass*>  ObjectClassHash;
+        mutable FMutex                  Mutex;
+        THashMap<FGuid, CObjectBase*>   ObjectGUIDHash;
+        TObjectHashMap<CClass*>         ObjectClassBucket;
     };
 }

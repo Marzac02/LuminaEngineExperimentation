@@ -6,7 +6,7 @@
 namespace Lumina
 {
     REFLECT()
-    class LUMINA_API CCharacterMovementSystem : public CEntitySystem
+    class LUMINA_API CPlayerCharacterMovementSystem : public CEntitySystem
     {
         GENERATED_BODY()
         ENTITY_SYSTEM(RequiresUpdate(EUpdateStage::PrePhysics, EUpdatePriority::Default))

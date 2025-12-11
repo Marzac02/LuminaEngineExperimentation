@@ -7,7 +7,6 @@
 #include "Assets/Factories/Factory.h"
 #include "Core/Engine/Engine.h"
 #include "Core/Object/ObjectIterator.h"
-#include "Core/Object/ObjectRedirector.h"
 #include "Core/Object/ObjectRename.h"
 #include "Core/Object/Package/Package.h"
 #include "Core/Object/Package/Thumbnail/PackageThumbnail.h"
@@ -78,7 +77,7 @@ namespace Lumina
     {
         using namespace Import::Textures;
 
-        (void)GEngine->GetEngineSubsystem<FAssetRegistry>()->GetOnAssetRegistryUpdated().AddMember(this, &FContentBrowserEditorTool::RefreshContentBrowser);
+        (void)FAssetRegistry::Get().GetOnAssetRegistryUpdated().AddMember(this, &FContentBrowserEditorTool::RefreshContentBrowser);
         (void)GEditorEngine->GetProject().OnProjectLoaded.AddMember(this, &FContentBrowserEditorTool::OnProjectLoaded);
 
         if (GEditorEngine->GetProject().HasLoadedProject())
@@ -94,9 +93,7 @@ namespace Lumina
                 FilterState.emplace(AssetClass->GetName().c_str(), true);
             }
         }
-
-        FilterState.emplace(CObjectRedirector::StaticName().c_str(), false);
-
+        
         CreateToolWindow("Content", [this] (const FUpdateContext& Contxt, bool bIsFocused)
         {
             float Left = 200.0f;
@@ -145,20 +142,15 @@ namespace Lumina
             {
                 if (ContentItem->IsAsset())
                 {
-                    if (ContentItem->GetAssetData().IsRedirector())
-                    {
-                        ImTexture = ImGuiX::ToImTextureRef(Paths::GetEngineResourceDirectory() + "/Textures/Redirect.png");
-                        TintColor = ImVec4(0.7f, 0.7f, 1.0f, 1.0f);
-                    }
-                    else if (CPackage* Package = ContentItem->GetPackage())
-                    {
-                        ImTexture = ImGuiX::ToImTextureRef(Paths::GetEngineResourceDirectory() + "/Textures/File.png");
-
-                        //if (Package->GetPackageThumbnail()->LoadedImage)
-                        //{
-                        //    ImTexture = ImGuiX::ToImTextureRef(Package->GetPackageThumbnail()->LoadedImage);
-                        //}
-                    }
+                    //if (CPackage* Package = ContentItem->GetPackage())
+                    //{
+                    //    ImTexture = ImGuiX::ToImTextureRef(Paths::GetEngineResourceDirectory() + "/Textures/File.png");
+                    //
+                    //    //if (Package->GetPackageThumbnail()->LoadedImage)
+                    //    //{
+                    //    //    ImTexture = ImGuiX::ToImTextureRef(Package->GetPackageThumbnail()->LoadedImage);
+                    //    //}
+                    //}
                 }
             }
             else
@@ -219,10 +211,10 @@ namespace Lumina
             }
             else if (ContentItem->IsAsset())
             {
-                FString QualifiedName = ContentItem->GetAssetData().FullPath.ToString();
-
-                CObject* Asset = LoadObject<CObject>(nullptr, QualifiedName);
-                ToolContext->OpenAssetEditor(Asset);
+                if (const FAssetData* Asset = FAssetQuery().WithPath(ContentItem->GetPath()).ExecuteFirst())
+                {
+                    ToolContext->OpenAssetEditor(Asset->AssetGUID);
+                }
             }
             else if (ContentItem->IsLuaScript())
             {
@@ -262,8 +254,9 @@ namespace Lumina
         {
             if (Paths::Exists(SelectedPath))
             {
-                TFixedVector<FString, 24> DirectoryPaths;
-                
+                TFixedVector<FString, 8> DirectoryPaths;
+                TFixedVector<FString, 6> FilePaths;
+
                 for (auto& Directory : std::filesystem::directory_iterator(SelectedPath.c_str()))
                 {
                     if (std::filesystem::is_directory(Directory))
@@ -271,48 +264,23 @@ namespace Lumina
                         FString VirtualPath = Paths::ConvertToVirtualPath(Directory.path().generic_string().c_str());
                         DirectoryPaths.push_back(Directory.path().generic_string().c_str());
                     }
+                    else
+                    {
+                        FilePaths.push_back(Directory.path().generic_string().c_str());
+                    }
                 }
 
                 eastl::sort(DirectoryPaths.begin(), DirectoryPaths.end());
+                eastl::sort(FilePaths.begin(), FilePaths.end());
                 
                 for (const FString& Directory : DirectoryPaths)
                 {
-                    ContentBrowserTileView.AddItemToTree<FContentBrowserTileViewItem>(nullptr, Directory, nullptr);
+                    ContentBrowserTileView.AddItemToTree<FContentBrowserTileViewItem>(nullptr, Directory);
                 }
 
-                if (Paths::IsUnderDirectory(GEditorEngine->GetProject().GetProjectScriptsDirectory(), SelectedPath))
+                for (const FString& FilePath : FilePaths)
                 {
-                    const TVector<Scripting::FScriptEntryHandle>& Scripts = Scripting::FScriptingContext::Get().GetScriptsUnderDirectory(SelectedPath);
-                    for (const Scripting::FScriptEntryHandle& Script : Scripts)
-                    {
-                        ContentBrowserTileView.AddItemToTree<FContentBrowserTileViewItem>(nullptr, Script->Path, nullptr);
-                    }
-                }
-                else
-                {
-                    FString FullPath = Paths::ConvertToVirtualPath(SelectedPath);
-                    TVector<FAssetData*> Assets = GEngine->GetEngineSubsystem<FAssetRegistry>()->GetAssetsForPath(FullPath);
-                
-                    eastl::sort(Assets.begin(), Assets.end(), [](const FAssetData* A, const FAssetData* B)
-                    {
-                        return A->AssetName.ToString() > B->AssetName.ToString();
-                    });
-
-                    for (FAssetData* Asset : Assets)
-                    {
-                        FString PackageFullPath = Paths::ResolveVirtualPath(Asset->PackageName.ToString());
-                        //CThumbnailManager::Get().TryLoadThumbnailsForPackage(PackageFullPath);
-                    }
-
-                    for (FAssetData* Asset : Assets)
-                    {
-                        FName ShortClassName = Paths::GetExtension(Asset->AssetClass.ToString());
-                        if (FilterState.count(ShortClassName) && FilterState.at(ShortClassName))
-                        {
-                            FullPath = Paths::ResolveVirtualPath(Asset->FullPath.ToString());
-                            ContentBrowserTileView.AddItemToTree<FContentBrowserTileViewItem>(nullptr, Move(FullPath), Asset);
-                        }
-                    }   
+                    ContentBrowserTileView.AddItemToTree<FContentBrowserTileViewItem>(nullptr, FilePath);
                 }
             }
         };
@@ -553,8 +521,8 @@ namespace Lumina
         if (!Payload->IsDirectory())
         {
             const FString& OldPath = Payload->GetPath();
-            FString NewPath = Drop->GetPath() + "/" + Payload->GetAssetData().AssetName.ToString();
-            PendingRenames.emplace_back(FPendingRename{OldPath, NewPath});
+            //FString NewPath = Drop->GetPath() + "/" + Payload->GetAssetData().AssetName.ToString();
+            //PendingRenames.emplace_back(FPendingRename{OldPath, NewPath});
         }
     }
 
@@ -616,7 +584,7 @@ namespace Lumina
             FString PathString = Paths::Combine(SelectedPath.c_str(), NoExtFileName.c_str());
         
             Paths::AddPackageExtension(PathString);
-            PathString = CPackage::MakeUniquePackagePath(PathString);
+            //PathString = CPackage::MakeUniquePackagePath(PathString);
             PathString = Paths::RemoveExtension(PathString);
         
             if (Factory->HasImportDialogue())
@@ -636,7 +604,7 @@ namespace Lumina
             {
                 Task::AsyncTask(1, 1, [this, Factory, Path, PathString] (uint32, uint32, uint32)
                 {
-                    Factory->TryImport(Path, PathString);
+                    Factory->Import(Path, PathString);
                     ImGuiX::Notifications::NotifySuccess("Successfully Imported: \"{0}\"", PathString.c_str());
                 });
             }
@@ -717,13 +685,13 @@ namespace Lumina
                 }
                 else if (!ContentItem->IsDirectory())
                 {
-                    FString TestAssetName = ContentItem->GetAssetData().PackageName.ToString() + "." + RenameState->Buffer;
-                    if (CObject* TestObject = FindObject<CObject>(nullptr, TestAssetName))
-                    {
-                        ValidationMessage = std::format("Asset already exists: {}", *TestObject->GetQualifiedName()).c_str();
-                        bHasError = true;
-                        bIsValid = false;
-                    }
+                    //FString TestAssetName = ContentItem->GetAssetData().PackageName.ToString() + "." + RenameState->Buffer;
+                    //if (CObject* TestObject = FindObject<CObject>(nullptr, TestAssetName))
+                    //{
+                    //    //ValidationMessage = std::format("Asset already exists: {}", *TestObject->GetQualifiedName()).c_str();
+                    //    bHasError = true;
+                    //    bIsValid = false;
+                    //}
                 }
                 else if (ContentItem->IsAsset())
                 {
@@ -1134,7 +1102,7 @@ namespace Lumina
                         FString ObjectName = ContentItem->GetFileName();
                         FString QualifiedName = ContentItem->GetVirtualPath() + "." + ObjectName;
         
-                        if (CObject* AliveObject = FindObject<CObject>(nullptr, QualifiedName))
+                        if (CObject* AliveObject = FindObject<CObject>(QualifiedName))
                         {
                             ToolContext->OnDestroyAsset(AliveObject);
                             bWasSuccessful = true;
@@ -1160,24 +1128,13 @@ namespace Lumina
             }
         }
 
-        if (ContentItem->IsAsset() && !ContentItem->GetAssetData().IsRedirector())
+        if (ContentItem->IsAsset())
         {
             if (ImGui::MenuItem(LE_ICON_FOLDER_OPEN " Open", "Double-Click"))
             {
-                FString QualifiedName = ContentItem->GetAssetData().FullPath.ToString();
-                CObject* Asset = LoadObject<CObject>(nullptr, QualifiedName);
-                ToolContext->OpenAssetEditor(Asset);
+                //CObject* Asset = LoadObject<CObject>(nullptr, QualifiedName);
+                //ToolContext->OpenAssetEditor(Asset);
             }
-            ImGui::Separator();
-        }
-        else if (ContentItem->GetAssetData().IsRedirector())
-        {
-            ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(255, 200, 100, 255));
-            if (ImGui::MenuItem(LE_ICON_TOOLBOX " Fix Redirector"))
-            {
-                // Fixup redirector logic
-            }
-            ImGui::PopStyleColor();
             ImGui::Separator();
         }
     }
@@ -1233,7 +1190,6 @@ namespace Lumina
                 {
                     FString PathString = Paths::Combine(SelectedPath.c_str(), Factory->GetDefaultAssetCreationName(PathString).c_str());
                     Paths::AddPackageExtension(PathString);
-                    PathString = CPackage::MakeUniquePackagePath(PathString);
                     PathString = Paths::RemoveExtension(PathString);
         
                     if (Factory->HasCreationDialogue())
@@ -1252,6 +1208,8 @@ namespace Lumina
                     else
                     {
                         CObject* Object = Factory->TryCreateNew(PathString);
+                        CPackage* Package = CPackage::FindPackageByPath(PathString);
+                        CPackage::SavePackage(Package, PathString);
                         if (Object)
                         {
                             ImGuiX::Notifications::NotifySuccess("Successfully Created: \"{0}\"", PathString.c_str());

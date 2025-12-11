@@ -52,20 +52,10 @@ namespace Lumina
 
     //-----------------------------------------------------------------------------------------------
     
-    /** Reinitialize properties because they were already set, and we don't want to clear them. */
     CObjectBase::CObjectBase()
         : ObjectFlags()
         , InternalIndex(INDEX_NONE)
-        , LoaderIndex(0)
     {
-        FObjectInitializer* Initializer = FObjectInitializer::Get();
-        NamePrivate = Initializer->Params.Name;
-        ClassPrivate = const_cast<CClass*>(Initializer->Params.Class);
-        PackagePrivate = Initializer->Package;
-
-        int32 Index = GObjectArray.AllocateObject(this).Index;
-        AddObject(NamePrivate, Index);
-
     }
 
     CObjectBase::~CObjectBase()
@@ -74,19 +64,29 @@ namespace Lumina
         GObjectArray.DeallocateObject(InternalIndex);
     }
 
+    void CObjectBase::ConstructInternal(const FObjectInitializer& OI)
+    {
+        NamePrivate = OI.Params.Name;
+        GUIDPrivate = OI.Params.Guid;
+        ClassPrivate = const_cast<CClass*>(OI.Params.Class);
+        PackagePrivate = OI.Package;
+
+        int32 Index = GObjectArray.AllocateObject(this).Index;
+        AddObject(NamePrivate, Index);
+    }
+
     CObjectBase::CObjectBase(EObjectFlags InFlags)
         : ObjectFlags(InFlags)
-        , NamePrivate()
         , InternalIndex(0)
-        , LoaderIndex(0)
     {
     }
 
-    CObjectBase::CObjectBase(CClass* InClass, EObjectFlags InFlags, CPackage* Package, FName InName)
+    CObjectBase::CObjectBase(CClass* InClass, EObjectFlags InFlags, CPackage* Package, FName InName, const FGuid& GUID)
         : ObjectFlags(InFlags)
         , ClassPrivate(InClass)
-        , NamePrivate(Move(InName))
         , PackagePrivate(Package)
+        , NamePrivate(Move(InName))
+        , GUIDPrivate(GUID)
         , InternalIndex(0)
     {
     }
@@ -165,12 +165,14 @@ namespace Lumina
     {
         FScopeLock Lock(RootMutex);
         GRootedObjects.emplace(this);
+        SetFlag(OF_Rooted);
     }
 
     void CObjectBase::RemoveFromRoot()
     {
         FScopeLock Lock(RootMutex);
         GRootedObjects.erase(this);
+        ClearFlags(OF_Rooted);
     }
 
     void CObjectBase::AddObject(const FName& Name, int32 InInternalIndex)
@@ -178,29 +180,6 @@ namespace Lumina
         InternalIndex = InInternalIndex;
 
         FObjectHashTables::Get().AddObject(this);
-    }
-
-    void CObjectBase::GetPath(FString& OutPath) const
-    {
-        OutPath = GetPathName();
-    }
-
-    FString CObjectBase::GetPathName() const
-    {
-        if (PackagePrivate == nullptr)
-        {
-            return ".";
-        }
-        return GetPackage()->GetName().ToString();
-    }
-
-    FName CObjectBase::GetQualifiedName() const
-    {
-        TInlineString<256> Path;
-        Path.append(GetPathName().c_str())
-        .append(".")
-        .append(GetName().c_str());
-        return Path.c_str();
     }
 
     //-----------------------------------------------------------------------------------------------

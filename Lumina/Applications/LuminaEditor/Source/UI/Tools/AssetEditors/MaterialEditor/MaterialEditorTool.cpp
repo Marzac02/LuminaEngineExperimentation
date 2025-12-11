@@ -54,7 +54,8 @@ namespace Lumina
         });
 
         FString GraphName = Asset->GetName().ToString() + "_MaterialGraph";
-        NodeGraph = LoadObject<CMaterialNodeGraph>(Asset->GetPackage(), GraphName);
+        NodeGraph = Cast<CMaterialNodeGraph>(Asset->GetPackage()->LoadObjectByName(GraphName));
+        
         if (NodeGraph == nullptr)
         {
             NodeGraph = NewObject<CMaterialNodeGraph>(Asset->GetPackage(), GraphName);

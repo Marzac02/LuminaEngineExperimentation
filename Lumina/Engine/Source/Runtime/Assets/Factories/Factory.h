@@ -43,9 +43,12 @@ namespace Lumina
         virtual FString GetDefaultAssetCreationName(const FString& InPath) { return "New_Asset"; }
         
         virtual CObject* CreateNew(const FName& Name, CPackage* Package) { return nullptr; }
+
+        void Import(const FString& ImportFile, const FString& DestinationPath);
         
         virtual bool CanImport() { return false; }
         virtual void TryImport(const FString& ImportFilePath, const FString& DestinationPath) { }
+        
         
 
         virtual bool IsExtensionSupported(const FString& Ext) { return false; }

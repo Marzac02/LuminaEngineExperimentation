@@ -18,122 +18,17 @@ namespace Lumina
 
 namespace Lumina
 {
-    //==================================================================================================
-    //  CPackage
-    //  ----------------------------------------------------------------------------------------------
-    //  Represents the top-level container for one or more serialized or script-defined CObjects.
-    //  
-    //  In the Lumina engine, a package is the authoritative root for any CObject path. All objects 
-    //  exist *within* a package, and all object references begin with their owning package.
-    //
-    //  Objects are generally lazy-loaded. That means when a package is loaded, all objects listed as
-    //  exports inside of that package have their initial memory allocated and are referencable.
-    //  The actual object still remains in a "needs loading" state, indicated by the "OF_NeedsLoad" flag.
-    //
-    //  When an object inside the package is requested, it starts a chain that can recursively load
-    //  multiple other assets across different packages. Objects serialized inside of this package are
-    //  stored within the export table, objects referenced that live outside of this package are stored
-    //  in the import table.
-    //
-    //  There are two types of packages:
-    //  
-    //      - "script://"  → Indicates the package is defined in native C++ source code. These packages
-    //                        typically hold engine classes and statically defined types.
-    //
-    //      - "project://" → Indicates the package is defined in a serialized asset file on disk 
-    //                        (typically with a `.lasset` extension). These packages contain runtime or 
-    //                        editor-authored asset data.
-    //
-    //  Each package maintains an internal Import Table and Export Table:
-    //      - The **Import Table** lists all external CObject references used by this package.
-    //      - The **Export Table** lists all CObjects defined in this package (name, class, offset, etc).
-    //
-    //  Import and export entries allow the system to resolve object dependencies across package
-    //  boundaries in a lazy and memory-efficient way.
-    //
-    //  Object paths are formatted as:
-    //      <package-path>.<object-name>
-    //
-    //  Where the dot (`.`) character separates the package name from the object name.
-    //  For example:
-    //      - project://Characters/HeroMesh.HeroMesh
-    //      - script://Engine/Pipelines.DefaultPipeline
-    //
-    //==================================================================================================
-    
-    /*
-    ====================================================================================================
-    //  Lumina Serialized Package Layout
-    //  --------------------------------------------------------------------------------------------
-    //  Describes the binary structure of a `.lasset` package file used by the Lumina engine.
-    //  This layout supports lazy object loading, import/export resolution, and efficient serialization.
-    ====================================================================================================
-    
-        Offset 0
-        +----------------------------+
-        | FPackageHeader            |   // Version info + table offsets
-        +----------------------------+
-        | uint32  Version           |
-        | uint32  ImportCount       |
-        | uint32  ExportCount       |
-        | uint64  ImportTableOffset |
-        | uint64  ObjectDataOffset  |
-        | uint64  ExportTableOffset |
-        +----------------------------+
-    
-        // At ImportTableOffset
-        +----------------------------------------+
-        | TArray<FObjectImport>                  |   // Describes referenced external objects
-        +----------------------------------------+
-        | FObjectImport[0]                       |
-        |   FName ObjectName                     |
-        |   FName ClassName                      |
-        | FObjectImport[1]                       |
-        |   ...                                  |
-        +----------------------------------------+
-    
-        // At ObjectDataOffset
-        +----------------------------------------+
-        | Serialized Object Data (Exports only)  |   // Raw serialized memory per object
-        +----------------------------------------+
-        | [Export 0]                             |
-        |   Object->Serialize(Writer)           |
-        | [Export 1]                             |
-        |   Object->Serialize(Writer)           |
-        | ...                                    |
-        +----------------------------------------+
-    
-        // At ExportTableOffset
-        +----------------------------------------+
-        | TArray<FObjectExport>                  |   // Describes each serialized object in this package
-        +----------------------------------------+
-        | FObjectExport[0]                       |
-        |   FName ObjectName                     |
-        |   FName ClassName                      |
-        |   uint64 Offset    // Into ObjectData  |
-        |   uint64 Size                          |
-        |   EObjectFlags Flags                   |
-        | FObjectExport[1]                       |
-        |   ...                                  |
-        +----------------------------------------+
-    
-        // Notes:
-        // - Objects are saved flat, not nested. Each export is serialized independently.
-        // - Export and Import tables track cross-package dependencies and allow for lazy loading.
-        // - Index 0 is always treated as "null object". ExportIndex = 1 maps to Export[0].
-        // - FObjectPackageIndex uses positive for exports, negative for imports, 0 for null.
-    
-    ====================================================================================================
-    */
-
     struct FObjectExport
     {
         FObjectExport() = default;
         FObjectExport(CObject* InObject);
 
-        /** Object name within the package (e.g., "HeroMesh") */
-        FName ObjectName;
+        /** Globally unique ID of the object */
+        FGuid ObjectGUID;
 
+        /** Name of the object */
+        FName ObjectName;
+        
         /** The class of the object (e.g., "CStaticMesh") */
         FName ClassName;
 
@@ -142,12 +37,13 @@ namespace Lumina
 
         /** Size in bytes of the serialized object */
         int64 Size;
-
+        
         /** The object which may have been loaded into the package */
         TWeakObjectPtr<CObject> Object;
 
         FORCEINLINE friend FArchive& operator << (FArchive& Ar, FObjectExport& Data)
         {
+            Ar << Data.ObjectGUID;
             Ar << Data.ObjectName;
             Ar << Data.ClassName;
             Ar << Data.Offset;
@@ -165,8 +61,8 @@ namespace Lumina
         /** Full path to the package this object comes from */
         FName Package; // e.g., "project://Materials/Steel"
 
-        /** Name of the object being imported from that package */
-        FName ObjectName;    // e.g., "SteelMaterial"
+        /** Globally unique ID of the object */
+        FGuid ObjectGUID;
 
         /** The class of the object (optional; may be validated on load) */
         FName ClassName;
@@ -177,7 +73,7 @@ namespace Lumina
         FORCEINLINE friend FArchive& operator << (FArchive& Ar, FObjectImport& Data)
         {
             Ar << Data.Package;
-            Ar << Data.ObjectName;
+            Ar << Data.ObjectGUID;
             Ar << Data.ClassName;
             
             return Ar;
@@ -192,25 +88,25 @@ namespace Lumina
         uint32 Tag;
         
         /** File format version (increment when the layout changes) */
-        uint32 Version;
+        int32 Version;
 
         /** Byte offset from file start to the import table section */
-        uint64 ImportTableOffset;
+        int64 ImportTableOffset;
 
         /** Number of entries in the import table */
-        uint32 ImportCount;
+        int32 ImportCount;
 
         /** Byte offset from file start to the export table section */
-        uint64 ExportTableOffset;
+        int64 ExportTableOffset;
 
         /** Number of entries in the export table */
         uint32 ExportCount;
 
         /** Byte offset from file start to the raw object data block */
-        uint64 ObjectDataOffset;
+        int64 ObjectDataOffset;
 
         /** Byte offset from the file start to the thumbnail */
-        uint64 ThumbnailDataOffset;
+        int64 ThumbnailDataOffset;
 
         friend FArchive& operator << (FArchive& Ar, FPackageHeader& Data)
         {
@@ -281,7 +177,7 @@ namespace Lumina
         }
 
         // Returns the usable array index for ImportTable or ExportTable
-        SIZE_T GetArrayIndex() const
+        int32 GetArrayIndex() const
         {
             if (IsNull())
             {
@@ -308,17 +204,13 @@ namespace Lumina
 
     //---------------------------------------------------------------------------------
     
-    
-    /**
-     * Packages are the only CObject without a package of their own.
-     */
     class CPackage : public CObject
     {
     public:
 
         DECLARE_CLASS(Lumina, CPackage, CObject, "", LUMINA_API)
-        DEFINE_DEFAULT_CONSTRUCTOR_CALL(CPackage)
-
+        DEFINE_CLASS_FACTORY(CPackage)
+        
 
         void OnDestroy() override;
         
@@ -337,6 +229,8 @@ namespace Lumina
         LUMINA_API static bool DestroyPackage(const FString& PackageName);
 
         LUMINA_API static bool DestroyPackage(CPackage* PackageToDestroy);
+
+        LUMINA_API static CPackage* FindPackageByPath(const FString& FullPath);
 
         /**
          * Will load the package and create the package loader. If called twice, nothing will happen.
@@ -377,7 +271,8 @@ namespace Lumina
          * @return If load was successful.
          */
         LUMINA_API void LoadObject(CObject* Object);
-        LUMINA_API CObject* LoadObject(FName ObjectName);
+        LUMINA_API CObject* LoadObject(const FGuid& GUID);
+        LUMINA_API CObject* LoadObjectByName(const FName& Name);
 
         /**
          * Load all the objects in this package (serialize).
@@ -394,9 +289,6 @@ namespace Lumina
 
         LUMINA_API NODISCARD FString GetPackageFilename() const;
         LUMINA_API NODISCARD FString GetFullPackageFilePath() const;
-
-        LUMINA_API NODISCARD static FString MakeUniquePackagePath(FStringView TestName);
-
         
         LUMINA_API void MarkDirty() { bDirty = true; }
         LUMINA_API void ClearDirty() { bDirty = false; }

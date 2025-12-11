@@ -85,7 +85,7 @@ namespace Lumina
         using namespace ax;
         
         NodeEditor::SetCurrentEditor(Context);
-        NodeEditor::Begin(GetQualifiedName().c_str());
+        NodeEditor::Begin(GetName().c_str());
     
         Graph::GraphNodeBuilder NodeBuilder;
         

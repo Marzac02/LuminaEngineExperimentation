@@ -83,16 +83,11 @@ namespace Lumina
         {
         public:
             
-            FContentBrowserTileViewItem(FTileViewItem* InParent, const FString& InPath, const FAssetData* InAssetData)
+            FContentBrowserTileViewItem(FTileViewItem* InParent, const FString& InPath)
                 : FTileViewItem(InParent)
                 , Path(InPath)
                 , VirtualPath(Paths::ConvertToVirtualPath(InPath))
             {
-                if (InAssetData)
-                {
-                    Package = FindObject<CPackage>(nullptr, InAssetData->PackageName);
-                    AssetData = *InAssetData;
-                }
             }
 
             constexpr static const char* DragDropID = "ContentBrowserItem";
@@ -111,7 +106,7 @@ namespace Lumina
 
                 if (IsAsset())
                 {
-                    ImGui::Text(LE_ICON_FILE " %s", AssetData.AssetClass.c_str());
+                    ImGui::Text(LE_ICON_FILE " Lumina Asset");
                 }
                 else if (IsLuaScript())
                 {
@@ -142,12 +137,6 @@ namespace Lumina
             FName GetName() const override
             {
                 FInlineString NameString;
-                if (Package && Package->IsDirty())
-                {
-                    NameString.append(Paths::FileName(Path, true).c_str()).append(" " LE_ICON_ARCHIVE_ALERT);
-                    return NameString;
-                }
-                
                 NameString.append(Paths::FileName(Path, true).c_str());
                 return NameString;
             }
@@ -157,16 +146,12 @@ namespace Lumina
             void SetPath(FStringView NewPath) { Path = NewPath; Paths::ConvertToVirtualPath(Path); }
             const FString& GetPath() const { return Path; }
             const FString& GetVirtualPath() const { return VirtualPath; }
-            bool IsAsset() const { return !AssetData.AssetClass.IsNone(); }
+            bool IsAsset() const { return Paths::GetExtension(Path) == "lasset"; }
             bool IsDirectory() const { return !IsAsset() && !IsLuaScript(); }
             bool IsLuaScript() const { return Paths::GetExtension(Path) == "lua"; }
-            const FAssetData& GetAssetData() const { return AssetData; }
-            CPackage* GetPackage() const { return Package; }
             
         private:
             
-            CPackage*               Package = nullptr;
-            FAssetData              AssetData;
             FString                 Path;
             FString                 VirtualPath;
         };

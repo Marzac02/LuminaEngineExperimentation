@@ -16,21 +16,17 @@ namespace Lumina
     public:
 
         LUMINA_API FObjectInitializer()
-            : Object(nullptr)
-            , Package(nullptr)
+            : Package(nullptr)
             , Params(nullptr)
         {}
         
-        LUMINA_API FObjectInitializer(CObject* Obj, CPackage* InPackage, const FConstructCObjectParams& InParams);
+        LUMINA_API FObjectInitializer(CPackage* InPackage, const FConstructCObjectParams& InParams);
         ~FObjectInitializer();
 
         static FObjectInitializer* Get();
-        CObject* GetObj() const { return Object; }
-
 
         void Construct();
 
-        CObject* Object;
         CPackage* Package;
         FConstructCObjectParams Params;
     };

@@ -176,22 +176,6 @@ namespace Lumina
     {
     }
 
-    void FWorldEditorTool::OnSave()
-    {
-        FString FullPath = Paths::ResolveVirtualPath(World->GetPathName());
-        Paths::AddPackageExtension(FullPath);
-
-        if (CPackage::SavePackage(World->GetPackage(), FullPath.c_str()))
-        {
-            GetEngineSystem<FAssetRegistry>().AssetSaved(World);
-            ImGuiX::Notifications::NotifySuccess("Successfully saved package: \"{0}\"", World->GetPathName().c_str());
-        }
-        else
-        {
-            ImGuiX::Notifications::NotifyError("Failed to save package: \"{0}\"", World->GetPathName().c_str());
-        }
-    }
-
     void FWorldEditorTool::Update(const FUpdateContext& UpdateContext)
     {
         while (!ComponentDestroyRequests.empty())
@@ -989,8 +973,7 @@ namespace Lumina
                     {
                         using namespace entt::literals;
 
-                        void* RegistryPtr = &World->GetEntityRegistry();
-                        entt::meta_any RetVal = CompInfo.MetaType.invoke("addcomponent"_hs, {}, SelectedEntity, RegistryPtr);
+                        entt::meta_any RetVal = CompInfo.MetaType.invoke("addcomponent"_hs, {}, SelectedEntity, entt::forward_as_meta(World->GetEntityRegistry()));
                         bComponentAdded = true;
                     }
                     
@@ -2176,8 +2159,7 @@ namespace Lumina
                     CreatedEntity = World->ConstructEntity("Entity");
                     World->GetEntityRegistry().get<SNameComponent>(CreatedEntity).Name = Struct->GetName().ToString() + "_" + eastl::to_string((uint32)CreatedEntity);
 
-                    void* RegistryPtr = &World->GetEntityRegistry();
-                    entt::meta_any RetVal = MetaType.invoke("addcomponent"_hs, {}, CreatedEntity, RegistryPtr);
+                    entt::meta_any RetVal = MetaType.invoke("addcomponent"_hs, {}, CreatedEntity, entt::forward_as_meta(World->GetEntityRegistry()));
                 }
             }
         }

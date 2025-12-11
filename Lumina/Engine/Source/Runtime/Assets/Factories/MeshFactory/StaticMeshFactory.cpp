@@ -379,9 +379,9 @@ namespace Lumina
                 FString DestinationParent = Paths::GetVirtualPathPrefix(FullPath);
                 FString TextureDestination = DestinationParent + TextureFileName;
 
-                if (!FindObject<CPackage>(nullptr, TextureDestination))
+                if (!FindObject<CPackage>(TextureDestination))
                 {
-                    TextureFactory->TryImport(TexturePath, TextureDestination);
+                    TextureFactory->Import(TexturePath, TextureDestination);
                 }
 
             });

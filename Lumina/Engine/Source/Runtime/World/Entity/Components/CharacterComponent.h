@@ -71,7 +71,8 @@ namespace Lumina
 
         PROPERTY(Script, Visible, Category = "Movement")
         glm::vec3 Velocity;
-        
+
+        bool bWantsToJump = false;
         bool bGrounded = false;
         int JumpCount = 0;
     };

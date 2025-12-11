@@ -1,10 +1,12 @@
 
 
 local MySystem = {
-    Stages = { UpdateStage.Paused }
+    Stages = { UpdateStage.PrePhysics }
 }
 
 function MySystem:OnUpdate()
+
+    Input.DisableCursor()
 
 
 end

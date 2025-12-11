@@ -52,7 +52,7 @@ namespace Lumina
         void PushModal(const FString& Title, ImVec2 Size, TMoveOnlyFunction<bool(const FUpdateContext&)> DrawFunction) override;
 
         void OpenScriptEditor(FStringView ScriptPath) override;
-        void OpenAssetEditor(CObject* InAsset) override;
+        void OpenAssetEditor(const FGuid& AssetGUID) override;
         void OnDestroyAsset(CObject* InAsset) override;
         
         template<typename T, typename... Args>
@@ -73,6 +73,7 @@ namespace Lumina
         void CreateGameViewportTool(const FUpdateContext& UpdateContext);
         void DestroyGameViewportTool(const FUpdateContext& UpdateContext);
 
+        void DrawObjectList();
         void DrawMemoryDialog();
         void DrawTitleBarMenu(const FUpdateContext& UpdateContext);
         void DrawTitleBarInfoStats(const FUpdateContext& UpdateContext);

@@ -32,7 +32,7 @@ namespace Lumina
             Surface.MaterialIndex = 0;
             Resource->GeometrySurfaces.push_back(Surface);
 
-            CubeMesh = NewObject<CStaticMesh>(nullptr, "ThumbnailCubeMesh", OF_Transient);
+            CubeMesh = NewObject<CStaticMesh>(nullptr, "ThumbnailCubeMesh", FGuid::New(), OF_Transient);
             CubeMesh->Materials.resize(1);
             CubeMesh->SetMeshResource(Move(Resource));
         }
@@ -48,7 +48,7 @@ namespace Lumina
             Surface.MaterialIndex = 0;
             Resource->GeometrySurfaces.push_back(Surface);
 
-            SphereMesh = NewObject<CStaticMesh>(nullptr, "ThumbnailSphereMesh", OF_Transient);
+            SphereMesh = NewObject<CStaticMesh>(nullptr, "ThumbnailSphereMesh", FGuid::New(), OF_Transient);
             SphereMesh->Materials.resize(1);
             SphereMesh->SetMeshResource(Move(Resource));
         }
@@ -64,7 +64,7 @@ namespace Lumina
             Surface.MaterialIndex = 0;
             Resource->GeometrySurfaces.push_back(Surface);
 
-            PlaneMesh = NewObject<CStaticMesh>(nullptr, "ThumbnailPlaneMesh", OF_Transient);
+            PlaneMesh = NewObject<CStaticMesh>(nullptr, "ThumbnailPlaneMesh", FGuid::New(), OF_Transient);
             PlaneMesh->Materials.resize(1);
             PlaneMesh->SetMeshResource(Move(Resource));
         }

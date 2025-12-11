@@ -59,7 +59,7 @@ namespace Lumina
             
             bEngineWantsExit = !GEngine->Update(bApplicationWantsExit);
 
-            FInputProcessor::Get().Reset();
+            FInputProcessor::Get().EndFrame();
         }
 
         

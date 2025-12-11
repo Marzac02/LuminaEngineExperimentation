@@ -29,7 +29,7 @@ namespace Lumina
 
         if (Project->HasLoadedProject())
         {
-            AssetRegistry->RunInitialDiscovery();
+            FAssetRegistry::Get().RunInitialDiscovery();
         }
 
         entt::locator<entt::meta_ctx>::reset(GetEngineMetaService());

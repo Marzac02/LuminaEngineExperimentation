@@ -57,14 +57,19 @@ namespace Lumina
         return false;
     }
 
-    void FInputProcessor::Reset()
-    {
-        MouseDeltaX = 0.0;
-        MouseDeltaY = 0.0;
-    }
-
     void FInputProcessor::SetCursorMode(int Mode)
     {
-		glfwSetInputMode(Windowing::GetPrimaryWindowHandle()->GetWindow(), GLFW_CURSOR, Mode);
+        DesiredInputMode = Mode;
+    }
+
+    void FInputProcessor::EndFrame()
+    {
+        if (DesiredInputMode != glfwGetInputMode(Windowing::GetPrimaryWindowHandle()->GetWindow(), GLFW_CURSOR))
+        {
+            glfwSetInputMode(Windowing::GetPrimaryWindowHandle()->GetWindow(), GLFW_CURSOR, DesiredInputMode);
+        }
+
+        MouseDeltaX = 0.0;
+        MouseDeltaY = 0.0;
     }
 }

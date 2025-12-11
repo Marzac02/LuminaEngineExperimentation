@@ -20,6 +20,9 @@ namespace Lumina
 
         PROPERTY(Script)
         bool bJumpPressed = false;
+
+        PROPERTY(Script, Editable)
+        bool bUseControllerRotation = false;
         
     };
 }
