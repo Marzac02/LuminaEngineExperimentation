@@ -108,6 +108,9 @@ Performance profiling - Built-in Lua script profiling with Tracy
 - **Python 3.8+** (automatically installed if missing)
 - **Vulkan SDK 1.3 or higher**  ([Download](https://vulkan.lunarg.com/sdk/home))
 
+<img width="250" height="70" alt="image" src="https://github.com/user-attachments/assets/2312a34a-5091-491b-b2b1-08659b3a9bed" />
+
+
 ### Installation
 
 Lumina's installation is being worked on, at the moment a majority of it's steps are compiled down into just running Setup.py.
