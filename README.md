@@ -107,8 +107,8 @@ Performance profiling - Built-in Lua script profiling with Tracy
 - **Visual Studio** (MSVC 17.8+)
 - **Python 3.8+** Python needs to be installed **and** available using the "python" command-line.
 - **Vulkan SDK 1.3 or higher**  ([Download](https://vulkan.lunarg.com/sdk/home))
-
--- Examples
+- 
+<img width="250" height="59" alt="image" src="https://github.com/user-attachments/assets/043b3add-a81f-47b1-92be-1eeda625e4d7" />
 <img width="250" height="70" alt="image" src="https://github.com/user-attachments/assets/2312a34a-5091-491b-b2b1-08659b3a9bed" />
 <img width="250" height="22" alt="image" src="https://github.com/user-attachments/assets/a0cc6bfe-7b87-432b-83d8-19b25422b4ee" />
 
