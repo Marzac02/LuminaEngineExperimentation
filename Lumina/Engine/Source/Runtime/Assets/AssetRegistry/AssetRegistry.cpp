@@ -60,19 +60,34 @@ namespace Lumina
 
     void FAssetRegistry::AssetCreated(CObject* Asset)
     {
+        FString FilePath = Paths::ResolveVirtualPath(Asset->GetPackage()->GetName().ToString()) + ".lasset";
+        
+        TSharedPtr<FAssetData> AssetData = MakeSharedPtr<FAssetData>();
+        AssetData->AssetClass   = Asset->GetClass()->GetName();
+        AssetData->AssetGUID    = Asset->GetGUID();
+        AssetData->AssetName    = Asset->GetName();
+        AssetData->FilePath     = Move(FilePath);
+        AssetData->PackageName  = Asset->GetPackage()->GetName();
+
         FScopeLock Lock(AssetsMutex);
+        Assets.emplace(Move(AssetData));
 
         GetOnAssetRegistryUpdated().Broadcast();
     }
 
-    void FAssetRegistry::AssetDeleted(const FName& Package)
+    void FAssetRegistry::AssetDeleted(const FGuid& GUID)
     {
         FScopeLock Lock(AssetsMutex);
 
+        auto It = Assets.find_as(GUID, FGuidHash(), FAssetDataGuidEqual());
+        LUM_ASSERT(It != Assets.end())
+
+        Assets.erase(It);
+        
         GetOnAssetRegistryUpdated().Broadcast();
     }
 
-    void FAssetRegistry::AssetRenamed(CObject* Asset, const FString& OldPackagePath)
+    void FAssetRegistry::AssetRenamed(CObject* Asset)
     {
         FScopeLock Lock(AssetsMutex);
 

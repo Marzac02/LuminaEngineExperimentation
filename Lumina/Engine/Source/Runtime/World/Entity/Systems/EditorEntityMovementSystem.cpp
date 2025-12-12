@@ -20,7 +20,13 @@ namespace Lumina
         {
             STransformComponent& Transform      = View.get<STransformComponent>(EditorEntity);
             SVelocityComponent& Velocity        = View.get<SVelocityComponent>(EditorEntity);
-            
+            FEditorComponent& Editor            = View.get<FEditorComponent>(EditorEntity);
+
+            if (!Editor.bEnabled)
+            {
+                return;
+            }
+
             SystemContext.EmplaceOrReplace<FNeedsTransformUpdate>(EditorEntity);
             
             glm::vec3 Forward   = Transform.Transform.Rotation * FViewVolume::ForwardAxis * -1.0f;

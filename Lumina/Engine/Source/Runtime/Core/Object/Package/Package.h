@@ -220,13 +220,8 @@ namespace Lumina
          * @return 
          */
         LUMINA_API static CPackage* CreatePackage(const FString& FileName);
-
-        /**
-         * 
-         * @param PackageName 
-         * @return 
-         */
-        LUMINA_API static bool DestroyPackage(const FString& PackageName);
+        
+        LUMINA_API static bool DestroyPackage(const FString& PackageFilePath);
 
         LUMINA_API static bool DestroyPackage(CPackage* PackageToDestroy);
 
@@ -279,7 +274,8 @@ namespace Lumina
          * @return If all object loads were successful.
          */
         LUMINA_API NODISCARD bool FullyLoad();
-        
+
+        LUMINA_API CObject* FindObjectInPackage(const FName& Name);
 
         
         LUMINA_API NODISCARD CObject* IndexToObject(const FObjectPackageIndex& Index);

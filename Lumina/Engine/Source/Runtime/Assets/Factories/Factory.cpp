@@ -43,7 +43,6 @@ namespace Lumina
         Package->ExportTable.emplace_back(New);
         
         New->SetFlag(OF_Public);
-        FAssetRegistry::Get().AssetCreated(New);
 
         return New;
     }
@@ -51,9 +50,6 @@ namespace Lumina
     void CFactory::Import(const FString& ImportFile, const FString& DestinationPath)
     {
         TryImport(ImportFile, DestinationPath);
-        
-        CPackage* Package = CPackage::FindPackageByPath(DestinationPath);
-        CPackage::SavePackage(Package, DestinationPath);
     }
 
     bool CFactory::ShowImportDialogue(CFactory* Factory, const FString& RawPath, const FString& DestinationPath)

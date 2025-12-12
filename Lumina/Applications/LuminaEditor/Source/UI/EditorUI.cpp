@@ -46,6 +46,7 @@
 #include "Tools/Import/ImportHelpers.h"
 #include "Tools/UI/ImGui/ImGuiRenderer.h"
 #include "World/WorldManager.h"
+#include "World/Entity/Components/EditorComponent.h"
 #include "World/Scene/RenderScene/RenderScene.h"
 
 namespace Lumina
@@ -937,8 +938,9 @@ namespace Lumina
                         Tool->bViewportFocused = ImGui::IsWindowFocused();
                         Tool->bViewportHovered = ImGui::IsWindowHovered();
                         Tool->DrawViewport(UpdateContext, ViewportTexture);
-                        
                     }
+
+                    Tool->GetWorld()->GetEntityRegistry().get<FEditorComponent>(Tool->EditorEntity).bEnabled = Tool->bViewportFocused;
                     
                     ImGui::End();
                 }
@@ -962,7 +964,6 @@ namespace Lumina
                     
                     ImGui::End();
                 }
-                
             }
         }
     }

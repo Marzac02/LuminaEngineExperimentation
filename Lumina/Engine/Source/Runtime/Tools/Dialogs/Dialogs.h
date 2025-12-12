@@ -32,50 +32,36 @@ namespace Lumina::Dialogs
         FatalError,
     };
     
-    EResult ShowInternal(ESeverity Severity, EType Type, const FString& Title, const FString& Message);
-    
-    LUMINA_API inline void Info(const FString& Title, const char* MessageFormat, ...)
-    {
-        va_list Args;
-        va_start(Args, MessageFormat);
-        FString Message;
-        Message.sprintf_va_list(MessageFormat, Args);
-        va_end(Args);
+    LUMINA_API EResult ShowInternal(ESeverity Severity, EType Type, const FString& Title, const FString& Message);
 
-        ShowInternal(ESeverity::Info, EType::Ok, Title, Message);
+    template <typename... TArgs>
+    void Info(const FString& Title, std::format_string<TArgs...> fmt, TArgs&&... Args)
+    {
+        std::string Msg = std::format(fmt, std::forward<TArgs>(Args)...);
+        ShowInternal(ESeverity::Info, EType::Ok, Title, Msg.c_str());
     }
 
-    LUMINA_API inline void Warning(const FString& Title, const char* MessageFormat, ...)
+    template <typename... TArgs>
+    void Warning(const FString& Title, std::format_string<TArgs...> fmt, TArgs&&... Args)
     {
-        va_list Args;
-        va_start(Args, MessageFormat);
-        FString Message;
-        Message.sprintf_va_list(MessageFormat, Args);
-        va_end(Args);
-
-        ShowInternal(ESeverity::Warning, EType::Ok, Title, Message);
+        std::string Msg = std::format(fmt, std::forward<TArgs>(Args)...);
+        ShowInternal(ESeverity::Warning, EType::Ok, Title, Msg.c_str());
     }
-    
-    LUMINA_API inline void Error(const FString& Title, const char* MessageFormat, ...)
-    {
-        va_list Args;
-        va_start(Args, MessageFormat);
-        FString Message;
-        Message.sprintf_va_list(MessageFormat, Args);
-        va_end(Args);
 
-        ShowInternal(ESeverity::Error, EType::Ok, Title, Message);
+    template <typename... TArgs>
+    void Error(const FString& Title, std::format_string<TArgs...> fmt, TArgs&&... Args)
+    {
+        std::string Msg = std::format(fmt, std::forward<TArgs>(Args)...);
+
+        ShowInternal(ESeverity::Error, EType::Ok, Title, Msg.c_str());
     }
-    
-    LUMINA_API inline bool Confirmation(const FString& Title, const char* MessageFormat, ...)
-    {
-        va_list Args;
-        va_start(Args, MessageFormat);
-        FString Message;
-        Message.sprintf_va_list(MessageFormat, Args);
-        va_end(Args);
 
-        return ShowInternal(ESeverity::Info, EType::YesNo, Title, Message) == EResult::Yes;
+    template <typename... TArgs>
+    bool Confirmation(const FString& Title, std::format_string<TArgs...> fmt, TArgs&&... Args)
+    {
+        std::string Msg = std::format(fmt, std::forward<TArgs>(Args)...);
+
+        return ShowInternal(ESeverity::Info, EType::YesNo, Title, Msg.c_str()) == EResult::Yes;
     }
 
     

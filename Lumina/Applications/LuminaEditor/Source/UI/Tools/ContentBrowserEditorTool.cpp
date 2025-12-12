@@ -58,7 +58,8 @@ namespace Lumina
 
             for (const FString& Path : FileEvent.GetPaths())
             {
-                PendingDrops.emplace_back(FPendingOSDrop{ Path, DropCursor });
+                PendingActions.get<FPendingOSDrop>()
+                PendingActions.emplace_back(FPendingOSDrop{ Path, DropCursor });
             }
 
             return true;
@@ -358,96 +359,53 @@ namespace Lumina
     {
         bool bWroteSomething = false;
         
-        for (FPendingDestroy& Destroy : PendingDestroy)
+
+        for (const FPendingDestroy& Destroy : PendingActions.get<FPendingDestroy>())
         {
-            if (CPackage::DestroyPackage(Destroy.PendingDestroy))
+            try
             {
-                FString PackagePathWithExt = Destroy.PendingDestroy + ".lasset";
-                std::filesystem::remove(PackagePathWithExt.c_str());
-                bWroteSomething = true;
+                if (std::filesystem::is_directory(Destroy.PendingDestroy.c_str()))
+                {
+                    if (std::filesystem::is_empty(Destroy.PendingDestroy.c_str()))
+                    {
+                        std::filesystem::remove(Destroy.PendingDestroy.c_str());
+                        bWroteSomething = true;
+                        
+                        ImGuiX::Notifications::NotifySuccess("Deleted Directory {0}", Destroy.PendingDestroy.c_str());
+                    }
+                }
+                else
+                {
+                    if (const FAssetData* Data = FAssetQuery().WithPath(Destroy.PendingDestroy).ExecuteFirst())
+                    {
+                        if (CObject* AliveObject = FindObject<CObject>(Data->AssetGUID))
+                        {
+                            ToolContext->OnDestroyAsset(AliveObject);
+                        }
+                    }
+
+                    if (CPackage::DestroyPackage(Destroy.PendingDestroy))
+                    {
+                        FString PackagePathWithExt = Destroy.PendingDestroy + ".lasset";
+                        bWroteSomething = true;
+
+                        ImGuiX::Notifications::NotifySuccess("Deleted Asset {0}", Destroy.PendingDestroy.c_str());
+
+                    }
+                }
             }
+            catch (const std::filesystem::filesystem_error& e)
+            {
+                LOG_ERROR("Failed to delete file: {0}", e.what());
+                ImGuiX::Notifications::NotifyError("Deletion failed: {0}", e.what());
+            }
+        }
+
+        for (const FPendingRename& Rename : PendingActions.get<FPendingRename>())
+        {
+            
         }
         
-        for (FPendingRename& Rename : PendingRenames)
-        {
-            if (Paths::IsDirectory(Rename.OldName))
-            {
-                if (std::filesystem::is_empty(Rename.OldName.c_str()))
-                {
-                    try
-                    {
-                        std::filesystem::rename(Rename.OldName.c_str(), Rename.NewName.c_str());
-                    }
-                    catch (std::filesystem::filesystem_error& Er)
-                    {
-                        ImGuiX::Notifications::NotifyError("Failed to rename {}", Er.what());
-                    }
-                }
-                else
-                {
-                    TVector<FString> ObjectsToRename; 
-                    for (auto& Dir : std::filesystem::recursive_directory_iterator(Rename.OldName.c_str())) 
-                    { 
-                        if (Dir.is_directory()) 
-                        { 
-                            continue; 
-                        }
- 
-                        if (Dir.path().extension() == ".lasset") 
-                        { 
-                            ObjectsToRename.push_back(Dir.path().generic_string().c_str()); 
-                        } 
-                    } 
-
-                    FString NormalizedOldPath = Rename.OldName;
-                    FString NormalizedNewPath = Rename.NewName;
-
-                    if (!NormalizedOldPath.empty() && NormalizedOldPath.back() != '/' && NormalizedOldPath.back() != '\\')
-                    {
-                        NormalizedOldPath += "/";
-                    }
-                    if (!NormalizedNewPath.empty() && NormalizedNewPath.back() != '/' && NormalizedNewPath.back() != '\\')
-                    {
-                        NormalizedNewPath += "/";
-                    }
-
-                    std::filesystem::rename(Rename.OldName.c_str(), Rename.NewName.c_str());
-
-                    bWroteSomething = true;
-                    
-                    for (const FString& ToRename : ObjectsToRename) 
-                    { 
-                        FString RenamePath = ToRename.c_str();
-    
-                        if (RenamePath.find(NormalizedOldPath) == 0)
-                        {
-                            RenamePath = NormalizedNewPath + RenamePath.substr(NormalizedOldPath.length());
-                            if (HandleRenameEvent(ToRename, RenamePath) == ObjectRename::EObjectRenameResult::Success)
-                            {
-                                ImGuiX::Notifications::NotifySuccess("Renamed to \"{0}\"", Rename.NewName.c_str());
-                            }
-                            else
-                            {
-                                ImGuiX::Notifications::NotifyError("Failed to rename asset");
-                            }
-                        }
-                    }
-                }
-            }
-            else
-            {
-                if (HandleRenameEvent(Rename.OldName, Rename.NewName) == ObjectRename::EObjectRenameResult::Success)
-                {
-                    bWroteSomething = true;
-                    ImGuiX::Notifications::NotifySuccess("Renamed to \"{0}\"", Rename.NewName.c_str());
-                }
-                else
-                {
-                    ImGuiX::Notifications::NotifyError("Failed to rename asset");
-                }
-            }
-        }
-
         if (bWroteSomething)
         {
             RefreshContentBrowser();
@@ -526,6 +484,17 @@ namespace Lumina
         }
     }
 
+    void FContentBrowserEditorTool::OpenDeletionWarningPopup(const FContentBrowserTileViewItem* Item, const TFunction<void(EYesNo)>& Callback)
+    {
+        if (Dialogs::Confirmation("Confirm Deletion", "Are you sure you want to delete \"{0}\"?\n""\nThis action cannot be undone.", Item->GetFileName()))
+        {
+            Callback(EYesNo::Yes);
+            PendingDestroy.emplace_back(FPendingDestroy{Item->GetPath()});
+        }
+
+        Callback(EYesNo::No);
+    }
+
     void FContentBrowserEditorTool::OnProjectLoaded()
     {
         SelectedPath = GEditorEngine->GetProject().GetProjectGameDirectory();
@@ -584,7 +553,7 @@ namespace Lumina
             FString PathString = Paths::Combine(SelectedPath.c_str(), NoExtFileName.c_str());
         
             Paths::AddPackageExtension(PathString);
-            //PathString = CPackage::MakeUniquePackagePath(PathString);
+            PathString = Paths::MakeUniquePath(PathString);
             PathString = Paths::RemoveExtension(PathString);
         
             if (Factory->HasImportDialogue())
@@ -918,7 +887,7 @@ namespace Lumina
         
         ImRect Rect(ChildMin, ChildMax);
 
-        for (FPendingOSDrop& Drop : PendingDrops)
+        for (FPendingOSDrop& Drop : PendingActions.get<FPendingOSDrop>())
         {
             if (Rect.Contains(Drop.MousePos))
             {
@@ -962,25 +931,7 @@ namespace Lumina
 
         if (bDeleteClicked)
         {
-            FString ConfirmMessage = std::format("Are you sure you want to delete \"{0}\"?\n\nThis action cannot be undone.", ContentItem->GetFileName().c_str()).c_str();
-            
-            if (Dialogs::Confirmation("Confirm Deletion", ConfirmMessage.c_str()))
-            {
-                if (std::filesystem::is_empty(ContentItem->GetPath().c_str()))
-                {
-                    try
-                    {
-                        std::filesystem::remove(ContentItem->GetPath().c_str());
-                        ImGuiX::Notifications::NotifySuccess("Deleted path");
-                        RefreshContentBrowser();
-                    }
-                    catch (const std::filesystem::filesystem_error& e)
-                    {
-                        LOG_ERROR("Failed to delete file: {0}", e.what());
-                        ImGuiX::Notifications::NotifyError("Deletion failed: {0}", e.what());
-                    }
-                }
-            }
+            OpenDeletionWarningPopup(ContentItem);
         }
     }
 
@@ -1014,38 +965,7 @@ namespace Lumina
 
         if (bDeleteClicked)
         {
-            FString ConfirmMessage = std::format("Are you sure you want to delete \"{0}\"?\n\nThis action cannot be undone.", ContentItem->GetFileName().c_str()).c_str();
-            
-            if (Dialogs::Confirmation("Confirm Deletion", ConfirmMessage.c_str()))
-            {
-                if (std::filesystem::is_directory(ContentItem->GetPath().c_str()))
-                {
-                    if (std::filesystem::is_empty(ContentItem->GetPath().c_str()))
-                    {
-                        try
-                        {
-                            std::filesystem::remove(ContentItem->GetPath().c_str());
-                            RefreshContentBrowser();
-                        }
-                        catch (const std::filesystem::filesystem_error& e)
-                        {
-                            ImGuiX::Notifications::NotifyError("Deletion failed: {0}", e.what());
-                        }
-                    }
-                }
-                else
-                {
-                    try
-                    {
-                        std::filesystem::remove(ContentItem->GetPath().c_str());
-                        RefreshContentBrowser();
-                    }
-                    catch (const std::filesystem::filesystem_error& e)
-                    {
-                        ImGuiX::Notifications::NotifyError("Deletion failed: {0}", e.what());
-                    }   
-                }
-            }
+            OpenDeletionWarningPopup(ContentItem);
         }
     }
 
@@ -1079,61 +999,17 @@ namespace Lumina
         
         if (bDeleteClicked)
         {
-            FString ConfirmMessage = std::format("Are you sure you want to delete \"{0}\"?\n\nThis action cannot be undone.", ContentItem->GetFileName().c_str()).c_str();
-            
-            if (Dialogs::Confirmation("Confirm Deletion", ConfirmMessage.c_str()))
-            {
-                try
-                {
-                    FString PackagePath = ContentItem->GetPath();
-                    bool bWasSuccessful = false;
-        
-                    if (std::filesystem::is_directory(PackagePath.c_str()))
-                    {
-                        if (std::filesystem::is_empty(PackagePath.c_str()))
-                        {
-                            std::filesystem::remove(PackagePath.c_str());
-                            bWasSuccessful = true;
-                            RefreshContentBrowser();   
-                        }
-                    }
-                    else
-                    {
-                        FString ObjectName = ContentItem->GetFileName();
-                        FString QualifiedName = ContentItem->GetVirtualPath() + "." + ObjectName;
-        
-                        if (CObject* AliveObject = FindObject<CObject>(QualifiedName))
-                        {
-                            ToolContext->OnDestroyAsset(AliveObject);
-                            bWasSuccessful = true;
-                        }
-
-                        PendingDestroy.emplace_back(FPendingDestroy{PackagePath});
-                    }
-        
-                    if (bWasSuccessful)
-                    {
-                        ImGuiX::Notifications::NotifySuccess("Deleted \"{0}\"", ContentItem->GetFileName().c_str());
-                    }
-                    else
-                    {
-                        ImGuiX::Notifications::NotifyError("Failed to delete \"{0}\"", ContentItem->GetFileName().c_str());
-                    }
-                }
-                catch (const std::filesystem::filesystem_error& e)
-                {
-                    LOG_ERROR("Failed to delete file: {0}", e.what());
-                    ImGuiX::Notifications::NotifyError("Deletion failed: {0}", e.what());
-                }
-            }
+            OpenDeletionWarningPopup(ContentItem);
         }
 
         if (ContentItem->IsAsset())
         {
             if (ImGui::MenuItem(LE_ICON_FOLDER_OPEN " Open", "Double-Click"))
             {
-                //CObject* Asset = LoadObject<CObject>(nullptr, QualifiedName);
-                //ToolContext->OpenAssetEditor(Asset);
+                if (const FAssetData* Data = FAssetQuery().WithPath(ContentItem->GetPath()).ExecuteFirst())
+                {
+                    ToolContext->OpenAssetEditor(Data->AssetGUID);
+                }
             }
             ImGui::Separator();
         }
@@ -1190,8 +1066,9 @@ namespace Lumina
                 {
                     FString PathString = Paths::Combine(SelectedPath.c_str(), Factory->GetDefaultAssetCreationName(PathString).c_str());
                     Paths::AddPackageExtension(PathString);
+                    PathString = Paths::MakeUniquePath(PathString);
                     PathString = Paths::RemoveExtension(PathString);
-        
+                    
                     if (Factory->HasCreationDialogue())
                     {
                         ToolContext->PushModal("Create New", {500, 500}, [this, Factory, PathString](const FUpdateContext& DrawContext)
@@ -1207,11 +1084,12 @@ namespace Lumina
                     }
                     else
                     {
-                        CObject* Object = Factory->TryCreateNew(PathString);
-                        CPackage* Package = CPackage::FindPackageByPath(PathString);
-                        CPackage::SavePackage(Package, PathString);
-                        if (Object)
+                        if (CObject* Object = Factory->TryCreateNew(PathString))
                         {
+                            CPackage* Package = CPackage::FindPackageByPath(PathString);
+                            CPackage::SavePackage(Package, PathString);
+                            FAssetRegistry::Get().AssetCreated(Object);
+
                             ImGuiX::Notifications::NotifySuccess("Successfully Created: \"{0}\"", PathString.c_str());
                         }
                         else

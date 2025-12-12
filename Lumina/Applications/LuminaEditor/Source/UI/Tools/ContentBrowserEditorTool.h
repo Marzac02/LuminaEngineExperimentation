@@ -1,6 +1,7 @@
 ﻿#pragma once
 #include "EditorTool.h"
 #include "Assets/AssetRegistry/AssetData.h"
+#include "Core/LuminaCommonTypes.h"
 #include "Core/Object/ObjectRename.h"
 #include "Core/Object/Package/Package.h"
 #include "Paths/Paths.h"
@@ -166,6 +167,8 @@ namespace Lumina
         {
         }
 
+        using FPendingActionsVector = TTupleVector<FPendingDestroy, FPendingOSDrop, FPendingRename>;
+        
         bool OnEvent(FEvent& Event) override;
         
         void RefreshContentBrowser();
@@ -185,6 +188,7 @@ namespace Lumina
         
     private:
 
+        void OpenDeletionWarningPopup(const FContentBrowserTileViewItem* Item, const TFunction<void(EYesNo)>& Callback = TFunction<void(EYesNo)>());
         void OnProjectLoaded();
 
         void TryImport(const FString& Path);
@@ -203,11 +207,16 @@ namespace Lumina
         void DrawScriptsDirectoryContextMenu();
         void DrawContentDirectoryContextMenu();
 
-        FDirectoryWatcher           Watcher;
+        template<typename T, typename ... TArgs>
+        T& EmplaceAction(TArgs&& ... Args)
+        {
+            entt::entity NewActionEntity = PendingActions.create();
+            return PendingActions.emplace<T>(NewActionEntity, Forward<TArgs>(Args)...);
+        }
 
-        TVector<FPendingDestroy>    PendingDestroy;
-        TVector<FPendingRename>     PendingRenames;
-        TVector<FPendingOSDrop>     PendingDrops;
+        entt::registry              PendingActions;
+        
+        FDirectoryWatcher           Watcher;
         FTreeListView               OutlinerListView;
         FTreeListViewContext        OutlinerContext;
 

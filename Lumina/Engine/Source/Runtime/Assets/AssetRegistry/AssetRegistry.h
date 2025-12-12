@@ -6,6 +6,7 @@
 #include "Subsystems/Subsystem.h"
 #include "Core/Delegates/Delegate.h"
 #include "Core/Serialization/MemoryArchiver.h"
+#include "Core/Templates/LuminaTemplate.h"
 #include "Core/Threading/Thread.h"
 #include "Memory/SmartPtr.h"
 
@@ -23,10 +24,7 @@ namespace Lumina
 	{
 		size_t operator() (const TSharedPtr<FAssetData>& Asset) const noexcept
 		{
-			size_t Seed;
-			Hash::HashCombine(Seed, Asset->AssetGUID);
-			
-			return Seed;
+			return Hash::GetHash(Asset->AssetGUID);
 		}
 	};
 
@@ -37,6 +35,22 @@ namespace Lumina
 			return A->AssetGUID == B->AssetGUID;
 		}
 	};
+
+    struct FGuidHash
+    {
+        size_t operator()(const FGuid& GUID) const noexcept
+        {
+            return Hash::GetHash(GUID);
+        }
+    };
+
+    struct FAssetDataGuidEqual
+    {
+        bool operator()(const TSharedPtr<FAssetData>& Asset, const FGuid& GUID) const noexcept
+        {
+            return Asset->AssetGUID == GUID;
+        }
+    };
 
 	using FAssetDataMap = THashSet<TSharedPtr<FAssetData>, FAssetDataPtrHash, FAssetDataPtrEqual>;
 	
@@ -53,8 +67,8 @@ namespace Lumina
 		void OnInitialDiscoveryCompleted();
 
 		void AssetCreated(CObject* Asset);
-		void AssetDeleted(const FName& Package);
-		void AssetRenamed(CObject* Asset, const FString& OldPackagePath);
+		void AssetDeleted(const FGuid& GUID);
+		void AssetRenamed(CObject* Asset);
 		void AssetSaved(CObject* Asset);
 
 		FAssetRegistryUpdatedDelegate& GetOnAssetRegistryUpdated() { return OnAssetRegistryUpdated; }
@@ -104,7 +118,7 @@ namespace Lumina
         virtual ~IAssetPredicate() = default;
         virtual bool Evaluate(const FAssetData& Asset) const = 0;
         virtual FString ToString() const = 0;
-        virtual eastl::shared_ptr<IAssetPredicate> Clone() const = 0;
+        virtual TSharedPtr<IAssetPredicate> Clone() const = 0;
     };
 
     // ============================================================================
@@ -119,7 +133,7 @@ namespace Lumina
     
     public:
         explicit FPathPredicate(FString InPath, bool bExact = false, bool bRec = true)
-            : Path(eastl::move(InPath)), bExactMatch(bExact), bRecursive(bRec) {}
+            : Path(Move(InPath)), bExactMatch(bExact), bRecursive(bRec) {}
     
         bool Evaluate(const FAssetData& Asset) const override
         {
@@ -153,9 +167,9 @@ namespace Lumina
                 bRecursive ? "" : "[NonRecursive]");
         }
     
-        eastl::shared_ptr<IAssetPredicate> Clone() const override
+        TSharedPtr<IAssetPredicate> Clone() const override
         {
-            return eastl::make_shared<FPathPredicate>(Path, bExactMatch, bRecursive);
+            return MakeSharedPtr<FPathPredicate>(Path, bExactMatch, bRecursive);
         }
     };
 
@@ -176,9 +190,9 @@ namespace Lumina
             return FString().sprintf("Guid(%s)", Guid.ToString().c_str());
         }
     
-        eastl::shared_ptr<IAssetPredicate> Clone() const override
+        TSharedPtr<IAssetPredicate> Clone() const override
         {
-            return eastl::make_shared<FGuidPredicate>(Guid);
+            return MakeSharedPtr<FGuidPredicate>(Guid);
         }
     };
 
@@ -210,9 +224,9 @@ namespace Lumina
                 bIncludeDerived ? "+Derived" : "");
         }
     
-        eastl::shared_ptr<IAssetPredicate> Clone() const override
+        TSharedPtr<IAssetPredicate> Clone() const override
         {
-            return eastl::make_shared<FClassPredicate>(ClassName, bIncludeDerived);
+            return MakeSharedPtr<FClassPredicate>(ClassName, bIncludeDerived);
         }
     };
 
@@ -223,7 +237,7 @@ namespace Lumina
     
     public:
         explicit FNamePredicate(FString InPattern, bool bCase = false)
-            : NamePattern(eastl::move(InPattern)), bCaseSensitive(bCase) {}
+            : NamePattern(Move(InPattern)), bCaseSensitive(bCase) {}
     
         bool Evaluate(const FAssetData& Asset) const override
         {
@@ -247,9 +261,9 @@ namespace Lumina
                 bCaseSensitive ? "[CaseSensitive]" : "");
         }
     
-        eastl::shared_ptr<IAssetPredicate> Clone() const override
+        TSharedPtr<IAssetPredicate> Clone() const override
         {
-            return eastl::make_shared<FNamePredicate>(NamePattern, bCaseSensitive);
+            return MakeSharedPtr<FNamePredicate>(NamePattern, bCaseSensitive);
         }
     };
 
@@ -262,7 +276,7 @@ namespace Lumina
     
     public:
         explicit TLambdaPredicate(Func&& InLambda, FString InDesc = "Custom")
-            : Lambda(eastl::forward<Func>(InLambda)), Description(eastl::move(InDesc)) {}
+            : Lambda(eastl::forward<Func>(InLambda)), Description(Move(InDesc)) {}
     
         bool Evaluate(const FAssetData& Asset) const override
         {
@@ -274,17 +288,17 @@ namespace Lumina
             return FString().sprintf("Lambda(%s)", Description.c_str());
         }
     
-        eastl::shared_ptr<IAssetPredicate> Clone() const override
+        TSharedPtr<IAssetPredicate> Clone() const override
         {
-            return eastl::make_shared<TLambdaPredicate<Func>>(eastl::forward<Func>(const_cast<Func&>(Lambda)), Description);
+            return MakeSharedPtr<TLambdaPredicate<Func>>(eastl::forward<Func>(const_cast<Func&>(Lambda)), Description);
         }
     };
 
     // Helper to create lambda predicates with type deduction
     template<typename Func>
-    eastl::shared_ptr<IAssetPredicate> MakeLambdaPredicate(Func&& Lambda, FString Desc = "Custom")
+    TSharedPtr<IAssetPredicate> MakeLambdaPredicate(Func&& Lambda, FString Desc = "Custom")
     {
-        return eastl::make_shared<TLambdaPredicate<eastl::decay_t<Func>>>(eastl::forward<Func>(Lambda), eastl::move(Desc));
+        return MakeSharedPtr<TLambdaPredicate<eastl::decay_t<Func>>>(eastl::forward<Func>(Lambda), Move(Desc));
     }
 
     // ============================================================================
@@ -293,11 +307,11 @@ namespace Lumina
 
     class LUMINA_API FAndPredicate : public IAssetPredicate
     {
-        eastl::vector<eastl::shared_ptr<IAssetPredicate>> Predicates;
+        TVector<TSharedPtr<IAssetPredicate>> Predicates;
     
     public:
-        explicit FAndPredicate(eastl::vector<eastl::shared_ptr<IAssetPredicate>> InPredicates)
-            : Predicates(eastl::move(InPredicates)) {}
+        explicit FAndPredicate(TVector<TSharedPtr<IAssetPredicate>> InPredicates)
+            : Predicates(Move(InPredicates)) {}
     
         bool Evaluate(const FAssetData& Asset) const override
         {
@@ -326,25 +340,25 @@ namespace Lumina
             return Result;
         }
     
-        eastl::shared_ptr<IAssetPredicate> Clone() const override
+        TSharedPtr<IAssetPredicate> Clone() const override
         {
-            eastl::vector<eastl::shared_ptr<IAssetPredicate>> ClonedPreds;
+            TVector<TSharedPtr<IAssetPredicate>> ClonedPreds;
             ClonedPreds.reserve(Predicates.size());
             for (const auto& P : Predicates)
             {
                 ClonedPreds.push_back(P->Clone());
             }
-            return eastl::make_shared<FAndPredicate>(eastl::move(ClonedPreds));
+            return MakeSharedPtr<FAndPredicate>(Move(ClonedPreds));
         }
     };
     
     class LUMINA_API FOrPredicate : public IAssetPredicate
     {
-        eastl::vector<eastl::shared_ptr<IAssetPredicate>> Predicates;
+        TVector<TSharedPtr<IAssetPredicate>> Predicates;
     
     public:
-        explicit FOrPredicate(eastl::vector<eastl::shared_ptr<IAssetPredicate>> InPredicates)
-            : Predicates(eastl::move(InPredicates)) {}
+        explicit FOrPredicate(TVector<TSharedPtr<IAssetPredicate>> InPredicates)
+            : Predicates(Move(InPredicates)) {}
     
         bool Evaluate(const FAssetData& Asset) const override
         {
@@ -373,25 +387,25 @@ namespace Lumina
             return Result;
         }
     
-        eastl::shared_ptr<IAssetPredicate> Clone() const override
+        TSharedPtr<IAssetPredicate> Clone() const override
         {
-            eastl::vector<eastl::shared_ptr<IAssetPredicate>> ClonedPreds;
+            TVector<TSharedPtr<IAssetPredicate>> ClonedPreds;
             ClonedPreds.reserve(Predicates.size());
             for (const auto& P : Predicates)
             {
                 ClonedPreds.push_back(P->Clone());
             }
-            return eastl::make_shared<FOrPredicate>(eastl::move(ClonedPreds));
+            return MakeSharedPtr<FOrPredicate>(Move(ClonedPreds));
         }
     };
 
     class LUMINA_API FNotPredicate : public IAssetPredicate
     {
-        eastl::shared_ptr<IAssetPredicate> Predicate;
+        TSharedPtr<IAssetPredicate> Predicate;
     
     public:
-        explicit FNotPredicate(eastl::shared_ptr<IAssetPredicate> InPredicate)
-            : Predicate(eastl::move(InPredicate)) {}
+        explicit FNotPredicate(TSharedPtr<IAssetPredicate> InPredicate)
+            : Predicate(Move(InPredicate)) {}
     
         bool Evaluate(const FAssetData& Asset) const override
         {
@@ -403,16 +417,12 @@ namespace Lumina
             return FString().sprintf("NOT(%s)", Predicate->ToString().c_str());
         }
     
-        eastl::shared_ptr<IAssetPredicate> Clone() const override
+        TSharedPtr<IAssetPredicate> Clone() const override
         {
-            return eastl::make_shared<FNotPredicate>(Predicate->Clone());
+            return MakeSharedPtr<FNotPredicate>(Predicate->Clone());
         }
     };
-
-    // ============================================================================
-    // Query Builder with Fluent Interface and Expression Templates
-    // ============================================================================
-
+    
     class LUMINA_API FAssetQuery
     {
     public:
@@ -421,30 +431,25 @@ namespace Lumina
         FAssetQuery(FAssetQuery&&) = default;
         FAssetQuery& operator=(const FAssetQuery&) = default;
         FAssetQuery& operator=(FAssetQuery&&) noexcept = default;
-    
-        // ========================================================================
-        // Predicate Builders
-        // ========================================================================
-    
+        
         FAssetQuery& WithPath(const FString& Path, bool bExact = false, bool bRecursive = true)
         {
-            AddPredicate(eastl::make_shared<FPathPredicate>(Path, bExact, bRecursive));
+            AddPredicate(MakeSharedPtr<FPathPredicate>(Path, bExact, bRecursive));
             return *this;
         }
     
         FAssetQuery& WithGuid(const FGuid& Guid)
         {
-            AddPredicate(eastl::make_shared<FGuidPredicate>(Guid));
+            AddPredicate(MakeSharedPtr<FGuidPredicate>(Guid));
             return *this;
         }
     
         FAssetQuery& OfClass(FName ClassName, bool bIncludeDerived = true)
         {
-            AddPredicate(eastl::make_shared<FClassPredicate>(ClassName, bIncludeDerived));
+            AddPredicate(MakeSharedPtr<FClassPredicate>(ClassName, bIncludeDerived));
             return *this;
         }
     
-        // Template version for compile-time class checking
         template<typename T>
         FAssetQuery& OfClass(bool bIncludeDerived = true)
         {
@@ -454,13 +459,13 @@ namespace Lumina
     
         FAssetQuery& WithName(const FString& Pattern, bool bCaseSensitive = false)
         {
-            AddPredicate(eastl::make_shared<FNamePredicate>(Pattern, bCaseSensitive));
+            AddPredicate(MakeSharedPtr<FNamePredicate>(Pattern, bCaseSensitive));
             return *this;
         }
     
         FAssetQuery& WithTag(FName Key, const FString& Value = FString())
         {
-            //AddPredicate(eastl::make_shared<FTagPredicate>(Key, Value));
+            //AddPredicate(MakeSharedPtr<FTagPredicate>(Key, Value));
             return *this;
         }
     
@@ -470,7 +475,7 @@ namespace Lumina
             static_assert(eastl::is_invocable_r_v<bool, Func, const FAssetData&>, "Lambda must be callable with signature: bool(const FAssetData&)");
         
             AddPredicate(MakeLambdaPredicate(eastl::forward<Func>(Lambda), 
-                eastl::move(Description)));
+                Move(Description)));
             return *this;
         }
     
@@ -502,9 +507,9 @@ namespace Lumina
     
         FAssetQuery& BeginGroup()
         {
-            GroupStack.push_back(eastl::move(CurrentPredicates));
+            GroupStack.push_back(Move(CurrentPredicates));
             CurrentPredicates.clear();
-            LogicalOpStack.push_back(eastl::move(LogicalOps));
+            LogicalOpStack.push_back(Move(LogicalOps));
             LogicalOps.clear();
             return *this;
         }
@@ -513,18 +518,18 @@ namespace Lumina
         {
             if (!GroupStack.empty())
             {
-                auto GroupPredicates = eastl::move(CurrentPredicates);
-                CurrentPredicates = eastl::move(GroupStack.back());
+                auto GroupPredicates = Move(CurrentPredicates);
+                CurrentPredicates = Move(GroupStack.back());
                 GroupStack.pop_back();
             
-                auto GroupOps = eastl::move(LogicalOps);
-                LogicalOps = eastl::move(LogicalOpStack.back());
+                auto GroupOps = Move(LogicalOps);
+                LogicalOps = Move(LogicalOpStack.back());
                 LogicalOpStack.pop_back();
             
                 if (!GroupPredicates.empty())
                 {
-                    auto GroupPred = CombinePredicatesWithOps(eastl::move(GroupPredicates), eastl::move(GroupOps));
-                    AddPredicate(eastl::move(GroupPred));
+                    auto GroupPred = CombinePredicatesWithOps(Move(GroupPredicates), Move(GroupOps));
+                    AddPredicate(Move(GroupPred));
                 }
             }
             return *this;
@@ -534,10 +539,10 @@ namespace Lumina
         // Execution Methods
         // ========================================================================
     
-        eastl::vector<FAssetData> Execute() const
+        TVector<FAssetData> Execute() const
         {
             FAssetRegistry& Registry = FAssetRegistry::Get();
-            eastl::vector<FAssetData> Results;
+            TVector<FAssetData> Results;
             auto FinalPredicate = BuildFinalPredicate();
         
             if (!FinalPredicate)
@@ -657,20 +662,20 @@ namespace Lumina
     private:
         enum class ELogicalOp : uint8 { And, Or };
     
-        eastl::vector<eastl::shared_ptr<IAssetPredicate>> CurrentPredicates;
-        eastl::vector<ELogicalOp> LogicalOps;
-        eastl::vector<eastl::vector<eastl::shared_ptr<IAssetPredicate>>> GroupStack;
-        eastl::vector<eastl::vector<ELogicalOp>> LogicalOpStack;
+        TVector<TSharedPtr<IAssetPredicate>> CurrentPredicates;
+        TVector<ELogicalOp> LogicalOps;
+        TVector<TVector<TSharedPtr<IAssetPredicate>>> GroupStack;
+        TVector<TVector<ELogicalOp>> LogicalOpStack;
         bool bNegateNext = false;
     
-        void AddPredicate(eastl::shared_ptr<IAssetPredicate> Predicate)
+        void AddPredicate(TSharedPtr<IAssetPredicate> Predicate)
         {
             if (bNegateNext)
             {
-                Predicate = eastl::make_shared<FNotPredicate>(eastl::move(Predicate));
+                Predicate = MakeSharedPtr<FNotPredicate>(Move(Predicate));
                 bNegateNext = false;
             }
-            CurrentPredicates.push_back(eastl::move(Predicate));
+            CurrentPredicates.push_back(Move(Predicate));
         }
     
         void PushLogicalOperator(ELogicalOp Op)
@@ -678,9 +683,7 @@ namespace Lumina
             LogicalOps.push_back(Op);
         }
     
-        eastl::shared_ptr<IAssetPredicate> CombinePredicatesWithOps(
-            eastl::vector<eastl::shared_ptr<IAssetPredicate>> Predicates,
-            eastl::vector<ELogicalOp> Ops) const
+        TSharedPtr<IAssetPredicate> CombinePredicatesWithOps(TVector<TSharedPtr<IAssetPredicate>> Predicates, TVector<ELogicalOp> Ops) const
         {
             if (Predicates.empty())
             {
@@ -713,7 +716,7 @@ namespace Lumina
                     else
                     {
                         AndGroups.push_back(
-                            eastl::make_shared<FAndPredicate>(eastl::move(CurrentAndGroup)));
+                            MakeSharedPtr<FAndPredicate>(Move(CurrentAndGroup)));
                     }
 
                     CurrentAndGroup.clear();
@@ -729,7 +732,7 @@ namespace Lumina
             else if (!CurrentAndGroup.empty())
             {
                 AndGroups.push_back(
-                    eastl::make_shared<FAndPredicate>(eastl::move(CurrentAndGroup)));
+                    MakeSharedPtr<FAndPredicate>(Move(CurrentAndGroup)));
             }
 
             if (AndGroups.size() == 1)
@@ -737,24 +740,18 @@ namespace Lumina
                 return AndGroups[0];
             }
 
-            return eastl::make_shared<FOrPredicate>(eastl::move(AndGroups));
+            return MakeSharedPtr<FOrPredicate>(Move(AndGroups));
         }
     
-        eastl::shared_ptr<IAssetPredicate> BuildFinalPredicate() const
+        TSharedPtr<IAssetPredicate> BuildFinalPredicate() const
         {
             return CombinePredicatesWithOps(CurrentPredicates, LogicalOps);
         }
     };
-
-    // ============================================================================
-    // Typed Query Builder with Compile-Time Class Constraints
-    // ============================================================================
-
     template<typename AssetType>
     class TAssetQuery : public FAssetQuery
     {
-        static_assert(eastl::is_base_of_v<CObject, AssetType>, 
-            "AssetType must derive from CObject");
+        static_assert(eastl::is_base_of_v<CObject, AssetType>, "AssetType must derive from CObject");
     
     public:
         TAssetQuery()
@@ -778,7 +775,7 @@ namespace Lumina
         template<typename Func>
         TAssetQuery& Where(Func&& Lambda, FString Desc = "Custom")
         {
-            FAssetQuery::Where(eastl::forward<Func>(Lambda), eastl::move(Desc));
+            FAssetQuery::Where(eastl::forward<Func>(Lambda), Move(Desc));
             return *this;
         }
     };

@@ -13,7 +13,6 @@
 #include "Renderer/RendererUtils.h"
 #include "Renderer/RenderTypes.h"
 #include "Renderer/RHIGlobals.h"
-#include "Renderer/RHIStaticStates.h"
 #include "Tools/Import/ImportHelpers.h"
 
 namespace Lumina
@@ -38,6 +37,7 @@ namespace Lumina
         TOptional<Import::Textures::FTextureImportResult> MaybeResult = Import::Textures::ImportTexture(RawPath, false);
         if (!MaybeResult.has_value())
         {
+            NewTexture->ForceDestroyNow();
             return;
         }
 
@@ -155,11 +155,9 @@ namespace Lumina
         }
 
         GRenderContext->UnMapStagingTexture(StagingImage);
-        
-        
-        if (ImageDescription.Extent.x == 0 || ImageDescription.Extent.y == 0)
-        {
-            LOG_ERROR("Attempted to import an image with an invalid size: X: {} Y: {}", ImageDescription.Extent.x, ImageDescription.Extent.y);
-        }
+
+        CPackage* NewPackage = NewTexture->GetPackage();
+        CPackage::SavePackage(NewPackage, NewPackage->GetFullPackageFilePath());
+        FAssetRegistry::Get().AssetCreated(NewTexture);
     }
 }

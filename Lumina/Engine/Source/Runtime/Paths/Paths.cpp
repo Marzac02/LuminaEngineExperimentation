@@ -236,7 +236,7 @@ namespace Lumina::Paths
         FString Path = FString(OriginPath);
 
         // Normalize path separators to '/'
-        eastl::replace(Path.begin(), Path.end(), '\\', '/');
+        NormalizePath(Path);
 
         // Split path into directory, base name, and extension
         const size_t LastSlash = Path.find_last_of('/');
@@ -359,7 +359,7 @@ namespace Lumina::Paths
 
     void NormalizePath(FString& Path)
     {
-        StringUtils::ReplaceAllOccurrencesInPlace(Path, "\\", "/");
+        eastl::replace(Path.begin(), Path.end(), '\\', '/');
     }
 
     bool PathsEqual(FStringView A, FStringView B)

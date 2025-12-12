@@ -358,47 +358,45 @@ namespace Lumina
 
             NewMesh->MeshResources = Move(MeshResource);
 
-            if (ImportedData.Textures.empty())
+            if (!ImportedData.Textures.empty())
             {
-                Counter++;
-                continue;
-            }
-
-            TVector<Import::Mesh::GLTF::FGLTFImage> Images(ImportedData.Textures.begin(), ImportedData.Textures.end());
-            uint32 WorkSize = (uint32)Images.size();
-            Task::ParallelFor(WorkSize, WorkSize / 4, [&](uint32 Index)
-            {
-                const Import::Mesh::GLTF::FGLTFImage& Texture = Images[Index];
-                
-                CTextureFactory* TextureFactory = CTextureFactory::StaticClass()->GetDefaultObject<CTextureFactory>();
-                
-                FString ParentPath = Paths::Parent(RawPath);
-                FString TexturePath = ParentPath + "/" + Texture.RelativePath;
-                FString TextureFileName = Paths::RemoveExtension(Paths::FileName(TexturePath));
-                                         
-                FString DestinationParent = Paths::GetVirtualPathPrefix(FullPath);
-                FString TextureDestination = DestinationParent + TextureFileName;
-
-                if (!FindObject<CPackage>(TextureDestination))
+                TVector<Import::Mesh::GLTF::FGLTFImage> Images(ImportedData.Textures.begin(), ImportedData.Textures.end());
+                uint32 WorkSize = (uint32)Images.size();
+                Task::ParallelFor(WorkSize, WorkSize / 4, [&](uint32 Index)
                 {
-                    TextureFactory->Import(TexturePath, TextureDestination);
+                    const Import::Mesh::GLTF::FGLTFImage& Texture = Images[Index];
+                
+                    CTextureFactory* TextureFactory = CTextureFactory::StaticClass()->GetDefaultObject<CTextureFactory>();
+                
+                    FString ParentPath = Paths::Parent(RawPath);
+                    FString TexturePath = ParentPath + "/" + Texture.RelativePath;
+                    FString TextureFileName = Paths::RemoveExtension(Paths::FileName(TexturePath));
+                                         
+                    FString DestinationParent = Paths::GetVirtualPathPrefix(FullPath);
+                    FString TextureDestination = DestinationParent + TextureFileName;
+
+                    if (!FindObject<CPackage>(TextureDestination))
+                    {
+                        TextureFactory->Import(TexturePath, TextureDestination);
+                    }
+
+                });
+            }
+
+            if (!ImportedData.Materials.empty())
+            {
+                for (SIZE_T i = 0; i < ImportedData.Materials[Counter].size(); ++i)
+                {
+                    //const Import::Mesh::GLTF::FGLTFMaterial& Material = ImportedData.Materials[Counter][i];
+                    //FName MaterialName = (i == 0) ? FString(FileName + "_Material").c_str() : FString(FileName + "_Material" + eastl::to_string(i)).c_str();
+                    ////CMaterial* NewMaterial = NewObject<CMaterial>(NewPackage, MaterialName.c_str());
+                    //NewMesh->Materials.push_back(nullptr);
                 }
-
-            });
-
-            if (ImportedData.Materials.empty())
-            {
-                Counter++;
-                continue;
             }
 
-            for (SIZE_T i = 0; i < ImportedData.Materials[Counter].size(); ++i)
-            {
-                //const Import::Mesh::GLTF::FGLTFMaterial& Material = ImportedData.Materials[Counter][i];
-                //FName MaterialName = (i == 0) ? FString(FileName + "_Material").c_str() : FString(FileName + "_Material" + eastl::to_string(i)).c_str();
-                ////CMaterial* NewMaterial = NewObject<CMaterial>(NewPackage, MaterialName.c_str());
-                //NewMesh->Materials.push_back(nullptr);
-            }
+            CPackage* NewPackage = NewMesh->GetPackage();
+            CPackage::SavePackage(NewPackage, NewPackage->GetFullPackageFilePath());
+            FAssetRegistry::Get().AssetCreated(NewMesh);
             
             Counter++;
         }

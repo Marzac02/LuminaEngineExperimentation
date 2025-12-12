@@ -105,9 +105,8 @@ namespace Lumina
                 
                 if (ImGui::BeginChild("##OptList", ChildSize, false, ImGuiChildFlags_NavFlattened))
                 {
+                    TVector<FAssetData> Assets = FAssetQuery().OfClass(ObjectProperty->GetPropertyClass()->GetName()).Execute();
                     
-                    TVector<FAssetData> Assets;
-                    //GEngine->GetEngineSubsystem<FAssetRegistry>()->GetAssetsByClass(ObjectProperty->GetPropertyClass(), Assets);
                     for (const FAssetData& Asset : Assets)
                     {
                         if (!SearchFilter.PassFilter(Asset.AssetName.c_str()))
@@ -115,13 +114,13 @@ namespace Lumina
                             continue;
                         }
                         
-                        //if (ImGui::Selectable(Asset.FullPath.c_str()))
-                        //{
-                        //    //Object = LoadObject<CObject>(nullptr, Asset.FullPath);
-                        //    ImGui::CloseCurrentPopup();
-                        //
-                        //    bWasChanged = true;
-                        //}
+                        if (ImGui::Selectable(Asset.AssetName.c_str()))
+                        {
+                            Object = LoadObject<CObject>(Asset.AssetGUID);
+                            ImGui::CloseCurrentPopup();
+                        
+                            bWasChanged = true;
+                        }
                     }
                 }
                 

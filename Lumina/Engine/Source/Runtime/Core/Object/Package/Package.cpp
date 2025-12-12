@@ -69,50 +69,71 @@ namespace Lumina
         return Package;
     }
     
-    bool CPackage::DestroyPackage(const FString& PackageName)
+    bool CPackage::DestroyPackage(const FString& PackageFilePath)
     {
-        FString PackageVirtualPath = Paths::ConvertToVirtualPath(PackageName);
+        FString PackageVirtualPath = Paths::ConvertToVirtualPath(PackageFilePath);
+
+        // If the package is loaded, we need to handle replacing references to its assets.
         if (CPackage* Package = FindObject<CPackage>(PackageVirtualPath))
         {
-            LUM_ASSERT(Package->FullyLoad())
+            return CPackage::DestroyPackage(Package);
+        }
 
-            for (const FObjectExport& Export : Package->ExportTable)
-            {
-                if (TObjectPtr<CObject> ExportObject = Export.Object.Lock())
-                {
-                    if (ExportObject->IsAsset())
-                    {
-                        FObjectReferenceReplacerArchive Ar(ExportObject, nullptr);
-                        for (TObjectIterator<CObject> Itr; Itr; ++Itr)
-                        {
-                            CObject* Object = *Itr;
-                            Object->Serialize(Ar);
-                        }
-                    }
-            
-                    if (ExportObject != Package)
-                    {
-                        ExportObject->ConditionalBeginDestroy();
-                    }
-                }
-            }
-        
-            Package->ExportTable.clear();
-            Package->ImportTable.clear();
-            
-            Package->RemoveFromRoot();
-            Package->ConditionalBeginDestroy();
-
-            FAssetRegistry::Get().AssetDeleted(PackageVirtualPath);
-
-            FString PathToRemove = PackageName;
-            Paths::AddPackageExtension(PathToRemove);
-            std::filesystem::remove(PathToRemove.c_str());
-
-            return true;
+        FString PackagePath = PackageFilePath;
+        if (!Paths::HasExtension(PackagePath, "lasset"))
+        {
+            Paths::AddPackageExtension(PackagePath);
         }
         
-        return false;
+        TVector<uint8> PackageBlob;
+        if (!FileHelper::LoadFileToArray(PackageBlob, PackageFilePath))
+        {
+            LOG_ERROR("Failed to load package file at path {}", PackagePath);
+            return false;
+        }
+
+        FName PackageFileName = Paths::FileName(PackagePath, true);
+
+
+        FPackageHeader Header;
+        FMemoryReader Reader(PackageBlob);
+        Reader << Header;
+
+        Reader.Seek(Header.ExportTableOffset);
+        
+        TVector<FObjectExport> Exports;
+        Reader << Exports;
+
+        TOptional<FObjectExport> Export;
+        for (const FObjectExport& E : Exports)
+        {
+            if (E.ObjectName == PackageFileName)
+            {
+                Export = E;
+                break;
+            }
+        }
+
+        if (!Export.has_value())
+        {
+            LOG_ERROR("No primary asset found in package");
+            return false;
+        }
+        
+
+        FAssetRegistry::Get().AssetDeleted(Export->ObjectGUID);
+
+        try
+        {
+            std::filesystem::remove(PackagePath.c_str());
+        }
+        catch (std::filesystem::filesystem_error& Error)
+        {
+            LOG_ERROR("Failed to delete asset file {0}", Error.what());
+            return false;
+        }
+        
+        return true;
     }
     
     bool CPackage::DestroyPackage(CPackage* PackageToDestroy)
@@ -122,11 +143,13 @@ namespace Lumina
         TVector<CObject*> ExportObjects;
         ExportObjects.reserve(20);
         GetObjectsWithPackage(PackageToDestroy, ExportObjects);
-        
+
+        FGuid AssetGUID;
         for (CObject* ExportObject : ExportObjects)
         {
             if (ExportObject->IsAsset())
             {
+                AssetGUID = ExportObject->GetGUID();
                 FObjectReferenceReplacerArchive Ar(ExportObject, nullptr);
                 for (TObjectIterator<CObject> Itr; Itr; ++Itr)
                 {
@@ -149,7 +172,9 @@ namespace Lumina
         PackageToDestroy->RemoveFromRoot();
         PackageToDestroy->ConditionalBeginDestroy();
 
-        FAssetRegistry::Get().AssetDeleted(PackagePath);
+        FAssetRegistry::Get().AssetDeleted(AssetGUID);
+
+        std::filesystem::remove(PackagePath.c_str());
 
         return true;
     }
@@ -526,6 +551,19 @@ namespace Lumina
         return true;
     }
 
+    CObject* CPackage::FindObjectInPackage(const FName& Name)
+    {
+        for (const FObjectExport& Export : ExportTable)
+        {
+            if (Export.ObjectName == Name)
+            {
+                return Export.Object.Get();
+            }
+        }
+
+        return nullptr;
+    }
+
     CObject* CPackage::IndexToObject(const FObjectPackageIndex& Index)
     {
         if (Index.IsNull())
@@ -577,9 +615,8 @@ namespace Lumina
 
     FString CPackage::GetFullPackageFilePath() const
     {
-        FString Path = Paths::ConvertToVirtualPath(GetName().ToString());
+        FString Path = Paths::ResolveVirtualPath(GetName().ToString());
         Paths::AddPackageExtension(Path);
-
         return Path;
     }
 }
