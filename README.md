@@ -115,14 +115,16 @@ Performance profiling - Built-in Lua script profiling with Tracy
 
 ### Installation
 
-** Disclaimer and tips **
+**Disclaimer and tips**
+
+
 Lumina's installation is being worked on, at the moment a majority of it's steps are compiled down into just running Setup.py.
 However I've noticed some issues with UTF-8 chars on Window's terminals, if the terminal opens and closes quickly, keep trying.
 
 There are also occasional issues I've noticed with Visual Studio where it will not pickup newly generated headers created by the Lumina Reflection Tool (LRT), if this happens and you 
 receive a "cannot find XXX.generated.h" error, just try building again, it should pick up the file the second time.
 
-Lumina relies on Python pretty heavily, including use of the "python" command line action, if you installed Python without selecting the option to add Python to your "PATH" system variable, the reflection tool will not,
+Lumina relies on Python pretty heavily, including use of the "python" command line action, if you installed Python without selecting the option to add Python to your "PATH" system variable, the reflection tool will not
 be able to run automatically and you will encounter a build error. Please see above images to confirm this action has been done correctly.
 
 Those of you who are newly installing Visual Studio 2026, without having installed Visual Studio 2022, by default the toolset Microsoft downloads for MSVC is to new for Lumina as it's only *officially* supported on v143. 
@@ -136,6 +138,7 @@ https://www.dropbox.com/scl/fi/suigjbqj75pzcpxcqm6hv/External.7z?rlkey=ebu8kiw4g
 -- If you encounter **any** other build issues during the installation of Lumina Engine, **please** reach out to me on Discord, or submit a Github Issue, that is the only way I am able to track these issues and fix them in  a timely manner.
 
 Thank you!
+
 
 ```
 
