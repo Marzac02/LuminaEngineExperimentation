@@ -48,8 +48,13 @@ namespace Lumina
 
     bool CObject::Rename(const FName& NewName, CPackage* NewPackage)
     {
-        FName SafeName = NewName;
-        HandleNameChange(SafeName, NewPackage);
+		if (NewName == GetName() && NewPackage == GetPackage())
+        {
+            return true;
+        }
+
+
+        HandleNameChange(NewName, NewPackage);
         return true;
     }
 }

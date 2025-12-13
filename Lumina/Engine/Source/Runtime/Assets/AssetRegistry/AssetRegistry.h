@@ -68,7 +68,7 @@ namespace Lumina
 
 		void AssetCreated(CObject* Asset);
 		void AssetDeleted(const FGuid& GUID);
-		void AssetRenamed(CObject* Asset);
+		void AssetRenamed(const FString& OldPath, const FString& NewPath);
 		void AssetSaved(CObject* Asset);
 
 		FAssetRegistryUpdatedDelegate& GetOnAssetRegistryUpdated() { return OnAssetRegistryUpdated; }

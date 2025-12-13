@@ -58,7 +58,7 @@ namespace Lumina
 
             for (const FString& Path : FileEvent.GetPaths())
             {
-                EmplaceAction<FPendingOSDrop>(FPendingOSDrop{ Path, DropCursor });
+                ActionRegistry.EnqueueAction<FPendingOSDrop>(FPendingOSDrop{ Path, DropCursor });
             }
 
             return true;
@@ -359,19 +359,16 @@ namespace Lumina
     {
         bool bWroteSomething = false;
         
-        PendingActions.view<FPendingDestroy>().each([&](FPendingDestroy& Destroy)
+        ActionRegistry.ProcessAllOf<FPendingDestroy>([&] (FPendingDestroy& Destroy)
         {
             try
             {
                 if (std::filesystem::is_directory(Destroy.PendingDestroy.c_str()))
                 {
-                    if (std::filesystem::is_empty(Destroy.PendingDestroy.c_str()))
-                    {
-                        std::filesystem::remove(Destroy.PendingDestroy.c_str());
-                        bWroteSomething = true;
+                    std::filesystem::remove(Destroy.PendingDestroy.c_str());
+                    bWroteSomething = true;
 
-                        ImGuiX::Notifications::NotifySuccess("Deleted Directory {0}", Destroy.PendingDestroy.c_str());
-                    }
+                    ImGuiX::Notifications::NotifySuccess("Deleted Directory {0}", Destroy.PendingDestroy.c_str());
                 }
                 else
                 {
@@ -392,6 +389,8 @@ namespace Lumina
 
                     }
                 }
+
+                bWroteSomething = true;
             }
             catch (const std::filesystem::filesystem_error& e)
             {
@@ -400,18 +399,74 @@ namespace Lumina
             }
 		});
         
-        //for (const FPendingRename& Rename : PendingActions.get<FPendingRename>())
-        //{
-        //    
-        //}
-        
+        ActionRegistry.ProcessAllOf<FPendingRename>([&](FPendingRename& Rename)
+        {
+            try
+            {
+                std::filesystem::rename(Rename.OldName.c_str(), Rename.NewName.c_str());
+
+                FString Extension = Paths::GetExtension(Rename.OldName);
+
+                // Lua will update itself via the directory watcher.
+
+                if (Extension == ".lasset")
+                {
+                    // Rename the underlying asset's package.
+                    FString OldObjectName = Paths::ConvertToVirtualPath(Rename.OldName);
+                    FString NewObjectName = Paths::ConvertToVirtualPath(Rename.NewName);
+
+                    CPackage::RenamePackage(OldObjectName, NewObjectName);
+                    FAssetRegistry::Get().AssetRenamed(Rename.OldName, Rename.NewName);
+                }
+                else if (Extension.empty())
+                {
+
+                    for (const std::filesystem::directory_entry& Directory : std::filesystem::recursive_directory_iterator(Rename.NewName.c_str()))
+                    {
+                        if (Directory.is_directory())
+                        {
+                            continue;
+                        }
+
+
+                        if (Directory.path().extension() == ".lasset")
+                        {
+                            FString CurrentPath = Directory.path().string().c_str();
+
+                            FString CurrentVirtualPath = Paths::ConvertToVirtualPath(CurrentPath);
+
+                            FString OldDirVirtual = Paths::ConvertToVirtualPath(Rename.OldName);
+                            FString NewDirVirtual = Paths::ConvertToVirtualPath(Rename.NewName);
+
+                            FString OldObjectName = CurrentVirtualPath;
+                            if (CurrentVirtualPath.find(NewDirVirtual) == 0)
+                            {
+                                OldObjectName = OldDirVirtual + CurrentVirtualPath.substr(NewDirVirtual.length());
+                            }
+
+                            CPackage::RenamePackage(OldObjectName, CurrentVirtualPath);
+
+                            FString OldObjectFilePath = Paths::ResolveVirtualPath(OldObjectName) += ".lasset";
+                            Paths::NormalizePath(CurrentPath);
+                            FAssetRegistry::Get().AssetRenamed(OldObjectFilePath, CurrentPath);
+                        }
+                    }
+                }
+
+                bWroteSomething = true;
+
+            }
+            catch (std::filesystem::filesystem_error& Error)
+            {
+                LOG_ERROR("Failed to process rename: {0}", Error.what());
+            }
+        });
+
+
         if (bWroteSomething)
         {
             RefreshContentBrowser();
         }
-
-        PendingActions.clear<FPendingDestroy>();
-		PendingActions.clear<FPendingRename>();
     }
     
     void FContentBrowserEditorTool::InitializeDockingLayout(ImGuiID InDockspaceID, const ImVec2& InDockspaceSize) const
@@ -446,41 +501,18 @@ namespace Lumina
 
     void FContentBrowserEditorTool::HandleContentBrowserDragDrop(FContentBrowserTileViewItem* Drop, FContentBrowserTileViewItem* Payload)
     {
-        /** If the payload is a folder, and is empty, we don't need to do much besides moving the folder */
-        if (Payload->IsDirectory() && Paths::Exists(Payload->GetPath()))
+        FString DestPath;
+
+        if (!Drop->IsDirectory())
         {
-            if (std::filesystem::is_empty(Payload->GetPath().c_str()))
-            {
-                std::filesystem::path SourcePath = Payload->GetPath().c_str();
-                FString SourceFileName = SourcePath.filename().generic_string().c_str();
-            
-                FString DestPath = Drop->GetPath() + "/" + SourceFileName;
-                
-                try
-                {
-                    std::filesystem::rename(SourcePath, DestPath.c_str());
-                    ImGuiX::Notifications::NotifySuccess("Moved folder {0} \n {1}", SourcePath.string(), DestPath);
-                    RefreshContentBrowser();
-                }
-                catch (const std::filesystem::filesystem_error& e)
-                {
-                    ImGuiX::Notifications::NotifyError("Failed to move folder: {0}", e.what());
-                }
-            }
-            else
-            {
-                
-                //...TODO Moving all assets in a folder :(
-            }
+            return;
         }
 
+        size_t Pos = Payload->GetPath().find_last_of('/');
+        FString DirName = (Pos != FString::npos) ? Payload->GetPath().substr(Pos + 1) : Payload->GetPath();
+        DestPath = Drop->GetPath() + "/" + DirName;
 
-        if (!Payload->IsDirectory())
-        {
-            const FString& OldPath = Payload->GetPath();
-            //FString NewPath = Drop->GetPath() + "/" + Payload->GetAssetData().AssetName.ToString();
-            //PendingRenames.emplace_back(FPendingRename{OldPath, NewPath});
-        }
+        ActionRegistry.EnqueueAction<FPendingRename>(FPendingRename{ Payload->GetPath(), DestPath });
     }
 
     void FContentBrowserEditorTool::OpenDeletionWarningPopup(const FContentBrowserTileViewItem* Item, const TFunction<void(EYesNo)>& Callback)
@@ -488,7 +520,7 @@ namespace Lumina
         if (Dialogs::Confirmation("Confirm Deletion", "Are you sure you want to delete \"{0}\"?\n""\nThis action cannot be undone.", Item->GetFileName()))
         {
             Callback(EYesNo::Yes);
-			EmplaceAction<FPendingDestroy>(FPendingDestroy{ Item->GetPath() });
+            ActionRegistry.EnqueueAction<FPendingDestroy>(FPendingDestroy{ Item->GetPath() });
         }
 
         Callback(EYesNo::No);
@@ -578,12 +610,6 @@ namespace Lumina
             }
         }
     }
-    
-
-    ObjectRename::EObjectRenameResult FContentBrowserEditorTool::HandleRenameEvent(const FString& OldPath, const FString& NewPath)
-    {
-        return ObjectRename::RenameObject(OldPath, NewPath);
-    }
 
     void FContentBrowserEditorTool::PushRenameModal(FContentBrowserTileViewItem* ContentItem)
     {
@@ -651,19 +677,12 @@ namespace Lumina
                     bHasError = true;
                     bIsValid = false;
                 }
-                else if (!ContentItem->IsDirectory())
+                else
                 {
-                    //FString TestAssetName = ContentItem->GetAssetData().PackageName.ToString() + "." + RenameState->Buffer;
-                    //if (CObject* TestObject = FindObject<CObject>(nullptr, TestAssetName))
-                    //{
-                    //    //ValidationMessage = std::format("Asset already exists: {}", *TestObject->GetQualifiedName()).c_str();
-                    //    bHasError = true;
-                    //    bIsValid = false;
-                    //}
-                }
-                else if (ContentItem->IsAsset())
-                {
-                    FString TestPath = ContentItem->GetPath() + "/" + RenameState->Buffer;
+                    FString Extension = ContentItem->GetExtension();
+                    FString PathNoExt = Paths::RemoveExtension(ContentItem->GetPath());
+                    FString TestPath = PathNoExt + "/" + RenameState->Buffer + Extension;
+
                     if (std::filesystem::exists(TestPath.c_str()))
                     {
                         ValidationMessage = std::format("Path already exists: {}", TestPath.c_str()).c_str();
@@ -697,18 +716,20 @@ namespace Lumina
             
             if (bSubmitted && bIsValid)
             {
-                FString NewPath = Paths::Parent(ContentItem->GetPath()) + "/" + RenameState->Buffer;
-				EmplaceAction<FPendingRename>(FPendingRename{ ContentItem->GetPath(), NewPath });
+                FString Extension = ContentItem->GetExtension();
+                FString ParentPath = Paths::Parent(ContentItem->GetPath());
+                FString NewPath = ParentPath + "/" + RenameState->Buffer + Extension;
+                ActionRegistry.EnqueueAction<FPendingRename>(FPendingRename{ ContentItem->GetPath(), NewPath });
                 RenameState->Reset();
                 return true;
             }
             
             ImGui::Spacing();
             
-            float remainingHeight = ImGui::GetContentRegionAvail().y - 40.0f;
-            if (remainingHeight > 0)
+            float RemainingHeight = ImGui::GetContentRegionAvail().y - 40.0f;
+            if (RemainingHeight > 0)
             {
-                ImGui::Dummy(ImVec2(0, remainingHeight));
+                ImGui::Dummy(ImVec2(0, RemainingHeight));
             }
             
             ImGui::Separator();
@@ -735,8 +756,10 @@ namespace Lumina
             {
                 if (bIsValid)
                 {
-                    FString NewPath = Paths::Parent(ContentItem->GetPath()) + "/" + RenameState->Buffer;
-					EmplaceAction<FPendingRename>(FPendingRename{ ContentItem->GetPath(), NewPath });
+                    FString Extension = ContentItem->GetExtension();
+                    FString ParentPath = Paths::Parent(ContentItem->GetPath());
+                    FString NewPath = ParentPath + "/" + RenameState->Buffer + Extension;
+                    ActionRegistry.EnqueueAction<FPendingRename>(FPendingRename{ ContentItem->GetPath(), NewPath });
                     RenameState->Reset();
                     return true;
                 }
@@ -771,7 +794,6 @@ namespace Lumina
             ImGui::PopStyleColor(3);
             ImGui::PopStyleVar();
             
-            // ESC to cancel
             if (ImGui::IsKeyPressed(ImGuiKey_Escape))
             {
                 RenameState->Reset();
@@ -886,16 +908,13 @@ namespace Lumina
         
         ImRect Rect(ChildMin, ChildMax);
 
-        PendingActions.view<FPendingOSDrop>().each([&](FPendingOSDrop& Drop)
+        ActionRegistry.ProcessAllOf<FPendingOSDrop>([&](FPendingOSDrop& Drop)
         {
             if (Rect.Contains(Drop.MousePos))
             {
                 TryImport(Drop.Path);
             }
 		});
-
-
-        PendingActions.clear<FPendingOSDrop>();
         
         ImGui::EndChild();
     

@@ -87,10 +87,20 @@ namespace Lumina
         GetOnAssetRegistryUpdated().Broadcast();
     }
 
-    void FAssetRegistry::AssetRenamed(CObject* Asset)
+    void FAssetRegistry::AssetRenamed(const FString& OldPath, const FString& NewPath)
     {
         FScopeLock Lock(AssetsMutex);
 
+        auto It = eastl::find_if(Assets.begin(), Assets.end(), [&OldPath](const TSharedPtr<FAssetData>& Asset)
+        {
+            return Asset->FilePath == OldPath;
+        });
+
+        LUM_ASSERT(It != Assets.end())
+
+        TSharedPtr<FAssetData> Data = *It;
+        Data->PackageName = Paths::ConvertToVirtualPath(NewPath);
+        Data->FilePath = NewPath;
 
         GetOnAssetRegistryUpdated().Broadcast();
     }

@@ -27,6 +27,8 @@ namespace Lumina
         LUM_ASSERT(It != ObjectGUIDHash.end())
 
         ObjectGUIDHash.erase(It);
+
+
         ObjectClassBucket[Object->GetClass()].erase(Object);
     }
 

@@ -34,9 +34,7 @@ namespace Lumina
 
     FObjectImport::FObjectImport(CObject* InObject)
     {
-        Package         = InObject->GetPackage()->GetName();
         ObjectGUID      = InObject->GetGUID();
-        ClassName       = InObject->GetClass()->GetName();
         Object          = InObject;
     }
 
@@ -44,6 +42,48 @@ namespace Lumina
     void CPackage::OnDestroy()
     {
         
+    }
+
+    bool CPackage::Rename(const FName& NewName, CPackage* NewPackage)
+    {
+		FString FileName = Paths::FileName(NewName.ToString(), true);
+		FString OldFileName = Paths::FileName(GetName().ToString(), true);
+        bool bFileNameDirty = FileName != OldFileName;
+     
+        if (bFileNameDirty)
+        {
+            for (FObjectExport& Export : ExportTable)
+            {
+                if (Export.ObjectName == OldFileName)
+                {
+                    Export.ObjectName = FileName;
+                    if (CObject* Object = Export.Object.Get())
+                    {
+                        LUM_ASSERT(Object->GetName() == OldFileName)
+                            Object->Rename(FileName, nullptr);
+                        break;
+                    }
+                }
+            }
+        }
+
+		bool bSuccess = CObject::Rename(NewName, NewPackage);
+        if (bSuccess && bFileNameDirty)
+        {
+			FString FilePath = Paths::ResolveVirtualPath(GetName().ToString()) + ".lasset";
+            CPackage::SavePackage(this, FilePath);
+
+            for (FObjectExport& Export : ExportTable)
+            {
+                if (Export.Object.Get())
+                {
+                    Export.Object.Get()->ConditionalBeginDestroy();
+                }
+            }
+        }
+
+
+        return bSuccess;
     }
 
     CPackage* CPackage::CreatePackage(const FString& FileName)
@@ -193,6 +233,56 @@ namespace Lumina
         return Package;
     }
 
+    void CPackage::RenamePackage(const FString& OldPath, const FString& NewPath)
+    {
+        if (CPackage* Package = FindObject<CPackage>(OldPath))
+        {
+            LUM_ASSERT(Package->Rename(NewPath, nullptr))
+            return;
+        }
+
+		FString NewFileName = Paths::FileName(NewPath, true);
+		FString OldFileName = Paths::FileName(OldPath, true);
+        bool bFileNameDirty = NewFileName != OldFileName;
+        if (!bFileNameDirty)
+        {
+            return;
+		}
+
+		// This is kind of weird but the file has already been moved, so we need to use the new path to load it.
+		FString FilePath = Paths::ResolveVirtualPath(NewPath) + ".lasset";
+        TVector<uint8> FileBlob;
+        if (!FileHelper::LoadFileToArray(FileBlob, FilePath))
+        {
+			LOG_ERROR("Failed to load package file at path {}", FilePath);
+            return;
+        }
+
+		FMemoryReader Reader(FileBlob);
+
+        FPackageHeader Header;
+        Reader << Header;
+        Reader.Seek(Header.ExportTableOffset);
+        
+        TVector<FObjectExport> Exports;
+        Reader << Exports;
+
+        for (FObjectExport& Export : Exports)
+        {
+            if (Export.ObjectName == Paths::FileName(OldPath, true))
+            {
+                Export.ObjectName = Paths::FileName(NewPath, true);
+                break;
+            }
+        }
+
+        FMemoryWriter Writer(FileBlob);
+        Writer.Seek(Header.ExportTableOffset);
+        Writer << Exports;
+
+		FileHelper::SaveArrayToFile(FileBlob, FilePath);
+	}
+
     CPackage* CPackage::LoadPackage(const FName& FileName)
     {
         LUMINA_PROFILE_SCOPE();
@@ -260,6 +350,8 @@ namespace Lumina
             LOG_ERROR("Cannot save a null package! {}", FileName);
             return false;
         }
+
+        Package->FullyLoad();
 
         FString PathString = FileName.ToString();
         if (!Paths::HasExtension(PathString, "lasset"))
@@ -579,16 +671,9 @@ namespace Lumina
                 LOG_WARN("Failed to find an object in the import table {}", ArrayIndex);
                 return nullptr;
             }
-            FObjectImport& Import = ImportTable[ArrayIndex];
-            FString FullPath = Paths::ResolveVirtualPath(Import.Package.ToString());
-            CPackage* Package = LoadPackage(FName(FullPath));
 
-            if (Package == nullptr)
-            {
-                return nullptr;
-            }
-            
-            Import.Object = Package->LoadObject(Import.ObjectGUID);
+            FObjectImport& Import = ImportTable[ArrayIndex];
+            Import.Object = Lumina::LoadObject<CObject>(Import.ObjectGUID);
             
             return ImportTable[ArrayIndex].Object.Get();
         }

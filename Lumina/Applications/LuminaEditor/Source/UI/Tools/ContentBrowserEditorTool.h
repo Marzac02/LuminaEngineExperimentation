@@ -7,6 +7,7 @@
 #include "Paths/Paths.h"
 #include "Platform/Filesystem/DirectoryWatcher.h"
 #include "Renderer/RHIFwd.h"
+#include "Tools/Actions/DeferredActions.h"
 #include "Tools/UI/ImGui/imfilebrowser.h"
 #include "Tools/UI/ImGui/Widgets/TileViewWidget.h"
 #include "Tools/UI/ImGui/Widgets/TreeListView.h"
@@ -147,9 +148,10 @@ namespace Lumina
             void SetPath(FStringView NewPath) { Path = NewPath; Paths::ConvertToVirtualPath(Path); }
             const FString& GetPath() const { return Path; }
             const FString& GetVirtualPath() const { return VirtualPath; }
-            bool IsAsset() const { return Paths::GetExtension(Path) == "lasset"; }
+            bool IsAsset() const { return Paths::GetExtension(Path) == ".lasset"; }
             bool IsDirectory() const { return !IsAsset() && !IsLuaScript(); }
-            bool IsLuaScript() const { return Paths::GetExtension(Path) == "lua"; }
+            bool IsLuaScript() const { return Paths::GetExtension(Path) == ".lua"; }
+            FString GetExtension() const { return Paths::GetExtension(Path); }
             
         private:
             
@@ -193,8 +195,6 @@ namespace Lumina
 
         void TryImport(const FString& Path);
         
-        ObjectRename::EObjectRenameResult HandleRenameEvent(const FString& OldPath, const FString& NewPath);
-
         void PushRenameModal(FContentBrowserTileViewItem* ContentItem);
         
         void DrawDirectoryBrowser(const FUpdateContext& Context, bool bIsFocused, ImVec2 Size);
@@ -207,14 +207,7 @@ namespace Lumina
         void DrawScriptsDirectoryContextMenu();
         void DrawContentDirectoryContextMenu();
 
-        template<typename T, typename ... TArgs>
-        T& EmplaceAction(TArgs&& ... Args)
-        {
-            entt::entity NewActionEntity = PendingActions.create();
-            return PendingActions.emplace<T>(NewActionEntity, Forward<TArgs>(Args)...);
-        }
-
-        entt::registry              PendingActions;
+        FDeferredActionRegistry     ActionRegistry;
         
         FDirectoryWatcher           Watcher;
         FTreeListView               OutlinerListView;

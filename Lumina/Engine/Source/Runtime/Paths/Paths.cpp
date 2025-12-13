@@ -81,10 +81,10 @@ namespace Lumina::Paths
         size_t Dot = InPath.find_last_of('.');
         if (Dot != FString::npos && Dot + 1 < InPath.length())
         {
-            return InPath.substr(Dot + 1);
+            return InPath.substr(Dot);
         }
 
-        return InPath;
+        return FString();
     }
 
     bool HasExtension(const FString& Path, const FString& Ext)
@@ -360,6 +360,12 @@ namespace Lumina::Paths
     void NormalizePath(FString& Path)
     {
         eastl::replace(Path.begin(), Path.end(), '\\', '/');
+
+        size_t Pos = 0;
+        while ((Pos = Path.find("//", Pos)) != FString::npos)
+        {
+            Path.erase(Pos, 1);
+        }
     }
 
     bool PathsEqual(FStringView A, FStringView B)

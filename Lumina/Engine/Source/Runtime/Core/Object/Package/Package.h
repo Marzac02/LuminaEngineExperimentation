@@ -57,24 +57,17 @@ namespace Lumina
     {
         FObjectImport() = default;
         FObjectImport(CObject* InObject);
-        
-        /** Full path to the package this object comes from */
-        FName Package; // e.g., "project://Materials/Steel"
+       
 
         /** Globally unique ID of the object */
         FGuid ObjectGUID;
-
-        /** The class of the object (optional; may be validated on load) */
-        FName ClassName;
 
         /** Runtime-resolved pointer after import is loaded */
         TWeakObjectPtr<CObject> Object;
 
         FORCEINLINE friend FArchive& operator << (FArchive& Ar, FObjectImport& Data)
         {
-            Ar << Data.Package;
             Ar << Data.ObjectGUID;
-            Ar << Data.ClassName;
             
             return Ar;
         }
@@ -213,6 +206,7 @@ namespace Lumina
         
 
         void OnDestroy() override;
+        bool Rename(const FName& NewName, CPackage* NewPackage) override;
         
         /**
          * 
@@ -226,6 +220,9 @@ namespace Lumina
         LUMINA_API static bool DestroyPackage(CPackage* PackageToDestroy);
 
         LUMINA_API static CPackage* FindPackageByPath(const FString& FullPath);
+
+        LUMINA_API static void RenamePackage(const FString& OldPath, const FString& NewPath);
+
 
         /**
          * Will load the package and create the package loader. If called twice, nothing will happen.
@@ -255,8 +252,7 @@ namespace Lumina
 
         void WriteImports(FPackageSaver& Ar, FPackageHeader& Header, FSaveContext& SaveContext);
         void WriteExports(FPackageSaver& Ar, FPackageHeader& Header, FSaveContext& SaveContext);
-        
-        
+                
         /**
          * Actually serialize the object from this package. After this function is finished,
          * the object will be fully loaded. If it's called without OF_NeedsLoad, data serialization
@@ -292,7 +288,7 @@ namespace Lumina
         
     public:
 
-        uint32                           bDirty:1=0;
+        uint32                           bDirty:1 = false;
         
         TUniquePtr<FArchive>             Loader;
         TVector<FObjectImport>           ImportTable;

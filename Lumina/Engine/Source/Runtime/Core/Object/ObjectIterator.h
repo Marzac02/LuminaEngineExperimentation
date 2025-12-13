@@ -33,7 +33,7 @@ namespace Lumina
                 }
                 else
                 {
-                    if (typeid(*Object) == typeid(T))
+                    if (Object->GetClass() == T::StaticClass())
                     {
                         AllObjects.push_back(Object);
                     }
@@ -69,7 +69,7 @@ namespace Lumina
             }
         }
 
-        TFixedVector<CObjectBase*, 1024> AllObjects;
+        TFixedVector<CObjectBase*, 10> AllObjects;
         SIZE_T Index;
     };
 }

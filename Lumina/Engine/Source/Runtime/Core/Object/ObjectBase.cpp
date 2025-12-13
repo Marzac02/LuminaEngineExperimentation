@@ -153,7 +153,7 @@ namespace Lumina
         FObjectHashTables::Get().RemoveObject(this);
         
         NamePrivate = NewName;
-        if (NewPackage != PackagePrivate)
+        if (NewPackage != PackagePrivate && NewPackage != nullptr)
         {
             PackagePrivate = NewPackage;
         }

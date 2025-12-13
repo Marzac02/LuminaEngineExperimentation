@@ -21,7 +21,7 @@ namespace Lumina
         FString GetAssetDescription() const override { return "A static mesh."; }
         CClass* GetAssetClass() const override { return CStaticMesh::StaticClass(); }
         bool CanImport() override { return true; }
-        bool IsExtensionSupported(const FString& Ext) override { return Ext == "gltf" || Ext == "glb"; }
+        bool IsExtensionSupported(const FString& Ext) override { return Ext == ".gltf" || Ext == ".glb"; }
 
         bool HasImportDialogue() const override { return true; }
         bool DrawImportDialogue(const FString& RawPath, const FString& DestinationPath, bool& bShouldClose) override;
