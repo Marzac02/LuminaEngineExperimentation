@@ -53,7 +53,7 @@ namespace Lumina
             DrawGLSLPreview(Cxt);
         });
 
-        FString GraphName = Asset->GetName().ToString() + "_MaterialGraph";
+        FString GraphName = "AssetMaterialGraph";
         NodeGraph = Cast<CMaterialNodeGraph>(Asset->GetPackage()->LoadObjectByName(GraphName));
         
         if (NodeGraph == nullptr)

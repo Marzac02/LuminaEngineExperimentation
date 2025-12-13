@@ -453,6 +453,7 @@ namespace Lumina
                     }
                 }
 
+                ImGuiX::Notifications::NotifySuccess("Rename Success");
                 bWroteSomething = true;
 
             }
