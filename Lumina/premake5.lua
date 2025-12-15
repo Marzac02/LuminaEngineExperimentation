@@ -38,6 +38,7 @@ project "Lumina"
     postbuildcommands
     {
         '{COPYFILE} "%{LuminaEngineDirectory}/External/RenderDoc/renderdoc.dll" "%{cfg.targetdir}"',
+        '{COPYFILE} "%{LuminaEngineDirectory}/Lumina/Engine/ThirdParty/NvidiaAftermath/lib/GFSDK_Aftermath_Lib.x64.dll" "%{cfg.targetdir}"',
     }
 
     files
@@ -87,7 +88,7 @@ project "Lumina"
         "Tracy",
         "lua54",
         "shaderc_combined",
-        "GFSDK_Aftermath_Lib.x64"
+        "GFSDK_Aftermath_Lib",
     }
 
     filter "configurations:Debug"

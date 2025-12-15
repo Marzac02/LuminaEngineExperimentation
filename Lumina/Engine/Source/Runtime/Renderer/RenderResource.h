@@ -52,7 +52,7 @@ struct LUMINA_API FFormatInfo
 	uint8 bIsSRGB : 1;
 };
 
-namespace RHI::Format
+namespace Lumina::RHI::Format
 {
 	LUMINA_API const FFormatInfo& Info(EFormat format);
 	LUMINA_API uint8 BytesPerBlock(EFormat Format);

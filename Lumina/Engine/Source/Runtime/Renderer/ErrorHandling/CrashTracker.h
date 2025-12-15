@@ -1,0 +1,29 @@
+﻿#pragma once
+#include "Memory/SmartPtr.h"
+
+namespace Lumina::RHI
+{
+    using RHIDevice = void*;
+    using RHIPhysicalDevice = void*;
+    using RHICommandBuffer = void*;
+    
+    class ICrashTracker
+    {
+    public:
+        virtual ~ICrashTracker() = default;
+    
+        virtual void Initialize(RHIDevice device, RHIPhysicalDevice physicalDevice) = 0;
+        virtual void Shutdown() = 0;
+
+        virtual void OnDeviceLost() = 0;
+    
+        virtual void RegisterShader(const TVector<uint32>& SPRIV, const FString& Name) = 0;
+    
+        virtual void SetMarker(RHICommandBuffer cmdBuffer, const char* markerName) = 0;
+        virtual void BeginMarker(RHICommandBuffer cmdBuffer, const char* markerName) = 0;
+        virtual void EndMarker(RHICommandBuffer cmdBuffer) = 0;
+    
+        virtual void PollCrashDumps() = 0;
+    
+    };
+}

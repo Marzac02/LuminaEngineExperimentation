@@ -8,6 +8,11 @@
 #include "RenderGraph/RenderGraph.h"
 
 
+namespace Lumina::RHI
+{
+    class ICrashTracker;
+}
+
 namespace Lumina
 {
     class IShaderCompiler;
@@ -36,6 +41,8 @@ namespace Lumina
 
         virtual void SetVSyncEnabled(bool bEnable) = 0;
         virtual bool IsVSyncEnabled() const = 0;
+
+        virtual void HandleDeviceLost() = 0;
 
         
         //-------------------------------------------------------------------------------------
@@ -107,7 +114,9 @@ namespace Lumina
         virtual void CreateBindingSetAndLayout(const TBitFlags<ERHIShaderType>& Visibility, uint16 Binding, const FBindingSetDesc& Desc, FRHIBindingLayoutRef& OutLayout, FRHIBindingSetRef& OutBindingSet) = 0;
         NODISCARD virtual FRHIComputePipelineRef CreateComputePipeline(const FComputePipelineDesc& Desc) = 0;
         NODISCARD virtual FRHIGraphicsPipelineRef CreateGraphicsPipeline(const FGraphicsPipelineDesc& Desc, const FRenderPassDesc& RenderPassDesc) = 0;
+
         
+        NODISCARD virtual RHI::ICrashTracker& GetCrashTracker() const = 0;
         
         //-------------------------------------------------------------------------------------
 

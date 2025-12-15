@@ -18,6 +18,7 @@
 #include "Renderer/RenderGraph/RenderGraphDescriptor.h"
 #include "src/VkBootstrap.h"
 #include "TaskSystem/TaskSystem.h"
+#include "Renderer/ErrorHandling/Vulkan/VulkanCrashTracker.h"
 
 namespace Lumina
 {
@@ -170,6 +171,7 @@ namespace Lumina
         , Queue(InQueue)
         , QueueFamilyIndex(InQueueFamilyIndex)
     {
+        
         VkSemaphoreTypeCreateInfo TimelineInfo = {};
         TimelineInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_TYPE_CREATE_INFO;
         TimelineInfo.semaphoreType = VK_SEMAPHORE_TYPE_TIMELINE;
@@ -280,10 +282,11 @@ namespace Lumina
         
         std::scoped_lock Lock(Mutex);
         LockMark(Mutex);
+        LastSubmittedID++;
+        
+        LUMINA_PROFILE_TAG(std::format("Last Submit ID: {} - Num Command Lists {}", LastSubmittedID, NumCommandLists).c_str());
         
         TFixedVector<VkCommandBuffer, 4> CommandBuffers(NumCommandLists);
-        
-        LastSubmittedID++;
         
         for (uint32 i = 0; i < NumCommandLists; ++i)
         {
@@ -313,18 +316,12 @@ namespace Lumina
 
         AddSignalSemaphore(TimelineSemaphore, LastSubmittedID);
 
-        VkTimelineSemaphoreSubmitInfo TimelineSubmitInfo = {};
-        TimelineSubmitInfo.sType = VK_STRUCTURE_TYPE_TIMELINE_SEMAPHORE_SUBMIT_INFO;
-        TimelineSubmitInfo.signalSemaphoreValueCount = (uint32)SignalSemaphoreValues.size();
-        TimelineSubmitInfo.pSignalSemaphoreValues = SignalSemaphoreValues.data();
-        if (!WaitSemaphoreValues.empty())
-        {
-            TimelineSubmitInfo.waitSemaphoreValueCount = (uint32)WaitSemaphoreValues.size();
-            TimelineSubmitInfo.pWaitSemaphoreValues = WaitSemaphoreValues.data();
-        }
-
-        LUMINA_PROFILE_TAG(std::format("Last Submit ID: {} - Num Command Lists {}", LastSubmittedID, NumCommandLists).c_str());
-
+        VkTimelineSemaphoreSubmitInfo TimelineSubmitInfo    = {};
+        TimelineSubmitInfo.sType                            = VK_STRUCTURE_TYPE_TIMELINE_SEMAPHORE_SUBMIT_INFO;
+        TimelineSubmitInfo.signalSemaphoreValueCount        = (uint32)SignalSemaphoreValues.size();
+        TimelineSubmitInfo.pSignalSemaphoreValues           = SignalSemaphoreValues.data();
+        TimelineSubmitInfo.waitSemaphoreValueCount          = (uint32)WaitSemaphoreValues.size();
+        TimelineSubmitInfo.pWaitSemaphoreValues             = WaitSemaphoreValues.data();
         
         VkSubmitInfo SubmitInfo         = {};
         SubmitInfo.sType                = VK_STRUCTURE_TYPE_SUBMIT_INFO;
@@ -579,6 +576,8 @@ namespace Lumina
         FlushPendingDeletes();
         IRHIResource::ReleaseAllRHIResources();
 
+        CrashTracker->Shutdown();
+        
         Memory::Delete(VulkanDevice);
         VulkanDevice = nullptr;
 
@@ -600,6 +599,14 @@ namespace Lumina
     bool FVulkanRenderContext::IsVSyncEnabled() const
     {
         return Swapchain->GetPresentMode() == VK_PRESENT_MODE_FIFO_KHR;
+    }
+
+    void FVulkanRenderContext::HandleDeviceLost()
+    {
+        if (CrashTracker)
+        {
+            CrashTracker->OnDeviceLost();
+        }
     }
 
     void FVulkanRenderContext::WaitIdle()
@@ -687,6 +694,8 @@ namespace Lumina
     
     void FVulkanRenderContext::CreateDevice(vkb::Instance Instance)
     {
+        CrashTracker = MakeUniquePtr<RHI::FVulkanCrashTracker>();
+        
         VkPhysicalDeviceFeatures DeviceFeatures             = {};
         DeviceFeatures.fragmentStoresAndAtomics             = VK_TRUE;
         DeviceFeatures.samplerAnisotropy                    = VK_TRUE;
@@ -720,7 +729,7 @@ namespace Lumina
         Features13.synchronization2 = VK_TRUE;
         
         vkb::PhysicalDeviceSelector selector(Instance);
-        vkb::PhysicalDevice physicalDevice = selector
+        vkb::PhysicalDevice PhysicalDevice = selector
             .set_minimum_version(1, 3)
             .set_required_features(DeviceFeatures)
             .set_required_features_11(Features11)
@@ -732,31 +741,35 @@ namespace Lumina
             .select()
             .value();
         
-        physicalDevice.enable_extension_if_present(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
-        physicalDevice.enable_extension_if_present(VK_EXT_SAMPLER_FILTER_MINMAX_EXTENSION_NAME);
+        PhysicalDevice.enable_extension_if_present(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
+        PhysicalDevice.enable_extension_if_present(VK_EXT_SAMPLER_FILTER_MINMAX_EXTENSION_NAME);
 
-        if (physicalDevice.enable_extension_if_present(VK_KHR_PUSH_DESCRIPTOR_EXTENSION_NAME))
+        if (PhysicalDevice.enable_extension_if_present(VK_KHR_PUSH_DESCRIPTOR_EXTENSION_NAME))
         {
             EnabledExtensions.SetFlag(EVulkanExtensions::PushDescriptors);
         }
         
-        if (physicalDevice.enable_extension_if_present(VK_EXT_CONSERVATIVE_RASTERIZATION_EXTENSION_NAME))
+        if (PhysicalDevice.enable_extension_if_present(VK_EXT_CONSERVATIVE_RASTERIZATION_EXTENSION_NAME))
         {
             EnabledExtensions.SetFlag(EVulkanExtensions::ConservativeRasterization);
         }
 
-        if (physicalDevice.enable_extension_if_present(VK_EXT_SHADER_VIEWPORT_INDEX_LAYER_EXTENSION_NAME))
+        if (PhysicalDevice.enable_extension_if_present(VK_EXT_SHADER_VIEWPORT_INDEX_LAYER_EXTENSION_NAME))
         {
             EnabledExtensions.SetFlag(EVulkanExtensions::ViewportIndexLayer);
         }
 
-        vkb::DeviceBuilder deviceBuilder(physicalDevice);
-        vkb::Device vkbDevice = deviceBuilder.build().value();
+        vkb::DeviceBuilder DeviceBuilder(PhysicalDevice);
+        CrashTracker->EnableDeviceFeatures(DeviceBuilder);
+        
+        vkb::Device vkbDevice = DeviceBuilder.build().value();
         VkDevice Device = vkbDevice.device;
         volkLoadDevice(Device);
 
-        VkPhysicalDevice PhysicalDevice = physicalDevice.physical_device;
-        VulkanDevice = Memory::New<FVulkanDevice>(this, VulkanInstance, PhysicalDevice, Device);
+        CrashTracker->Initialize(Device, PhysicalDevice.physical_device);
+
+        VkPhysicalDevice VulkanPhysicalDevice = PhysicalDevice.physical_device;
+        VulkanDevice = Memory::New<FVulkanDevice>(this, VulkanInstance, VulkanPhysicalDevice, Device);
 
         if (vkbDevice.get_queue(vkb::QueueType::graphics).has_value())
         {
@@ -1093,6 +1106,11 @@ namespace Lumina
     FRHIGraphicsPipelineRef FVulkanRenderContext::CreateGraphicsPipeline(const FGraphicsPipelineDesc& Desc, const FRenderPassDesc& RenderPassDesc)
     {
         return PipelineCache.GetOrCreateGraphicsPipeline(VulkanDevice, Desc, RenderPassDesc);
+    }
+
+    RHI::ICrashTracker& FVulkanRenderContext::GetCrashTracker() const
+    {
+        return *CrashTracker;
     }
 
     void FVulkanRenderContext::SetObjectName(IRHIResource* Resource, const char* Name, EAPIResourceType Type)

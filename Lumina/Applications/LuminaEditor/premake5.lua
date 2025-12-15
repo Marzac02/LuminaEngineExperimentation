@@ -10,7 +10,8 @@ project "Editor"
 	
     libdirs
     {
-        "%{LuminaEngineDirectory}/Lumina/Engine/ThirdParty/lua/"
+        "%{LuminaEngineDirectory}/Lumina/Engine/ThirdParty/lua/",
+		"%{LuminaEngineDirectory}/Lumina/Engine/ThirdParty/NvidiaAftermath/lib",
     }
 
 	links
@@ -20,6 +21,7 @@ project "Editor"
     	"EA",
 		"Tracy",
 		"lua54",
+		"GFSDK_Aftermath_Lib",
 	 }
 	 
 	files

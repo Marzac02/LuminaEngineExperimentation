@@ -10,6 +10,7 @@
 #include "Core/Threading/Thread.h"
 #include "Memory/SmartPtr.h"
 #include "Renderer/RenderContext.h"
+#include "Renderer/ErrorHandling/Vulkan/VulkanCrashTracker.h"
 #include "src/VkBootstrap.h"
 #include "Types/BitFlags.h"
 
@@ -126,6 +127,8 @@ namespace Lumina
         void SetVSyncEnabled(bool bEnable) override;
         bool IsVSyncEnabled() const override;
 
+        void HandleDeviceLost() override;
+
         void WaitIdle() override;
         void CreateDevice(vkb::Instance Instance);
         
@@ -204,8 +207,10 @@ namespace Lumina
         NODISCARD FRHIComputePipelineRef CreateComputePipeline(const FComputePipelineDesc& Desc) override;
         NODISCARD FRHIGraphicsPipelineRef CreateGraphicsPipeline(const FGraphicsPipelineDesc& Desc, const FRenderPassDesc& RenderPassDesc) override;
 
-
         NODISCARD const FRenderContextDesc& GetRenderContextDescription() const override { return Description; }
+
+
+        RHI::ICrashTracker& GetCrashTracker() const override;
 
         //-------------------------------------------------------------------------------------
 
@@ -218,6 +223,7 @@ namespace Lumina
     
     private:
 
+        TUniquePtr<RHI::FVulkanCrashTracker>                CrashTracker;
         FRenderContextDesc                                  Description;
         uint8                                               CurrentFrameIndex;
         TBitFlags<EVulkanExtensions>                        EnabledExtensions;

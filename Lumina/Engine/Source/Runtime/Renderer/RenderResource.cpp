@@ -300,7 +300,7 @@ namespace Lumina
     };
 
 
-namespace RHI::Format
+namespace Lumina::RHI::Format
 {
     const FFormatInfo& Info(EFormat format)
     {

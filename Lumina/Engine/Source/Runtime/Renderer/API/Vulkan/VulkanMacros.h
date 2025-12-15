@@ -1,6 +1,8 @@
 ﻿#pragma once
 
 #include "Log/Log.h"
+#include "Renderer/RenderContext.h"
+#include "Renderer/RHIGlobals.h"
 
 
 namespace Lumina::Vulkan
@@ -61,8 +63,7 @@ do {                                                                            
             #x, __FILE__, __LINE__, result, Vulkan::VkResultToString(result));      \
         if (result == VK_ERROR_DEVICE_LOST)                                         \
         {                                                                           \
-            __debugbreak();                                                         \
-            std::abort();                                                           \
+            Lumina::GRenderContext->HandleDeviceLost();                             \
         }                                                                           \
     }                                                                               \
 } while (0)
