@@ -259,7 +259,7 @@ def main():
     print(f"\n{Fore.GREEN}{Style.BRIGHT}{'=' * 70}")
     print(f"{Fore.GREEN}{Style.BRIGHT}{'SETUP COMPLETE!':^70}")
     print(f"{Fore.GREEN}{Style.BRIGHT}{'=' * 70}{Style.RESET_ALL}\n")
-    print_info("You can now open the solution file in Visual Studio 2022")
+    print_info("You can now open the solution file in Visual Studio")
     time.sleep(0.25)
 
     return 0

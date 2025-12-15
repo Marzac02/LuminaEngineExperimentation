@@ -1,7 +1,5 @@
 ﻿#pragma once
 
-#include <shaderc/shaderc.hpp>
-
 #include "Shader.h"
 #include "Containers/Array.h"
 #include "Containers/String.h"

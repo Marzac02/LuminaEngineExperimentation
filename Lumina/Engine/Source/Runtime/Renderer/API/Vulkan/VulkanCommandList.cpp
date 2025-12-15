@@ -1329,7 +1329,7 @@ namespace Lumina
     {
         
         VkViewport Viewport = {};
-#define FLIP 0;
+#define FLIP 0
 
 #if FLIP
         Viewport.x        = MinX;

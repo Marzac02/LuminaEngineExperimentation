@@ -7,7 +7,7 @@
 #include "Memory/Memory.h"
 #include "Paths/Paths.h"
 #include "Platform/Filesystem/FileHelper.h"
-#include "shaderc/shaderc.hpp"
+#include 
 #include "TaskSystem/TaskSystem.h"
 #include "SPIRV-Reflect/spirv_reflect.h"
 

@@ -38,7 +38,6 @@ project "Lumina"
     postbuildcommands
     {
         '{COPYFILE} "%{LuminaEngineDirectory}/External/RenderDoc/renderdoc.dll" "%{cfg.targetdir}"',
-        '{COPYFILE} "%{LuminaEngineDirectory}/External/ShaderC/shaderc_combined.lib" "%{cfg.targetdir}"',
     }
 
     files
@@ -75,6 +74,7 @@ project "Lumina"
     libdirs
     {
         "%{LuminaEngineDirectory}/Lumina/Engine/ThirdParty/lua",
+        "%{LuminaEngineDirectory}/External/ShaderC",
     }
 
     links
@@ -84,8 +84,13 @@ project "Lumina"
         "EA",
         "Tracy",
         "lua54",
-        "shaderc_combined"
+        "shaderc_combined",
     }
+
+    filter "configurations:Debug"
+        removelinks { "shaderc_combined" }
+        links { "shaderc_combinedd" }
+        
         
     filter "files:Engine/ThirdParty/**.cpp"
         flags { "NoPCH" }

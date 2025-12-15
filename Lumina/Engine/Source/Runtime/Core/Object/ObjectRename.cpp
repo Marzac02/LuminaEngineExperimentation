@@ -2,7 +2,7 @@
 #include "ObjectRename.h"
 #include "Paths/Paths.h"
 #include "Core/Object/Package/Package.h"
-#include "Core/Object/ObjectCore.h"s
+#include "Core/Object/ObjectCore.h"
 #include "Assets/AssetManager/AssetManager.h"
 
 namespace Lumina::ObjectRename

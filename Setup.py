@@ -1,269 +1,312 @@
+"""
+Lumina Engine Setup Script
+Automates dependency download, extraction, and project configuration
+"""
+
 import os
-import time
-import subprocess
 import sys
+import time
 import shutil
+import subprocess
+from pathlib import Path
 
-try:
-    from colorama import Fore, Style, Back, init
-    init(autoreset=True)
-except ImportError:
-    subprocess.check_call([sys.executable, "-m", "pip", "install", "colorama"])
-    from colorama import Fore, Style, Back, init
-    init(autoreset=True)
-
-try:
-    import requests
-except ImportError:
-    subprocess.check_call([sys.executable, "-m", "pip", "install", "requests"])
-    import requests
-
-try:
-    import py7zr
-    from py7zr.callbacks import ExtractCallback
-except ImportError:
-    subprocess.check_call([sys.executable, "-m", "pip", "install", "py7zr"])
-    import py7zr
-    from py7zr.callbacks import ExtractCallback
-
-
-def print_header(text):
-    """Print a styled header."""
-    width = 80
-    print("\n" + Fore.CYAN + "═" * width)
-    print(Fore.CYAN + Style.BRIGHT + text.center(width))
-    print(Fore.CYAN + "═" * width + "\n")
-
-
-def print_step(step_num, total_steps, description):
-    """Print a step indicator."""
-    print(Fore.MAGENTA + Style.BRIGHT + f"\n╔═══ Step {step_num}/{total_steps} ═══╗")
-    print(Fore.MAGENTA + f"║ {description}")
-    print(Fore.MAGENTA + "╚" + "═" * (len(description) + 2) + "╝\n")
-
-
-def print_progress_bar(progress, total, prefix='Progress:', suffix='Complete', length=50):
-    """Print a progress bar."""
-    if total == 0:
-        return
-    
-    # Ensure progress doesn't exceed total
-    progress = min(progress, total)
-    
+# Ensure required packages are installed
+def ensure_package(package_name, import_name=None):
+    """Install package if not available."""
+    import_name = import_name or package_name
     try:
-        filled_length = int(length * progress // total)
-        bar = '█' * filled_length + '░' * (length - filled_length)
-        percent = f"{100 * (progress / float(total)):.1f}"
-        sys.stdout.write(f'\r{Fore.YELLOW}{prefix} |{Fore.GREEN}{bar}{Fore.YELLOW}| {percent}% {suffix}')
+        __import__(import_name)
+    except ImportError:
+        subprocess.check_call([sys.executable, "-m", "pip", "install", package_name], 
+                            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+
+ensure_package("colorama")
+ensure_package("requests")
+ensure_package("py7zr")
+
+from colorama import Fore, Style, init
+import requests
+import py7zr
+from py7zr.callbacks import ExtractCallback
+
+init(autoreset=True)
+
+
+class SetupDisplay:
+    
+    WIDTH = 80
+    
+    @staticmethod
+    def header(text):
+        """Display a professional header."""
+        print(f"\n{Fore.CYAN}{Style.BRIGHT}{'=' * SetupDisplay.WIDTH}")
+        print(f"{Fore.CYAN}{Style.BRIGHT}{text.center(SetupDisplay.WIDTH)}")
+        print(f"{Fore.CYAN}{Style.BRIGHT}{'=' * SetupDisplay.WIDTH}\n")
+    
+    @staticmethod
+    def step(num, total, description):
+        """Display a step indicator."""
+        step_text = f"Step {num}/{total}: {description}"
+        print(f"\n{Fore.MAGENTA}{Style.BRIGHT}{step_text}")
+        print(f"{Fore.MAGENTA}{'-' * len(step_text)}\n")
+    
+    @staticmethod
+    def info(message):
+        """Display informational message."""
+        print(f"{Fore.CYAN}{message}")
+    
+    @staticmethod
+    def success(message):
+        """Display success message."""
+        print(f"{Fore.GREEN}{Style.BRIGHT}{message}")
+    
+    @staticmethod
+    def warning(message):
+        """Display warning message."""
+        print(f"{Fore.YELLOW}{message}")
+    
+    @staticmethod
+    def error(message):
+        """Display error message."""
+        print(f"{Fore.RED}{Style.BRIGHT}{message}")
+    
+    @staticmethod
+    def progress_bar(current, total, prefix="Progress", bar_length=50):
+        """Display a clean progress bar."""
+        if total == 0:
+            return
+        
+        current = min(current, total)
+        filled = int(bar_length * current / total)
+        bar = '█' * filled + '░' * (bar_length - filled)
+        percent = f"{100 * current / total:.1f}%".rjust(6)
+        
+        sys.stdout.write(f'\r{Fore.YELLOW}{prefix}: [{Fore.GREEN}{bar}{Fore.YELLOW}] {percent}')
         sys.stdout.flush()
-    except Exception:
-        # Silently fail if there's any issue with progress bar
-        pass
+        
+        if current >= total:
+            print()
 
 
-def download_from_dropbox(url, dest_filename):
-    """Download a file from Dropbox with a detailed progress bar."""
-    print(Fore.CYAN + Style.BRIGHT + "Connecting to Dropbox...")
+class DependencyDownloader:
     
-    if "dl=0" in url:
-        url = url.replace("dl=0", "dl=1")
-    elif "dl=1" not in url:
-        url += "?dl=1"
+    def __init__(self, url, destination):
+        self.url = self._normalize_url(url)
+        self.destination = Path(destination)
+        self.chunk_size = 8192
+    
+    @staticmethod
+    def _normalize_url(url):
+        """Ensure Dropbox URL triggers direct download."""
+        if "dl=0" in url:
+            return url.replace("dl=0", "dl=1")
+        elif "dl=1" not in url:
+            return f"{url}?dl=1"
+        return url
+    
+    def download(self):
 
-    try:
-        response = requests.get(url, stream=True, timeout=30)
-        response.raise_for_status()
-
-        total_size = int(response.headers.get('content-length', 0))
-        downloaded = 0
-        chunk_size = 8192
+        SetupDisplay.info("Connecting to Dropbox...")
         
-        print(Fore.GREEN + f"Connection established")
-        print(Fore.CYAN + f"File size: {total_size / (1024*1024):.2f} MB\n")
-
-        start_time = time.time()
-        last_update = start_time
-        
-        with open(dest_filename, 'wb') as f:
-            for chunk in response.iter_content(chunk_size=chunk_size):
-                if chunk:
-                    f.write(chunk)
-                    downloaded += len(chunk)
-                    
-                    current_time = time.time()
-                    # Only update display every 0.1 seconds
-                    if current_time - last_update >= 0.1 or downloaded >= total_size:
-                        elapsed_time = current_time - start_time
-                        if elapsed_time > 0:
-                            speed = downloaded / elapsed_time / 1024 / 1024  # MB/s
-                            
-                            if total_size > 0:
-                                print_progress_bar(downloaded, total_size, 
-                                                 prefix=f'{Fore.CYAN}Downloading:',
-                                                 suffix=f'{Fore.CYAN}| {speed:.2f} MB/s')
-                        last_update = current_time
-        
-        print(Fore.GREEN + Style.BRIGHT + f"\n\nSuccessfully downloaded {dest_filename}")
-
-    except requests.RequestException as e:
-        print(Fore.RED + Style.BRIGHT + f"\nFailed to download file: {e}")
-        sys.exit(1)
-    except Exception as e:
-        print(Fore.RED + Style.BRIGHT + f"\nUnexpected error during download: {e}")
-        sys.exit(1)
-
-
-def extract_7z(archive_filename, extract_to):
-    """Extract a .7z archive with progress tracking."""
-    if not os.path.exists(archive_filename):
-        print(Fore.RED + Style.BRIGHT + f"{archive_filename} not found.")
-        sys.exit(1)
-
-    print(Fore.CYAN + Style.BRIGHT + f"Preparing to extract archive...")
-
-    try:
-        # Create a custom callback class
-        class ProgressCallback(ExtractCallback):
-            def __init__(self, total_files):
-                self.total_files = total_files
-                self.extracted_count = 0
-                self.last_update = time.time()
-            
-            def report_start_preparation(self):
-                pass
-            
-            def report_start(self, processing_file_path, processing_bytes):
-                self.extracted_count += 1
-            
-            def report_update(self, decompressed_bytes):
-                current_time = time.time()
-                
-                # Update display every 0.05 seconds or on last file
-                if current_time - self.last_update >= 0.05 or self.extracted_count >= self.total_files:
-                    print_progress_bar(self.extracted_count, self.total_files, 
-                                     prefix=f'{Fore.CYAN}Extracting:',
-                                     suffix=f'{Fore.CYAN}| {self.extracted_count}/{self.total_files} files')
-                    self.last_update = current_time
-                
-                return super().report_update(decompressed_bytes)
-            
-            def report_end(self, processing_file_path, wrote_bytes):
-                pass
-            
-            def report_warning(self, message):
-                print(Fore.YELLOW + f"\n⚠ Warning: {message}")
-            
-            def report_postprocess(self):
-                # Ensure final progress is shown
-                print_progress_bar(self.total_files, self.total_files, 
-                                 prefix=f'{Fore.CYAN}Extracting:',
-                                 suffix=f'{Fore.CYAN}| {self.total_files}/{self.total_files} files')
-        
-        with py7zr.SevenZipFile(archive_filename, mode='r') as archive:
-            file_list = archive.getnames()
-            total_files = len(file_list)
-            
-            print(Fore.GREEN + f"Archive opened successfully")
-            print(Fore.CYAN + f"Files to extract: {total_files}\n")
-            
-            # Create callback instance
-            callback = ProgressCallback(total_files)
-            
-            # Extract all files with callback
-            archive.extractall(path=extract_to, callback=callback)
-            
-            print(Fore.GREEN + Style.BRIGHT + f"\n\nExtraction complete! ({total_files} files extracted)")
-            
-    except Exception as e:
-        print(Fore.RED + Style.BRIGHT + f"\nFailed to extract archive: {e}")
-        sys.exit(1)
-
-
-def run_generate():
-    """Run the project generation script."""
-    script_path = os.path.join("Scripts", "Win-GenProjects.py")
-
-    if not os.path.exists(script_path):
-        print(Fore.RED + Style.BRIGHT + f"Script not found: {script_path}")
-        sys.exit(1)
-
-    print(Fore.CYAN + Style.BRIGHT + f"Generating project files...")
-    print(Fore.YELLOW + "   This may take a moment...\n")
-
-    try:
-        result = subprocess.run([sys.executable, script_path], 
-                              capture_output=True, 
-                              text=True,
-                              encoding='utf-8',
-                              errors='replace',
-                              check=True)
-        
-        # Print the output from the script
-        if result.stdout:
-            print(Fore.WHITE + result.stdout)
-        
-        print(Fore.GREEN + Style.BRIGHT + "Project generation complete!")
-        
-    except subprocess.CalledProcessError as e:
-        print(Fore.RED + Style.BRIGHT + f"Failed to run {script_path}")
-        if e.stderr:
-            print(Fore.RED + e.stderr)
-        sys.exit(1)
-
-
-def cleanup_archive(archive_filename):
-    """Remove the downloaded archive file."""
-    if os.path.exists(archive_filename):
         try:
-            os.remove(archive_filename)
-            print(Fore.GREEN + Style.BRIGHT + f"Cleaned up {archive_filename}")
+            response = requests.get(self.url, stream=True, timeout=30)
+            response.raise_for_status()
+            
+            total_size = int(response.headers.get('content-length', 0))
+            downloaded = 0
+            
+            SetupDisplay.success("Connection established")
+            SetupDisplay.info(f"File size: {total_size / (1024**2):.2f} MB\n")
+            
+            start_time = time.time()
+            last_update = start_time
+            
+            with open(self.destination, 'wb') as f:
+                for chunk in response.iter_content(chunk_size=self.chunk_size):
+                    if chunk:
+                        f.write(chunk)
+                        downloaded += len(chunk)
+                        
+                        current_time = time.time()
+                        if current_time - last_update >= 0.1 or downloaded >= total_size:
+                            elapsed = current_time - start_time
+                            if elapsed > 0 and total_size > 0:
+                                speed = downloaded / elapsed / (1024**2)
+                                prefix = f"Downloading ({speed:.2f} MB/s)"
+                                SetupDisplay.progress_bar(downloaded, total_size, prefix)
+                            last_update = current_time
+            
+            print()
+            SetupDisplay.success(f"Download complete: {self.destination.name}\n")
+            return True
+            
+        except requests.RequestException as e:
+            SetupDisplay.error(f"Download failed: {e}")
+            return False
         except Exception as e:
-            print(Fore.YELLOW + f"Could not remove {archive_filename}: {e}")
+            SetupDisplay.error(f"Unexpected error: {e}")
+            return False
 
 
-if __name__ == '__main__':
+class ArchiveExtractor:
+    
+    def __init__(self, archive_path, extract_to):
+        self.archive_path = Path(archive_path)
+        self.extract_to = Path(extract_to)
+    
+    class ProgressCallback(ExtractCallback):
+
+        def __init__(self, total_files):
+            self.total_files = total_files
+            self.extracted = 0
+            self.last_update = time.time()
+        
+        def report_start(self, processing_file_path, processing_bytes):
+            self.extracted += 1
+        
+        def report_update(self, decompressed_bytes):
+            current_time = time.time()
+            if current_time - self.last_update >= 0.05 or self.extracted >= self.total_files:
+                SetupDisplay.progress_bar(
+                    self.extracted, 
+                    self.total_files, 
+                    f"Extracting ({self.extracted}/{self.total_files})"
+                )
+                self.last_update = current_time
+            return super().report_update(decompressed_bytes)
+        
+        def report_postprocess(self):
+            SetupDisplay.progress_bar(self.total_files, self.total_files, "Extracting")
+    
+    def extract(self):
+        """Extract archive with progress display."""
+        if not self.archive_path.exists():
+            SetupDisplay.error(f"Archive not found: {self.archive_path}")
+            return False
+        
+        SetupDisplay.info("Opening archive...")
+        
+        try:
+            with py7zr.SevenZipFile(self.archive_path, mode='r') as archive:
+                file_list = archive.getnames()
+                total_files = len(file_list)
+                
+                SetupDisplay.success("Archive opened successfully")
+                SetupDisplay.info(f"Files to extract: {total_files}\n")
+                
+                callback = self.ProgressCallback(total_files)
+                archive.extractall(path=str(self.extract_to), callback=callback)
+                
+                print()
+                SetupDisplay.success(f"Extraction complete: {total_files} files\n")
+                return True
+                
+        except Exception as e:
+            SetupDisplay.error(f"Extraction failed: {e}")
+            return False
+
+
+class ProjectGenerator:
+    """Handles project file generation."""
+    
+    def __init__(self, script_path):
+        self.script_path = Path(script_path)
+    
+    def generate(self):
+        """Run project generation script."""
+        if not self.script_path.exists():
+            SetupDisplay.error(f"Generation script not found: {self.script_path}")
+            return False
+        
+        SetupDisplay.info("Generating project files...\n")
+        
+        try:
+            result = subprocess.run(
+                [sys.executable, str(self.script_path)],
+                capture_output=True,
+                text=True,
+                encoding='utf-8',
+                errors='replace',
+                check=True
+            )
+            
+            if result.stdout:
+                print(result.stdout)
+            
+            SetupDisplay.success("Project generation complete\n")
+            return True
+            
+        except subprocess.CalledProcessError as e:
+            SetupDisplay.error("Project generation failed")
+            if e.stderr:
+                print(e.stderr)
+            return False
+
+
+def cleanup_file(filepath):
+    """Remove a file if it exists."""
+    path = Path(filepath)
+    if path.exists():
+        try:
+            path.unlink()
+            SetupDisplay.success(f"Cleaned up: {path.name}")
+        except Exception as e:
+            SetupDisplay.warning(f"Could not remove {path.name}: {e}")
+
+
+def main():
     try:
-        print_header("LUMINA ENGINE SETUP")
+        SetupDisplay.header("LUMINA ENGINE SETUP")
         
-        print(Fore.CYAN + Style.BRIGHT + "Welcome to the Lumina Engine setup script!")
-        print(Fore.WHITE + "This script will download dependencies, extract files, and configure your project.\n")
+        print(f"{Fore.WHITE}Welcome to the Lumina Engine setup utility.")
+        print(f"{Fore.WHITE}This will download dependencies and configure your project.\n")
         
-        dropbox_url = "https://www.dropbox.com/scl/fi/suigjbqj75pzcpxcqm6hv/External.7z?rlkey=ebu8kiw4gswtvj5mclg6wa1lu&st=mndgypjl&dl=0"
-        archive_filename = "External.7z"
-        extract_to = "."
+        # Configuration
+        dropbox_url = "https://www.dropbox.com/scl/fi/suigjbqj75pzcpxcqm6hv/External.7z?rlkey=ebu8kiw4gswtvj5mclg6wa1lu&st=vd98mrab&dl=0"
+        archive_file = "External.7z"
+        extract_location = "."
+        generation_script = Path("Scripts") / "Win-GenProjects.py"
         
-        total_steps = 6
-
-        # Step 1: Download
-        print_step(1, total_steps, "Downloading External Dependencies")
-        download_from_dropbox(dropbox_url, archive_filename)
-        time.sleep(0.5)
-
-        # Step 2: Extract
-        print_step(2, total_steps, "Extracting Dependencies")
-        extract_7z(archive_filename, extract_to)
-        time.sleep(0.5)
-
-        # Step 3: Initial Project Generation
-        print_step(3, total_steps, "Generating Project Files (Initial)")
-        run_generate()
-        time.sleep(0.5)
-
-        # Step 6: Cleanup
-        print_step(4, total_steps, "Cleaning Up")
-        cleanup_archive(archive_filename)
-
-        # Success message
-        print_header("SETUP COMPLETE")
-        print(Fore.GREEN + Style.BRIGHT + "Lumina Engine is ready to use!")
-        print(Fore.CYAN + "\nYou can now open " + Style.BRIGHT + "Lumina.sln" + Style.NORMAL + " in Visual Studio.")
-        print(Fore.YELLOW + "\nHappy coding!\n")
+        total_steps = 4
+        
+        # Step 1: Download dependencies
+        SetupDisplay.step(1, total_steps, "Downloading Dependencies")
+        downloader = DependencyDownloader(dropbox_url, archive_file)
+        if not downloader.download():
+            sys.exit(1)
+        
+        # Step 2: Extract archive
+        SetupDisplay.step(2, total_steps, "Extracting Dependencies")
+        extractor = ArchiveExtractor(archive_file, extract_location)
+        if not extractor.extract():
+            sys.exit(1)
+        
+        # Step 3: Generate project files
+        SetupDisplay.step(3, total_steps, "Generating Project Files")
+        generator = ProjectGenerator(generation_script)
+        if not generator.generate():
+            sys.exit(1)
+        
+        # Step 4: Cleanup
+        SetupDisplay.step(4, total_steps, "Cleaning Up")
+        cleanup_file(archive_file)
+        
+        # Completion
+        print()
+        SetupDisplay.header("SETUP COMPLETE")
+        SetupDisplay.success("Lumina Engine is ready to use!")
+        print(f"\n{Fore.CYAN}You can now open {Style.BRIGHT}Lumina.sln{Style.NORMAL} in Visual Studio.")
+        print(f"{Fore.YELLOW}Happy coding!\n")
         
     except KeyboardInterrupt:
-        print(Fore.YELLOW + "\n\n⚠ Setup interrupted by user")
+        print(f"\n\n{Fore.YELLOW}Setup interrupted by user")
         sys.exit(1)
     except Exception as e:
-        print(Fore.RED + Style.BRIGHT + f"\n✗ Unexpected error: {e}")
+        SetupDisplay.error(f"\nUnexpected error: {e}")
         import traceback
         traceback.print_exc()
         sys.exit(1)
+
+
+if __name__ == '__main__':
+    main()
