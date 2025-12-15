@@ -168,8 +168,6 @@ namespace Lumina
             , ContentBrowserTileViewContext()
         {
         }
-
-        using FPendingActionsVector = TTupleVector<FPendingDestroy, FPendingOSDrop, FPendingRename>;
         
         bool OnEvent(FEvent& Event) override;
         
@@ -186,7 +184,7 @@ namespace Lumina
 
         void DrawToolMenu(const FUpdateContext& UpdateContext) override;
 
-        void HandleContentBrowserDragDrop(FContentBrowserTileViewItem* Drop, FContentBrowserTileViewItem* Payload);
+        void HandleContentBrowserDragDrop(FStringView DropPath, FStringView PayloadPath);
         
     private:
 

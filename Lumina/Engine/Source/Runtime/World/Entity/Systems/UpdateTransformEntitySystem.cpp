@@ -76,7 +76,7 @@ namespace Lumina
             // Only schedule tasks if there is a significant amount of transform updates required.
             if (DirtyEntities.size() > 1000)
             {
-                Task::ParallelFor((uint32)DirtyEntities.size(), (uint32)DirtyEntities.size(), RelationshipTransformCallable);
+                Task::ParallelFor((uint32)DirtyEntities.size(), RelationshipTransformCallable);
             }
             else
             {
@@ -104,7 +104,7 @@ namespace Lumina
             };
 
             auto Handle = SingleView.handle();
-            Task::ParallelFor(Handle->size(), Handle->size(), [&](uint32 Index)
+            Task::ParallelFor(Handle->size(), [&](uint32 Index)
             {
                 entt::entity Entity = (*Handle)[Index];
                 

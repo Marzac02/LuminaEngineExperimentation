@@ -36,25 +36,9 @@ namespace Lumina::Import
         NODISCARD LUMINA_API FRHIImageRef CreateTextureFromImport(IRenderContext* RenderContext, const FString& RawFilePath, bool bFlipVerticalOnLoad = true);
     }
 
-    namespace Mesh::GLTF
+    namespace Mesh
     {
-        struct FGLTFMaterial
-        {
-            FName Name;
-        };
-
-        struct FGLTFImage
-        {
-            FString RelativePath;
-            SIZE_T ByteOffset;
-
-            bool operator==(const FGLTFImage& Other) const
-            {
-                return Other.RelativePath == RelativePath && Other.ByteOffset == ByteOffset;
-            }
-        };
-
-        struct FGLTFImportOptions
+        struct FMeshImportOptions
         {
             bool bOptimize = true;               // Weather to run a mesh optimization pass.
             bool bImportMaterials = true;        // Whether to import materials defined in the GLTF file
@@ -68,9 +52,20 @@ namespace Lumina::Import
             float Scale = 1.0f;                  // Scene-wide scale factor
         };
 
-        struct FGLTFImageHasher
+        struct FMeshImportImage
         {
-            size_t operator()(const FGLTFImage& Asset) const noexcept
+            FString RelativePath;
+            SIZE_T ByteOffset;
+
+            bool operator==(const FMeshImportImage& Other) const
+            {
+                return Other.RelativePath == RelativePath && Other.ByteOffset == ByteOffset;
+            }
+        };
+
+        struct FMeshImportImageHasher
+        {
+            size_t operator()(const FMeshImportImage& Asset) const noexcept
             {
                 size_t Seed = 0;
                 Hash::HashCombine(Seed, Asset.RelativePath);
@@ -79,25 +74,41 @@ namespace Lumina::Import
             }
         };
     
-        struct FGLTFImageEqual
+        struct FMeshImportImageEqual
         {
-            bool operator()(const FGLTFImage& A, const FGLTFImage& B) const noexcept
+            bool operator()(const FMeshImportImage& A, const FMeshImportImage& B) const noexcept
             {
                 return A.RelativePath == B.RelativePath && A.ByteOffset == B.ByteOffset;
             }
         };
+
+        using FMeshImportTextureMap = THashSet<FMeshImportImage, FMeshImportImageHasher, FMeshImportImageEqual>;
+
         
-        struct FGLTFImportData
+        struct FMeshStatistics
         {
-            TVector<TUniquePtr<FMeshResource>>          Resources;
             TVector<meshopt_OverdrawStatistics>         OverdrawStatics;
             TVector<meshopt_VertexFetchStatistics>      VertexFetchStatics;
-            
-            THashMap<SIZE_T, TVector<FGLTFMaterial>>    Materials;
-            THashSet<FGLTFImage, FGLTFImageHasher, FGLTFImageEqual> Textures;
-            
         };
-        LUMINA_API bool ImportGLTF(FGLTFImportData& OutData, const FGLTFImportOptions& ImportOptions, const FString& RawFilePath);
-    }
 
+        struct FMeshImportData
+        {
+            TVector<TUniquePtr<FMeshResource>>          Resources;
+            FMeshStatistics                             MeshStatistics;
+            FMeshImportTextureMap                       Textures;
+        };
+        
+        namespace OBJ
+        {
+            
+            NODISCARD LUMINA_API bool ImportOBJ(FMeshImportData& OutData, const FMeshImportOptions& ImportOptions, FStringView FilePath);
+        }
+
+        
+        namespace GLTF
+        {
+            LUMINA_API bool ImportGLTF(FMeshImportData& OutData, const FMeshImportOptions& ImportOptions, FStringView FilePath);
+        }
+    }
+    
 }

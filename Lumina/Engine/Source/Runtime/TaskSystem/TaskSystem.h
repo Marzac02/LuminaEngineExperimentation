@@ -60,7 +60,7 @@ namespace Lumina
         
         
         template<typename TFunc>
-        void ParallelFor(uint32 Num, uint32 MinRange, TFunc&& Func, ETaskPriority Priority = ETaskPriority::Medium)
+        void ParallelFor(uint32 Num, TFunc&& Func, uint32 MinRange = 0, ETaskPriority Priority = ETaskPriority::Medium)
         {
             struct ParallelTask : ITaskSet
             {
@@ -95,7 +95,7 @@ namespace Lumina
             };
 
             LUMINA_PROFILE_SECTION("Tasks::ParallelFor");
-            ParallelTask Task = ParallelTask(std::forward<TFunc>(Func), Num, std::max(1u, MinRange));
+            ParallelTask Task = ParallelTask(std::forward<TFunc>(Func), Num, std::min(1u, MinRange == 0 ? Num : MinRange));
             if (Num == 1)
             {
                 Task.ExecuteRange(TaskSetPartition{0, 1}, Threading::GetThreadID());
@@ -206,9 +206,9 @@ namespace Lumina
 
         template<typename TIndex, typename TFunc>
         requires(eastl::is_integral_v<TIndex>)
-        void ParallelFor(TIndex Num, uint32 MinRange, TFunc&& Func, ETaskPriority Priority = ETaskPriority::Medium)
+        void ParallelFor(TIndex Num, TFunc&& Func, uint32 MinRange = 0, ETaskPriority Priority = ETaskPriority::Medium)
         {
-            GTaskSystem->ParallelFor(static_cast<uint32>(Num), MinRange, std::forward<TFunc>(Func), Priority);
+            GTaskSystem->ParallelFor(static_cast<uint32>(Num), std::forward<TFunc>(Func), MinRange, Priority);
         }
 
         template<typename TIterator, typename TFunc>

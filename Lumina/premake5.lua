@@ -60,6 +60,7 @@ project "Lumina"
         "Engine/ThirdParty/SPIRV-Reflect/**.cpp",
         "Engine/ThirdParty/fastgltf/src/**.cpp",
         "Engine/ThirdParty/fastgltf/deps/simdjson/**.cpp",
+        "Engine/ThirdParty/tinyobjloader/**.cc"
     }
 
     includedirs

@@ -241,8 +241,8 @@ namespace Lumina
             return;
         }
 
-		FString NewFileName = Paths::FileName(NewPath, true);
-		FString OldFileName = Paths::FileName(OldPath, true);
+		FName NewFileName = Paths::FileName(NewPath, true);
+		FName OldFileName = Paths::FileName(OldPath, true);
         bool bFileNameDirty = NewFileName != OldFileName;
         if (!bFileNameDirty)
         {
@@ -269,9 +269,9 @@ namespace Lumina
 
         for (FObjectExport& Export : Exports)
         {
-            if (Export.ObjectName == Paths::FileName(OldPath, true))
+            if (Export.ObjectName == OldFileName)
             {
-                Export.ObjectName = Paths::FileName(NewPath, true);
+                Export.ObjectName = NewFileName;
                 break;
             }
         }

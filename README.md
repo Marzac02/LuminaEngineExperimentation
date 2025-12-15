@@ -63,27 +63,9 @@ Performance profiling - Built-in Lua script profiling with Tracy
 
 ---
 
-## 📸 Gallery
+## Gallery
 
-<div align="center">
-
-<img src="https://github.com/user-attachments/assets/a6a6a5bb-034e-4423-a25b-2c4dcad6bbc6" alt=Project Creator width=800  />
-<img src="https://github.com/user-attachments/assets/a6b973ba-851e-4732-b30b-eb0bf14b08e1" alt="Scene Editor" width="800"/>
-<img src="https://github.com/user-attachments/assets/944c2569-a969-42b9-b0e6-88050fb5037c" alt="Clustered Lighting" width="800"/>
-<img src="https://github.com/user-attachments/assets/b8717096-e8e9-437b-af18-01502ed821b9" alt="PBR Materials" width="800"/>
-
-</div>
-
-<details>
-<summary>📷 View More Screenshots</summary>
-
-<img src="https://github.com/user-attachments/assets/8c81055c-f46a-447d-a79c-31b51fded805" alt="Editor Overview"/>
-<img src="https://github.com/user-attachments/assets/6b1dc6a7-ffb3-416b-93ad-d130695e810e" alt="Component Inspector"/>
-<img src="https://github.com/user-attachments/assets/9974246c-4bc0-4975-b489-5846f1551c74" alt="Scene Hierarchy"/>
-<img src="https://github.com/user-attachments/assets/a5659962-8c9b-4bf7-9730-6ebc079b42fd" alt="Material Editor"/>
-<img src="https://github.com/user-attachments/assets/9ccd1e52-bb64-44c8-bd8c-66c1f1545253" alt="Lighting System"/>
-
-</details>
+*New Images Coming Soon*
 
 ---
 
@@ -98,7 +80,7 @@ Performance profiling - Built-in Lua script profiling with Tracy
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/mrdrelliot/luminaengine.git
+   git clone https://github.com/mrdrelliot/luminaengine
    cd LuminaEngine
    ```
 
@@ -114,7 +96,7 @@ Performance profiling - Built-in Lua script profiling with Tracy
 
 4. **Build and run Editor**
    - Select `Development` configuration
-   - Press F5 or click Build → Run
+   - Press F5 or click Build -> Run
 
 5. **Start developing**
    - Open the `Sandbox` project to experiment
@@ -122,7 +104,7 @@ Performance profiling - Built-in Lua script profiling with Tracy
 
 ### Troubleshooting
 
-- **Missing v143 toolset?** Install it via Visual Studio Installer → Individual Components → MSVC v143 Build Tools
+- **Missing v143 toolset?** Install it via Visual Studio Installer -> Individual Components -> MSVC v143 Build Tools
 - **"Cannot find .generated.h" error?** Build again - Visual Studio sometimes needs a second pass to detect new files
 - **Python not found?** Ensure Python is added to PATH during installation (check "Add Python to PATH" when installing)
 - **Build fails?** [Submit an issue](https://github.com/mrdrelliot/LuminaEngine/issues) or contact me on Discord
@@ -134,14 +116,12 @@ setx LUMINA_DIR "C:\path\to\lumina"
 
 ---
 
-
 ## Supported Asset Formats
 
-| Format | Support | Notes |
-|--------|---------|-------|
-| **GLTF** | Full | Recommended format |
-| **GLB** | Full | Binary GLTF |
-| **PNG/JPG** | Full | Textures via STB_Image |
+- **GLTF**
+- **GLB**
+- **OBJ**
+- **PNG/JPG**
 
 ### Free Asset Resources
 
@@ -151,57 +131,35 @@ setx LUMINA_DIR "C:\path\to\lumina"
 
 ---
 
-## Technology Stack
+### Third Party Dependencies
+- **ImGui** - Immediate mode graphical user interface for rapid tool development with minimal dependencies
+- **Tracy** - Real-time frame profiler with GPU profiling, memory tracking, and remote access capabilities
+- **SPDLog** - Fast C++ logging library with async mode, custom formatting, and multiple sink support
+- **NlohmannJson** - Modern JSON library with intuitive syntax and full STL compatibility
+- **XXHash** - Extremely fast non-cryptographic hash algorithm optimized for speed over collision resistance
+- **ConcurrentQueue** - Industrial-strength lock-free queue supporting multiple producers and consumers
+- **EASTL** - Electronic Arts Standard Template Library optimized for game development with custom allocators
+- **EnkiTS** - Lightweight task scheduler for creating parallel-for, task sets, and dependency graphs across multiple threads
+- **EnTT** - Fast and reliable entity component system with sparse set implementation and signal/delegate support
+- **FastGLTF** - High-performance GLTF 2.0 parser with complete specification support and efficient memory handling
+- **GLM** - Header-only C++ mathematics library designed for graphics programming with GLSL-compatible syntax
+- **JoltPhysics** - High-performance multi-threaded physics engine with continuous collision detection and ragdoll support
+- **Sol2** - Modern C++/Lua binding library with compile-time safety and automatic type conversions
+- **MeshOptimizer** - Mesh optimization library providing vertex cache optimization, overdraw reduction, and vertex/index buffer compression
+- **RenderDoc** - Graphics debugging tool integration for frame capture and analysis
+- **RPMalloc** - Lock-free thread-caching memory allocator providing 10-thread scalability with minimal overhead
+- **STBImage** - Public domain image loading library supporting PNG, JPG, TGA, BMP, PSD, GIF, HDR, and PIC formats
+- **TinyObjLoader** - Lightweight single-header OBJ file parser with MTL material support
+- **ShaderC** - Google's GLSL to SPIR-V compiler with optimization passes and shader reflection capabilities
+- **Vulkan** - Modern low-level graphics API providing explicit control over GPU resources and high-performance rendering
+- **VKBootsrap** - Simplifies Vulkan initialization with sensible defaults and reduced boilerplate code
+- **Volk** - Meta-loader for Vulkan that eliminates linking issues and enables runtime API loading
+- **VulkanMemoryAllocator** - Production-ready memory management for Vulkan with defragmentation and optimal allocation strategies
 
-<table>
-<tr>
-<td valign="top" width="50%">
-
-### Core Systems
-- **GLFW** - Window & input management
-- **EnTT** - Entity Component System
-- **EnkiTS** - Multi-threaded task scheduler
-- **EASTL** - High-performance STL replacement
-- **RPMalloc** - Custom memory allocator
-
-</td>
-<td valign="top" width="50%">
-
-### Rendering
-- **Vulkan** - Graphics API
-- **VMA** - Vulkan Memory Allocator
-- **Volk** - Vulkan Loader
-- **VkBootstrap** - Vulkan initialization
-- **SPIRV-Reflect** - Shader reflection
-- **GLM** - Math library
-
-</td>
-</tr>
-<tr>
-<td valign="top" width="50%">
-
-### Tools & Utilities
-- **ImGui** - Editor UI framework
-- **Tracy** - Performance profiler
-- **SPDLog** - Fast logging
-- **NlohmannJson** - JSON serialization
-- **XXHash** - Fast hashing
-
-</td>
-<td valign="top" width="50%">
-
-### Content Pipeline
-- **FastGLTF** - GLTF 2.0 parser
-- **STB_Image** - Image loading
-- **Reflection** - Custom C++ reflection
-
-</td>
-</tr>
-</table>
 
 ---
 
-## 📖 Documentation
+## Documentation
 
 ### Coding Standards
 
@@ -214,40 +172,12 @@ Lumina follows a consistent naming convention:
 | `S` | Reflected structs | `SVertex`, `SMaterial` |
 
 **General Rules:**
-- ✅ PascalCase for all identifiers
-- ✅ Tabs for indentation
-- ✅ Braces on new lines
-- ✅ Descriptive variable names
+- PascalCase for all identifiers
+- Tabs for indentation
+- Braces on new lines
+- Descriptive variable names
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for complete guidelines.
-
-### Architecture Overview
-
-```
-Game Loop → ECS Update → Render Graph → Vulkan Commands → Present
-              ↓              ↓              ↓
-          Reflection    Scene Graph    Resource Manager
-```
-
----
-
-## Roadmap
-
-### Current Focus
-- **Refactoring to dynamic libraries** - Better modularity and faster iteration
-- **Scene batched rendering** - Improved draw call efficiency
-- **Documentation expansion** - API docs and tutorials
-
-### Upcoming Features
-- **Multi-threaded renderer** - Parallel command buffer generation
-- **Plugin system** - Hot-reloadable game code
-- **Animation system** - Skeletal animation support
-- **Physics integration** - Rigid body dynamics
-- **Audio system** - 3D spatial audio
-
-### Future Platforms
-- **macOS support** - Metal backend
-- **Linux support** - Native Vulkan
 
 ---
 
@@ -265,14 +195,14 @@ Contributions are welcome! Whether it's bug fixes, features, or documentation im
 7. Open a Pull Request
 
 **Requirements:**
-- ✅ Clean, well-documented code
-- ✅ Follow existing architecture patterns
-- ✅ Include tests where appropriate
-- ✅ Update documentation as needed
+- Clean, well-documented code
+- Follow existing architecture patterns
+- Include tests where appropriate
+- Update documentation as needed
 
 ---
 
-## 🙏 Acknowledgments
+## Acknowledgments
 
 Lumina is inspired by and learns from these excellent open-source engines:
 
@@ -286,7 +216,7 @@ Special thanks to the entire game engine development community for sharing knowl
 
 ---
 
-## 📄 License
+## License
 
 Lumina is licensed under the [Apache 2.0 License](LICENSE).
 

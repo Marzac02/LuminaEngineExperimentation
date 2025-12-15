@@ -69,20 +69,21 @@ namespace Lumina::Import::Mesh::GLTF
             }
 
             *OutAsset = std::move(expected_asset.get());
+            return true;
         }
     }
     
 
-    bool ImportGLTF(FGLTFImportData& OutData, const FGLTFImportOptions& ImportOptions, const FString& RawFilePath)
+    bool ImportGLTF(FMeshImportData& OutData, const FMeshImportOptions& ImportOptions, FStringView FilePath)
     {
         fastgltf::Asset Asset;
-        if (!ExtractAsset(&Asset, RawFilePath))
+        if (!ExtractAsset(&Asset, FilePath.data()))
         {
             OutData = {};
             return false;
         }
         
-        FString Name = Paths::FileName(RawFilePath, true);
+        FString Name = Paths::FileName(FilePath.data(), true);
         
         OutData.Resources.clear();
         OutData.Resources.reserve(Asset.meshes.size());
@@ -98,10 +99,10 @@ namespace Lumina::Import::Mesh::GLTF
             
             for (auto& Material : Asset.materials)
             {
-                FGLTFMaterial NewMaterial;
-                NewMaterial.Name = Material.name.c_str();
-                
-                OutData.Materials[OutData.Resources.size()].push_back(NewMaterial);
+                //FGLTFMaterial NewMaterial;
+                //NewMaterial.Name = Material.name.c_str();
+                //
+                //OutData.Materials[OutData.Resources.size()].push_back(NewMaterial);
             }
 
             if (ImportOptions.bImportTextures)
@@ -109,7 +110,7 @@ namespace Lumina::Import::Mesh::GLTF
                 for (auto& Image : Asset.images)
                 {
                     auto& URI = std::get<fastgltf::sources::URI>(Image.data);
-                    FGLTFImage GLTFImage;
+                    FMeshImportImage GLTFImage;
                     GLTFImage.ByteOffset = URI.fileByteOffset;
                     GLTFImage.RelativePath = URI.uri.c_str();
                     OutData.Textures.emplace(GLTFImage);
@@ -119,7 +120,7 @@ namespace Lumina::Import::Mesh::GLTF
             for (auto& Primitive : Mesh.primitives)
             {
                 FGeometrySurface NewSurface;
-                NewSurface.StartIndex = IndexCount;
+                NewSurface.StartIndex = (uint32)IndexCount;
                 NewSurface.ID = Mesh.name.empty() ? FName(Name + "_" + eastl::to_string(NewResource->GetNumSurfaces())) : Mesh.name.c_str();
                 
                 if (Primitive.materialIndex.has_value())
@@ -216,8 +217,8 @@ namespace Lumina::Import::Mesh::GLTF
             meshopt_optimizeVertexCache(NewResource->ShadowIndices.data(), NewResource->ShadowIndices.data(), NewResource->ShadowIndices.size(), NewResource->Vertices.size());
 
 
-            OutData.VertexFetchStatics.push_back(meshopt_analyzeVertexFetch(NewResource->Indices.data(), NewResource->Indices.size(), NewResource->Vertices.size(), sizeof(FVertex)));
-            OutData.OverdrawStatics.push_back(meshopt_analyzeOverdraw(NewResource->Indices.data(), NewResource->Indices.size(), (float*)NewResource->Vertices.data(), NewResource->Vertices.size(), sizeof(FVertex)));
+            OutData.MeshStatistics.VertexFetchStatics.push_back(meshopt_analyzeVertexFetch(NewResource->Indices.data(), NewResource->Indices.size(), NewResource->Vertices.size(), sizeof(FVertex)));
+            OutData.MeshStatistics.OverdrawStatics.push_back(meshopt_analyzeOverdraw(NewResource->Indices.data(), NewResource->Indices.size(), (float*)NewResource->Vertices.data(), NewResource->Vertices.size(), sizeof(FVertex)));
             OutData.Resources.push_back(eastl::move(NewResource));
         }
 

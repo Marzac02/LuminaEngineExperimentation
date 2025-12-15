@@ -113,7 +113,7 @@ namespace Lumina
             const uint32 RowBytes = ImageDesc.Extent.y * BytesPerPixel;
             
             TVector<uint8> FlippedData(Thumbnail->ImageData.size());
-            Task::ParallelFor(ImageDesc.Extent.y, ImageDesc.Extent.y, [&](uint32 Y)
+            Task::ParallelFor(ImageDesc.Extent.y, [&](uint32 Y)
             {
                 const uint32 FlippedY = 255 - Y;
                 Memory::Memcpy(FlippedData.data() + (FlippedY * RowBytes), Thumbnail->ImageData.data() + (Y * RowBytes), RowBytes);

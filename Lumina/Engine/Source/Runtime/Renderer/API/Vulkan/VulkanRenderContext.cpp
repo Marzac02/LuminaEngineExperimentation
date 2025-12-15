@@ -665,7 +665,7 @@ namespace Lumina
 
         if (NumCommandLists > 30)
         {
-            Task::ParallelFor(NumCommandLists, 1, [&](uint32 Index)
+            Task::ParallelFor(NumCommandLists, [&](uint32 Index)
             {
                 FVulkanCommandList* CommandList = static_cast<FVulkanCommandList*>(CommandLists[Index]);
                 CommandList->Executed(Queue.get(), SubmissionID);   

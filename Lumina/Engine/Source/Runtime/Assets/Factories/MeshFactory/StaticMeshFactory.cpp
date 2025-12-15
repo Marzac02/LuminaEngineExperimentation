@@ -45,12 +45,27 @@ namespace Lumina
         {
             FString VirtualPath = Paths::ConvertToVirtualPath(DestinationPath);
             ImportedData = {};
-            if (!Import::Mesh::GLTF::ImportGLTF(ImportedData, Options, RawPath))
+            FName FileExtension = Paths::GetExtension(RawPath);
+
+            if (FileExtension == ".obj")
             {
-                ImportedData = {};
-                Options = {};
-                bShouldImport = false;
-                bShouldClose = true;
+                if (!Import::Mesh::OBJ::ImportOBJ(ImportedData, Options, RawPath))
+                {
+                    ImportedData = {};
+                    Options = {};
+                    bShouldImport = false;
+                    bShouldClose = true;
+                }
+            }
+            else if (FileExtension == ".gltf" || FileExtension == ".glb")
+            {
+                if (!Import::Mesh::GLTF::ImportGLTF(ImportedData, Options, RawPath))
+                {
+                    ImportedData = {};
+                    Options = {};
+                    bShouldImport = false;
+                    bShouldClose = true;
+                }   
             }
             bShouldReimport = false;
         }
@@ -219,7 +234,7 @@ namespace Lumina
     
                 for (size_t i = 0; i < ImportedData.Resources.size(); ++i)
                 {
-                    DrawRow(*ImportedData.Resources[i], ImportedData.OverdrawStatics[i], ImportedData.VertexFetchStatics[i]);
+                    DrawRow(*ImportedData.Resources[i], ImportedData.MeshStatistics.OverdrawStatics[i], ImportedData.MeshStatistics.VertexFetchStatics[i]);
                 }
     
                 ImGui::EndTable();
@@ -248,7 +263,7 @@ namespace Lumina
                         ImGui::TableHeadersRow();
                         ImGui::PopStyleColor();
     
-                        for (const Import::Mesh::GLTF::FGLTFImage& Image : ImportedData.Textures)
+                        for (const Import::Mesh::FMeshImportImage& Image : ImportedData.Textures)
                         {
                             FString ImagePath = Paths::Parent(RawPath) + "/" + Image.RelativePath;
                         
@@ -360,11 +375,11 @@ namespace Lumina
 
             if (!ImportedData.Textures.empty())
             {
-                TVector<Import::Mesh::GLTF::FGLTFImage> Images(ImportedData.Textures.begin(), ImportedData.Textures.end());
+                TVector<Import::Mesh::FMeshImportImage> Images(ImportedData.Textures.begin(), ImportedData.Textures.end());
                 uint32 WorkSize = (uint32)Images.size();
-                Task::ParallelFor(WorkSize, WorkSize / 4, [&](uint32 Index)
+                Task::ParallelFor(WorkSize, [&](uint32 Index)
                 {
-                    const Import::Mesh::GLTF::FGLTFImage& Texture = Images[Index];
+                    const Import::Mesh::FMeshImportImage& Texture = Images[Index];
                 
                     CTextureFactory* TextureFactory = CTextureFactory::StaticClass()->GetDefaultObject<CTextureFactory>();
                 
@@ -372,10 +387,10 @@ namespace Lumina
                     FString TexturePath = ParentPath + "/" + Texture.RelativePath;
                     FString TextureFileName = Paths::RemoveExtension(Paths::FileName(TexturePath));
                                          
-                    FString DestinationParent = Paths::GetVirtualPathPrefix(FullPath);
-                    FString TextureDestination = DestinationParent + TextureFileName;
+                    FString DestinationParent = Paths::Parent(FullPath);
+                    FString TextureDestination = DestinationParent + "/" + TextureFileName + ".lasset";
 
-                    if (!FindObject<CPackage>(TextureDestination))
+                    if (!FindObject<CPackage>(Paths::ConvertToVirtualPath(TextureDestination)))
                     {
                         TextureFactory->Import(TexturePath, TextureDestination);
                     }
@@ -383,16 +398,16 @@ namespace Lumina
                 });
             }
 
-            if (!ImportedData.Materials.empty())
-            {
-                for (SIZE_T i = 0; i < ImportedData.Materials[Counter].size(); ++i)
-                {
-                    //const Import::Mesh::GLTF::FGLTFMaterial& Material = ImportedData.Materials[Counter][i];
-                    //FName MaterialName = (i == 0) ? FString(FileName + "_Material").c_str() : FString(FileName + "_Material" + eastl::to_string(i)).c_str();
-                    ////CMaterial* NewMaterial = NewObject<CMaterial>(NewPackage, MaterialName.c_str());
-                    //NewMesh->Materials.push_back(nullptr);
-                }
-            }
+            //if (!ImportedData.Materials.empty())
+            //{
+            //    for (SIZE_T i = 0; i < ImportedData.Materials[Counter].size(); ++i)
+            //    {
+            //        //const Import::Mesh::GLTF::FGLTFMaterial& Material = ImportedData.Materials[Counter][i];
+            //        //FName MaterialName = (i == 0) ? FString(FileName + "_Material").c_str() : FString(FileName + "_Material" + eastl::to_string(i)).c_str();
+            //        ////CMaterial* NewMaterial = NewObject<CMaterial>(NewPackage, MaterialName.c_str());
+            //        //NewMesh->Materials.push_back(nullptr);
+            //    }
+            //}
 
             CPackage* NewPackage = NewMesh->GetPackage();
             CPackage::SavePackage(NewPackage, NewPackage->GetFullPackageFilePath());

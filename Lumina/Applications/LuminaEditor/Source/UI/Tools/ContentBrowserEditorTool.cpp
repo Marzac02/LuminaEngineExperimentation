@@ -7,7 +7,6 @@
 #include "Assets/Factories/Factory.h"
 #include "Core/Engine/Engine.h"
 #include "Core/Object/ObjectIterator.h"
-#include "Core/Object/ObjectRename.h"
 #include "Core/Object/Package/Package.h"
 #include "Core/Object/Package/Thumbnail/PackageThumbnail.h"
 #include "Core/Windows/Window.h"
@@ -125,8 +124,7 @@ namespace Lumina
                     return;
                 }
 
-                HandleContentBrowserDragDrop(TypedDroppedItem, SourceItem);
-                
+                HandleContentBrowserDragDrop(TypedDroppedItem->GetPath(), SourceItem->GetPath());
             }
         };
 
@@ -294,6 +292,19 @@ namespace Lumina
                 
             }
         };
+
+        OutlinerContext.DragDropFunction = [this](FTreeListViewItem* DroppedOntoItem)
+        {
+            FContentBrowserListViewItem* TypedDroppedItem = static_cast<FContentBrowserListViewItem*>(DroppedOntoItem);
+            const ImGuiPayload* Payload = ImGui::AcceptDragDropPayload(FContentBrowserTileViewItem::DragDropID, ImGuiDragDropFlags_AcceptBeforeDelivery);
+            if (Payload && Payload->IsDelivery())
+            {
+                uintptr_t ValuePtr = *static_cast<uintptr_t*>(Payload->Data);
+                auto* SourceItem = reinterpret_cast<FContentBrowserTileViewItem*>(ValuePtr);
+                
+                HandleContentBrowserDragDrop(TypedDroppedItem->GetPath(), SourceItem->GetPath());
+            }
+        };
         
         OutlinerContext.RebuildTreeFunction = [this](FTreeListView* Tree)
         {
@@ -359,15 +370,13 @@ namespace Lumina
     {
         bool bWroteSomething = false;
         
-        ActionRegistry.ProcessAllOf<FPendingDestroy>([&] (FPendingDestroy& Destroy)
+        ActionRegistry.ProcessAllOf<FPendingDestroy>([&] (const FPendingDestroy& Destroy)
         {
             try
             {
                 if (std::filesystem::is_directory(Destroy.PendingDestroy.c_str()))
                 {
-                    std::filesystem::remove(Destroy.PendingDestroy.c_str());
-                    bWroteSomething = true;
-
+                    std::filesystem::remove_all(Destroy.PendingDestroy.c_str());
                     ImGuiX::Notifications::NotifySuccess("Deleted Directory {0}", Destroy.PendingDestroy.c_str());
                 }
                 else
@@ -383,8 +392,6 @@ namespace Lumina
                     if (CPackage::DestroyPackage(Destroy.PendingDestroy))
                     {
                         FString PackagePathWithExt = Destroy.PendingDestroy + ".lasset";
-                        bWroteSomething = true;
-
                         ImGuiX::Notifications::NotifySuccess("Deleted Asset {0}", Destroy.PendingDestroy.c_str());
 
                     }
@@ -420,7 +427,6 @@ namespace Lumina
                 }
                 else if (Extension.empty())
                 {
-
                     for (const std::filesystem::directory_entry& Directory : std::filesystem::recursive_directory_iterator(Rename.NewName.c_str()))
                     {
                         if (Directory.is_directory())
@@ -500,20 +506,13 @@ namespace Lumina
         }
     }
 
-    void FContentBrowserEditorTool::HandleContentBrowserDragDrop(FContentBrowserTileViewItem* Drop, FContentBrowserTileViewItem* Payload)
+    void FContentBrowserEditorTool::HandleContentBrowserDragDrop(FStringView DropPath, FStringView PayloadPath)
     {
-        FString DestPath;
+        size_t Pos = PayloadPath.find_last_of('/');
+        FString DirName = (Pos != FString::npos) ? FString(PayloadPath.substr(Pos + 1)) : FString(PayloadPath);
+        FString DestPath = FString(DropPath) + "/" + DirName;
 
-        if (!Drop->IsDirectory())
-        {
-            return;
-        }
-
-        size_t Pos = Payload->GetPath().find_last_of('/');
-        FString DirName = (Pos != FString::npos) ? Payload->GetPath().substr(Pos + 1) : Payload->GetPath();
-        DestPath = Drop->GetPath() + "/" + DirName;
-
-        ActionRegistry.EnqueueAction<FPendingRename>(FPendingRename{ Payload->GetPath(), DestPath });
+        ActionRegistry.EnqueueAction<FPendingRename>(FPendingRename{ FString(PayloadPath), DestPath });
     }
 
     void FContentBrowserEditorTool::OpenDeletionWarningPopup(const FContentBrowserTileViewItem* Item, const TFunction<void(EYesNo)>& Callback)
@@ -909,7 +908,7 @@ namespace Lumina
         
         ImRect Rect(ChildMin, ChildMax);
 
-        ActionRegistry.ProcessAllOf<FPendingOSDrop>([&](FPendingOSDrop& Drop)
+        ActionRegistry.ProcessAllOf<FPendingOSDrop>([&](const FPendingOSDrop& Drop)
         {
             if (Rect.Contains(Drop.MousePos))
             {
@@ -1057,7 +1056,7 @@ namespace Lumina
         if (ImGui::MenuItem(MenuItemName.c_str()))
         {
             FString SelectedFile;
-            const char* Filter = "Supported Assets (*.png;*.jpg;*.fbx;*.gltf;*.glb)\0*.png;*.jpg;*.fbx;*.gltf;*.glb\0All Files (*.*)\0*.*\0";
+            const char* Filter = "Supported Assets (*.png;*.jpg;*.fbx;*.gltf;*.glb;*.obj)\0*.png;*.jpg;*.fbx;*.gltf;*.glb;*.obj\0All Files (*.*)\0*.*\0";
             if (Platform::OpenFileDialogue(SelectedFile, "Import Asset", Filter))
             {
                 TryImport(SelectedFile);
