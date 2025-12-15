@@ -75,7 +75,7 @@ project "Lumina"
     libdirs
     {
         "%{LuminaEngineDirectory}/Lumina/Engine/ThirdParty/lua",
-        "%{LuminaEngineDirectory}/Lumina/ThirdParty/NvidiaAftermath/lib",
+        "%{LuminaEngineDirectory}/Lumina/Engine/ThirdParty/NvidiaAftermath/lib",
         "%{LuminaEngineDirectory}/External/ShaderC",
     }
 
