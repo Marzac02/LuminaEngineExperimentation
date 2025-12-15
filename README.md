@@ -36,7 +36,7 @@ Lumina is a modern C++ game engine designed for learning and experimentation wit
 
 ### **Advanced Rendering**
 - **Vulkan-powered renderer** with automatic resource tracking and barrier placement
-- **Deferred rendering pipeline** with clustered lighting for efficient multi-light scenes
+- **Forward+ rendering pipeline** with clustered lighting for efficient multi-light scenes
 - **PBR materials** with full GLTF/GLB support
 
 ### **Modern Architecture**
@@ -68,20 +68,9 @@ Performance profiling - Built-in Lua script profiling with Tracy
 <div align="center">
 
 <img src="https://github.com/user-attachments/assets/a6a6a5bb-034e-4423-a25b-2c4dcad6bbc6" alt=Project Creator width=800  />
-
-* One click project creator
-
 <img src="https://github.com/user-attachments/assets/a6b973ba-851e-4732-b30b-eb0bf14b08e1" alt="Scene Editor" width="800"/>
-
-*Real-time scene editing with ImGui-based editor*
-
 <img src="https://github.com/user-attachments/assets/944c2569-a969-42b9-b0e6-88050fb5037c" alt="Clustered Lighting" width="800"/>
-
-*Deferred rendering with clustered lighting*
-
 <img src="https://github.com/user-attachments/assets/b8717096-e8e9-437b-af18-01502ed821b9" alt="PBR Materials" width="800"/>
-
-*Physically-based materials with GLTF support*
 
 </div>
 
@@ -100,71 +89,45 @@ Performance profiling - Built-in Lua script profiling with Tracy
 
 ## Quick Start
 
-### Prerequisites
-
+### What You Need
 - **Windows 10/11** (64-bit)
-- **MSVC Build Tools for x86/64 (v14.44)** (Platform Toolset v143)
-- **Visual Studio** (MSVC 17.8+)
-- **Python 3.8+** Python needs to be installed **and** available using the "python" command-line.
-- **Vulkan SDK 1.3 or higher**  ([Download](https://vulkan.lunarg.com/sdk/home))
-- 
-<img width="250" height="59" alt="image" src="https://github.com/user-attachments/assets/043b3add-a81f-47b1-92be-1eeda625e4d7" />
-<img width="250" height="70" alt="image" src="https://github.com/user-attachments/assets/2312a34a-5091-491b-b2b1-08659b3a9bed" />
-<img width="250" height="22" alt="image" src="https://github.com/user-attachments/assets/a0cc6bfe-7b87-432b-83d8-19b25422b4ee" />
+- **Visual Studio 2022 or 2019** with MSVC v143 toolset (17.8+)
+- **Python 3.8+** added to your system PATH
 
+### Installation Steps
 
-### Installation
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/mrdrelliot/lumina.git
+   cd lumina
+   ```
 
-**Disclaimer and tips**
+2. **Run the setup script**
+   ```bash
+   python Setup.py
+   ```
+   - This downloads and extracts all dependencies automatically
+   - If the download fails, manually download [External.7z](https://www.dropbox.com/scl/fi/suigjbqj75pzcpxcqm6hv/External.7z?rlkey=ebu8kiw4gswtvj5mclg6wa1lu&st=vd98mrab&dl=0) and extract it to the `lumina` folder
 
+3. **Open the solution**
+   - Open `Lumina.sln` in Visual Studio
 
-Lumina's installation is being worked on, at the moment a majority of it's steps are compiled down into just running Setup.py.
-However I've noticed some issues with UTF-8 chars on Window's terminals, if the terminal opens and closes quickly, keep trying.
+4. **Build and run**
+   - Select `Development` configuration
+   - Press F5 or click Build → Run
 
-There are also occasional issues I've noticed with Visual Studio where it will not pickup newly generated headers created by the Lumina Reflection Tool (LRT), if this happens and you 
-receive a "cannot find XXX.generated.h" error, just try building again, it should pick up the file the second time.
+5. **Start developing**
+   - Open the `Sandbox` project to experiment
+   - Or run `Tools/ProjectConfigurator.py` to create a new project
 
-Lumina relies on Python pretty heavily, including use of the "python" command line action, if you installed Python without selecting the option to add Python to your "PATH" system variable, the reflection tool will not
-be able to run automatically and you will encounter a build error. Please see above images to confirm this action has been done correctly.
+### Troubleshooting
 
-Those of you who are newly installing Visual Studio 2026, without having installed Visual Studio 2022, by default the toolset Microsoft downloads for MSVC is to new for Lumina as it's only *officially* supported on v143. 
-However, as long as you manually download the correct toolset from the Visual Studio Installer, there should be no issues. If you do forget to do this, when building Lumina you will get an error that prompts you to either -
-retarget the project, or download the toolset. If you select the option to retarget, Visual Studio will give you the option to also install the missing v143, this is the option you should select, and should allievate this build issue,
-from happening to you in the future.
+- **Missing v143 toolset?** Install it via Visual Studio Installer → Individual Components → MSVC v143 Build Tools
+- **"Cannot find .generated.h" error?** Build again - Visual Studio sometimes needs a second pass to detect new files
+- **Python not found?** Ensure Python is added to PATH during installation (check "Add Python to PATH" when installing)
+- **Build fails?** [Submit an issue](https://github.com/mrdrelliot/LuminaEngine/issues) or contact me on Discord
 
-During the setup process, Lumina will attempt to download from Dropbox, if for some reason this fails. You can get the .7z file here, and extract it yourself into the engine install directory (same directory as Setup.py)
-https://www.dropbox.com/scl/fi/suigjbqj75pzcpxcqm6hv/External.7z?rlkey=ebu8kiw4gswtvj5mclg6wa1lu&st=759m2aj0&dl=0
-
--- If you encounter **any** other build issues during the installation of Lumina Engine, **please** reach out to me on Discord, or submit a Github Issue, that is the only way I am able to track these issues and fix them in  a timely manner.
-
-Thank you!
-
-
-```
-
-** Ensure you have all prerequisites installed **
-
-# 1. Clone the repository
-git clone https://github.com/mrdrelliot/lumina.git
-cd lumina
-
-# 2. Run setup (downloads dependencies automatically)
-python Setup.py
-
-# 3. Build and run the Editor
-Set Editor as startup project → Build → Run (Prefer Development configuration)
-
-# 4. Select a project
-Open the Sandbox project to play around
-or..
-Open Tools/ProjectConfigurator.py to create a new project.
-
-Happy coding!
-```
-
-### First Time Setup
-
-After building, the `LUMINA_DIR` environment variable should be automatically set. If not:
+**Note:** The `LUMINA_DIR` environment variable is set automatically during build. If needed, set it manually:
 ```bash
 setx LUMINA_DIR "C:\path\to\lumina"
 ```
