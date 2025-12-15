@@ -21,6 +21,11 @@ namespace Lumina
         LUMINA_API CObjectBase();
         LUMINA_API virtual ~CObjectBase();
         
+        CObjectBase(CObjectBase&&) = default;
+        CObjectBase(const CObjectBase&) = delete;
+        CObjectBase& operator = (CObjectBase&&) = default;
+        CObjectBase& operator = (const CObjectBase&) = delete;
+        
         LUMINA_API virtual void ConstructInternal(const FObjectInitializer& OI);
         
         LUMINA_API CObjectBase(EObjectFlags InFlags);
@@ -47,6 +52,7 @@ namespace Lumina
         /** Called just before the destructor is called and the memory is freed */
         LUMINA_API virtual void OnDestroy() { }
 
+        /** Internal index into the CObjectArray */
         LUMINA_API int32 GetInternalIndex() const { return InternalIndex; }
 
         /** Adds the object the root set, rooting an object will ensure it will not be destroyed */

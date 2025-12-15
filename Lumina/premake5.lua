@@ -75,6 +75,7 @@ project "Lumina"
     libdirs
     {
         "%{LuminaEngineDirectory}/Lumina/Engine/ThirdParty/lua",
+        "%{LuminaEngineDirectory}/ThirdParty/NvidiaAftermath/lib",
         "%{LuminaEngineDirectory}/External/ShaderC",
     }
 
@@ -86,6 +87,7 @@ project "Lumina"
         "Tracy",
         "lua54",
         "shaderc_combined",
+        "GFSDK_Aftermath_Lib.x64"
     }
 
     filter "configurations:Debug"

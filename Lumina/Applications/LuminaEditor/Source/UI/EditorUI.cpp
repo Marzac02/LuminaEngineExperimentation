@@ -39,7 +39,6 @@
 #include "Renderer/RHIGlobals.h"
 #include "Renderer/ShaderCompiler.h"
 #include "Tools/GamePreviewTool.h"
-#include "Tools/AssetEditors/ArchetypeEditor/ArchetypeEditorTool.h"
 #include "Tools/AssetEditors/MaterialEditor/MaterialInstanceEditorTool.h"
 #include "Tools/AssetEditors/MeshEditor/MeshEditorTool.h"
 #include "Tools/AssetEditors/TextureEditor/TextureEditorTool.h"
@@ -1812,7 +1811,6 @@ namespace Lumina
                     
                     ImGui::PushID((int)i);
                     
-                    // Create a subtle background for each item
                     ImVec2 ItemStart = ImGui::GetCursorScreenPos();
                     ImVec2 ItemSize = ImVec2(ImGui::GetContentRegionAvail().x, 64);
                     
@@ -1842,7 +1840,6 @@ namespace Lumina
                             
                             ImGui::TextColored(ImVec4(0.6f, 0.6f, 0.6f, 1.0f), "%s", Package->GetFullPackageFilePath().c_str());
                             
-                            // Show save state
                             switch (SaveStates[i])
                             {
                                 case ESaveState::Saving:
@@ -1988,7 +1985,6 @@ namespace Lumina
         {
             return;
         }
-        // Save Section
         if (ImGui::MenuItem(LE_ICON_ZIP_DISK " Save", "Ctrl+S"))
         {
             // Save action
@@ -2001,7 +1997,6 @@ namespace Lumina
 
         ImGui::Separator();
 
-        // Recent Files
         if (ImGui::BeginMenu(LE_ICON_ROTATE_LEFT " Recent"))
         {
             ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.6f, 0.6f, 0.62f, 1.0f));
@@ -2022,7 +2017,6 @@ namespace Lumina
 
         ImGui::Separator();
 
-        // Shaders Submenu
         ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.8f, 0.6f, 0.4f, 1.0f));
         if (ImGui::BeginMenu(LE_ICON_HAMMER " Shaders"))
         {
@@ -2092,7 +2086,6 @@ namespace Lumina
             return;
         }
 
-        // Project Actions
         if (ImGui::MenuItem(LE_ICON_FOLDER_OPEN " Open Project...", "Ctrl+O"))
         {
             OpenProjectDialog();
@@ -2105,7 +2098,6 @@ namespace Lumina
     
         ImGui::Separator();
     
-        // Project Settings
         if (ImGui::MenuItem(LE_ICON_SETTINGS_HELPER " Project Settings"))
         {
             ProjectSettingsDialog();
@@ -2118,7 +2110,6 @@ namespace Lumina
     
         ImGui::Separator();
     
-        // Build Options
         if (ImGui::BeginMenu(LE_ICON_HAMMER " Build"))
         {
             if (ImGui::MenuItem(LE_ICON_PLAY " Build Project", "Ctrl+B"))
@@ -2271,7 +2262,6 @@ namespace Lumina
         {
             bool bShouldClose = false;
 
-            // Header section
             ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.9f, 0.9f, 0.9f, 1.0f));
             ImGui::TextWrapped(LE_ICON_FOLDER_OPEN " Select a project to open or browse for an existing project");
             ImGui::PopStyleColor();
@@ -2280,16 +2270,13 @@ namespace Lumina
             ImGui::Separator();
             ImGui::Spacing();
 
-            // Main content area
             ImGui::BeginChild("ProjectContent", ImVec2(0, -50), false);
             {
-                // Recent/Example Projects Section
                 ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.4f, 0.7f, 1.0f, 1.0f));
                 ImGui::Text(LE_ICON_FOLDER_OPEN " Example Projects");
                 ImGui::PopStyleColor();
                 ImGui::Spacing();
 
-                // Project cards container
                 ImGui::BeginChild("ProjectCards", ImVec2(0, 0), false);
                 {
                     const float cardWidth = 280.0f;
@@ -2300,13 +2287,11 @@ namespace Lumina
                     float availWidth = ImGui::GetContentRegionAvail().x;
                     int cardsPerRow = Math::Max(1, (int)((availWidth + padding) / (cardWidth + padding)));
 
-                    // Sandbox Project Card
                     ImGui::BeginGroup();
                     {
                         ImVec2 cursorPos = ImGui::GetCursorScreenPos();
                         ImDrawList* drawList = ImGui::GetWindowDrawList();
 
-                        // Card background
                         ImVec4 cardBgColor = ImVec4(0.15f, 0.15f, 0.16f, 1.0f);
                         ImVec4 cardBgHoverColor = ImVec4(0.18f, 0.18f, 0.19f, 1.0f);
                         ImVec4 accentColor = ImVec4(0.3f, 0.6f, 1.0f, 1.0f);
@@ -2329,18 +2314,15 @@ namespace Lumina
                         ImGui::PopStyleVar(2);
                         ImGui::PopStyleColor(3);
 
-                        // Draw accent line at top of card
                         drawList->AddRectFilled(
                             cursorPos,
                             ImVec2(cursorPos.x + cardWidth, cursorPos.y + 4),
                             ImGui::GetColorU32(accentColor)
                         );
 
-                        // Card content overlay
                         ImGui::SetCursorScreenPos(ImVec2(cursorPos.x + 16, cursorPos.y + 20));
                         ImGui::BeginGroup();
                         {
-                            // Icon circle background
                             ImVec2 iconPos = ImGui::GetCursorScreenPos();
                             drawList->AddCircleFilled(
                                 ImVec2(iconPos.x + 20, iconPos.y + 20),
@@ -2355,14 +2337,12 @@ namespace Lumina
 
                             ImGui::SetCursorScreenPos(ImVec2(cursorPos.x + 16, iconPos.y + 50));
 
-                            // Project name
                             ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 1.0f, 1.0f, 1.0f));
                             ImGui::Text("Sandbox Project");
                             ImGui::PopStyleColor();
 
                             ImGui::Spacing();
 
-                            // Description
                             ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.7f, 0.7f, 0.7f, 1.0f));
                             ImGui::BeginChild("##SandboxDesc", ImVec2(cardWidth - 32, 60), false, ImGuiWindowFlags_NoScrollbar);
                             ImGui::TextWrapped("A basic sandbox environment for testing and experimentation. Perfect for learning the engine basics.");
@@ -2371,7 +2351,6 @@ namespace Lumina
 
                             ImGui::SetCursorScreenPos(ImVec2(cursorPos.x + 16, cursorPos.y + cardHeight - 30));
 
-                            // Project type badge
                             ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.5f, 0.8f, 0.5f, 1.0f));
                             ImGui::Text("Example Project");
                             ImGui::PopStyleColor();
@@ -2388,13 +2367,11 @@ namespace Lumina
                 ImGui::EndChild();
             }
 
-            // Bottom action bar
             ImGui::Separator();
             ImGui::Spacing();
 
             ImGui::BeginGroup();
             {
-                // Browse button (left side)
                 ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.3f, 0.6f, 1.0f, 1.0f));
                 ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.4f, 0.7f, 1.0f, 1.0f));
                 ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.2f, 0.5f, 0.9f, 1.0f));
@@ -2413,7 +2390,6 @@ namespace Lumina
 
                 ImGui::PopStyleColor(3);
 
-                // Cancel button (right side)
                 ImGui::SameLine(ImGui::GetContentRegionAvail().x - 120);
 
                 ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.2f, 0.2f, 0.2f, 1.0f));
@@ -2464,34 +2440,21 @@ namespace Lumina
             ImGui::Separator();
             ImGui::Spacing();
             
-            // Template selection
             ImGui::Text("Project Template:");
             ImGui::BeginChild("Templates", ImVec2(0, -40), true);
             {
                 if (ImGui::Selectable(LE_ICON_CUBE " Blank Project"))
                 {
-                    // Select blank template
-                }
-                
-                if (ImGui::Selectable(LE_ICON_GAMEPAD " First Person Template"))
-                {
-                    // Select FPS template
-                }
-                
-                if (ImGui::Selectable(LE_ICON_CAR " Vehicle Template"))
-                {
-                    // Select vehicle template
+                    
                 }
             }
             ImGui::EndChild();
             
             ImGui::Spacing();
             
-            // Action buttons
             ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.25f, 0.55f, 0.3f, 1.0f));
             if (ImGui::Button(LE_ICON_CHECK " Create Project", ImVec2(140, 0)))
             {
-                // Create project
                 return true;
             }
             ImGui::PopStyleColor();
@@ -2511,7 +2474,6 @@ namespace Lumina
     {
         ModalManager.CreateDialogue("Project Settings", ImVec2(1000, 700), [this](const FUpdateContext& Ctx) -> bool
         {
-            // Sidebar with categories
             ImGui::BeginChild("SettingsCategories", ImVec2(200, 0), true);
             {
                 ImGui::TextColored(ImVec4(0.7f, 0.7f, 0.7f, 1.0f), "CATEGORIES");
@@ -2547,21 +2509,18 @@ namespace Lumina
             
             ImGui::SameLine();
             
-            // Settings content
             ImGui::BeginChild("SettingsContent", ImVec2(0, -40), true);
             {
                 ImGui::TextColored(ImVec4(0.8f, 0.9f, 1.0f, 1.0f), "General Settings");
                 ImGui::Separator();
                 ImGui::Spacing();
                 
-                // Add settings controls here
                 ImGui::Text("Project settings content goes here...");
             }
             ImGui::EndChild();
             
             ImGui::Spacing();
             
-            // Close button
             if (ImGui::Button("Close", ImVec2(120, 0)))
             {
                 return true;

@@ -17,12 +17,11 @@ namespace Lumina
     
     struct LUMINA_API FLineBatcherComponent : SRenderComponent
     {
-        THashMap<int32, TFixedVector<FBatchedLine, 2024>> BatchedLines;
+        TFixedVector<FBatchedLine, 2024> BatchedLines;
 
         void DrawLine(const glm::vec3& Start, const glm::vec3& End, const glm::vec4& Color, float Thickness = 1.0f, float Duration = 1.0f)
         {
-            int32 Key = static_cast<int32>(Duration * 1000.0f);
-            BatchedLines[Key].emplace_back(FBatchedLine
+            BatchedLines.emplace_back(FBatchedLine
             {
                 .Start = Start,
                 .End = End,
@@ -31,21 +30,21 @@ namespace Lumina
             });
         }
 
-        void DrawBox(const glm::vec3& Center, const glm::vec3& Extents, const glm::quat& Rotation, const glm::vec4& Color, float Thickness = 1.0f, float Duration = 1.0f)
+        void DrawBox(const glm::vec3& Center, const glm::vec3& HalfExtents, const glm::quat& Rotation, const glm::vec4& Color, float Thickness = 1.0f, float Duration = 1.0f)
         {
             BatchedLines.reserve(BatchedLines.size() + 12);
 
             glm::vec3 LocalCorners[8] =
             {
-                {-Extents.x, -Extents.y, -Extents.z},
-                { Extents.x, -Extents.y, -Extents.z},
-                { Extents.x,  Extents.y, -Extents.z},
-                {-Extents.x,  Extents.y, -Extents.z},
+                {-HalfExtents.x, -HalfExtents.y, -HalfExtents.z},
+                { HalfExtents.x, -HalfExtents.y, -HalfExtents.z},
+                { HalfExtents.x,  HalfExtents.y, -HalfExtents.z},
+                {-HalfExtents.x,  HalfExtents.y, -HalfExtents.z},
 
-                {-Extents.x, -Extents.y,  Extents.z},
-                { Extents.x, -Extents.y,  Extents.z},
-                { Extents.x,  Extents.y,  Extents.z},
-                {-Extents.x,  Extents.y,  Extents.z},
+                {-HalfExtents.x, -HalfExtents.y,  HalfExtents.z},
+                { HalfExtents.x, -HalfExtents.y,  HalfExtents.z},
+                { HalfExtents.x,  HalfExtents.y,  HalfExtents.z},
+                {-HalfExtents.x,  HalfExtents.y,  HalfExtents.z},
             };
 
             glm::vec3 corners[8];

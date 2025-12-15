@@ -18,7 +18,6 @@ namespace Lumina
     class FAssetManager;
     class FApplication;
     class FWindow;
-    class FDeferredRenderScene;
 }
 
 namespace Lumina

@@ -2,7 +2,7 @@
 
 #pragma shader_stage(fragment)
 
-#include "Includes/Common.glsl"
+#include "Includes/SceneGlobals.glsl"
 
 layout(location = 0) in vec4 inColor;
 layout(location = 0) out vec4 outFragColor;

@@ -1,8 +1,5 @@
 #include "pch.h"
 #include "ForwardRenderScene.h"
-#include <algorithm>
-#include <execution>
-
 #include "Assets/AssetTypes/Material/Material.h"
 #include "Core/Windows/Window.h"
 #include "Renderer/RendererUtils.h"
@@ -233,13 +230,10 @@ namespace Lumina
             auto Group = World->GetEntityRegistry().group<FLineBatcherComponent>();
             Group.each([&](FLineBatcherComponent& LineBatcherComponent)
             {
-                for (const auto& Pair : LineBatcherComponent.BatchedLines)
+                for (const FBatchedLine& Line : LineBatcherComponent.BatchedLines)
                 {
-                    for (const FBatchedLine& Line : Pair.second)
-                    {
-                        SimpleVertices.emplace_back(glm::vec4(Line.Start, 1.0f), Line.Color);
-                        SimpleVertices.emplace_back(glm::vec4(Line.End, 1.0f), Line.Color);
-                    }
+                    SimpleVertices.emplace_back(glm::vec4(Line.Start, 1.0f), Line.Color);
+                    SimpleVertices.emplace_back(glm::vec4(Line.End, 1.0f), Line.Color);
                 }
         
                 LineBatcherComponent.Flush();
@@ -429,7 +423,7 @@ namespace Lumina
                 
                 LightData.Lights[LightData.NumLights++] = Light;
         
-                //Scene->DrawDebugSphere(Transform.Location, 0.25f, Light.Color);
+                //World->DrawDebugSphere(Light.Position, 0.25f, glm::vec4(PointLightComponent.LightColor, 1.0));
             });
         }
         
@@ -1217,7 +1211,69 @@ namespace Lumina
 
     void FForwardRenderScene::BatchedLineDraw(FRenderGraph& RenderGraph)
     {
-        
+        FRGPassDescriptor* Descriptor = RenderGraph.AllocDescriptor();
+        RenderGraph.AddPass(RG_Raster, FRGEvent("Batched Line Draw"), Descriptor, [&](ICommandList& CmdList)
+        {
+            LUMINA_PROFILE_SECTION_COLORED("Batched Line Draw", tracy::Color::Red2);
+
+            FRHIVertexShaderRef VertexShader = FShaderLibrary::GetVertexShader("SimpleElement.vert");
+            FRHIPixelShaderRef PixelShader = FShaderLibrary::GetPixelShader("SimpleElement.frag");
+            if (!VertexShader || !PixelShader)
+            {
+                return;
+            }
+
+            FRenderPassDesc::FAttachment RenderTarget;
+            RenderTarget.SetImage(HDRRenderTarget);
+            if (!DrawCommands.empty())
+            {
+                RenderTarget.SetLoadOp(ERenderLoadOp::Load);
+            }
+
+            FRenderPassDesc::FAttachment Depth; Depth
+                .SetImage(DepthAttachment)
+                .SetLoadOp(ERenderLoadOp::Load);
+
+            FRenderPassDesc RenderPass; RenderPass
+                .AddColorAttachment(RenderTarget)
+                .SetDepthAttachment(Depth)
+                .SetRenderArea(HDRRenderTarget->GetExtent());
+            
+            FRasterState RasterState; RasterState
+                .SetLineWidth(5.0f)
+                .EnableDepthClip();
+
+            FDepthStencilState DepthState; DepthState
+                .SetDepthFunc(EComparisonFunc::Greater)
+                .EnableDepthWrite()
+                .EnableDepthTest();
+
+            FRenderState RenderState; RenderState
+                .SetRasterState(RasterState)
+                .SetDepthStencilState(DepthState);
+            
+            FGraphicsPipelineDesc Desc; Desc
+                .SetDebugName("Batched Line Draw")
+                .SetPrimType(EPrimitiveType::LineList)
+                .SetRenderState(RenderState)
+                .SetInputLayout(SimpleVertexLayoutInput)
+                .AddBindingLayout(BindingLayout)
+                .AddBindingLayout(BasePassLayout)
+                .SetVertexShader(VertexShader)
+                .SetPixelShader(PixelShader);
+
+            FGraphicsState GraphicsState; GraphicsState
+                .SetRenderPass(RenderPass)
+                .AddVertexBuffer({SimpleVertexBuffer})
+                .SetViewportState(MakeViewportStateFromImage(HDRRenderTarget))
+                .SetPipeline(GRenderContext->CreateGraphicsPipeline(Desc, RenderPass))
+                .AddBindingSet(BindingSet)
+                .AddBindingSet(BasePassSet);
+
+            CmdList.SetGraphicsState(GraphicsState);
+            CmdList.Draw(SimpleVertices.size(), 1, 0, 0);
+            
+        });
     }
 
     void FForwardRenderScene::ToneMappingPass(FRenderGraph& RenderGraph)

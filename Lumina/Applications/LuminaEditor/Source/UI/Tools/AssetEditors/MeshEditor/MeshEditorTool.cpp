@@ -187,6 +187,26 @@ void FMeshEditorTool::OnInitialize()
         World->GetEntityRegistry().get<STransformComponent>(MeshEntity).SetLocation(glm::vec3(0.0f, 0.0f, -2.5f));
     }
 
+    void FMeshEditorTool::Update(const FUpdateContext& UpdateContext)
+    {
+        FAssetEditorTool::Update(UpdateContext);
+
+        if (!World.IsValid())
+        {
+            return;
+        }
+
+        if (bShowAABB)
+        {
+            SStaticMeshComponent& StaticMeshComponent = World->GetEntityRegistry().get<SStaticMeshComponent>(MeshEntity);
+            FTransform Transform = World->GetEntityRegistry().get<STransformComponent>(MeshEntity).GetTransform();
+
+            FAABB AABB = StaticMeshComponent.StaticMesh->GetAABB().ToWorld(Transform.GetMatrix());
+            
+            World->DrawDebugBox(AABB.GetCenter(), AABB.GetSize() * 0.5f, glm::quat(1, 0, 0, 0), FColor::Green);
+        }
+    }
+
     void FMeshEditorTool::OnDeinitialize(const FUpdateContext& UpdateContext)
     {
     }
@@ -218,37 +238,9 @@ void FMeshEditorTool::OnInitialize()
             ImGui::EndMenu();
         }
 
-        if (ImGui::BeginMenu(LE_ICON_DEBUG_STEP_INTO " Render Debug"))
+        if (ImGui::BeginMenu(LE_ICON_DEBUG_STEP_INTO " Mesh Debug"))
         {
-            IRenderScene* SceneRenderer = World->GetRenderer();
-
-            ImGui::TextColored(ImVec4(0.58f, 0.86f, 1.0f, 1.0f), "Debug Visualization");
-            ImGui::Separator();
-
-            static const char* DebugLabels[] =
-            {
-                "None",
-                "Position",
-                "Normals",
-                "Albedo",
-                "SSAO",
-                "Material",
-                "Depth",
-                "Overdraw",
-                "Cascade1",
-                "Cascade2",
-                "Cascade3",
-                "Cascade4",
-            };
-
-            ERenderSceneDebugFlags DebugMode = SceneRenderer->GetDebugMode();
-            int DebugModeInt = static_cast<int>(DebugMode);
-            ImGui::PushItemWidth(200);
-            if (ImGui::Combo("Debug Visualization", &DebugModeInt, DebugLabels, IM_ARRAYSIZE(DebugLabels)))
-            {
-                SceneRenderer->SetDebugMode(static_cast<ERenderSceneDebugFlags>(DebugModeInt));
-            }
-            ImGui::PopItemWidth();
+            ImGui::MenuItem(LE_ICON_BOX " Show AABB", nullptr, &bShowAABB);
 
             ImGui::EndMenu();
         }
