@@ -2,8 +2,8 @@
 
 #include "Core/Object/ObjectMacros.h"
 #include "Core/Object/Object.h"
+#include "Core/Object/Cast.h"
 #include "Factory.generated.h"
-
 
 namespace Lumina
 {
@@ -24,7 +24,7 @@ namespace Lumina
         TVector<CFactory*> Factories;
     };
     
-    
+
     
     REFLECT()
     class LUMINA_API CFactory : public CObject
@@ -34,6 +34,12 @@ namespace Lumina
     public:
 
         void PostCreateCDO() override;
+
+        template<IsACObject T>
+        T* TryCreateNew(const FString& Path)
+        {
+            return Cast<T>(TryCreateNew(Path));
+        }
         
         CObject* TryCreateNew(const FString& Path);
         

@@ -1,7 +1,8 @@
 #pragma once
+
 #include "imgui.h"
-#include "Core/UpdateContext.h"
 #include "Containers/Function.h"
+#include "Core/UpdateContext.h"
 #include "GUID/GUID.h"
 
 namespace Lumina

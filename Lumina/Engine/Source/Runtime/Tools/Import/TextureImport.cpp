@@ -22,7 +22,6 @@ namespace Lumina::Import::Textures
         
         int x, y, channels;
         
-        // First, check if it's an HDR image (floating point)
         if (stbi_is_hdr(RawFilePath.c_str()))
         {
             float* data = stbi_loadf(RawFilePath.c_str(), &x, &y, &channels, 0);
@@ -52,7 +51,6 @@ namespace Lumina::Import::Textures
             return Result;
         }
         
-        // Check if it's a 16-bit image
         if (stbi_is_16_bit(RawFilePath.c_str()))
         {
             uint16* data = stbi_load_16(RawFilePath.c_str(), &x, &y, &channels, 0);
@@ -108,9 +106,7 @@ namespace Lumina::Import::Textures
             return eastl::nullopt;
         }
         
-        // Check if image is likely sRGB (common for color textures)
-        // Might want to make this configurable or check file extension
-        bool bIsSRGB = false;//IsSRGBTexture(RawFilePath); // Helper function
+        bool bIsSRGB = false;
         
         
         switch (channels)
@@ -139,7 +135,7 @@ namespace Lumina::Import::Textures
                 return eastl::nullopt;
         }
         
-        if (channels != 3) // If we didn't do the RGB->RGBA conversion above
+        if (channels != 3) // If we didn't do the RGB -> RGBA conversion above
         {
             Result.Pixels.assign(data, data + static_cast<size_t>(x) * y * channels);
         }

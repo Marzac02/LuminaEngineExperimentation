@@ -21,15 +21,13 @@ namespace Lumina
     {
         return NewObject<CTexture>(Package, Name);
     }
-
+    
     void CTextureFactory::TryImport(const FString& RawPath, const FString& DestinationPath)
     {
-        FString FullPath = DestinationPath;
-        Paths::AddPackageExtension(FullPath);
         FString VirtualPath = Paths::ConvertToVirtualPath(DestinationPath);
         FString FileName = Paths::FileName(DestinationPath, true);
 
-        CTexture* NewTexture = Cast<CTexture>(TryCreateNew(DestinationPath));
+        CTexture* NewTexture = TryCreateNew<CTexture>(DestinationPath);
         NewTexture->SetFlag(OF_NeedsPostLoad);
 
         NewTexture->TextureResource = MakeUniquePtr<FTextureResource>();
@@ -160,4 +158,5 @@ namespace Lumina
         CPackage::SavePackage(NewPackage, NewPackage->GetFullPackageFilePath());
         FAssetRegistry::Get().AssetCreated(NewTexture);
     }
+    
 }

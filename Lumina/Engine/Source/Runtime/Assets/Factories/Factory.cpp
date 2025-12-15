@@ -33,11 +33,11 @@ namespace Lumina
     {
         CFactoryRegistry::Get().RegistryFactory(this);
     }
-
+    
     CObject* CFactory::TryCreateNew(const FString& Path)
     {
         CPackage* Package = CPackage::CreatePackage(Path);
-        FString FileName = Paths::FileName(Path);
+        FString FileName = Paths::FileName(Path, true);
 
         CObject* New = CreateNew(FileName.c_str(), Package);
         Package->ExportTable.emplace_back(New);
@@ -46,7 +46,7 @@ namespace Lumina
 
         return New;
     }
-
+    
     void CFactory::Import(const FString& ImportFile, const FString& DestinationPath)
     {
         TryImport(ImportFile, DestinationPath);

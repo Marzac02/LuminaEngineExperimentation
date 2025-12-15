@@ -2,10 +2,12 @@
 #include "Log.h"
 
 #include <filesystem>
-#include <spdlog/sinks/stdout_color_sinks.h>
 
+PRAGMA_DISABLE_ALL_WARNINGS
 #include "Sinks/ConsoleSink.h"
+#include <spdlog/sinks/stdout_color_sinks.h>
 #include "spdlog/sinks/ringbuffer_sink.h"
+PRAGMA_ENABLE_ALL_WARNINGS
 
 namespace Lumina::Logging
 {

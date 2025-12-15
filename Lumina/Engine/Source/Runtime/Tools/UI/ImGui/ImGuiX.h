@@ -2,6 +2,7 @@
 
 #include <format>
 #include "imgui.h"
+#include "imgui_internal.h"
 #include "Assets/AssetRegistry/AssetRegistry.h"
 #include "Containers/Array.h"
 #include "Containers/Function.h"
@@ -34,8 +35,31 @@ namespace Lumina::ImGuiX
     //--------------------------------------------------------------
 
     LUMINA_API void ItemTooltip(const char* fmt, ...);
-
     LUMINA_API void TextTooltip(const char* fmt, ...);
+
+    template <typename... TArgs>
+    void Text(std::format_string<TArgs...> fmt, TArgs&&... Args)
+    {
+        ImGui::TextUnformatted(std::format(fmt, std::forward<TArgs>(Args)...).c_str());
+    }
+
+    template <typename... TArgs>
+    void TextWrapped(std::format_string<TArgs...> fmt, TArgs&&... Args)
+    {
+        ImGuiContext& g = *GImGui;
+        const bool need_backup = (g.CurrentWindow->DC.TextWrapPos < 0.0f);
+        if (need_backup)
+        {
+            ImGui::PushTextWrapPos(0.0f);
+        }
+        
+        Text(std::forward<decltype(fmt)>(fmt), std::forward<TArgs>(Args)...);
+        
+        if (need_backup)
+        {
+            ImGui::PopTextWrapPos();
+        }
+    }
 
     LUMINA_API bool ButtonEx(char const* pIcon, char const* pLabel, ImVec2 const& size = ImVec2( 0, 0 ), const ImColor& backgroundColor = ImGui::ColorConvertFloat4ToU32( ImGui::GetStyle().Colors[ImGuiCol_Button] ), const ImColor& iconColor = ImGui::ColorConvertFloat4ToU32( ImGui::GetStyle().Colors[ImGuiCol_Text] ), const ImColor& foregroundColor = ImGui::ColorConvertFloat4ToU32( ImGui::GetStyle().Colors[ImGuiCol_Text] ), bool shouldCenterContents = false );
 

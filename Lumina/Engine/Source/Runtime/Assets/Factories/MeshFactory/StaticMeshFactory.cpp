@@ -16,21 +16,6 @@
 
 namespace Lumina
 {
-    FString FormatNumber(size_t number)
-    {
-        FString result;
-        result.sprintf("%zu", number);
-        
-        int insertPosition = result.length() - 3;
-        while (insertPosition > 0) 
-        {
-            result.insert(insertPosition, ",");
-            insertPosition -= 3;
-        }
-        return result;
-    }
-    
-    
     CObject* CStaticMeshFactory::CreateNew(const FName& Name, CPackage* Package)
     {
         return NewObject<CStaticMesh>(Package, Name);
@@ -71,23 +56,19 @@ namespace Lumina
         }
         
     
-        // Add some padding and use a child window for better layout control
         ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(20, 20));
         ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(12, 8));
     
-        // Header with file info
         ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.9f, 0.9f, 0.9f, 1.0f));
         ImGui::TextWrapped("Importing: %s", Paths::FileName(RawPath).c_str());
         ImGui::PopStyleColor();
         ImGui::Spacing();
     
-        // Import Options Section
         ImGui::PushStyleColor(ImGuiCol_Separator, ImVec4(0.4f, 0.6f, 0.8f, 0.8f));
         ImGui::SeparatorText("Import Options");
         ImGui::PopStyleColor();
         ImGui::Spacing();
         
-        // Create a more spacious options layout
         ImGui::PushStyleVar(ImGuiStyleVar_CellPadding, ImVec2(12, 8));
         if (ImGui::BeginTable("GLTFImportOptionsTable", 2, ImGuiTableFlags_BordersInnerV | ImGuiTableFlags_PadOuterX))
         {
@@ -99,7 +80,6 @@ namespace Lumina
                 ImGui::TableNextRow();
                 ImGui::TableSetColumnIndex(0);
                 
-                // Add icon and label
                 ImGui::Text("%s %s", Icon, Label);
                 if (Description && ImGui::IsItemHovered())
                 {
@@ -120,7 +100,6 @@ namespace Lumina
             
             if (!Options.bImportMaterials)
             {
-                // Indent texture option when materials are disabled
                 ImGui::TableNextRow();
                 ImGui::TableSetColumnIndex(0);
                 ImGui::Indent(20.0f);
@@ -146,7 +125,6 @@ namespace Lumina
             AddCheckboxRow(LE_ICON_ACCOUNT_BOX, "Use Mesh Compression", "Compress vertex data to reduce memory usage", Options.bUseCompression);
             AddCheckboxRow(LE_ICON_ACCOUNT_BOX, "Flip UVs", "Flip the UVs vertically on load", Options.bFlipUVs);
 
-            // Import Scale with better styling
             ImGui::TableNextRow();
             ImGui::TableSetColumnIndex(0);
             ImGui::TextUnformatted(LE_ICON_ACCOUNT_BOX " Scale");
@@ -166,9 +144,8 @@ namespace Lumina
     
             ImGui::EndTable();
         }
-        ImGui::PopStyleVar(); // CellPadding
+        ImGui::PopStyleVar();
     
-        // Import Statistics Section
         if (!ImportedData.Resources.empty())
         {
             ImGui::Spacing();
@@ -179,13 +156,11 @@ namespace Lumina
             ImGui::PopStyleColor();
             ImGui::Spacing();
     
-            // Mesh Statistics with alternating row colors
             ImGui::PushStyleVar(ImGuiStyleVar_CellPadding, ImVec2(10, 6));
             if (ImGui::BeginTable("GLTFImportMeshStats", 6, 
                 ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg | 
                 ImGuiTableFlags_Resizable | ImGuiTableFlags_ScrollY, ImVec2(0, 150)))
             {
-                // Styled headers
                 ImGui::TableSetupColumn("Mesh Name", ImGuiTableColumnFlags_WidthStretch);
                 ImGui::TableSetupColumn("Vertices", ImGuiTableColumnFlags_WidthFixed, 80);
                 ImGui::TableSetupColumn("Indices", ImGuiTableColumnFlags_WidthFixed, 80);
@@ -201,35 +176,32 @@ namespace Lumina
                 {
                     ImGui::TableNextRow();
                     
-                    auto SetColoredColumn = [&](int idx, const char* fmt, auto value, ImVec4 color = ImVec4(1,1,1,1))
+                    auto SetColoredColumn = [&]<typename ... T>(int idx, std::format_string<T...> fmt, T&&... value)
                     {
                         ImGui::TableSetColumnIndex(idx);
-                        if (color.x != 1 || color.y != 1 || color.z != 1)
-                        {
-                            ImGui::PushStyleColor(ImGuiCol_Text, color);
-                            ImGui::Text(fmt, value);
-                            ImGui::PopStyleColor();
-                        }
-                        else
-                        {
-                            ImGui::Text(fmt, value);
-                        }
+                        ImGuiX::Text(fmt, std::forward<T>(value)...);
+                    };
+
+                    auto SetColoredColumnWithColor = [&]<typename ... T>(int idx, ImVec4 color, std::format_string<T...> fmt, T&&... value)
+                    {
+                        ImGui::TableSetColumnIndex(idx);
+                        ImGui::PushStyleColor(ImGuiCol_Text, color);
+                        ImGuiX::Text(fmt, std::forward<T>(value)...);
+                        ImGui::PopStyleColor();
                     };
     
-                    SetColoredColumn(0, "%s", Resource.Name.c_str());
+                    SetColoredColumn(0, "{0}", Resource.Name.c_str());
                     
-                    // Color-code vertex/index counts based on complexity
-                    ImVec4 vertexColor = Resource.Vertices.size() > 10000 ? ImVec4(1,0.7f,0.3f,1) : ImVec4(0.7f,1,0.7f,1);
-                    SetColoredColumn(1, "%s", FormatNumber(Resource.Vertices.size()).c_str(), vertexColor);
-                    SetColoredColumn(2, "%s", FormatNumber(Resource.Indices.size()).c_str());
-                    SetColoredColumn(3, "%zu", Resource.GeometrySurfaces.size());
+                    ImVec4 VertexColor = Resource.Vertices.size() > 10000 ? ImVec4(1,0.7f,0.3f,1) : ImVec4(0.7f,1,0.7f,1);
+                    SetColoredColumnWithColor(1, VertexColor,  "{0}", ImGuiX::FormatSize(Resource.Vertices.size()));
+                    SetColoredColumn(2, "{0}", ImGuiX::FormatSize(Resource.Indices.size()));
+                    SetColoredColumn(3, "{0}", Resource.GeometrySurfaces.size());
                     
-                    // Color-code performance metrics
-                    ImVec4 overdrawColor = Overdraw.overdraw > 2.0f ? ImVec4(1,0.5f,0.5f,1) : ImVec4(0.8f,0.8f,0.8f,1);
-                    SetColoredColumn(4, "%.2f", Overdraw.overdraw, overdrawColor);
+                    ImVec4 OverdrawColor = Overdraw.overdraw > 2.0f ? ImVec4(1,0.5f,0.5f,1) : ImVec4(0.8f,0.8f,0.8f,1);
+                    SetColoredColumnWithColor(4, OverdrawColor, "{:.2f}", Overdraw.overdraw);
                     
-                    ImVec4 fetchColor = VertexFetch.overfetch > 2.0f ? ImVec4(1,0.5f,0.5f,1) : ImVec4(0.8f,0.8f,0.8f,1);
-                    SetColoredColumn(5, "%.2f", VertexFetch.overfetch, fetchColor);
+                    ImVec4 FetchColor = VertexFetch.overfetch > 2.0f ? ImVec4(1,0.5f,0.5f,1) : ImVec4(0.8f,0.8f,0.8f,1);
+                    SetColoredColumnWithColor(5, FetchColor, "{:.2f}", VertexFetch.overfetch);
                 };
     
                 for (size_t i = 0; i < ImportedData.Resources.size(); ++i)
@@ -239,9 +211,8 @@ namespace Lumina
     
                 ImGui::EndTable();
             }
-            ImGui::PopStyleVar(); // CellPadding
+            ImGui::PopStyleVar();
     
-            // Texture Preview Section
             if (!ImportedData.Textures.empty())
             {
                 ImGui::Spacing();
@@ -270,7 +241,6 @@ namespace Lumina
                             ImGui::TableNextRow();
                             ImGui::TableSetColumnIndex(0);
                             
-                            // Add a subtle border around the texture preview
                             ImVec2 imageSize(128.0f, 128.0f);
                             ImVec2 cursorPos = ImGui::GetCursorScreenPos();
                             ImGui::GetWindowDrawList()->AddRect(
@@ -284,27 +254,25 @@ namespace Lumina
 
                             ImGui::TableSetColumnIndex(1);
                             ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.9f, 0.9f, 0.9f, 1.0f));
-                            ImGui::TextWrapped("%s", Paths::FileName(ImagePath).c_str());
+                            ImGuiX::TextWrapped("{0}", Paths::FileName(ImagePath));
                             ImGui::PopStyleColor();
                             ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.7f, 0.7f, 0.7f, 1.0f));
-                            ImGui::TextWrapped("%s", ImagePath.c_str());
+                            ImGuiX::TextWrapped("{0}", ImagePath);
                             ImGui::PopStyleColor();
                         }
                         ImGui::EndTable();
                     }
-                    ImGui::PopStyleVar(); // CellPadding
+                    ImGui::PopStyleVar();
                     ImGui::EndChild();
                 }
             }
         }
     
-        // Action Buttons with better styling
         ImGui::Spacing();
         ImGui::Spacing();
         ImGui::Separator();
         ImGui::Spacing();
     
-        // Center the buttons
         float buttonWidth = 100.0f;
         float spacing = ImGui::GetStyle().ItemSpacing.x;
         float totalWidth = (buttonWidth * 2) + spacing;
@@ -314,7 +282,6 @@ namespace Lumina
             ImGui::SetCursorPosX(ImGui::GetCursorPosX() + offsetX);
         }
 
-        // Style the import button
         ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.2f, 0.7f, 0.2f, 1.0f));
         ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.3f, 0.8f, 0.3f, 1.0f));
         ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.1f, 0.6f, 0.1f, 1.0f));
@@ -330,7 +297,6 @@ namespace Lumina
         ImGui::PopStyleColor(3);
         ImGui::SameLine();
     
-        // Style the cancel button
         ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.6f, 0.3f, 0.3f, 1.0f));
         ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.7f, 0.4f, 0.4f, 1.0f));
         ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.5f, 0.2f, 0.2f, 1.0f));
@@ -360,15 +326,15 @@ namespace Lumina
         uint32 Counter = 0;
         for (TUniquePtr<FMeshResource>& MeshResource : ImportedData.Resources)
         {
-            size_t Pos = DestinationPath.find_last_of('/');
-
-            FString QualifiedPath = DestinationPath.substr(0, Pos + 1) + MeshResource->Name.ToString() + eastl::to_string(Counter);
-            FString FileName = Paths::FileName(QualifiedPath, true);
+            size_t LastSlashPos = DestinationPath.find_last_of('/');
+            FString QualifiedPath = DestinationPath.substr(0, LastSlashPos + 1) + MeshResource->Name.ToString();
             
-            FString FullPath = QualifiedPath;
-            Paths::AddPackageExtension(FullPath);
-
-            CStaticMesh* NewMesh = Cast<CStaticMesh>(TryCreateNew(QualifiedPath));
+            if (Counter)
+            {
+                QualifiedPath += eastl::to_string(Counter);
+            }
+            
+            CStaticMesh* NewMesh = TryCreateNew<CStaticMesh>(QualifiedPath);
             NewMesh->SetFlag(OF_NeedsPostLoad);
 
             NewMesh->MeshResources = Move(MeshResource);
@@ -385,16 +351,15 @@ namespace Lumina
                 
                     FString ParentPath = Paths::Parent(RawPath);
                     FString TexturePath = ParentPath + "/" + Texture.RelativePath;
-                    FString TextureFileName = Paths::RemoveExtension(Paths::FileName(TexturePath));
+                    FString TextureFileName = Paths::FileName(TexturePath, true);
                                          
-                    FString DestinationParent = Paths::Parent(FullPath);
+                    FString DestinationParent = Paths::Parent(QualifiedPath);
                     FString TextureDestination = DestinationParent + "/" + TextureFileName + ".lasset";
 
                     if (!FindObject<CPackage>(Paths::ConvertToVirtualPath(TextureDestination)))
                     {
                         TextureFactory->Import(TexturePath, TextureDestination);
                     }
-
                 });
             }
 
@@ -421,4 +386,5 @@ namespace Lumina
         ImportedData = {};
         bShouldReimport = true;
     }
+    
 }

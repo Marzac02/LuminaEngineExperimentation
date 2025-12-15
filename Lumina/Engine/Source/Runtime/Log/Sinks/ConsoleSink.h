@@ -1,6 +1,9 @@
 #pragma once
+#include "Core/DisableAllWarnings.h"
 
+PRAGMA_DISABLE_ALL_WARNINGS
 #include <spdlog/sinks/base_sink.h>
+PRAGMA_ENABLE_ALL_WARNINGS
 #include "Containers/Array.h"
 #include "Core/Profiler/Profile.h"
 #include "Core/Templates/LuminaTemplate.h"

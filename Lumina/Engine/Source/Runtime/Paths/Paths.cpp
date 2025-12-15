@@ -399,7 +399,10 @@ namespace Lumina::Paths
 
     void AddPackageExtension(FString& FileName)
     {
-        FileName += ".lasset";
+        if (GetExtension(FileName).empty())
+        {
+            FileName += ".lasset";
+        }
     }
     
     bool SetEnvVariable(const FString& name, const FString& value)

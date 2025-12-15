@@ -111,7 +111,8 @@ namespace Lumina
         
         GetOnAssetRegistryUpdated().Broadcast();
     }
-    
+
+    LUMINA_DISABLE_OPTIMIZATION
     void FAssetRegistry::ProcessPackagePath(FStringView Path)
     {
         TVector<uint8> PackageBlob;
@@ -160,7 +161,7 @@ namespace Lumina
         FScopeLock Lock(AssetsMutex);
         Assets.emplace(Move(AssetData));
     }
-    
+    LUMINA_ENABLE_OPTIMIZATION
     void FAssetRegistry::ClearAssets()
     {
         FScopeLock Lock(AssetsMutex);

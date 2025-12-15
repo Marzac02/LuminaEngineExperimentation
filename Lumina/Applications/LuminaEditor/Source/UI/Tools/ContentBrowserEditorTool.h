@@ -9,6 +9,7 @@
 #include "Renderer/RHIFwd.h"
 #include "Tools/Actions/DeferredActions.h"
 #include "Tools/UI/ImGui/imfilebrowser.h"
+#include "Tools/UI/ImGui/ImGuiX.h"
 #include "Tools/UI/ImGui/Widgets/TileViewWidget.h"
 #include "Tools/UI/ImGui/Widgets/TreeListView.h"
 
@@ -128,8 +129,7 @@ namespace Lumina
                     if (std::filesystem::exists(Path.c_str()))
                     {
                         uint64 Size = std::filesystem::file_size(Path.c_str());
-                        double SizeKiB = static_cast<double>(Size) / 1024.0;
-                        ImGui::Text(LE_ICON_FILE_CODE " Size: %.2f KiB", SizeKiB);
+                        ImGuiX::Text(LE_ICON_FILE_CODE " Size: {0}", ImGuiX::FormatSize(Size).c_str());
                     }
                 }
             }

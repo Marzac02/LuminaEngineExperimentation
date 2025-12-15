@@ -37,7 +37,7 @@ Lumina is a modern C++ game engine designed for learning and experimentation wit
 ### **Advanced Rendering**
 - **Vulkan-powered renderer** with automatic resource tracking and barrier placement
 - **Forward+ rendering pipeline** with clustered lighting for efficient multi-light scenes
-- **PBR materials** with full GLTF/GLB support
+- **PBR materials**
 
 ### **Modern Architecture**
 - **Entity Component System (ECS)** using EnTT for high-performance gameplay code

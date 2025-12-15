@@ -264,19 +264,17 @@ namespace Lumina::ImGuiX
 
     FString FormatSize(size_t Bytes)
     {
-        const char* suffixes[] = { "B", "KB", "MB", "GB" };
-        double size = static_cast<double>(Bytes);
-        int suffix = 0;
+        const char* Suffixes[] = { "B", "KB", "MB", "GB" };
+        double Size = static_cast<double>(Bytes);
+        int Suffix = 0;
 
-        while (size >= 1024.0 && suffix < 3)
+        while (Size >= 1024.0 && Suffix < 3)
         {
-            size /= 1024.0;
-            ++suffix;
+            Size /= 1024.0;
+            ++Suffix;
         }
-
-        char buffer[64];
-        snprintf(buffer, sizeof(buffer), "%.2f %s", size, suffixes[suffix]);
-        return FString(buffer);
+    	
+        return FString(std::format("{:.2f} {}", Size, Suffixes[Suffix]).c_str());
     }
 
     void RenderWindowOuterBorders(ImGuiWindow* Window)
