@@ -99,7 +99,7 @@ Performance profiling - Built-in Lua script profiling with Tracy
 1. **Clone the repository**
    ```bash
    git clone https://github.com/mrdrelliot/luminaengine.git
-   cd lumina
+   cd LuminaEngine
    ```
 
 2. **Run the setup script**
@@ -107,12 +107,12 @@ Performance profiling - Built-in Lua script profiling with Tracy
    python Setup.py
    ```
    - This downloads and extracts all dependencies automatically
-   - If the download fails, manually download [External.7z](https://www.dropbox.com/scl/fi/suigjbqj75pzcpxcqm6hv/External.7z?rlkey=ebu8kiw4gswtvj5mclg6wa1lu&st=vd98mrab&dl=0) and extract it to the `lumina` folder
+   - If the download fails, manually download [External.7z](https://www.dropbox.com/scl/fi/suigjbqj75pzcpxcqm6hv/External.7z?rlkey=ebu8kiw4gswtvj5mclg6wa1lu&st=vd98mrab&dl=0) and extract it to the `LuminaEngine` folder
 
 3. **Open the solution**
    - Open `Lumina.sln` in Visual Studio
 
-4. **Build and run**
+4. **Build and run Editor**
    - Select `Development` configuration
    - Press F5 or click Build → Run
 
