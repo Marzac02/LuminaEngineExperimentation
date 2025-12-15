@@ -98,7 +98,7 @@ Performance profiling - Built-in Lua script profiling with Tracy
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/mrdrelliot/lumina.git
+   git clone https://github.com/mrdrelliot/luminaengine.git
    cd lumina
    ```
 
