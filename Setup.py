@@ -38,14 +38,12 @@ class SetupDisplay:
     
     @staticmethod
     def header(text):
-        """Display a professional header."""
         print(f"\n{Fore.CYAN}{Style.BRIGHT}{'=' * SetupDisplay.WIDTH}")
         print(f"{Fore.CYAN}{Style.BRIGHT}{text.center(SetupDisplay.WIDTH)}")
         print(f"{Fore.CYAN}{Style.BRIGHT}{'=' * SetupDisplay.WIDTH}\n")
     
     @staticmethod
     def step(num, total, description):
-        """Display a step indicator."""
         step_text = f"Step {num}/{total}: {description}"
         print(f"\n{Fore.MAGENTA}{Style.BRIGHT}{step_text}")
         print(f"{Fore.MAGENTA}{'-' * len(step_text)}\n")
@@ -160,6 +158,15 @@ class ArchiveExtractor:
             self.total_files = total_files
             self.extracted = 0
             self.last_update = time.time()
+
+        def report_end(self, processing_file_path, wrote_bytes):
+            return super().report_end(processing_file_path, wrote_bytes)
+        
+        def report_start_preparation(self):
+            return super().report_start_preparation()
+        
+        def report_warning(self, message):
+            return super().report_warning(message)
         
         def report_start(self, processing_file_path, processing_bytes):
             self.extracted += 1
