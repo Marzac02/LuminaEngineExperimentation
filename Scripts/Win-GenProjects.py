@@ -39,8 +39,6 @@ except ImportError:
 
 
 # --- Constants ---
-VULKAN_SDK_URL = "https://vulkan.lunarg.com/sdk/home"
-VULKAN_ENV_VAR = "VULKAN_SDK"
 PREMAKE_VERSION = "5.0.0-beta2"
 PREMAKE_URL = f"https://github.com/premake/premake-core/releases/download/v{PREMAKE_VERSION}/premake-{PREMAKE_VERSION}-windows.zip"
 
@@ -155,33 +153,6 @@ def setup_premake():
         print_error("Premake5 installation failed")
         return None
 
-# --- Check Vulkan SDK ---
-def check_vulkan():
-    """Check if Vulkan SDK is installed."""
-    print_section("Vulkan SDK Verification")
-    
-    vulkan_sdk = os.environ.get(VULKAN_ENV_VAR)
-    
-    if vulkan_sdk and os.path.exists(vulkan_sdk):
-        print_success(f"Vulkan SDK found at: {vulkan_sdk}")
-        return True
-    
-    # Check common install locations
-    common_paths = [
-        os.path.join(os.getcwd(), "Dependencies", "Vulkan"),
-        "C:\\VulkanSDK",
-    ]
-    
-    for path in common_paths:
-        if os.path.exists(path):
-            print_success(f"Vulkan SDK found at: {path}")
-            os.environ[VULKAN_ENV_VAR] = path
-            return True
-    
-    print_error("Vulkan SDK not found!")
-    print_info(f"Please install from: {Fore.BLUE}{VULKAN_SDK_URL}")
-    print_info("After installation, restart this script.")
-    return False
 
 # --- Set Environment Variable ---
 def set_lumina_dir():
@@ -268,12 +239,6 @@ def main():
     # Step 2: Check Python
     if not check_python_requirements():
         print_error("\nSetup failed: Python requirements not met")
-        time.sleep(1.5)
-        return 1
-    
-    # Step 3: Check Vulkan
-    if not check_vulkan():
-        print_error("\nSetup failed: Vulkan SDK required")
         time.sleep(1.5)
         return 1
     

@@ -1,10 +1,5 @@
 -- Validate required environment variables
-VULKAN_SDK = os.getenv("VULKAN_SDK")
 LuminaEngineDirectory = os.getenv("LUMINA_DIR")
-
-if not VULKAN_SDK then
-    error("VULKAN_SDK environment variable not set. Please install Vulkan SDK.")
-end
 
 if not LuminaEngineDirectory then
     error("LUMINA_DIR environment variable not set. Run Setup.py first.")
@@ -27,7 +22,8 @@ IncludeDir["VMA"]                   = enginePath("Lumina/Engine/ThirdParty/Vulka
 IncludeDir["fastgltf"]              = enginePath("Lumina/Engine/ThirdParty/fastgltf/include")
 IncludeDir["stb"]                   = enginePath("Lumina/Engine/ThirdParty/stb_image")
 IncludeDir["meshoptimizer"]         = enginePath("Lumina/Engine/ThirdParty/meshoptimizer/src")
-IncludeDir["vulkan"]                = path.join(VULKAN_SDK, "Include")
+IncludeDir["vulkan"]                = enginePath("Lumina/Engine/ThirdParty/vulkan")
+IncludeDir["shaderc"]               = enginePath("Lumina/Engine/ThirdParty/shaderc")
 IncludeDir["volk"]                  = enginePath("Lumina/Engine/ThirdParty/volk")
 IncludeDir["EnkiTS"]                = enginePath("Lumina/Engine/ThirdParty/EnkiTS/src")
 IncludeDir["SPIRV_Reflect"]         = enginePath("Lumina/Engine/ThirdParty/SPIRV-Reflect")
