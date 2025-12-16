@@ -29,9 +29,9 @@ namespace Lumina
 		void SubmitAssetRequest(const TSharedPtr<FAssetRequest>& Request);
 	
 	private:
-		
+
+		FMutex								RequestMutex;
 		THashSet<TSharedPtr<FAssetRequest>>	ActiveRequests;
-		eastl::atomic<int32>				OutstandingTasks{0};
 		
 	};
 	

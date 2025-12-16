@@ -46,14 +46,13 @@ namespace Lumina
 
     void FAssetManager::FlushAsyncLoading()
     {
-        while (OutstandingTasks.load(eastl::memory_order_acquire) != 0)
-        {
-            Threading::ThreadYield();
-        }
+        GTaskSystem->WaitForAll();
     }
 
     TSharedPtr<FAssetRequest> FAssetManager::TryFindActiveRequest(const FString& InAssetPath, const FGuid& GUID, bool& bAlreadyInQueue)
     {
+        FScopeLock Lock(RequestMutex);
+        
         auto It = eastl::find_if(ActiveRequests.begin(), ActiveRequests.end(), [&](const TSharedPtr<FAssetRequest>& Request)
         {
             return Request->GetAssetPath() == InAssetPath && Request->RequestedGUID == GUID;
@@ -74,31 +73,29 @@ namespace Lumina
 
     void FAssetManager::SubmitAssetRequest(const TSharedPtr<FAssetRequest>& Request)
     {
-        OutstandingTasks.fetch_add(1, eastl::memory_order_relaxed);
-
         struct FAssetTask : ITaskSet
         {
-            FAssetManager* Manager;
-            TSharedPtr<FAssetRequest> Request;
+            FAssetManager*              Manager;
+            TSharedPtr<FAssetRequest>   Request;
+            FCompletionActionDelete     Deleter;
+
 
             FAssetTask(FAssetManager* InManager, const TSharedPtr<FAssetRequest>& InRequest)
                 : Manager(InManager), Request(InRequest)
             {
                 m_SetSize = 1;
+                Deleter.SetDependency(Deleter.Dependency, this);
             }
 
             void ExecuteRange(enki::TaskSetPartition range, uint32_t threadnum) override
             {
-                if (Request->Process())
-                {
-                    Manager->NotifyAssetRequestCompleted(Request);
-                }
-
-                Manager->OutstandingTasks.fetch_sub(1, eastl::memory_order_release);
+                Request->Process();
+                Manager->NotifyAssetRequestCompleted(Request);
             }
         };
 
         auto* Task = Memory::New<FAssetTask>(this, Request);
+
         GTaskSystem->ScheduleTask(Task);
     }
     

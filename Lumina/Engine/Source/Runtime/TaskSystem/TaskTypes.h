@@ -20,7 +20,7 @@ namespace Lumina
         Low    = 2,
     };
     
-    struct CompletionActionDelete : enki::ICompletable
+    struct FCompletionActionDelete : enki::ICompletable
     {
         enki::Dependency    Dependency;
     
@@ -64,7 +64,7 @@ namespace Lumina
 
         
         TaskSetFunction             Function;
-        CompletionActionDelete      TaskRecycle;
+        FCompletionActionDelete     TaskRecycle;
     };
     
 }
