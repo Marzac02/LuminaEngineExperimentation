@@ -1,7 +1,6 @@
 #pragma once
 
 #include "AssetData.h"
-#include "Assets/AssetHeader.h"
 #include "Core/DisableAllWarnings.h"
 #include "Subsystems/Subsystem.h"
 #include "Core/Delegates/Delegate.h"

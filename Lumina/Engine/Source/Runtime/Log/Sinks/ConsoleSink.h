@@ -27,16 +27,15 @@ namespace Lumina
         
         void sink_it_(const spdlog::details::log_msg& msg) override
         {
-        
             std::time_t timestamp = std::chrono::system_clock::to_time_t(msg.time);
             char TimeBuffer[16];
             (void)std::strftime(TimeBuffer, sizeof(TimeBuffer), "%H:%M:%S", std::localtime(&timestamp));  // NOLINT(concurrency-mt-unsafe)
 
             FConsoleMessage Message;
             Message.Time.assign(TimeBuffer);
-            Message.LoggerName.assign(msg.logger_name.begin(), msg.logger_name.end());
-            Message.Level = msg.level;
-            Message.Message.assign(msg.payload.begin(), msg.payload.end());
+            Message.LoggerName  = msg.logger_name.data();
+            Message.Level       = msg.level;
+            Message.Message     = msg.payload.data();
 
             OutputMessages.push_back(Move(Message));
         }

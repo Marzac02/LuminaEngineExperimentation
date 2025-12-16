@@ -270,52 +270,48 @@ namespace Lumina
     }
 }
 
-namespace fmt
+namespace std
 {
     template <>
     struct formatter<Lumina::FString>
     {
-        constexpr auto parse(::fmt::format_parse_context& ctx) -> decltype(ctx.begin())
+        constexpr auto parse(std::format_parse_context& ctx)
         {
             return ctx.begin();
         }
 
         template <typename FormatContext>
-        auto format(const Lumina::FString& str, FormatContext& ctx) -> decltype(ctx.out())
+        auto format(const Lumina::FString& str, FormatContext& ctx) const
         {
-            return fmt::format_to(ctx.out(), "{}", str.data());
+            return std::format_to(ctx.out(), "{}", str.data());
         }
     };
 
     template <>
     struct formatter<eastl::string_view>
     {
-        constexpr auto parse(format_parse_context& ctx) -> decltype(ctx.begin())
+        constexpr auto parse(format_parse_context& ctx)
         {
             return ctx.begin();
         }
-
+        
         template <typename FormatContext>
-        auto format(const eastl::string_view& str, FormatContext& ctx) -> decltype(ctx.out())
+        auto format(const eastl::string_view& str, FormatContext& ctx) const
         {
-            return fmt::format_to(ctx.out(), "{}", std::string_view(str.data(), str.length()));
+            return std::format_to(ctx.out(), "{}", std::string_view(str.data(), str.length()));
         }
     };
 }
 
 
-namespace eastl
+template <eastl_size_t S>
+struct eastl::hash<eastl::fixed_string<char, S, true>>
 {
-    template <eastl_size_t S>
-    struct hash<eastl::fixed_string<char, S, true>>
+    size_t operator()(const eastl::fixed_string<char, S, true>& str) const noexcept
     {
-        size_t operator()(const eastl::fixed_string<char, S, true>& str) const noexcept
-        {
-            return eastl::hash<eastl::string_view>{}(eastl::string_view(str.c_str(), str.length()));
-        }
-    };
-    
-}
+        return eastl::hash<eastl::string_view>{}(eastl::string_view(str.c_str(), str.length()));
+    }
+};
 
 namespace eastl
 {

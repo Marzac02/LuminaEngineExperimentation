@@ -1,9 +1,6 @@
 #include "pch.h"
 #include "FileHelper.h"
-
-#define _ITERATOR_DEBUG_LEVEL 0
 #include <fstream>
-
 #include "Containers/Array.h"
 #include "Log/Log.h"
 #include "Paths/Paths.h"

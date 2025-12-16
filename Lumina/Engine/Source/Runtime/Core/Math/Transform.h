@@ -115,17 +115,17 @@ namespace Lumina
 }
 
 template <>
-struct fmt::formatter<Lumina::FTransform>
+struct std::formatter<Lumina::FTransform>
 {
-    constexpr auto parse(format_parse_context& ctx) -> decltype(ctx.begin())
+    constexpr auto parse(format_parse_context& ctx)
     {
         return ctx.begin();
     }
 
     template <typename FormatContext>
-    auto format(const Lumina::FTransform& transform, FormatContext& ctx) -> decltype(ctx.out())
+    auto format(const Lumina::FTransform& transform, FormatContext& ctx) const
     {
-        return fmt::format_to(ctx.out(), 
+        return std::format_to(ctx.out(), 
             "Location: ({:.2f}, {:.2f}, {:.2f}) | Rotation: ({:.2f}, {:.2f}, {:.2f}, {:.2f}) | Scale: ({:.2f}, {:.2f}, {:.2f})",
             transform.Location.x, transform.Location.y, transform.Location.z,
             transform.Rotation.w, transform.Rotation.x, transform.Rotation.y, transform.Rotation.z,

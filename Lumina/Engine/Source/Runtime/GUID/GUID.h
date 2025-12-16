@@ -93,23 +93,20 @@ namespace eastl
 }
 
 
-namespace fmt
+template <>
+struct LUMINA_API std::formatter<Lumina::FGuid>
 {
-    template <>
-    struct LUMINA_API formatter<Lumina::FGuid>
+    // Parses the format specifier (not used here, so we ignore it)
+    constexpr auto parse(std::format_parse_context& ctx)
     {
-        // Parses the format specifier (not used here, so we ignore it)
-        constexpr auto parse(format_parse_context& ctx) -> decltype(ctx.begin())
-        {
-            return ctx.begin();
-        }
+        return ctx.begin();
+    }
 
-        // Formats the FGuid instance
-        template <typename FormatContext>
-        auto format(const Lumina::FGuid& guid, FormatContext& ctx) -> decltype(ctx.out())
-        {
-            // Use FGuid's ToString method to get a string representation
-            return fmt::format_to(ctx.out(), "{}", guid.ToString());
-        }
-    };
-}
+    // Formats the FGuid instance
+    template <typename FormatContext>
+    auto format(const Lumina::FGuid& guid, FormatContext& ctx) const
+    {
+        // Use FGuid's ToString method to get a string representation
+        return std::format_to(ctx.out(), "{}", guid.ToString());
+    }
+};

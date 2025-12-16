@@ -20,7 +20,7 @@ namespace Lumina
     
     static TAutoConsoleVariable<float> CVarShadowCascadeLambda(
         "r.Shadows.CascadeLambda",
-        0.95,
+        0.95f,
         "Changes the lambda of the cascade selection");
     
     FForwardRenderScene::FForwardRenderScene(CWorld* InWorld)

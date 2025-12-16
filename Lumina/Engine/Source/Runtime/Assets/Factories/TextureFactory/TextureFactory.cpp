@@ -1,11 +1,8 @@
 #include "pch.h"
 #include "TextureFactory.h"
-
-#include "Assets/AssetHeader.h"
 #include "Assets/AssetRegistry/AssetRegistry.h"
 #include "Assets/AssetTypes/Textures/Texture.h"
 #include "Core/Engine/Engine.h"
-#include "Core/Object/Cast.h"
 #include "Core/Object/Package/Package.h"
 #include "Paths/Paths.h"
 #include "Platform/Filesystem/FileHelper.h"

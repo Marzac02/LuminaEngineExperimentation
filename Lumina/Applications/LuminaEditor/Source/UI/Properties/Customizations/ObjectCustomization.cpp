@@ -2,6 +2,7 @@
 #include "imgui.h"
 #include "Assets/AssetTypes/Textures/Texture.h"
 #include "Core/Engine/Engine.h"
+#include "Core/Object/Class.h"
 #include "Core/Object/Package/Thumbnail/PackageThumbnail.h"
 #include "Core/Reflection/Type/Properties/ObjectProperty.h"
 #include "Paths/Paths.h"

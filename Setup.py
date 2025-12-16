@@ -269,7 +269,7 @@ def main():
         print(f"{Fore.WHITE}This will download dependencies and configure your project.\n")
         
         # Configuration
-        dropbox_url = "https://www.dropbox.com/scl/fi/suigjbqj75pzcpxcqm6hv/External.7z?rlkey=ebu8kiw4gswtvj5mclg6wa1lu&st=vd98mrab&dl=0"
+        dropbox_url = "https://www.dropbox.com/scl/fi/suigjbqj75pzcpxcqm6hv/External.7z?rlkey=ebu8kiw4gswtvj5mclg6wa1lu&st=68ybsxy2&dl=0"
         archive_file = "External.7z"
         extract_location = "."
         generation_script = Path("Scripts") / "Win-GenProjects.py"

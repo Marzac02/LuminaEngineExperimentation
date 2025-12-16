@@ -8,7 +8,7 @@
 #include "Core/Windows/Window.h"
 #include "Renderer/RenderTypes.h"
 #include "src/VkBootstrap.h"
-
+#include "Renderer/RHIGlobals.h"
 #include "VulkanSwapchain.h"
 #include <glfw/glfw3.h>
 

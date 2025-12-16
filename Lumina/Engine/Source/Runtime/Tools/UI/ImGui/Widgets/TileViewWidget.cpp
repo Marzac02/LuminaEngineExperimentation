@@ -1,6 +1,5 @@
 #include "pch.h"
 #include "TileViewWidget.h"
-#include "Assets/AssetPath.h"
 #include "Tools/UI/ImGui/ImGuiX.h"
 
 namespace Lumina

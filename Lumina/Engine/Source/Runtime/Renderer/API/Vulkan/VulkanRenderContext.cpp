@@ -284,7 +284,7 @@ namespace Lumina
         LockMark(Mutex);
         LastSubmittedID++;
         
-        LUMINA_PROFILE_TAG(std::format("Last Submit ID: {} - Num Command Lists {}", LastSubmittedID, NumCommandLists).c_str());
+        LUMINA_PROFILE_TAG(std::format("Last Submit ID: {0} - Num Command Lists {1}", LastSubmittedID, NumCommandLists).c_str());
         
         TFixedVector<VkCommandBuffer, 4> CommandBuffers(NumCommandLists);
         
@@ -294,7 +294,7 @@ namespace Lumina
             ECommandQueue CommandListType = VulkanCommandList->GetCommandListInfo().CommandQueue;
             if (CommandListType != Type)
             {
-                LOG_CRITICAL("Attempted to submit a command buffer to queue type {} but was a {} command buffer!", (uint32)Type, (uint32)CommandListType);
+                LOG_CRITICAL("Attempted to submit a command buffer to queue type {0} but was a {1} command buffer!", (uint32)Type, (uint32)CommandListType);
                 continue;
             }
             

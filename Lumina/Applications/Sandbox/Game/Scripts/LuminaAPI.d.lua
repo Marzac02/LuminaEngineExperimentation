@@ -142,30 +142,181 @@ Input = {}
 
 ---@meta
 
----@class UpdateStage
----@field FrameStart integer
----@field PrePhysics integer
----@field DuringPhysics integer
----@field PostPhysics integer
----@field FrameEnd integer
----@field Paused integer
-UpdateStage = {}
+---@enum UpdateStage
+UpdateStage = {
+    FrameStart = 0,
+    PrePhysics = 1,
+    DuringPhysics = 2,
+    PostPhysics = 3,
+    FrameEnd = 4,
+    Paused = 5
+}
 
 ---@meta
-
----@class ViewResult
----A table representing an entity and its components
----@field Entity integer The entity ID
----Each component is accessible by its type name as a field
 
 ---@class SystemContext
 ---@field GetDeltaTime fun(self: SystemContext): number Get delta time in seconds
 ---@field GetUpdateStage fun(self: SystemContext): integer Get current update stage
----@field View fun(self: SystemContext, ...: string|table): table<integer, ViewResult> Query entities with components. Returns a table indexed by entity ID.
+---@field View fun(self: SystemContext): table Query entities with components
+
+---Global script context available in all scripts
 ---@type SystemContext
 ScriptContext = {}
 
 
----@class EntitySystemBase
----@field Stages integer[]
----@field OnUpdate fun(self: EntitySystemBase)
+---@class ScriptTypeEnum
+---@field System string
+---@field EventBind string
+---@field Component string
+---@field Command string
+---@field Resource string
+
+---@type ScriptTypeEnum
+ScriptType = {
+    System = "System",
+    EventBind = "EventBind",
+    Component = "Component",
+    Command = "Command",
+    Resource = "Resource"
+}
+
+---@class SystemDescriptor
+---@field Name? string Name of the system (default: "UnnamedSystem")
+---@field Stage? UpdateStage Stage when the system should execute (default: UpdateStage.FrameStart)
+---@field Priority? number Execution priority within the stage (default: 0)
+---@field Execute fun(world: any, deltaTime: number) Function called every frame
+
+---@class SystemResult
+---@field Type string The type identifier (ScriptType.System)
+---@field Name string Name of the system
+---@field Stage UpdateStage Stage when the system should execute
+---@field Priority number Execution priority within the stage
+---@field Execute fun(world: any, deltaTime: number) Function called every frame
+
+---Helper to create a system descriptor
+---@param descriptor SystemDescriptor
+---@return SystemResult
+function System(descriptor)
+    return {
+        Type = ScriptType.System,
+        Name = descriptor.Name or "UnnamedSystem",
+        Stage = descriptor.Stage or UpdateStage.FrameStart, ---@type UpdateStage
+        Priority = descriptor.Priority or 0,
+        Execute = descriptor.Execute,
+    }
+end
+
+---@class EventBindDescriptor
+---@field Name? string Name of the event binding (default: "UnnamedEventBind")
+---@field Events? string[] List of event names to bind to
+---@field Handler fun(eventName: string, eventData: any) Function called when events are triggered
+---@field Priority? number Handler execution priority (default: 0)
+
+---@class EventBindResult
+---@field Type string The type identifier (ScriptType.EventBind)
+---@field Name string Name of the event binding
+---@field Events string[] List of event names to bind to
+---@field Handler fun(eventName: string, eventData: any) Function called when events are triggered
+---@field Priority number Handler execution priority
+
+---Helper to create an event binding descriptor
+---@param descriptor EventBindDescriptor
+---@return EventBindResult
+function EventBind(descriptor)
+    return {
+        Type = ScriptType.EventBind,
+        Name = descriptor.Name or "UnnamedEventBind",
+        Events = descriptor.Events or {},
+        Handler = descriptor.Handler,
+        Priority = descriptor.Priority or 0
+    }
+end
+
+---@class ComponentDescriptor
+---@field Name string Name of the component
+---@field Fields? table<string, any> Default field values for the component
+---@field OnCreate? fun(component: any, entity: any) Called when component is created
+---@field OnDestroy? fun(component: any, entity: any) Called when component is destroyed
+
+---@class ComponentResult
+---@field Type string The type identifier (ScriptType.Component)
+---@field Name string Name of the component
+---@field Fields table<string, any> Default field values for the component
+---@field OnCreate? fun(component: any, entity: any) Called when component is created
+---@field OnDestroy? fun(component: any, entity: any) Called when component is destroyed
+
+---Helper to create a component descriptor
+---@param descriptor ComponentDescriptor
+---@return ComponentResult
+function Component(descriptor)
+    return {
+        Type = ScriptType.Component,
+        Name = descriptor.Name,
+        Fields = descriptor.Fields or {},
+        OnCreate = descriptor.OnCreate,
+        OnDestroy = descriptor.OnDestroy
+    }
+end
+
+---@class CommandParameter
+---@field name string Parameter name
+---@field type string Parameter type ("string", "number", "boolean", etc.)
+---@field description string Parameter description
+
+---@class CommandDescriptor
+---@field Name string Name of the command
+---@field Description? string Description of what the command does
+---@field Parameters? CommandParameter[] List of command parameters
+---@field Execute fun(params: table<string, any>) Function called when command is executed
+
+---@class CommandResult
+---@field Type string The type identifier (ScriptType.Command)
+---@field Name string Name of the command
+---@field Description string Description of what the command does
+---@field Parameters CommandParameter[] List of command parameters
+---@field Execute fun(params: table<string, any>) Function called when command is executed
+
+---Helper to create a command descriptor
+---@param descriptor CommandDescriptor
+---@return CommandResult
+function Command(descriptor)
+    return {
+        Type = ScriptType.Command,
+        Name = descriptor.Name,
+        Description = descriptor.Description or "",
+        Parameters = descriptor.Parameters or {},
+        Execute = descriptor.Execute
+    }
+end
+
+
+
+---@class Metadata
+---@field name string Script Name
+---@field author string Script Author
+---@field version string Script Version
+---@field description string Script Description
+
+
+---@class MetadataDescriptor
+---@field Name string Script Name
+---@field Author string Script Author
+---@field Version string Script Version
+---@field Description string Script Description
+
+---@class MetadataResult
+---@field Name string Script Name
+---@field Author string Script Author
+---@field Version string Script Version
+---@field Description string Script Description
+
+---@param descriptor MetadataDescriptor
+---@return MetadataResult
+function Metadata(descriptor)
+    return {
+        Name = descriptor.Name or "",
+        Author = descriptor.Author or "",
+        Version = descriptor.Version or "1.0.0",
+        Description = descriptor.Description or "",
+    }
+end

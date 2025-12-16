@@ -269,20 +269,17 @@ namespace eastl
     };
 }
 
-namespace fmt
+template <>
+struct std::formatter<Lumina::FName>
 {
-    template <>
-    struct formatter<Lumina::FName>
+    constexpr auto parse(format_parse_context& ctx)
     {
-        constexpr auto parse(::fmt::format_parse_context& ctx) -> decltype(ctx.begin())
-        {
-            return ctx.begin();
-        }
+        return ctx.begin();
+    }
 
-        template <typename FormatContext>
-        auto format(const Lumina::FName& str, FormatContext& ctx) -> decltype(ctx.out())
-        {
-            return fmt::format_to(ctx.out(), "{}", str.c_str());
-        }
-    };
-}
+    template <typename FormatContext>
+    auto format(const Lumina::FName& str, FormatContext& ctx) const
+    {
+        return std::format_to(ctx.out(), "{}", std::string_view(str.c_str()));
+    }
+};

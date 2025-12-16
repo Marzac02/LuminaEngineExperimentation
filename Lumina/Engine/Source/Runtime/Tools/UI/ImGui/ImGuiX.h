@@ -6,7 +6,6 @@
 #include "Assets/AssetRegistry/AssetRegistry.h"
 #include "Containers/Array.h"
 #include "Containers/Function.h"
-#include "Core/Object/Class.h"
 #include "glm/glm.hpp"
 #include "Module/API.h"
 #include "Platform/GenericPlatform.h"
@@ -51,7 +50,6 @@ namespace Lumina::ImGuiX
         ImGui::TextUnformatted(std::format(fmt, std::forward<TArgs>(Args)...).c_str());
         ImGui::PopStyleColor();
     }
-
     
     template <typename... TArgs>
     void TextWrapped(std::format_string<TArgs...> fmt, TArgs&&... Args)

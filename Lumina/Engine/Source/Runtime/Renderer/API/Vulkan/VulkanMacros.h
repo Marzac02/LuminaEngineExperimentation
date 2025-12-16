@@ -1,9 +1,7 @@
 ﻿#pragma once
 
 #include "Log/Log.h"
-#include "Renderer/RenderContext.h"
-#include "Renderer/RHIGlobals.h"
-
+#include "Containers/String.h"
 
 namespace Lumina::Vulkan
 {
@@ -49,23 +47,23 @@ namespace Lumina::Vulkan
 // Macro to check Vulkan function results and log errors if necessary
 
 #ifndef LUMINA_SHIPPING
-#define VK_CHECK(x)                                                                 \
-do {                                                                                \
-    VkResult result = (x);                                                          \
-    if (UNLIKELY(result < 0))                                                       \
-    {                                                                               \
-        LOG_WARN(                                                                   \
-            "Vulkan Error:\n"                                                       \
-            "  Function Call : {0}\n"                                               \
-            "  File          : {1}\n"                                               \
-            "  Line          : {2}\n"                                               \
-            "  Error Code    : {3} ({4})",                                          \
-            #x, __FILE__, __LINE__, result, Vulkan::VkResultToString(result));      \
-        if (result == VK_ERROR_DEVICE_LOST)                                         \
-        {                                                                           \
-            Lumina::GRenderContext->HandleDeviceLost();                             \
-        }                                                                           \
-    }                                                                               \
+#define VK_CHECK(x)                                                                     \
+do {                                                                                    \
+    VkResult result = (x);                                                              \
+    if (UNLIKELY(result < 0))                                                           \
+    {                                                                                   \
+        LOG_WARN(                                                                       \
+            "Vulkan Error:\n"                                                           \
+            "  Function Call : {0}\n"                                                   \
+            "  File          : {1}\n"                                                   \
+            "  Line          : {2}\n"                                                   \
+            "  Error Code    : {3} ({4})",                                              \
+            #x, __FILE__, __LINE__, (uint32)result, Vulkan::VkResultToString(result));  \
+        if (result == VK_ERROR_DEVICE_LOST)                                             \
+        {                                                                               \
+            Lumina::GRenderContext->HandleDeviceLost();                                 \
+        }                                                                               \
+    }                                                                                   \
 } while (0)
 
 #else

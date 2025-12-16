@@ -2,6 +2,7 @@
 #include "VulkanDevice.h"
 #define VMA_IMPLEMENTATION
 #include "vk_mem_alloc.h"
+#include "Renderer/RHIGlobals.h"
 #include "VulkanMacros.h"
 #include "VulkanRenderContext.h"
 #include "VulkanResources.h"
