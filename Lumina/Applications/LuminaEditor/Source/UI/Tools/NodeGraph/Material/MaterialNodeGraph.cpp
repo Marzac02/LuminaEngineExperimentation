@@ -183,8 +183,7 @@ namespace Lumina
                 continue; 
             }
 
-            //@ TODO Code smell.
-            if (CMaterialGraphNode* MaterialGraphNode = dynamic_cast<CMaterialGraphNode*>(Node))
+            if (CMaterialGraphNode* MaterialGraphNode = Cast<CMaterialGraphNode>(Node))
             {
                 MaterialGraphNode->GenerateExpression(Compiler);
             }
