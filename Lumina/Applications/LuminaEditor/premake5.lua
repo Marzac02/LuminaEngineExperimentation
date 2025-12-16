@@ -2,7 +2,8 @@ include(os.getenv("LUMINA_DIR") .. "/Dependencies.lua")
 
 project "Editor"
 	kind "ConsoleApp"
-    
+    rtti "off"
+	
     targetdir ("%{wks.location}/Binaries/" .. outputdir)
     objdir ("%{wks.location}/Intermediates/Obj/" .. outputdir .. "/%{prj.name}")   
 

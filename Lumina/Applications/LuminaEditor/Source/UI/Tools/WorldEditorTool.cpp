@@ -458,9 +458,6 @@ namespace Lumina
             {
                 SceneRenderer->GetSceneRenderSettings().bOcclusionCull = bUseOcclusionCull;
             }
-
-
-            ImGui::SliderFloat("Cascade Split Lambda", &SceneRenderer->GetSceneRenderSettings().CascadeSplitLambda, 0.0f, 1.0f);
             
             if (ImGui::IsItemHovered())
             {
@@ -698,6 +695,11 @@ namespace Lumina
     {
         ImGui::SameLine();
         constexpr float ButtonWidth = 120;
+        
+        if (!IsAssetEditorTool())
+        {
+            return;
+        }
         
         if (!bGamePreviewRunning)
         {

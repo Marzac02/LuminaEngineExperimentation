@@ -85,7 +85,6 @@ namespace Lumina
         void NewProjectDialog();
         void ProjectSettingsDialog();
         void AssetRegistryDialog();
-        void LaunchTracyProfiler();
         
         void HandleUserInput(const FUpdateContext& UpdateContext);
     

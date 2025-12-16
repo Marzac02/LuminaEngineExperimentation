@@ -1,6 +1,7 @@
 #include "pch.h"
 #include "ForwardRenderScene.h"
 #include "Assets/AssetTypes/Material/Material.h"
+#include "Core/Console/ConsoleVariable.h"
 #include "Core/Windows/Window.h"
 #include "Renderer/RendererUtils.h"
 #include "Renderer/RHIStaticStates.h"
@@ -16,6 +17,12 @@
 
 namespace Lumina
 {
+    
+    static TAutoConsoleVariable<float> CVarShadowCascadeLambda(
+        "r.Shadows.CascadeLambda",
+        0.95,
+        "Changes the lambda of the cascade selection");
+    
     FForwardRenderScene::FForwardRenderScene(CWorld* InWorld)
         : World(InWorld)
         , LightData(), SceneGlobalData()
@@ -230,13 +237,9 @@ namespace Lumina
             auto Group = World->GetEntityRegistry().group<FLineBatcherComponent>();
             Group.each([&](FLineBatcherComponent& LineBatcherComponent)
             {
-                for (const FBatchedLine& Line : LineBatcherComponent.BatchedLines)
-                {
-                    SimpleVertices.emplace_back(glm::vec4(Line.Start, 1.0f), Line.Color);
-                    SimpleVertices.emplace_back(glm::vec4(Line.End, 1.0f), Line.Color);
-                }
-        
-                LineBatcherComponent.Flush();
+                SimpleVertices.resize(LineBatcherComponent.Vertices.size());
+                Memory::Memcpy(SimpleVertices.data(), LineBatcherComponent.Vertices.data(), LineBatcherComponent.Vertices.size() * sizeof(FSimpleElementVertex));
+                LineBatcherComponent.Vertices.clear();
             });
         }
         
@@ -275,7 +278,7 @@ namespace Lumina
                     float P = ((float)i + 1) / (float)NumCascades;
                     float Log = MinZ * glm::pow(Ratio, P);
                     float Uniform = MinZ + Range * P;
-                    float D = RenderSettings.CascadeSplitLambda * (Log - Uniform) + Uniform;
+                    float D = CVarShadowCascadeLambda.GetValue() * (Log - Uniform) + Uniform;
                     CascadeSplits[i] = (D - NearClip) / ClipRange;
                 }
         
@@ -641,10 +644,8 @@ namespace Lumina
                 
             FRHIGraphicsPipelineRef Pipeline = GRenderContext->CreateGraphicsPipeline(Desc, RenderPass);
             
-            for (SIZE_T CurrentDraw = 0; CurrentDraw < DrawCommands.size(); ++CurrentDraw)
+            for (const FMeshDrawCommand& Batch : DrawCommands)
             {
-                const FMeshDrawCommand& Batch = DrawCommands[CurrentDraw];
-                
                 FGraphicsState GraphicsState;
                 GraphicsState.AddVertexBuffer({ Batch.VertexBuffer });
                 GraphicsState.SetIndexBuffer({ Batch.IndexBuffer });

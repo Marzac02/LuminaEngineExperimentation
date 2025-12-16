@@ -1,39 +1,33 @@
 #pragma once
 #include "RenderComponent.h"
+#include "Renderer/Vertex.h"
 #include <glm/gtx/quaternion.hpp>
 
 namespace Lumina
-{
-    struct FBatchedLine
-    {
-        glm::vec3 Start;
-
-        glm::vec3 End;
-
-        glm::vec4 Color = glm::vec4(1.0f);
-
-        float Thickness = 1.0f;
-    };
-    
+{   
     struct LUMINA_API FLineBatcherComponent : SRenderComponent
     {
-        TFixedVector<FBatchedLine, 2024> BatchedLines;
+        TFixedVector<FSimpleElementVertex, 2024> Vertices;
 
         void DrawLine(const glm::vec3& Start, const glm::vec3& End, const glm::vec4& Color, float Thickness = 1.0f, float Duration = 1.0f)
         {
-            BatchedLines.emplace_back(FBatchedLine
+			Vertices.reserve(Vertices.size() + 2);
+
+            Vertices.emplace_back(FSimpleElementVertex
             {
-                .Start = Start,
-                .End = End,
+                .Position = glm::vec4(Start, 1.0),
                 .Color = Color,
-                .Thickness = Thickness,
+            });
+
+            Vertices.emplace_back(FSimpleElementVertex
+            {
+                .Position = glm::vec4(End, 1.0),
+                .Color = Color,
             });
         }
 
         void DrawBox(const glm::vec3& Center, const glm::vec3& HalfExtents, const glm::quat& Rotation, const glm::vec4& Color, float Thickness = 1.0f, float Duration = 1.0f)
         {
-            BatchedLines.reserve(BatchedLines.size() + 12);
-
             glm::vec3 LocalCorners[8] =
             {
                 {-HalfExtents.x, -HalfExtents.y, -HalfExtents.z},
@@ -74,8 +68,6 @@ namespace Lumina
 
         void DrawSphere(const glm::vec3& Center, float Radius, const glm::vec4& Color, uint8 Segments = 16, float Thickness = 1.0f, float Duration = 1.0f)
         {
-            BatchedLines.reserve(BatchedLines.size() + (Segments - 1) * Segments + Segments * Segments);
-
             for (uint8 lat = 1; lat < Segments; ++lat)
             {
                 float latAngle = glm::pi<float>() * lat / Segments;
@@ -251,9 +243,5 @@ namespace Lumina
             DrawFrustum(ViewVolume.GetViewProjectionMatrix(), ViewVolume.GetNear(), ViewVolume.GetFar(), Color, Thickness, Duration);
         }
 
-        void Flush()
-        {
-            BatchedLines.clear();
-        }
     };
 }

@@ -2,12 +2,14 @@ include(os.getenv("LUMINA_DIR") .. "/Dependencies.lua")
 
 project "Lumina"
     kind "SharedLib"
+    rtti "off"
     targetdir ("%{LuminaEngineDirectory}/Binaries/" .. outputdir)
     objdir ("%{LuminaEngineDirectory}/Intermediates/Obj/" .. outputdir .. "/%{prj.name}")
 
     pchheader "pch.h"
     pchsource "Engine/Source/pch.cpp"
     dependson { "GLFW", "EA", "ImGui", "Tracy", "Reflector" }
+
 
     defines
     {

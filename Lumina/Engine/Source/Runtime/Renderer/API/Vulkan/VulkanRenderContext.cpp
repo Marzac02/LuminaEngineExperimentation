@@ -565,9 +565,9 @@ namespace Lumina
         
         Memory::Delete(Swapchain);
         
-        for (size_t i = 0; i < Queues.size(); ++i)
+        for (TUniquePtr<FQueue>& Queue : Queues)
         {
-            Queues[i].reset();
+            Queue.reset();
         }
 
         SamplerMap.clear();
@@ -593,7 +593,7 @@ namespace Lumina
     
     void FVulkanRenderContext::SetVSyncEnabled(bool bEnable)
     {
-        Swapchain->SetPresentMode(bEnable ? VK_PRESENT_MODE_FIFO_KHR : VK_PRESENT_MODE_IMMEDIATE_KHR);
+        Swapchain->SetPresentMode(bEnable ? VK_PRESENT_MODE_FIFO_KHR : VK_PRESENT_MODE_MAILBOX_KHR);
     }
 
     bool FVulkanRenderContext::IsVSyncEnabled() const
