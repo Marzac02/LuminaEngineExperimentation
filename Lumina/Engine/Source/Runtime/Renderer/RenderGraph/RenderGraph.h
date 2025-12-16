@@ -71,7 +71,7 @@ namespace Lumina
     private:
         
         
-        FBlockLinearAllocator           GraphAllocator;
+        FLinearAllocator                GraphAllocator;
         TVector<TVector<FRGPassHandle>> PassGroups;
     };
 }

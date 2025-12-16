@@ -52,13 +52,13 @@ namespace Lumina
         
         TRGPass(FRGEvent&& InEvent, ERGPassFlags Flags, const FRGPassDescriptor* InParams, ExecutorType&& Executor)
             : FRenderGraphPass(std::move(InEvent), Flags, InParams)
-            , ExecutionLambda(std::move(Executor))
+            , ExecutionLambda(eastl::forward<ExecutorType>(Executor))
         {}
 
 
         void Execute(ICommandList& CommandList) override
         {
-            ExecutionLambda(CommandList);
+            eastl::invoke(ExecutionLambda, CommandList);
         }
 
 

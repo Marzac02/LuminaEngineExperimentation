@@ -50,33 +50,28 @@ class SetupDisplay:
     
     @staticmethod
     def info(message):
-        """Display informational message."""
         print(f"{Fore.CYAN}{message}")
     
     @staticmethod
     def success(message):
-        """Display success message."""
         print(f"{Fore.GREEN}{Style.BRIGHT}{message}")
     
     @staticmethod
     def warning(message):
-        """Display warning message."""
         print(f"{Fore.YELLOW}{message}")
     
     @staticmethod
     def error(message):
-        """Display error message."""
         print(f"{Fore.RED}{Style.BRIGHT}{message}")
     
     @staticmethod
     def progress_bar(current, total, prefix="Progress", bar_length=50):
-        """Display a clean progress bar."""
         if total == 0:
             return
         
         current = min(current, total)
         filled = int(bar_length * current / total)
-        bar = '█' * filled + '░' * (bar_length - filled)
+        bar = '|' * filled + '_' * (bar_length - filled)
         percent = f"{100 * current / total:.1f}%".rjust(6)
         
         sys.stdout.write(f'\r{Fore.YELLOW}{prefix}: [{Fore.GREEN}{bar}{Fore.YELLOW}] {percent}')
@@ -186,7 +181,6 @@ class ArchiveExtractor:
             SetupDisplay.progress_bar(self.total_files, self.total_files, "Extracting")
     
     def extract(self):
-        """Extract archive with progress display."""
         if not self.archive_path.exists():
             SetupDisplay.error(f"Archive not found: {self.archive_path}")
             return False
@@ -304,6 +298,8 @@ def main():
         SetupDisplay.success("Lumina Engine is ready to use!")
         print(f"\n{Fore.CYAN}You can now open {Style.BRIGHT}Lumina.sln{Style.NORMAL} in Visual Studio.")
         print(f"{Fore.YELLOW}Happy coding!\n")
+        print("This window will close in 2 seconds.")
+        time.sleep(2.0)
         
     except KeyboardInterrupt:
         print(f"\n\n{Fore.YELLOW}Setup interrupted by user")
