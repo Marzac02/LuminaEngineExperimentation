@@ -511,7 +511,6 @@ namespace Lumina
 
         int32 LoaderIndex = FObjectPackageIndex(Object->LoaderIndex).GetArrayIndex();
 
-        // Validate index
         if (LoaderIndex < 0 || LoaderIndex >= (int32)ExportTable.size())
         {
             LOG_ERROR("Invalid loader index {} for object {}", LoaderIndex, Object->GetName());
@@ -536,7 +535,6 @@ namespace Lumina
             return;
         }
         
-        // Seek to the data offset
         Loader->Seek(DataPos);
         
         Object->PreLoad();

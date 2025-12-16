@@ -317,6 +317,8 @@ namespace Lumina
             const FEnumeratorParam* Param = &Params.Params[i];
             NewEnum->AddEnum(Param->NameUTF8, Param->Value);
         }
+
+        NewEnum->AddToRoot();
     }
     
     void ConstructCStruct(CStruct** OutStruct, const FStructParams& Params)
@@ -345,6 +347,8 @@ namespace Lumina
         }
         
         FinalClass->Link();
+
+        FinalClass->AddToRoot();
     }
     
 }

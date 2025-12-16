@@ -24,23 +24,6 @@ namespace Lumina
         
         ImGuiTableFlags TableFlags = ImGuiTableFlags_Resizable | ImGuiTableFlags_NoPadOuterX | ImGuiTableFlags_ScrollY;
         TableFlags |= ImGuiTableFlags_RowBg | ImGuiTableFlags_BordersOuterH | ImGuiTableFlags_NoBordersInBody | ImGuiTableFlags_BordersV;
-
-        auto ShouldDrawItem = [&](const auto& Item) -> bool
-        {
-            return !Context.FilterFunc || Context.FilterFunc(Item);
-        };
-
-        //TVector<FTreeListViewItem*> FilteredItems;
-        //FilteredItems.reserve(ListItems.size());
-
-        //for (FTreeListViewItem* Item : ListItems)
-        //{
-        //    if (ShouldDrawItem(Item))
-        //    {
-        //        FilteredItems.push_back(Item);
-        //    }
-        //}
-
         
         ImGui::PushID(this);
         ImGui::PushStyleVar(ImGuiStyleVar_CellPadding, ImVec2(2, 2));
@@ -172,11 +155,25 @@ namespace Lumina
         
         ItemToDraw->bExpanded = ImGui::TreeNodeEx("##TreeNode", Flags, "%s", DisplayName.c_str());
         
-        if (ImGui::IsItemClicked(ImGuiMouseButton_Left))
+        if (ImGui::IsItemHovered() && ImGui::IsItemClicked(ImGuiMouseButton_Left))
         {
             SetSelection(ItemToDraw, Context);
         }
-
+        
+        if (ImGui::IsItemHovered())
+        {
+            for (int Key = ImGuiKey_NamedKey_BEGIN; Key < ImGuiKey_NamedKey_END; Key++)
+            {
+                if (ImGui::IsKeyPressed((ImGuiKey)Key))
+                {
+                    if (HandleKeyPressed(Context, *ItemToDraw, (ImGuiKey)Key))
+                    {
+                        break;
+                    }
+                }
+            }
+        }
+        
         if (ImGui::BeginDragDropSource())
         {
             ItemToDraw->SetDragDropPayloadData();
@@ -257,7 +254,18 @@ namespace Lumina
         {
             Context.ItemSelectedFunction(bWasSelected ? nullptr : Item);
         }
+        
         Item->OnSelectionStateChanged();
+    }
+
+    bool FTreeListView::HandleKeyPressed(const FTreeListViewContext& Context, FTreeListViewItem& Item, ImGuiKey Key)
+    {
+        if (Context.KeyPressedFunction)
+        {
+            return Context.KeyPressedFunction(Item, Key);
+        }
+
+        return false;
     }
 
     void FTreeListView::RequestScrollTo(const FTreeListViewItem* Item)

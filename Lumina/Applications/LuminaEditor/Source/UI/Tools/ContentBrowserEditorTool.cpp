@@ -24,27 +24,24 @@
 namespace Lumina
 {
 
+    template<size_t BufferSize = 42>
     class FRenameModalState
     {
     public:
         
-        char Buffer[256] = {};
-        bool bInitialized = false;
-    
         void Initialize(const FString& CurrentName)
         {
-            if (!bInitialized)
-            {
-                strncpy_s(Buffer, sizeof(Buffer), CurrentName.c_str(), _TRUNCATE);
-                bInitialized = true;
-            }
+            Buffer.assign(CurrentName.begin(), CurrentName.end());
         }
-    
-        void Reset()
-        {
-            memset(Buffer, 0, sizeof(Buffer));
-            bInitialized = false;
-        }
+
+        
+        NODISCARD constexpr size_t Capacity() const { return BufferSize; }
+        FORCEINLINE NODISCARD char* CStr() { return Buffer.data(); }
+        FORCEINLINE NODISCARD bool IsValid() const { return !Buffer.empty(); }
+        
+    private:
+        
+        TInlineString<BufferSize> Buffer;
     };
 
     bool FContentBrowserEditorTool::OnEvent(FEvent& Event)
@@ -69,7 +66,7 @@ namespace Lumina
     void FContentBrowserEditorTool::RefreshContentBrowser()
     {
         ContentBrowserTileView.MarkTreeDirty();
-        OutlinerListView.MarkTreeDirty();
+        DirectoryListView.MarkTreeDirty();
     }
 
     void FContentBrowserEditorTool::OnInitialize()
@@ -136,22 +133,7 @@ namespace Lumina
 
             ImTextureRef ImTexture = ImGuiX::ToImTextureRef(Paths::GetEngineResourceDirectory() + "/Textures/File.png");
             
-            if (!ContentItem->IsDirectory())
-            {
-                if (ContentItem->IsAsset())
-                {
-                    //if (CPackage* Package = ContentItem->GetPackage())
-                    //{
-                    //    ImTexture = ImGuiX::ToImTextureRef(Paths::GetEngineResourceDirectory() + "/Textures/File.png");
-                    //
-                    //    //if (Package->GetPackageThumbnail()->LoadedImage)
-                    //    //{
-                    //    //    ImTexture = ImGuiX::ToImTextureRef(Package->GetPackageThumbnail()->LoadedImage);
-                    //    //}
-                    //}
-                }
-            }
-            else
+            if (ContentItem->IsDirectory())
             {
                 ImTexture = ImGuiX::ToImTextureRef(Paths::GetEngineResourceDirectory() + "/Textures/Folder.png");
                 TintColor = ImVec4(1.0f, 0.9f, 0.6f, 1.0f);
@@ -257,13 +239,12 @@ namespace Lumina
 
                 for (const std::filesystem::directory_entry& Directory : std::filesystem::directory_iterator(SelectedPath.c_str()))
                 {
-					std::filesystem::path Path = Directory.path();
                     if (std::filesystem::is_directory(Directory))
                     {
                         FString VirtualPath = Paths::ConvertToVirtualPath(Directory.path().generic_string().c_str());
                         DirectoryPaths.push_back(Directory.path().generic_string().c_str());
                     }
-					else if (Path.extension() == ".lasset" || Path.extension() == ".lua")
+					else if (Directory.path().extension() == ".lasset" || Directory.path().extension() == ".lua")
                     {
                         FilePaths.push_back(Directory.path().generic_string().c_str());
                     }
@@ -284,7 +265,26 @@ namespace Lumina
             }
         };
 
-        OutlinerContext.DrawItemContextMenuFunction = [this](const TVector<FTreeListViewItem*>& Items)
+        ContentBrowserTileViewContext.KeyPressedFunction = [this] (FTileViewItem& Item, ImGuiKey Key) -> bool
+        {
+            if (Key == ImGuiKey_F2)
+            {
+                FContentBrowserTileViewItem* ContentItem = static_cast<FContentBrowserTileViewItem*>(&Item);
+                PushRenameModal(ContentItem);
+                return true;
+            }
+
+            if (Key == ImGuiKey_Delete)
+            {
+                FContentBrowserTileViewItem* ContentItem = static_cast<FContentBrowserTileViewItem*>(&Item);
+                OpenDeletionWarningPopup(ContentItem);
+                return true;
+            }
+
+            return false;
+        };
+        
+        DirectoryContext.DrawItemContextMenuFunction = [this](const TVector<FTreeListViewItem*>& Items)
         {
             for (FTreeListViewItem* Item : Items)
             {
@@ -293,7 +293,7 @@ namespace Lumina
             }
         };
 
-        OutlinerContext.DragDropFunction = [this](FTreeListViewItem* DroppedOntoItem)
+        DirectoryContext.DragDropFunction = [this](FTreeListViewItem* DroppedOntoItem)
         {
             FContentBrowserListViewItem* TypedDroppedItem = static_cast<FContentBrowserListViewItem*>(DroppedOntoItem);
             const ImGuiPayload* Payload = ImGui::AcceptDragDropPayload(FContentBrowserTileViewItem::DragDropID, ImGuiDragDropFlags_AcceptBeforeDelivery);
@@ -306,11 +306,11 @@ namespace Lumina
             }
         };
         
-        OutlinerContext.RebuildTreeFunction = [this](FTreeListView* Tree)
+        DirectoryContext.RebuildTreeFunction = [this](FTreeListView* Tree)
         {
             for (const auto& [VirtualPrefix, PhysicalRootStr] : Paths::GetMountedPaths())
             {
-                auto* RootItem = OutlinerListView.AddItemToTree<FContentBrowserListViewItem>(nullptr, PhysicalRootStr, VirtualPrefix.ToString());
+                auto* RootItem = DirectoryListView.AddItemToTree<FContentBrowserListViewItem>(nullptr, PhysicalRootStr, VirtualPrefix.ToString());
 
                 TFunction<void(FContentBrowserListViewItem*, const FString&)> AddChildrenRecursive;
 
@@ -330,7 +330,7 @@ namespace Lumina
 
                         if (Entry.path() == SelectedPath.c_str())
                         {
-                            OutlinerListView.SetSelection(ChildItem, OutlinerContext);
+                            DirectoryListView.SetSelection(ChildItem, DirectoryContext);
                         }
 
                         AddChildrenRecursive(ChildItem, Path);
@@ -341,9 +341,7 @@ namespace Lumina
             }
         };
 
-
-
-        OutlinerContext.ItemSelectedFunction = [this] (FTreeListViewItem* Item)
+        DirectoryContext.ItemSelectedFunction = [this] (FTreeListViewItem* Item)
         {
             if (Item == nullptr)
             {
@@ -357,7 +355,12 @@ namespace Lumina
             RefreshContentBrowser();
         };
 
-        OutlinerListView.MarkTreeDirty();
+        DirectoryContext.KeyPressedFunction = [this] (FTreeListViewItem& Item, ImGuiKey Key) -> bool
+        {
+            return false;
+        };
+        
+        DirectoryListView.MarkTreeDirty();
         ContentBrowserTileView.MarkTreeDirty();
     }
 
@@ -613,9 +616,7 @@ namespace Lumina
 
     void FContentBrowserEditorTool::PushRenameModal(FContentBrowserTileViewItem* ContentItem)
     {
-        TUniquePtr<FRenameModalState> RenameState = MakeUniquePtr<FRenameModalState>();
-        
-        ToolContext->PushModal("Rename", ImVec2(480.0f, 340.0f), [this, ContentItem, RenameState = Move(RenameState)](const FUpdateContext&) -> bool
+        ToolContext->PushModal("Rename", ImVec2(480.0f, 320.0f), [this, ContentItem, RenameState = MakeUniquePtr<FRenameModalState<>>()](const FUpdateContext&) -> bool
         {
             RenameState->Initialize(ContentItem->GetFileName());
             
@@ -623,7 +624,7 @@ namespace Lumina
             const float ContentWidth = ImGui::GetContentRegionAvail().x;
             
             ImGuiX::Font::PushFont(ImGuiX::Font::EFont::MediumBold);
-            ImGui::TextColored(ImVec4(0.9f, 0.9f, 0.95f, 1.0f), LE_ICON_ARCHIVE_EDIT " Rename %s", ContentItem->IsDirectory() ? "Folder" : "Asset");
+            ImGuiX::TextColored(ImVec4(0.9f, 0.9f, 0.95f, 1.0f), LE_ICON_ARCHIVE_EDIT " Rename {0}", ContentItem->IsDirectory() ? "Folder" : "Asset");
             ImGuiX::Font::PopFont();
             
             ImGui::Spacing();
@@ -631,19 +632,16 @@ namespace Lumina
             ImGui::Spacing();
             ImGui::Spacing();
             
-            ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.6f, 0.6f, 0.65f, 1.0f));
-            ImGui::Text("Current name:");
-            ImGui::PopStyleColor();
+            ImGuiX::TextColored(ImVec4(0.6f, 0.6f, 0.65f, 1.0f), "Current name:");
             
             ImGui::SameLine();
-            ImGui::TextColored(ImVec4(0.85f, 0.85f, 0.9f, 1.0f), "%s", ContentItem->GetFileName().c_str());
+            
+            ImGuiX::TextColored(ImVec4(0.85f, 0.85f, 0.9f, 1.0f), "{0}", ContentItem->GetFileName().c_str());
             
             ImGui::Spacing();
             ImGui::Spacing();
             
-            ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.6f, 0.6f, 0.65f, 1.0f));
-            ImGui::Text("New name:");
-            ImGui::PopStyleColor();
+            ImGuiX::TextColoredUnformatted(ImVec4(0.6f, 0.6f, 0.65f, 1.0f), "New name:");
             
             ImGui::Spacing();
             
@@ -655,8 +653,7 @@ namespace Lumina
             
             ImGui::SetNextItemWidth(-1);
             
-            bool bSubmitted = ImGui::InputText("##RenameInput", RenameState->Buffer, sizeof(RenameState->Buffer), 
-                ImGuiInputTextFlags_CharsNoBlank | ImGuiInputTextFlags_EnterReturnsTrue);
+            bool bSubmitted = ImGui::InputText("##RenameInput", RenameState->CStr(), RenameState->Capacity(), ImGuiInputTextFlags_CharsNoBlank | ImGuiInputTextFlags_EnterReturnsTrue);
             
             ImGui::PopStyleVar(2);
             ImGui::PopStyleColor(3);
@@ -664,12 +661,12 @@ namespace Lumina
             ImGui::Spacing();
             ImGui::Spacing();
             
-            bool bIsValid = strlen(RenameState->Buffer) > 0;
-            bool bNameUnchanged = strcmp(RenameState->Buffer, ContentItem->GetFileName().c_str()) == 0;
+            bool bIsValid = RenameState->IsValid();
+            bool bNameUnchanged = strcmp(RenameState->CStr(), ContentItem->GetFileName().c_str()) == 0;
             FString ValidationMessage;
             bool bHasError = false;
             
-            if (strlen(RenameState->Buffer) > 0)
+            if (RenameState->IsValid())
             {
                 if (bNameUnchanged)
                 {
@@ -681,7 +678,7 @@ namespace Lumina
                 {
                     FString Extension = ContentItem->GetExtension();
                     FString PathNoExt = Paths::RemoveExtension(ContentItem->GetPath());
-                    FString TestPath = PathNoExt + "/" + RenameState->Buffer + Extension;
+                    FString TestPath = PathNoExt + "/" + RenameState->CStr() + Extension;
 
                     if (std::filesystem::exists(TestPath.c_str()))
                     {
@@ -699,7 +696,7 @@ namespace Lumina
                 ImGui::PushStyleVar(ImGuiStyleVar_ChildBorderSize, 1.0f);
                 ImGui::PushStyleColor(ImGuiCol_Border, ImVec4(0.8f, 0.2f, 0.2f, 0.4f));
                 
-                ImGui::BeginChild("##ValidationError", ImVec2(-1, 50.0f), true);
+                ImGui::BeginChild("##ValidationError", ImVec2(-1, 45.0f), true);
                 
                 ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 0.4f, 0.4f, 1.0f));
                 ImGui::Text(LE_ICON_ALERT_OCTAGON);
@@ -718,19 +715,12 @@ namespace Lumina
             {
                 FString Extension = ContentItem->GetExtension();
                 FString ParentPath = Paths::Parent(ContentItem->GetPath());
-                FString NewPath = ParentPath + "/" + RenameState->Buffer + Extension;
+                FString NewPath = ParentPath + "/" + RenameState->CStr() + Extension;
                 ActionRegistry.EnqueueAction<FPendingRename>(FPendingRename{ ContentItem->GetPath(), NewPath });
-                RenameState->Reset();
                 return true;
             }
             
             ImGui::Spacing();
-            
-            float RemainingHeight = ImGui::GetContentRegionAvail().y - 40.0f;
-            if (RemainingHeight > 0)
-            {
-                ImGui::Dummy(ImVec2(0, RemainingHeight));
-            }
             
             ImGui::Separator();
             ImGui::Spacing();
@@ -758,9 +748,8 @@ namespace Lumina
                 {
                     FString Extension = ContentItem->GetExtension();
                     FString ParentPath = Paths::Parent(ContentItem->GetPath());
-                    FString NewPath = ParentPath + "/" + RenameState->Buffer + Extension;
+                    FString NewPath = ParentPath + "/" + RenameState->CStr() + Extension;
                     ActionRegistry.EnqueueAction<FPendingRename>(FPendingRename{ ContentItem->GetPath(), NewPath });
-                    RenameState->Reset();
                     return true;
                 }
             }
@@ -777,7 +766,6 @@ namespace Lumina
                 ImGui::PopStyleColor(3);
             }
             
-            // Cancel button
             ImGui::SameLine();
             
             ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 4.0f);
@@ -787,7 +775,6 @@ namespace Lumina
             
             if (ImGui::Button(LE_ICON_CANCEL " Cancel", ImVec2(ButtonWidth, ButtonHeight)))
             {
-                RenameState->Reset();
                 return true;
             }
             
@@ -796,7 +783,6 @@ namespace Lumina
             
             if (ImGui::IsKeyPressed(ImGuiKey_Escape))
             {
-                RenameState->Reset();
                 return true;
             }
             
@@ -808,7 +794,7 @@ namespace Lumina
     {
         ImGui::BeginChild("Directories", Size);
 
-        OutlinerListView.Draw(OutlinerContext);
+        DirectoryListView.Draw(DirectoryContext);
         
         ImGui::EndChild();
     }

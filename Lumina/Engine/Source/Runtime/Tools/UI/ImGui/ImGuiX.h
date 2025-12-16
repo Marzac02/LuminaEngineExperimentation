@@ -36,6 +36,7 @@ namespace Lumina::ImGuiX
 
     LUMINA_API void ItemTooltip(const char* fmt, ...);
     LUMINA_API void TextTooltip(const char* fmt, ...);
+    LUMINA_API void TextColoredUnformatted(const ImVec4& Color, const FInlineString& String);
 
     template <typename... TArgs>
     void Text(std::format_string<TArgs...> fmt, TArgs&&... Args)
@@ -43,6 +44,15 @@ namespace Lumina::ImGuiX
         ImGui::TextUnformatted(std::format(fmt, std::forward<TArgs>(Args)...).c_str());
     }
 
+    template <typename... TArgs>
+    void TextColored(const ImVec4& Color, std::format_string<TArgs...> fmt, TArgs&&... Args)
+    {
+        ImGui::PushStyleColor(ImGuiCol_Text, Color);
+        ImGui::TextUnformatted(std::format(fmt, std::forward<TArgs>(Args)...).c_str());
+        ImGui::PopStyleColor();
+    }
+
+    
     template <typename... TArgs>
     void TextWrapped(std::format_string<TArgs...> fmt, TArgs&&... Args)
     {

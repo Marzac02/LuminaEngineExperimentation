@@ -4,6 +4,7 @@
 #include "RenderResource.h"
 #include "Core/Serialization/MemoryArchiver.h"
 #include "Core/Threading/Thread.h"
+#include "Core/Utils/Defer.h"
 #include "Memory/Memory.h"
 #include "Paths/Paths.h"
 #include "Platform/Filesystem/FileHelper.h"
@@ -181,6 +182,7 @@ namespace Lumina
             Options = Move(Options),
             Callback = Move(OnCompleted)] (uint32 Start, uint32 End, uint32 Thread) mutable
         {
+            
             shaderc::CompileOptions CompileOpts;
             CompileOpts.SetIncluder(std::make_unique<FShaderCIncluder>());
             CompileOpts.SetOptimizationLevel(shaderc_optimization_level_performance);
@@ -188,6 +190,11 @@ namespace Lumina
             CompileOpts.SetTargetEnvironment(shaderc_target_env_vulkan, shaderc_env_version_vulkan_1_3);
 
             uint32 Num = End - Start;
+
+            DEFER
+            {
+                PendingTasks.fetch_sub(Num, eastl::memory_order_relaxed);
+            };
             
             for (uint32 i = Start; i < End; ++i)
             {
@@ -263,8 +270,6 @@ namespace Lumina
                 Callback(Move(Shader));
 
             }
-
-            PendingTasks.fetch_sub(Num, eastl::memory_order_relaxed);
             
         }, ETaskPriority::High);
     
@@ -295,6 +300,11 @@ namespace Lumina
             Callback = Move(OnCompleted)]
             (uint32, uint32, uint32 Thread)
         {
+            DEFER
+            {
+                PendingTasks.fetch_sub(1, eastl::memory_order_relaxed);
+            };
+            
             auto CompileStart = std::chrono::high_resolution_clock::now();
             
             shaderc::Compiler Compiler;
@@ -361,8 +371,6 @@ namespace Lumina
             LOG_TRACE("Compiled raw shader in {0:.2f} ms (Thread {1})", DurationMs.count(), Thread);
             
             Callback(Move(Shader));
-
-            PendingTasks.fetch_sub(1, eastl::memory_order_acq_rel);
             
         });
         

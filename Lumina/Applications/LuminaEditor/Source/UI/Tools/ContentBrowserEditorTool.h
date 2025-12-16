@@ -163,7 +163,7 @@ namespace Lumina
 
         FContentBrowserEditorTool(IEditorToolContext* Context)
             : FEditorTool(Context, "Content Browser", nullptr)
-            , OutlinerContext()
+            , DirectoryContext()
             , ContentBrowserTileView()
             , ContentBrowserTileViewContext()
         {
@@ -206,10 +206,11 @@ namespace Lumina
         void DrawContentDirectoryContextMenu();
 
         FDeferredActionRegistry     ActionRegistry;
-        
         FDirectoryWatcher           Watcher;
-        FTreeListView               OutlinerListView;
-        FTreeListViewContext        OutlinerContext;
+        
+        
+        FTreeListView               DirectoryListView;
+        FTreeListViewContext        DirectoryContext;
 
         FTileViewWidget             ContentBrowserTileView;
         FTileViewContext            ContentBrowserTileViewContext;

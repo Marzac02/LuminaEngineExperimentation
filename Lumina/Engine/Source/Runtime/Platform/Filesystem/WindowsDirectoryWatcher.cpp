@@ -75,8 +75,8 @@ namespace Lumina
             return;
         }
 
-        const DWORD BufferSize = 64 * 1024;
-        eastl::vector<BYTE> Buffer;
+        constexpr DWORD BufferSize = 64 * 1024;
+        TVector<BYTE> Buffer;
         Buffer.resize(BufferSize);
         
         OVERLAPPED Overlapped = {};
@@ -133,7 +133,7 @@ namespace Lumina
                 FString FullPathStr = FullPath.string().c_str();
 
                 FFileEvent Event;
-                Event.Path = FullPathStr.c_str();
+                Event.Path = FullPathStr;
 
                 switch (Info->Action)
                 {
@@ -148,7 +148,7 @@ namespace Lumina
                         break;
                     case FILE_ACTION_RENAMED_OLD_NAME:
                         Event.Action = EFileAction::Renamed;
-                        Event.OldPath = FullPathStr.c_str();
+                        Event.OldPath = Move(FullPathStr);
                         break;
                     case FILE_ACTION_RENAMED_NEW_NAME:
                         Event.Action = EFileAction::Renamed;
@@ -185,11 +185,11 @@ namespace Lumina
         }
         
         int SizeNeeded = WideCharToMultiByte(CP_UTF8, 0, Wide.data(), (int)Wide.size(), nullptr, 0, nullptr, nullptr);
-        eastl::string Result;
+        FString Result;
         Result.resize(SizeNeeded);
         WideCharToMultiByte(CP_UTF8, 0, Wide.data(), (int)Wide.size(), Result.data(), SizeNeeded, nullptr, nullptr);
         
-        return FString(Result.c_str());
+        return Result;
     }
 }
 

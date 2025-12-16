@@ -11,7 +11,6 @@ namespace Lumina
 
     class LUMINA_API FTreeListViewItem
     {
-
         friend class FTreeListView;
         
     public:
@@ -47,10 +46,10 @@ namespace Lumina
         }
 
         template<typename T, typename... Args>
-        requires (std::is_base_of_v<FTreeListViewItem, T> && std::is_constructible_v<T, Args...>)
+        requires (eastl::is_base_of_v<FTreeListViewItem, T> && eastl::is_constructible_v<T, Args...>)
         T* AddChild(Args&&... args)
         {
-            T* New = Allocator->TAlloc<T>(std::forward<Args>(args)...);
+            T* New = Allocator->TAlloc<T>(eastl::forward<Args>(args)...);
             New->Allocator = Allocator;
             Children.push_back(New);
 
@@ -91,6 +90,9 @@ namespace Lumina
 
         /** Called when we have a drag-drop operation on a target */
         TFunction<void(FTreeListViewItem*)>                         DragDropFunction;
+        
+        /** Called when a key is pressed while hovering the tile item, return true to absorb. */
+        TFunction<bool(FTreeListViewItem&, ImGuiKey)>               KeyPressedFunction;
     };
     
     
@@ -135,6 +137,9 @@ namespace Lumina
         void SetSelection(FTreeListViewItem* Item, const FTreeListViewContext& Context);
         
     private:
+
+        bool HandleKeyPressed(const FTreeListViewContext& Context, FTreeListViewItem& Item, ImGuiKey Key);
+
         
         void RequestScrollTo(const FTreeListViewItem* Item);
         

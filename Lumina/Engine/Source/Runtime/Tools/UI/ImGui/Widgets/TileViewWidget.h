@@ -71,13 +71,16 @@ namespace Lumina
 
         /** Called when we have a drag-drop operation on a target */
         TFunction<void(FTileViewItem*)>                         DragDropFunction;
+
+        /** Called when a key is pressed while hovering the tile item, return true to absorb. */
+        TFunction<bool(FTileViewItem&, ImGuiKey)>               KeyPressedFunction;
     };
 
     class LUMINA_API FTileViewWidget
     {
     public:
 
-        void Draw(FTileViewContext Context);
+        void Draw(const FTileViewContext& Context);
 
         void ClearTree();
 
@@ -87,16 +90,17 @@ namespace Lumina
         FORCEINLINE bool IsDirty() const { return bDirty; }
         
         template<typename T, typename... Args>
-        requires (std::is_base_of_v<FTileViewItem, T> && std::is_constructible_v<T, Args...>)
+        requires (eastl::is_base_of_v<FTileViewItem, T> && eastl::is_constructible_v<T, Args...>)
         FORCEINLINE void AddItemToTree(Args&&... args)
         {
-            T* New = Allocator.TAlloc<T>(std::forward<Args>(args)...);
+            T* New = Allocator.TAlloc<T>(eastl::forward<Args>(args)...);
             ListItems.push_back(New);
         }
 
 
     private:
 
+        bool HandleKeyPressed(const FTileViewContext& Context, FTileViewItem& Item, ImGuiKey Key);
         
         void RebuildTree(const FTileViewContext& Context, bool bKeepSelections = false);
         

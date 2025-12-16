@@ -43,6 +43,13 @@ namespace Lumina::ImGuiX
         ImGui::PopStyleVar();
     }
 
+    void TextColoredUnformatted(const ImVec4& Color, const FInlineString& String)
+    {
+    	ImGui::PushStyleColor(ImGuiCol_Text, Color);
+    	ImGui::TextUnformatted(String.c_str());
+    	ImGui::PopStyleColor();
+    }
+
     bool ButtonEx(char const* pIcon, char const* pLabel, ImVec2 const& size, const ImColor& backgroundColor, const ImColor& iconColor, const ImColor& foregroundColor, bool shouldCenterContents)
     {
          bool wasPressed = false;
