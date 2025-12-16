@@ -939,7 +939,13 @@ namespace Lumina
                         Tool->DrawViewport(UpdateContext, ViewportTexture);
                     }
 
-                    Tool->GetWorld()->GetEntityRegistry().get<FEditorComponent>(Tool->EditorEntity).bEnabled = Tool->bViewportFocused;
+                    if (Tool->EditorEntity != entt::null)
+                    {
+						if (FEditorComponent* EditorComp = Tool->GetWorld()->GetEntityRegistry().try_get<FEditorComponent>(Tool->EditorEntity))
+                        {
+                            EditorComp->bEnabled = Tool->bViewportFocused;
+                        }
+                    }
                     
                     ImGui::End();
                 }

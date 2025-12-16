@@ -1048,6 +1048,28 @@ namespace Lumina
         });
     }
 
+    void FWorldEditorTool::OnSave()
+    {
+		if (!IsAssetEditorTool())
+        {
+            ImGuiX::Notifications::NotifyError("Cannot save world: No associated package.");
+            return;
+        }
+
+        FString FullPath = Paths::ResolveVirtualPath(World->GetPackage()->GetName().ToString());
+        Paths::AddPackageExtension(FullPath);
+
+        if (CPackage::SavePackage(World->GetPackage(), FullPath.c_str()))
+        {
+            FAssetRegistry::Get().AssetSaved(World);
+            ImGuiX::Notifications::NotifySuccess("Successfully saved world: \"{0}\"", World->GetName().c_str());
+        }
+        else
+        {
+            ImGuiX::Notifications::NotifyError("Failed to save world: \"{0}\"", World->GetName().c_str());
+        }
+    }
+
     bool FWorldEditorTool::IsAssetEditorTool() const
     {
         return World->GetPackage() != nullptr;

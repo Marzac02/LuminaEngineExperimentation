@@ -127,6 +127,8 @@ namespace Lumina
         void PushAddComponentModal(entt::entity Entity);
         void PushRenameEntityModal(entt::entity Entity);
 
+		void OnSave() override;
+
         bool IsAssetEditorTool() const override;
         FOnGamePreview& GetOnPreviewStartRequestedDelegate() { return OnGamePreviewStartRequested; }
         FOnGamePreview& GetOnPreviewStopRequestedDelegate() { return OnGamePreviewStopRequested; }
