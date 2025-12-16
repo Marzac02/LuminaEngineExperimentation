@@ -19,8 +19,15 @@ namespace Lumina
     {
     public:
         
+        FVulkanSwapchain() = default;
         ~FVulkanSwapchain();
-
+        
+        FVulkanSwapchain(const FVulkanSwapchain&) = delete;
+        FVulkanSwapchain& operator=(const FVulkanSwapchain&) = delete;
+        FVulkanSwapchain(FVulkanSwapchain&&) = delete;
+        FVulkanSwapchain& operator=(FVulkanSwapchain&&) = delete;
+        
+        
         void CreateSwapchain(VkInstance Instance, FVulkanRenderContext* InContext, FWindow* Window, glm::uvec2 Extent, bool bFromResize = false);
 
         void RecreateSwapchain(const glm::uvec2& Extent);
@@ -41,25 +48,26 @@ namespace Lumina
         
     private:
 
-        uint64                                  AcquireSemaphoreIndex = 0;
-        uint32                                  CurrentImageIndex = 0;
-        
-        bool                                    bNeedsResize = false;
+        FVulkanRenderContext*                   Context = nullptr;
         VkSurfaceKHR                            Surface = VK_NULL_HANDLE;
-        VkFormat                                Format = VK_FORMAT_MAX_ENUM;
-        glm::uvec2                              SwapchainExtent = {};
-                                                
         VkSwapchainKHR                          Swapchain = VK_NULL_HANDLE;
-        VkSurfaceFormatKHR                      SurfaceFormat = {};
-        VkPresentModeKHR                        CurrentPresentMode = VK_PRESENT_MODE_IMMEDIATE_KHR;
+        uint64                                  AcquireSemaphoreIndex = 0;
         
         TVector<TRefCountPtr<FVulkanImage>>     SwapchainImages;
         TVector<VkSemaphore>                    PresentSemaphores;
         TVector<VkSemaphore>                    AcquireSemaphores;
-        FVulkanRenderContext*                   Context = nullptr;
-
         TQueue<FRHIEventQueryRef>               FramesInFlight;
         TFixedVector<FRHIEventQueryRef, 4>      QueryPool;
+        
+        glm::uvec2                              SwapchainExtent = {};
+        
+        VkSurfaceFormatKHR                      SurfaceFormat = {};
+        
+        VkFormat                                Format = VK_FORMAT_MAX_ENUM;
+        VkPresentModeKHR                        CurrentPresentMode = VK_PRESENT_MODE_FIFO_KHR;
+        uint32                                  CurrentImageIndex = 0;
+        
+        bool                                    bNeedsResize = false;
     };
     
 }

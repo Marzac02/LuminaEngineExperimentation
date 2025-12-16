@@ -340,7 +340,6 @@ namespace Lumina
 
     struct FSceneRenderSettings
     {
-        float CascadeSplitLambda = 0.95f;
         uint8 bUseInstancing:1 = true;
         uint8 bHasEnvironment:1 = false;
         uint8 bDrawAABB:1 = false;

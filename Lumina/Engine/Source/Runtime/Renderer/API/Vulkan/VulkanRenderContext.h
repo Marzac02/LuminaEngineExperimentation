@@ -23,7 +23,6 @@ namespace Lumina
     enum class ECommandQueue : uint8;
 }
 
-
 namespace Lumina
 {
     extern VkAllocationCallbacks GVulkanAllocationCallbacks;
@@ -54,6 +53,12 @@ namespace Lumina
         
         FQueue(FVulkanRenderContext* InRenderContext, VkQueue InQueue, uint32 InQueueFamilyIndex, ECommandQueue InType);
         ~FQueue();
+        
+        FQueue(const FQueue&) = delete;
+        FQueue& operator = (const FQueue&) = delete;
+        FQueue(FQueue&&) = delete;
+        FQueue& operator = (FQueue&&) = delete;
+        
 
         /**
          * @threadsafety - Called from ICommandList::Open, so free-threaded.
@@ -76,31 +81,33 @@ namespace Lumina
         void AddWaitSemaphore(VkSemaphore Semaphore, uint64 Value, VkPipelineStageFlags Stage);
 
         FVulkanRenderContext*               RenderContext = nullptr;
+        VkQueue                             Queue = VK_NULL_HANDLE;
+        VkSemaphore                         TimelineSemaphore = VK_NULL_HANDLE;
+    
         eastl::atomic<uint64>               LastRecordingID = 0;
+    
         uint64                              LastSubmittedID = 0;
         uint64                              LastFinishedID = 0;
-        
+    
+        TList<TRefCountPtr<FTrackedCommandBuffer>> CommandBuffersInFlight;
+        TConcurrentQueue<TRefCountPtr<FTrackedCommandBuffer>> CommandBufferPool;
+    
         TFixedVector<VkSemaphore, 4>            WaitSemaphores;
         TFixedVector<uint64, 4>                 WaitSemaphoreValues;
         TFixedVector<VkPipelineStageFlags, 4>   WaitStageFlags;
         TFixedVector<VkSemaphore, 4>            SignalSemaphores;
         TFixedVector<uint64, 4>                 SignalSemaphoreValues;
 
-        ECommandQueue               Type = ECommandQueue::Num;
         TracyLockable(FMutex,       Mutex);
-        
-        VkQueue                     Queue = VK_NULL_HANDLE;
+    
+        ECommandQueue               Type = ECommandQueue::Num;
         uint32                      QueueFamilyIndex = 0;
-        VkSemaphore                 TimelineSemaphore = VK_NULL_HANDLE;
-
-        TList<TRefCountPtr<FTrackedCommandBuffer>> CommandBuffersInFlight;
-        TConcurrentQueue<TRefCountPtr<FTrackedCommandBuffer>> CommandBufferPool;
     };
 
-    class FCommandListManager
+    class FCommandListManager : INonCopyable
     {
     private:
-
+        
         TArray<TConcurrentQueue<FRHICommandListRef>, (uint32)ECommandQueue::Num> CommandLists;
 
     public:
@@ -121,6 +128,11 @@ namespace Lumina
         
         FVulkanRenderContext();
         
+        FVulkanRenderContext(const FVulkanRenderContext&) = delete;
+        FVulkanRenderContext& operator = (const FVulkanRenderContext&) = delete;
+        FVulkanRenderContext(FVulkanRenderContext&&) = delete;
+        FVulkanRenderContext& operator = (FVulkanRenderContext&&) = delete;
+        
         bool Initialize(const FRenderContextDesc& Desc) override;
         void Deinitialize() override;
         
@@ -139,7 +151,7 @@ namespace Lumina
         uint64 GetAvailableMemory() const override;
 
 
-        NODISCARD FQueue* GetQueue(ECommandQueue Type) const { return Queues[(uint32)Type].get(); }
+        FORCEINLINE NODISCARD FQueue* GetQueue(ECommandQueue Type) const { return Queues[(uint32)Type].get(); }
 
         void ClearCommandListCache() override;
         NODISCARD FRHICommandListRef CreateCommandList(const FCommandListInfo& Info) override;
@@ -223,27 +235,29 @@ namespace Lumina
     
     private:
 
-        TUniquePtr<RHI::FVulkanCrashTracker>                CrashTracker;
-        FRenderContextDesc                                  Description;
-        uint8                                               CurrentFrameIndex;
-        TBitFlags<EVulkanExtensions>                        EnabledExtensions;
+        FVulkanSwapchain*                                   Swapchain = nullptr;
+        FVulkanDevice*                                      VulkanDevice = nullptr;
+        FSpirVShaderCompiler*                               ShaderCompiler = nullptr;
+        VkInstance                                          VulkanInstance = nullptr;
 
-        FMutex                                              LayoutMutex;
+        TUniquePtr<RHI::FVulkanCrashTracker>                CrashTracker;
+        FRHIShaderLibraryRef                                ShaderLibrary;
+        
         THashMap<uint64, FRHIInputLayoutRef>                InputLayoutMap;
-        FMutex                                              SamplerMutex;
         THashMap<uint64, FRHISamplerRef>                    SamplerMap;
+        FVulkanRenderContextFunctions                       DebugUtils;
 
         FCommandListManager                                 CommandListManager;
         FVulkanPipelineCache                                PipelineCache;
         FQueueArray                                         Queues;
         
-        VkInstance                                          VulkanInstance;
-        
-        FVulkanSwapchain*                                   Swapchain = nullptr;
-        FVulkanDevice*                                      VulkanDevice = nullptr;
-        FVulkanRenderContextFunctions                       DebugUtils;
+        FMutex                                              LayoutMutex;
+        FMutex                                              SamplerMutex;
 
-        FSpirVShaderCompiler*                               ShaderCompiler;
-        FRHIShaderLibraryRef                                ShaderLibrary;
+        TBitFlags<EVulkanExtensions>                        EnabledExtensions;
+
+        uint8                                               CurrentFrameIndex;
+        FRenderContextDesc                                  Description;
+
     };
 }

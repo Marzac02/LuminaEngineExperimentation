@@ -2175,7 +2175,10 @@ namespace Lumina
         
         if (ImGui::MenuItem(LE_ICON_WATCH" Tracy Profiler", "Ctrl+P"))
         {
-            LaunchTracyProfiler();
+            FString LuminaDirEnv = std::getenv("LUMINA_DIR");
+            FString FullPath = LuminaDirEnv + "/External/Tracy/tracy-profiler.exe";
+            
+            Platform::LaunchURL(StringUtils::ToWideString(FullPath).c_str());
         }
         
         if (ImGui::MenuItem(LE_ICON_CAMERA " RenderDoc Capture", "F11"))
@@ -2543,18 +2546,5 @@ namespace Lumina
             return false;
         }, false);
     }
-
-    void FEditorUI::LaunchTracyProfiler()
-    {
-        FString LuminaDirEnv = std::getenv("LUMINA_DIR");
-        FString FullPath = LuminaDirEnv + "/External/Tracy/tracy-profiler.exe";
     
-#ifdef _WIN32
-        FString FullCommand = "start \"\" \"" + FullPath + "\"";
-#else
-        FString FullCommand = FullPath + " &";
-#endif
-    
-        std::system(FullCommand.c_str());
-    }
 }
