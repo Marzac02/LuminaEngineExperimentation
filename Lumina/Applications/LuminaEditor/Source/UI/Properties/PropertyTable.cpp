@@ -18,11 +18,11 @@ namespace Lumina
     static FPropertyRow* CreatePropertyRow(const TSharedPtr<FPropertyHandle>& InPropHandle, FPropertyRow* InParentRow, const FPropertyChangedEventCallbacks& InCallbacks)
     {
         FPropertyRow* NewRow = nullptr;
-        if (dynamic_cast<FArrayProperty*>(InPropHandle->Property))
+        if (InPropHandle->Property->GetType() == EPropertyTypeFlags::Vector)
         {
             NewRow = Memory::New<FArrayPropertyRow>(InPropHandle, InParentRow, InCallbacks);
         }
-        else if (dynamic_cast<FStructProperty*>(InPropHandle->Property))
+        else if (InPropHandle->Property->GetType() == EPropertyTypeFlags::Struct)
         {
             NewRow = Memory::New<FStructPropertyRow>(InPropHandle, InParentRow, InCallbacks);
         }
