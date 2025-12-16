@@ -1,8 +1,8 @@
 
 
-local MyScript = 
+local MyScript =
 {
-    MovementSystem = System 
+    MovementSystem = System
     {
         Name = "PlayerMovementSystem",
         Stage = UpdateStage.FrameStart,
