@@ -107,6 +107,7 @@ Performance profiling - Built-in Lua script profiling with Tracy
 - **Missing v143 toolset?** Install it via Visual Studio Installer -> Individual Components -> MSVC v143 Build Tools
 - **"Cannot find .generated.h" error?** Build again - Visual Studio sometimes needs a second pass to detect new files
 - **Python not found?** Ensure Python is added to PATH during installation (check "Add Python to PATH" when installing)
+- **Error C1076 compiler limit: internal heap limit reached** - Try again, this is currently an issue with a font file.
 - **Build fails?** [Submit an issue](https://github.com/mrdrelliot/LuminaEngine/issues) or contact me on Discord
 
 **Note:** The `LUMINA_DIR` environment variable is set automatically during build. If needed, set it manually:
@@ -121,7 +122,8 @@ setx LUMINA_DIR "C:\path\to\lumina"
 - **GLTF**
 - **GLB**
 - **OBJ**
-- **PNG/JPG**
+- **PNG**
+- **JPG**
 
 ### Free Asset Resources
 
