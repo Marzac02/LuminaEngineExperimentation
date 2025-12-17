@@ -201,7 +201,7 @@ namespace Lumina
     {
     public:
 
-        DECLARE_CLASS(Lumina, CPackage, CObject, "", LUMINA_API)
+        DECLARE_CLASS(Lumina, CPackage, CObject, "" /** Intentionally empty */, LUMINA_API)
         DEFINE_CLASS_FACTORY(CPackage)
         
 

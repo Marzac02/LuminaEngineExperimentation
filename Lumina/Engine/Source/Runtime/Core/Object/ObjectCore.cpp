@@ -36,7 +36,10 @@ namespace Lumina
         void* ObjectMemory = AllocateCObjectMemory(Params.Class, Params.Flags);
         Memory::Memzero(ObjectMemory, Params.Class->GetSize());
         
-        CObject* NewObject = Params.Class->CreateInstance(ObjectMemory, FObjectInitializer(Params.Package, Params));
+        CObject* NewObject = Params.Class->EmplaceInstance(ObjectMemory);
+
+        NewObject->ConstructInternal(FObjectInitializer(Params.Package, Params));
+        
         NewObject->PostInitProperties();
         
         return NewObject;

@@ -122,9 +122,16 @@ namespace Lumina
 
     void CObjectBase::ForceDestroyNow()
     {
+        if (HasAnyFlag(OF_MarkedDestroy))
+        {
+            return;
+        }
+        
         SetFlag(OF_MarkedDestroy);
+        
         OnDestroy();
-        Memory::Delete(this);
+        
+        GCObjectAllocator.FreeCObject(this);
     }
 
     void CObjectBase::ConditionalBeginDestroy()
@@ -139,7 +146,8 @@ namespace Lumina
             SetFlag(OF_MarkedDestroy);
 
             OnDestroy();
-            Memory::Delete(this);
+            
+            GCObjectAllocator.FreeCObject(this);
         }
     }
 
@@ -148,7 +156,7 @@ namespace Lumina
         return GObjectArray.GetStrongRefCountByIndex(InternalIndex);
     }
 
-    void CObjectBase::HandleNameChange(FName NewName, CPackage* NewPackage) noexcept
+    void CObjectBase::HandleNameChange(const FName& NewName, CPackage* NewPackage) noexcept
     {
         FObjectHashTables::Get().RemoveObject(this);
         

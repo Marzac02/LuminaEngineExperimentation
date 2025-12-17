@@ -113,7 +113,11 @@ public: \
         static FName StaticName(#TClass); \
         return StaticName; \
     } \
-    inline static const TCHAR* StaticPackage() { return TEXT(TPackage); } \
+    inline static const TCHAR* StaticPackage() \
+    { \
+        return TEXT(TPackage); \
+    } \
+    
 
 #define DECLARE_SERIALIZER(TNamespace, TClass) \
     public: \
@@ -125,11 +129,9 @@ public: \
 
 
 #define DEFINE_CLASS_FACTORY(TClass) \
-    static CObject* __CreateInstance(void* Memory, const FObjectInitializer& OI) \
+    static CObject* __PlacementNew(void* Memory) \
     { \
-        TClass* NewInstance = new (Memory) TClass(); \
-        NewInstance->ConstructInternal(OI); \
-        return NewInstance; \
+        return new (Memory) TClass(); \
     }
 
 #define IMPLEMENT_CLASS(TNamespace, TClass) \
@@ -145,7 +147,7 @@ public: \
                 sizeof(TNamespace::TClass), \
                 alignof(TNamespace::TClass), \
                 &TNamespace::TClass::Super::StaticClass, \
-                &TNamespace::TClass::__CreateInstance); \
+                &TNamespace::TClass::__PlacementNew); \
         } \
         return CONCAT4(Registration_Info_CClass_, TNamespace, _, TClass).InnerSingleton; \
     }

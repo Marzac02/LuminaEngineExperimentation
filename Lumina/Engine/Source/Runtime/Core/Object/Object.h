@@ -36,7 +36,7 @@ namespace Lumina
         DECLARE_CLASS(Lumina, CObject, CObject, "script://lumina", LUMINA_API)
         DEFINE_CLASS_FACTORY(CObject)
 
-        LUMINA_API CObject() = default;
+        CObject() = default;
         
         /** Internal constructor */
         LUMINA_API CObject(EObjectFlags InFlags)

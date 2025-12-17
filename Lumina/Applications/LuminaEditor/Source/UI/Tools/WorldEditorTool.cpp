@@ -697,7 +697,7 @@ namespace Lumina
         ImGui::SameLine();
         constexpr float ButtonWidth = 120;
         
-        if (!IsAssetEditorTool())
+        if (!IsAssetEditorTool() && !bSimulatingWorld)
         {
             return;
         }

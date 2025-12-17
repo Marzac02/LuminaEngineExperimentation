@@ -20,11 +20,13 @@ namespace Lumina
         
         LUMINA_API CObjectBase();
         LUMINA_API virtual ~CObjectBase();
-        
-        CObjectBase(CObjectBase&&) = default;
+
+        // Non-movable, Non-copyable.
         CObjectBase(const CObjectBase&) = delete;
-        CObjectBase& operator = (CObjectBase&&) = default;
-        CObjectBase& operator = (const CObjectBase&) = delete;
+        CObjectBase(CObjectBase&&) = delete;
+
+        CObjectBase& operator=(const CObjectBase&) = delete;
+        CObjectBase& operator=(CObjectBase&&) = delete;
         
         LUMINA_API virtual void ConstructInternal(const FObjectInitializer& OI);
         
@@ -47,7 +49,7 @@ namespace Lumina
         LUMINA_API int32 GetStrongRefCount() const;
 
         /** Low level object rename, will remove and reload into hash buckets. Only call this if you've verified it's safe */
-        LUMINA_API void HandleNameChange(FName NewName, CPackage* NewPackage = nullptr) noexcept;
+        LUMINA_API void HandleNameChange(const FName& NewName, CPackage* NewPackage = nullptr) noexcept;
 
         /** Called just before the destructor is called and the memory is freed */
         LUMINA_API virtual void OnDestroy() { }

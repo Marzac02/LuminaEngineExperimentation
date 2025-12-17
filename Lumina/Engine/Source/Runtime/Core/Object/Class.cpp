@@ -41,13 +41,10 @@ namespace Lumina
     //-----------------------------------------------------------------------------------------------
 
 
-    CObject* CClass::CreateInstance(void* Memory, const FObjectInitializer& Initializer) const
+    CObject* CClass::EmplaceInstance(void* Memory) const
     {
-        if (FactoryFunction)
-        {
-            return FactoryFunction(Memory, Initializer);
-        }
-        return nullptr;
+        LUM_ASSERT(FactoryFunction)
+        return FactoryFunction(Memory);
     }
 
     CClass* CClass::GetSuperClass() const

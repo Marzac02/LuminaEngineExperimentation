@@ -163,9 +163,8 @@ namespace Lumina
         DECLARE_CLASS(Lumina, CClass, CStruct, "script://lumina", LUMINA_API)
         DEFINE_CLASS_FACTORY(CClass)
 
-        using FactoryFunctionType = CObject*(*)(void*, const FObjectInitializer&);
+        using FactoryFunctionType = CObject*(*)(void*);
         
-
         FactoryFunctionType FactoryFunction;
         
         CClass() = default;
@@ -178,7 +177,7 @@ namespace Lumina
         //~ End Internal Use Only Constructors
 
 
-        LUMINA_API CObject* CreateInstance(void* Memory, const FObjectInitializer& Initializer) const;
+        LUMINA_API CObject* EmplaceInstance(void* Memory) const;
         
         LUMINA_API CClass* GetSuperClass() const;
         

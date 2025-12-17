@@ -192,12 +192,12 @@ namespace Lumina
     	VkSemaphore Semaphore = AcquireSemaphores[AcquireSemaphoreIndex];
     	VkResult Result = VK_RESULT_MAX_ENUM;
 
-    	const int MaxAttempts = 3;
+	    constexpr int MaxAttempts = 3;
 	    for (int Attempt = 0; Attempt < MaxAttempts; ++Attempt)
 	    {
 	    	Result = vkAcquireNextImageKHR(Context->GetDevice()->GetDevice(), Swapchain, UINT64_MAX, Semaphore, nullptr, &CurrentImageIndex);
 
-	    	if ((Result == VK_ERROR_OUT_OF_DATE_KHR || Result == VK_SUBOPTIMAL_KHR) && Attempt < MaxAttempts)
+	    	if ((Result == VK_ERROR_OUT_OF_DATE_KHR || Result == VK_SUBOPTIMAL_KHR || bNeedsResize) && Attempt < MaxAttempts)
 	    	{
 	    		RecreateSwapchain(Windowing::GetPrimaryWindowHandle()->GetExtent());
 	    		GEngine->GetEngineSubsystem<FRenderManager>()->SwapchainResized(Windowing::GetPrimaryWindowHandle()->GetExtent());

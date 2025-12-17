@@ -12,7 +12,7 @@
 namespace Lumina
 {
     FRenderGraph::FRenderGraph()
-        : GraphAllocator(1024 * 10)
+        : GraphAllocator(1024llu * 10llu)
     {
         PassGroups.reserve(24);
     }

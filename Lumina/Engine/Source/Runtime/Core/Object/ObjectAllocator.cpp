@@ -20,7 +20,7 @@ namespace Lumina
 
     void* FCObjectAllocator::AllocateCObject(uint32 Size, uint32 Alignment)
     {
-        return static_cast<CObjectBase*>(Memory::Malloc(Size, Alignment));
+        return Memory::Malloc(Size, Alignment);
     }
 
     void FCObjectAllocator::FreeCObject(CObjectBase* Ptr)

@@ -20,6 +20,8 @@ namespace Lumina
 
         /** Allocates memory for a new CObject, but does not place in memory */
         LUMINA_API void* AllocateCObject(uint32 Size, uint32 Alignment);
+
+        /** Free memory of an object */
         LUMINA_API void FreeCObject(CObjectBase* Ptr);
 
     private:

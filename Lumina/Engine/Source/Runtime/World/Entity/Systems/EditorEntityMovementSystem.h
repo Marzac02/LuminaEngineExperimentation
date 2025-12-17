@@ -8,7 +8,7 @@ namespace Lumina
     class LUMINA_API CEditorEntityMovementSystem : public CEntitySystem
     {
         GENERATED_BODY()
-        ENTITY_SYSTEM(RequiresUpdate(EUpdateStage::Paused))
+        ENTITY_SYSTEM(RequiresUpdate(EUpdateStage::Paused, EUpdatePriority::Highest))
     public:
         
 

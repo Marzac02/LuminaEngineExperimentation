@@ -69,7 +69,6 @@ namespace Lumina
                 glm::vec3 Up = glm::vec3(0, 1, 0);
 
                 Camera.SetView(TargetPos, Forward, Up);
-                
             });
             
         }

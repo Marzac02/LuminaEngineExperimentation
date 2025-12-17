@@ -35,7 +35,7 @@ namespace Lumina
 
         void PostCreateCDO() override;
 
-        template<IsACObject T>
+        template<Concept::IsACObject T>
         T* TryCreateNew(const FString& Path)
         {
             return Cast<T>(TryCreateNew(Path));

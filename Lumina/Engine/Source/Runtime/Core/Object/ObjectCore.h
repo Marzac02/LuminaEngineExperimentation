@@ -23,9 +23,12 @@ namespace Lumina
 namespace Lumina
 {
 
-    template<typename T>
-    concept IsACObject = std::is_base_of_v<CObject, T>;
-
+    namespace Concept
+    {
+        template<typename T>
+        concept IsACObject = eastl::is_base_of_v<CObject, T>;
+    }
+    
     LUMINA_API CObject* StaticAllocateObject(const FConstructCObjectParams& Params);
 
     LUMINA_API CObject* FindObjectImpl(const FGuid& ObjectGUID);
@@ -35,25 +38,25 @@ namespace Lumina
     LUMINA_API bool IsValid(const CObjectBase* Obj);
     LUMINA_API bool IsValid(CObjectBase* Obj);
     
-    template<IsACObject T>
+    template<Concept::IsACObject T>
     T* FindObject(const FGuid& GUID)
     {
         return static_cast<T*>(FindObjectImpl(GUID));
     }
 
-    template<IsACObject T>
+    template<Concept::IsACObject T>
     T* FindObject(const FName& Name)
     {
         return static_cast<T*>(FindObjectImpl(Name, T::StaticClass()));
     }
 
-    template<IsACObject T>
+    template<Concept::IsACObject T>
     T* FindObject(CClass& Class, const FName& Name)
     {
         return static_cast<T*>(FindObjectImpl(Name, &Class));
     }
 
-    template<IsACObject T>
+    template<Concept::IsACObject T>
     T* LoadObject(const FGuid& GUID)
     {
         return (T*)StaticLoadObject(T::StaticClass(), GUID);
@@ -63,31 +66,31 @@ namespace Lumina
     LUMINA_API void GetObjectsWithPackage(const CPackage* Package, TVector<CObject*>& OutObjects);
 
 
-    template<IsACObject T>
+    template<Concept::IsACObject T>
     T* NewObject(EObjectFlags Flags)
     {
         return static_cast<T*>(NewObject(T::StaticClass(), nullptr, NAME_None, FGuid::New(), Flags));
     }
     
-    template<IsACObject T>
+    template<Concept::IsACObject T>
     T* NewObject(CPackage* Package = nullptr, const FName& Name = NAME_None, const FGuid& GUID = FGuid::New(), EObjectFlags Flags = OF_None)
     {
         return static_cast<T*>(NewObject(T::StaticClass(), Package, Name, GUID, Flags));
     }
 
-    template<IsACObject T>
+    template<Concept::IsACObject T>
     T* NewObject(CClass* InClass, CPackage* Package = nullptr, const FName& Name = NAME_None, const FGuid& GUID = FGuid::New(), EObjectFlags Flags = OF_None)
     {
         return static_cast<T*>(NewObject(InClass, Package, Name, GUID, Flags));
     }
 
-    template<IsACObject T>
+    template<Concept::IsACObject T>
     T* GetMutableDefault()
     {
         return T::StaticClass()->template GetDefaultObject<T>();
     }
 
-    template<IsACObject T>
+    template<Concept::IsACObject T>
     const T* GetDefault()
     {
         return T::StaticClass()->template GetDefaultObject<T>();

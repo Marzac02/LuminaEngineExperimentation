@@ -18,10 +18,13 @@ namespace Lumina
 
 namespace Lumina
 {
-    template <typename ExecutorType>
-    concept ExecutorConcept = (sizeof(ExecutorType) <= 1024) && eastl::is_invocable_v<ExecutorType, ICommandList&>;
-
-    template<ExecutorConcept ExecutorType>
+    namespace Concept
+    {
+        template <typename ExecutorType>
+        concept TExecutor = (sizeof(ExecutorType) <= 1024) && eastl::is_invocable_v<ExecutorType, ICommandList&>;
+    }
+    
+    template<Concept::TExecutor ExecutorType>
     struct RGParallelPassSpec
     {
         RGParallelPassSpec(ERGPassFlags InPassFlags, FRGEvent&& InEvent, const FRGPassDescriptor* InParameters, ExecutorType&& InExecutor)
@@ -41,10 +44,12 @@ namespace Lumina
     class LUMINA_API FRenderGraph
     {
     public:
-
         FRenderGraph();
+        ~FRenderGraph() = default;
         
-        template <ExecutorConcept ExecutorType>
+        LE_NO_COPYMOVE(FRenderGraph);
+        
+        template <Concept::TExecutor ExecutorType>
         FRGPassHandle AddPass(ERGPassFlags PassFlags, FRGEvent&& Event, const FRGPassDescriptor* Parameters, ExecutorType&& Executor);
 
         template<typename ... TSpecs>
@@ -64,7 +69,7 @@ namespace Lumina
     
     private:
 
-        template <ExecutorConcept ExecutorType>
+        template <Concept::TExecutor ExecutorType>
         FRGPassHandle AddPassToGroup(TVector<FRGPassHandle>& Group, ERGPassFlags PassFlags, FRGEvent&& Event, const FRGPassDescriptor* Parameters, ExecutorType&& Executor);
         
 

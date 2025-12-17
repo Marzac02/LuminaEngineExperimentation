@@ -5,7 +5,7 @@
 
 namespace Lumina
 {
-    template <ExecutorConcept ExecutorType>
+    template <Concept::TExecutor ExecutorType>
     FRGPassHandle FRenderGraph::AddPass(ERGPassFlags PassFlags, FRGEvent&& Event, const FRGPassDescriptor* Parameters, ExecutorType&& Executor)
     {
         FRGPassHandle Pass =  GraphAllocator.TAlloc<TRGPass<ExecutorType>>(std::move(Event), PassFlags, Parameters, std::forward<ExecutorType>(Executor));
@@ -14,7 +14,7 @@ namespace Lumina
         return Pass;
     }
 
-    template <ExecutorConcept ExecutorType>
+    template <Concept::TExecutor ExecutorType>
     FRGPassHandle FRenderGraph::AddPassToGroup(TVector<FRGPassHandle>& Group, ERGPassFlags PassFlags, FRGEvent&& Event, const FRGPassDescriptor* Parameters, ExecutorType&& Executor)
     {
         FRGPassHandle Pass =  GraphAllocator.TAlloc<TRGPass<ExecutorType>>(std::move(Event), PassFlags, Parameters, std::forward<ExecutorType>(Executor));

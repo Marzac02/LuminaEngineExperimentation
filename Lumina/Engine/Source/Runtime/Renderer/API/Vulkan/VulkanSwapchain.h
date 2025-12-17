@@ -1,11 +1,8 @@
 ﻿#pragma once
 
-#include "Platform/Platform.h"
 #include "VulkanResources.h"
 #include "Containers/Array.h"
 #include <volk/volk.h>
-#include "Core/Math/Math.h"
-#include "Renderer/RHIFwd.h"
 
 namespace Lumina
 {
@@ -64,7 +61,7 @@ namespace Lumina
         VkSurfaceFormatKHR                      SurfaceFormat = {};
         
         VkFormat                                Format = VK_FORMAT_MAX_ENUM;
-        VkPresentModeKHR                        CurrentPresentMode = VK_PRESENT_MODE_FIFO_KHR;
+        VkPresentModeKHR                        CurrentPresentMode = VK_PRESENT_MODE_MAILBOX_KHR;
         uint32                                  CurrentImageIndex = 0;
         
         bool                                    bNeedsResize = false;
