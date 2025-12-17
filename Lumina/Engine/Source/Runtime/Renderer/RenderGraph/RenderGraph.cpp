@@ -29,6 +29,8 @@ namespace Lumina
         TFixedVector<FLambdaTask, 1> AsyncTasks;
         TFixedVector<ICommandList*, 1> AllCommandLists;
         
+		FMutex CommandListMutex;
+
         FRHICommandListRef CommandList = GRenderContext->CreateCommandList(FCommandListInfo::Graphics());
         AllCommandLists.push_back(CommandList);
         CommandList->Open();
@@ -43,14 +45,14 @@ namespace Lumina
                 // The user has promised us this pass can now run at any time without issues, so we dispatch it and keep going.
                 if (Pass->GetDescriptor()->HasAnyFlag(ERGExecutionFlags::Async))
                 {
-                    size_t AsyncPassIndex = AllCommandLists.size();
-                    AllCommandLists.push_back(nullptr);
-
-                    Task::AsyncTask(1, 1, [&AllCommandLists, AsyncPassIndex, Pass](uint32, uint32, uint32)
+                    Task::AsyncTask(1, 1, [&AllCommandLists, &CommandListMutex, Pass](uint32, uint32, uint32)
                     {
                         FRHICommandListRef LocalCommandList = GRenderContext->CreateCommandList(FCommandListInfo::Graphics());
                     
-                        AllCommandLists[AsyncPassIndex] = LocalCommandList;
+                        {
+                            FScopeLock Lock(CommandListMutex);
+                            AllCommandLists.push_back(LocalCommandList);
+                        }
             
                         LocalCommandList->Open();
                         Pass->Execute(*LocalCommandList);
@@ -70,6 +72,4 @@ namespace Lumina
         
         GRenderContext->ExecuteCommandLists(AllCommandLists.data(), (uint32)AllCommandLists.size(), ECommandQueue::Graphics);   
     }
-    
-    
 }

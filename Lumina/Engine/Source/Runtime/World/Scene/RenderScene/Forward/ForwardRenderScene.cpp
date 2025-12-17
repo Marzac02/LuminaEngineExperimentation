@@ -664,6 +664,11 @@ namespace Lumina
 
     void FForwardRenderScene::DepthPyramidPass(FRenderGraph& RenderGraph)
     {
+        if (DrawCommands.empty())
+        {
+            return;
+        }
+
         FRGPassDescriptor* Descriptor = RenderGraph.AllocDescriptor();
         Descriptor->SetFlag(ERGExecutionFlags::Async);
         RenderGraph.AddPass(RG_Compute, FRGEvent("Depth Pyramid Pass"), Descriptor, [&](ICommandList& CmdList)

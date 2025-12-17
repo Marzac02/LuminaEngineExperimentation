@@ -410,7 +410,7 @@ namespace Lumina
 
         {
             LUMINA_PROFILE_SECTION("vkWaitSemaphores");
-            // Here we will wait for the command list to catch up.
+            // Wwait for the command list to catch up.
             VkResult Result = vkWaitSemaphores(Device->GetDevice(), &WaitInfo, Timeout);
             VK_CHECK(Result);
             return (Result == VK_SUCCESS);
@@ -484,8 +484,7 @@ namespace Lumina
         GVulkanAllocationCallbacks.pfnReallocation  = VulkanRealloc;
         
         
-        vkb::InstanceBuilder Builder;
-        Builder
+        vkb::InstanceBuilder Builder; Builder
         .set_app_name("Lumina Engine")
         .require_api_version(1, 3, 0)
         .set_allocation_callbacks(VK_ALLOC_CALLBACK);
@@ -659,7 +658,7 @@ namespace Lumina
 
     FRHICommandListRef FVulkanRenderContext::CreateCommandList(const FCommandListInfo& Info)
     {
-        return CommandListManager.GetOrCreateCommandList(this, Info);
+        return MakeRefCount<FVulkanCommandList>(this, Info); //CommandListManager.GetOrCreateCommandList(this, Info);
     }
     
     uint64 FVulkanRenderContext::ExecuteCommandLists(ICommandList* const* CommandLists, uint32 NumCommandLists, ECommandQueue QueueType)
@@ -687,7 +686,7 @@ namespace Lumina
             }
         }
         
-        CommandListManager.BulkEnqueue(CommandLists, NumCommandLists, QueueType);
+        //CommandListManager.BulkEnqueue(CommandLists, NumCommandLists, QueueType);
         
         return SubmissionID;
     }
