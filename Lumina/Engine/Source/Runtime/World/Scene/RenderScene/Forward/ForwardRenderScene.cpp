@@ -743,6 +743,11 @@ namespace Lumina
 
     void FForwardRenderScene::ClusterBuildPass(FRenderGraph& RenderGraph, const FViewVolume& View)
     {
+		if (LightData.NumLights == 0)
+        {
+            return;
+        }
+
         FRGPassDescriptor* Descriptor = RenderGraph.AllocDescriptor();
         RenderGraph.AddPass(RG_Compute, FRGEvent("Cluster Build Pass"), Descriptor, [&] (ICommandList& CmdList)
         {
@@ -776,6 +781,11 @@ namespace Lumina
 
     void FForwardRenderScene::LightCullPass(FRenderGraph& RenderGraph, const FViewVolume& View)
     {
+        if (LightData.NumLights == 0)
+        {
+            return;
+        }
+
         FRGPassDescriptor* Descriptor = RenderGraph.AllocDescriptor();
         RenderGraph.AddPass(RG_Compute, FRGEvent("Light Cull Pass"), Descriptor, [&] (ICommandList& CmdList)
         {
@@ -1166,57 +1176,64 @@ namespace Lumina
 
     void FForwardRenderScene::EnvironmentPass(FRenderGraph& RenderGraph)
     {
-        if (RenderSettings.bHasEnvironment)
+        if (!RenderSettings.bHasEnvironment)
         {
-            FRGPassDescriptor* Descriptor = RenderGraph.AllocDescriptor();
-            RenderGraph.AddPass(RG_Raster, FRGEvent("Environment Pass"), Descriptor, [&](ICommandList& CmdList)
-            {
-                LUMINA_PROFILE_SECTION_COLORED("Environment Pass", tracy::Color::Green3);
-        
-                FRHIVertexShaderRef VertexShader = FShaderLibrary::GetVertexShader("FullscreenQuad.vert");
-                FRHIPixelShaderRef PixelShader = FShaderLibrary::GetPixelShader("Environment.frag");
-                if (!VertexShader || !PixelShader)
-                {
-                    return;
-                }
-        
-                FRenderPassDesc::FAttachment Attachment; Attachment
-                    .SetImage(HDRRenderTarget);
-                
-                FRenderPassDesc RenderPass; RenderPass
-                    .AddColorAttachment(Attachment)
-                    .SetRenderArea(HDRRenderTarget->GetExtent());
-        
-                FRasterState RasterState;
-                RasterState.SetCullNone();
-                
-                FRenderState RenderState;
-                RenderState.SetRasterState(RasterState);
-        
-                FGraphicsPipelineDesc Desc;
-                Desc.SetDebugName("Environment Pass");
-                Desc.SetRenderState(RenderState);
-                Desc.AddBindingLayout(BindingLayout);
-                Desc.SetVertexShader(VertexShader);
-                Desc.SetPixelShader(PixelShader);
-        
-                FRHIGraphicsPipelineRef Pipeline = GRenderContext->CreateGraphicsPipeline(Desc, RenderPass);
-        
-                FGraphicsState GraphicsState;
-                GraphicsState.AddBindingSet(BindingSet);
-                GraphicsState.SetPipeline(Pipeline);
-                GraphicsState.SetRenderPass(RenderPass);
-                GraphicsState.SetViewportState(MakeViewportStateFromImage(HDRRenderTarget));
-        
-                CmdList.SetGraphicsState(GraphicsState);
-            
-                CmdList.Draw(3, 1, 0, 0); 
-            });
+            return;
         }
+
+        FRGPassDescriptor* Descriptor = RenderGraph.AllocDescriptor();
+        RenderGraph.AddPass(RG_Raster, FRGEvent("Environment Pass"), Descriptor, [&](ICommandList& CmdList)
+        {
+            LUMINA_PROFILE_SECTION_COLORED("Environment Pass", tracy::Color::Green3);
+        
+            FRHIVertexShaderRef VertexShader = FShaderLibrary::GetVertexShader("FullscreenQuad.vert");
+            FRHIPixelShaderRef PixelShader = FShaderLibrary::GetPixelShader("Environment.frag");
+            if (!VertexShader || !PixelShader)
+            {
+                return;
+            }
+        
+            FRenderPassDesc::FAttachment Attachment; Attachment
+                .SetImage(HDRRenderTarget);
+            
+            FRenderPassDesc RenderPass; RenderPass
+                .AddColorAttachment(Attachment)
+                .SetRenderArea(HDRRenderTarget->GetExtent());
+        
+            FRasterState RasterState;
+            RasterState.SetCullNone();
+            
+            FRenderState RenderState;
+            RenderState.SetRasterState(RasterState);
+        
+            FGraphicsPipelineDesc Desc;
+            Desc.SetDebugName("Environment Pass");
+            Desc.SetRenderState(RenderState);
+            Desc.AddBindingLayout(BindingLayout);
+            Desc.SetVertexShader(VertexShader);
+            Desc.SetPixelShader(PixelShader);
+        
+            FRHIGraphicsPipelineRef Pipeline = GRenderContext->CreateGraphicsPipeline(Desc, RenderPass);
+        
+            FGraphicsState GraphicsState;
+            GraphicsState.AddBindingSet(BindingSet);
+            GraphicsState.SetPipeline(Pipeline);
+            GraphicsState.SetRenderPass(RenderPass);
+            GraphicsState.SetViewportState(MakeViewportStateFromImage(HDRRenderTarget));
+        
+            CmdList.SetGraphicsState(GraphicsState);
+        
+            CmdList.Draw(3, 1, 0, 0); 
+        });
     }
 
     void FForwardRenderScene::BatchedLineDraw(FRenderGraph& RenderGraph)
     {
+        if (SimpleVertices.empty())
+        {
+            return;
+		}
+
         FRGPassDescriptor* Descriptor = RenderGraph.AllocDescriptor();
         RenderGraph.AddPass(RG_Raster, FRGEvent("Batched Line Draw"), Descriptor, [&](ICommandList& CmdList)
         {
@@ -1342,64 +1359,67 @@ namespace Lumina
 
     void FForwardRenderScene::DebugDrawPass(FRenderGraph& RenderGraph)
     {
-        if (DebugVisualizationMode != ERenderSceneDebugFlags::None)
+        if (DebugVisualizationMode == ERenderSceneDebugFlags::None)
         {
-            FRGPassDescriptor* Descriptor = RenderGraph.AllocDescriptor();
-            RenderGraph.AddPass(RG_Raster, FRGEvent("Debug Draw Pass"), Descriptor, [&](ICommandList& CmdList)
-            {
-                LUMINA_PROFILE_SECTION_COLORED("Debug Draw Pass", tracy::Color::Red2);
-            
-                FRHIVertexShaderRef VertexShader = FShaderLibrary::GetVertexShader("FullscreenQuad.vert");
-                FRHIPixelShaderRef PixelShader = FShaderLibrary::GetPixelShader("Debug.frag");
-                if (!VertexShader || !PixelShader)
-                {
-                    return;
-                }
-            
-                FRenderPassDesc::FAttachment Attachment; Attachment
-                    .SetLoadOp(ERenderLoadOp::Load)
-                    .SetImage(GetRenderTarget());
-        
-                FRenderPassDesc RenderPass; RenderPass
-                    .AddColorAttachment(Attachment)
-                    .SetRenderArea(GetRenderTarget()->GetExtent());
-        
-        
-                FRasterState RasterState;
-                RasterState.SetCullNone();
-            
-                FDepthStencilState DepthState;
-                DepthState.DisableDepthTest();
-                DepthState.DisableDepthWrite();
-            
-                FRenderState RenderState;
-                RenderState.SetRasterState(RasterState);
-                RenderState.SetDepthStencilState(DepthState);
-            
-                FGraphicsPipelineDesc Desc;
-                Desc.SetDebugName("Debug Draw Pass");
-                Desc.SetRenderState(RenderState);
-                Desc.AddBindingLayout(BindingLayout);
-                Desc.AddBindingLayout(DebugPassLayout);
-                Desc.SetVertexShader(VertexShader);
-                Desc.SetPixelShader(PixelShader);
-        
-                FRHIGraphicsPipelineRef Pipeline = GRenderContext->CreateGraphicsPipeline(Desc, RenderPass);
-        
-                FGraphicsState GraphicsState;
-                GraphicsState.SetPipeline(Pipeline);
-                GraphicsState.AddBindingSet(BindingSet);
-                GraphicsState.AddBindingSet(DebugPassSet);
-                GraphicsState.SetRenderPass(RenderPass);               
-                GraphicsState.SetViewportState(MakeViewportStateFromImage(GetRenderTarget()));
-        
-                CmdList.SetGraphicsState(GraphicsState);
-        
-                uint32 Mode = (uint32)DebugVisualizationMode;
-                CmdList.SetPushConstants(&Mode, sizeof(uint32));
-                CmdList.Draw(3, 1, 0, 0); 
-            });
+            return;
         }
+
+
+        FRGPassDescriptor* Descriptor = RenderGraph.AllocDescriptor();
+        RenderGraph.AddPass(RG_Raster, FRGEvent("Debug Draw Pass"), Descriptor, [&](ICommandList& CmdList)
+        {
+            LUMINA_PROFILE_SECTION_COLORED("Debug Draw Pass", tracy::Color::Red2);
+        
+            FRHIVertexShaderRef VertexShader = FShaderLibrary::GetVertexShader("FullscreenQuad.vert");
+            FRHIPixelShaderRef PixelShader = FShaderLibrary::GetPixelShader("Debug.frag");
+            if (!VertexShader || !PixelShader)
+            {
+                return;
+            }
+        
+            FRenderPassDesc::FAttachment Attachment; Attachment
+                .SetLoadOp(ERenderLoadOp::Load)
+                .SetImage(GetRenderTarget());
+        
+            FRenderPassDesc RenderPass; RenderPass
+                .AddColorAttachment(Attachment)
+                .SetRenderArea(GetRenderTarget()->GetExtent());
+        
+        
+            FRasterState RasterState;
+            RasterState.SetCullNone();
+        
+            FDepthStencilState DepthState;
+            DepthState.DisableDepthTest();
+            DepthState.DisableDepthWrite();
+        
+            FRenderState RenderState;
+            RenderState.SetRasterState(RasterState);
+            RenderState.SetDepthStencilState(DepthState);
+        
+            FGraphicsPipelineDesc Desc;
+            Desc.SetDebugName("Debug Draw Pass");
+            Desc.SetRenderState(RenderState);
+            Desc.AddBindingLayout(BindingLayout);
+            Desc.AddBindingLayout(DebugPassLayout);
+            Desc.SetVertexShader(VertexShader);
+            Desc.SetPixelShader(PixelShader);
+        
+            FRHIGraphicsPipelineRef Pipeline = GRenderContext->CreateGraphicsPipeline(Desc, RenderPass);
+        
+            FGraphicsState GraphicsState;
+            GraphicsState.SetPipeline(Pipeline);
+            GraphicsState.AddBindingSet(BindingSet);
+            GraphicsState.AddBindingSet(DebugPassSet);
+            GraphicsState.SetRenderPass(RenderPass);               
+            GraphicsState.SetViewportState(MakeViewportStateFromImage(GetRenderTarget()));
+        
+            CmdList.SetGraphicsState(GraphicsState);
+        
+            uint32 Mode = (uint32)DebugVisualizationMode;
+            CmdList.SetPushConstants(&Mode, sizeof(uint32));
+            CmdList.Draw(3, 1, 0, 0); 
+        });
     }
     
     void FForwardRenderScene::InitBuffers()

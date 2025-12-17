@@ -2330,6 +2330,8 @@ namespace Lumina
                         );
 
                         ImGui::SetCursorScreenPos(ImVec2(cursorPos.x + 16, cursorPos.y + 20));
+                        ImGui::Dummy(ImVec2(0, 0));
+
                         ImGui::BeginGroup();
                         {
                             ImVec2 iconPos = ImGui::GetCursorScreenPos();

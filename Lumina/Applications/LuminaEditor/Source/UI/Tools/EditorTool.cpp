@@ -188,10 +188,12 @@ namespace Lumina
 
         ImGui::Dummy(ImStyle.ItemSpacing);
         ImGui::SetCursorPos(ImStyle.ItemSpacing);
+        ImGui::Dummy(ImVec2(0, 0));
         DrawViewportOverlayElements(UpdateContext, ViewportTexture, ViewportSize);
 
         ImGui::Dummy(ImStyle.ItemSpacing);
         ImGui::SetCursorPos(ImStyle.ItemSpacing);
+        ImGui::Dummy(ImVec2(0, 0));
         DrawViewportToolbar(UpdateContext);
         
         if (ImGuiDockNode* pDockNode = ImGui::GetWindowDockNode())
