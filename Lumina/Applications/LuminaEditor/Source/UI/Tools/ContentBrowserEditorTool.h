@@ -109,7 +109,10 @@ namespace Lumina
 
                 if (IsAsset())
                 {
-                    ImGui::Text(LE_ICON_FILE " Lumina Asset");
+                    if (const FAssetData* Asset = FAssetQuery().WithPath(Path).ExecuteFirst())
+                    {
+						ImGuiX::Text(LE_ICON_FILE " Asset Type: {0}", Asset->AssetClass);
+                    }
                 }
                 else if (IsLuaScript())
                 {

@@ -7,6 +7,7 @@
 #include "EASTL/sort.h"
 #include "glm/gtx/matrix_decompose.hpp"
 #include "Paths/Paths.h"
+#include "Tools/Dialogs/Dialogs.h"
 #include "Tools/UI/ImGui/ImGuiX.h"
 #include "World/WorldManager.h"
 #include "World/Entity/EntityUtils.h"
@@ -1616,34 +1617,7 @@ namespace Lumina
             {
                 ImGui::Spacing();
                 ImGui::Indent(8.0f);
-                
-                ImGui::BeginDisabled();
-                ImGui::PushStyleColor(ImGuiCol_FrameBg, ImVec4(0.12f, 0.12f, 0.14f, 1.0f));
-                int ID = (int)SelectedEntity;
-                ImGui::SetNextItemWidth(-1);
-                ImGui::DragInt("##ID", &ID);
-                ImGui::PopStyleColor();
-                ImGui::EndDisabled();
-                
-                if (ImGui::IsItemHovered())
-                {
-                    ImGui::SetTooltip("Entity ID: %d", ID);
-                }
-                
-                ImGui::Spacing();
-                
-                ImGui::BeginDisabled();
-                ImGui::PushStyleColor(ImGuiCol_FrameBg, ImVec4(0.12f, 0.12f, 0.14f, 1.0f));
-                ImGui::SetNextItemWidth(-1);
-                ImGui::InputText("##Name", (char*)EntityName.c_str(), 256);
-                ImGui::PopStyleColor();
-                ImGui::EndDisabled();
-                
-                ImGui::Spacing();
-                ImGui::Separator();
-                ImGui::Spacing();
-                
-                // Action Buttons
+
                 DrawEntityActionButtons();
                 
                 ImGui::Spacing();
@@ -1723,7 +1697,10 @@ namespace Lumina
 
         if (ImGui::Button(LE_ICON_TRASH_CAN " Destroy", ImVec2(AvailWidth, ButtonHeight)))
         {
-            EntityDestroyRequests.push(SelectedEntity);
+            if (Dialogs::Confirmation("Confirm Deletion", "Are you sure you want to delete entity \"{0}\"?\n""\nThis action cannot be undone.", (uint32)SelectedEntity))
+            {
+                EntityDestroyRequests.push(SelectedEntity);
+            }
         }
         if (ImGui::IsItemHovered())
         {

@@ -713,12 +713,12 @@ namespace Lumina
         const bool bVisible = CurrentWindow != nullptr && !CurrentWindow->Hidden;
         
         ImVec4 VisibleColor   = ImVec4(1.0f, 1.0f, 1.0f, 1.0f);
-        ImVec4 NotVisibleColor = ImVec4(0.5f, 0.5f, 0.5f, 1.0f);
+        ImVec4 NotVisibleColor = ImVec4(0.4f, 0.4f, 0.4f, 1.0f);
 
         ImGui::PushStyleColor(ImGuiCol_Text, bVisible ? VisibleColor : NotVisibleColor);
         ImGui::SetNextWindowSizeConstraints(ImVec2(128, 128), ImVec2(FLT_MAX, FLT_MAX));
         ImGui::SetNextWindowSize(ImVec2(1024, 768), ImGuiCond_FirstUseEver);
-        ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 1.0f);
+        ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.5f);
         ImGui::Begin(EditorTool->GetToolName().c_str(), bIsToolOpen, WindowFlags);
         ImGui::PopStyleVar();
         ImGui::PopStyleColor();
