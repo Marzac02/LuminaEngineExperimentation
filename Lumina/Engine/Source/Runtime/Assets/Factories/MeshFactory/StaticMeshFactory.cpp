@@ -21,41 +21,46 @@ namespace Lumina
         return NewObject<CStaticMesh>(Package, Name);
     }
 
-    bool CStaticMeshFactory::DrawImportDialogue(const FString& RawPath, const FString& DestinationPath, bool& bShouldClose)
+    bool CStaticMeshFactory::DrawImportDialogue(const FString& RawPath, const FString& DestinationPath, eastl::any& ImportSettings, bool& bShouldClose, bool& bShouldReimport)
     {
-        bool bShouldImport = false;
-        bShouldClose = false;
+        static Import::Mesh::FMeshImportOptions Options;
         
+        TSharedPtr<Import::Mesh::FMeshImportData> ImportedData;
+        
+        bool bShouldImport = false;
         if (bShouldReimport)
         {
-            FString VirtualPath = Paths::ConvertToVirtualPath(DestinationPath);
-            ImportedData = {};
+            ImportedData = MakeSharedPtr<Import::Mesh::FMeshImportData>();
+            
             FName FileExtension = Paths::GetExtension(RawPath);
-
+            
             if (FileExtension == ".obj")
             {
-                if (!Import::Mesh::OBJ::ImportOBJ(ImportedData, Options, RawPath))
+                TExpected<Import::Mesh::FMeshImportData, FString> Expected = Import::Mesh::OBJ::ImportOBJ(Options, RawPath);
+                if (!Expected)
                 {
-                    ImportedData = {};
-                    Options = {};
+                    LOG_ERROR("Encountered problem importing GLTF: {0}", Expected.Error());
                     bShouldImport = false;
                     bShouldClose = true;
                 }
+                
+                *ImportedData = Move(Expected.Value());
             }
             else if (FileExtension == ".gltf" || FileExtension == ".glb")
             {
-                if (!Import::Mesh::GLTF::ImportGLTF(ImportedData, Options, RawPath))
+                TExpected<Import::Mesh::FMeshImportData, FString> Expected = Import::Mesh::GLTF::ImportGLTF(Options, RawPath);
+                if (!Expected)
                 {
-                    ImportedData = {};
-                    Options = {};
+                    LOG_ERROR("Encountered problem importing GLTF: {0}", Expected.Error());
                     bShouldImport = false;
                     bShouldClose = true;
-                }   
+                }
+                
+                *ImportedData = Move(Expected.Value());
             }
             bShouldReimport = false;
         }
         
-    
         ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(20, 20));
         ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(12, 8));
     
@@ -146,7 +151,7 @@ namespace Lumina
         }
         ImGui::PopStyleVar();
     
-        if (!ImportedData.Resources.empty())
+        if (!ImportedData->Resources.empty())
         {
             ImGui::Spacing();
             ImGui::Spacing();
@@ -204,16 +209,16 @@ namespace Lumina
                     SetColoredColumnWithColor(5, FetchColor, "{:.2f}", VertexFetch.overfetch);
                 };
     
-                for (size_t i = 0; i < ImportedData.Resources.size(); ++i)
+                for (size_t i = 0; i < ImportedData->Resources.size(); ++i)
                 {
-                    DrawRow(*ImportedData.Resources[i], ImportedData.MeshStatistics.OverdrawStatics[i], ImportedData.MeshStatistics.VertexFetchStatics[i]);
+                    DrawRow(*ImportedData->Resources[i], ImportedData->MeshStatistics.OverdrawStatics[i], ImportedData->MeshStatistics.VertexFetchStatics[i]);
                 }
     
                 ImGui::EndTable();
             }
             ImGui::PopStyleVar();
     
-            if (!ImportedData.Textures.empty())
+            if (!ImportedData->Textures.empty())
             {
                 ImGui::Spacing();
                 ImGui::PushStyleColor(ImGuiCol_Separator, ImVec4(0.8f, 0.6f, 0.8f, 0.8f));
@@ -234,7 +239,7 @@ namespace Lumina
                         ImGui::TableHeadersRow();
                         ImGui::PopStyleColor();
     
-                        for (const Import::Mesh::FMeshImportImage& Image : ImportedData.Textures)
+                        for (const Import::Mesh::FMeshImportImage& Image : ImportedData->Textures)
                         {
                             FString ImagePath = Paths::Parent(RawPath) + "/" + Image.RelativePath;
                         
@@ -304,8 +309,6 @@ namespace Lumina
         
         if (ImGui::Button("Cancel", ImVec2(buttonWidth, 0)))
         {
-            ImportedData = {};
-            Options = {};
             bShouldImport = false;
             bShouldClose = true;
         }
@@ -315,16 +318,38 @@ namespace Lumina
         
         ImGui::PopStyleVar(2);
         
+        if (bShouldReimport)
+        {
+            ImportSettings = Move(ImportedData);
+        }
         
         return bShouldImport;
     }
     
-    void CStaticMeshFactory::TryImport(const FString& RawPath, const FString& DestinationPath)
+    void CStaticMeshFactory::TryImport(const FString& RawPath, const FString& DestinationPath, const eastl::any& ImportSettings)
     {
-        FString VirtualPath = Paths::ConvertToVirtualPath(DestinationPath);
-
         uint32 Counter = 0;
-        for (TUniquePtr<FMeshResource>& MeshResource : ImportedData.Resources)
+        
+        using namespace Import::Mesh;
+
+        TSharedPtr<FMeshImportData> ImportData;
+        
+        try
+        {
+             ImportData = eastl::any_cast<TSharedPtr<FMeshImportData>>(ImportSettings);
+        }
+        catch (std::bad_any_cast& E)
+        {
+            LOG_ERROR("Import Error: {0}", E.what());
+            return;
+        }
+        
+        if (ImportData == nullptr)
+        {
+            return;
+        }
+        
+        for (TUniquePtr<FMeshResource>& MeshResource : ImportData->Resources)
         {
             size_t LastSlashPos = DestinationPath.find_last_of('/');
             FString QualifiedPath = DestinationPath.substr(0, LastSlashPos + 1) + MeshResource->Name.ToString();
@@ -339,9 +364,9 @@ namespace Lumina
 
             NewMesh->MeshResources = Move(MeshResource);
 
-            if (!ImportedData.Textures.empty())
+            if (!ImportData->Textures.empty())
             {
-                TVector<Import::Mesh::FMeshImportImage> Images(ImportedData.Textures.begin(), ImportedData.Textures.end());
+                TVector<Import::Mesh::FMeshImportImage> Images(ImportData->Textures.begin(), ImportData->Textures.end());
                 uint32 WorkSize = (uint32)Images.size();
                 Task::ParallelFor(WorkSize, [&](uint32 Index)
                 {
@@ -381,10 +406,5 @@ namespace Lumina
             Counter++;
         }
         
-
-        Options = {};
-        ImportedData = {};
-        bShouldReimport = true;
     }
-    
 }

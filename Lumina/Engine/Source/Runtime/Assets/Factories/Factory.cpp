@@ -47,20 +47,25 @@ namespace Lumina
         return New;
     }
     
-    void CFactory::Import(const FString& ImportFile, const FString& DestinationPath)
+    void CFactory::Import(const FString& ImportFile, const FString& DestinationPath, const eastl::any& ImportSettings)
     {
-        TryImport(ImportFile, DestinationPath);
+        TryImport(ImportFile, DestinationPath, ImportSettings);
     }
 
     bool CFactory::ShowImportDialogue(CFactory* Factory, const FString& RawPath, const FString& DestinationPath)
     {
         bool bShouldClose = false;
-        if (Factory->DrawImportDialogue(RawPath, DestinationPath, bShouldClose))
+        bool bShouldReimport = true;
+        
+        eastl::any ImportSettings;
+        if (Factory->DrawImportDialogue(RawPath, DestinationPath, ImportSettings, bShouldClose, bShouldReimport))
         {
-            Task::AsyncTask(1, 1, [Factory, RawPath, DestinationPath](uint32 Start, uint32 End, uint32 Thread)
+            Task::AsyncTask(1, 1, [Factory, RawPath, DestinationPath, ImportSettings = Move(ImportSettings)](uint32, uint32, uint32)
             {
-                Factory->Import(RawPath, DestinationPath);
+                Factory->Import(RawPath, DestinationPath, ImportSettings);
             });
+            
+            return true;
         }
 
         return bShouldClose;
@@ -71,12 +76,14 @@ namespace Lumina
         bool bShouldClose = false;
         if (Factory->DrawCreationDialogue(Path, bShouldClose))
         {
-            Task::AsyncTask(1, 1, [Factory, Path](uint32 Start, uint32 End, uint32 Thread)
+            Task::AsyncTask(1, 1, [Factory, Path = Move(Path)](uint32, uint32, uint32)
             {
                 Factory->TryCreateNew(Path);
                 CPackage* Package = CPackage::FindPackageByPath(Path);
                 CPackage::SavePackage(Package, Path);
             });
+            
+            return true;
         }
 
         return bShouldClose;

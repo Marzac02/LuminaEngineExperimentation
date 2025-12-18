@@ -24,14 +24,8 @@ namespace Lumina
         bool IsExtensionSupported(const FString& Ext) override { return Ext == ".gltf" || Ext == ".glb" || Ext == ".obj"; }
 
         bool HasImportDialogue() const override { return true; }
-        bool DrawImportDialogue(const FString& RawPath, const FString& DestinationPath, bool& bShouldClose) override;
-        void TryImport(const FString& RawPath, const FString& DestinationPath) override;
-
-    private:
-
+        bool DrawImportDialogue(const FString& RawPath, const FString& DestinationPath, eastl::any& ImportSettings, bool& bShouldClose, bool& bShouldReimport) override;
+        void TryImport(const FString& RawPath, const FString& DestinationPath, const eastl::any& ImportSettings) override;
         
-        Import::Mesh::FMeshImportData       ImportedData;
-        Import::Mesh::FMeshImportOptions    Options;
-        bool bShouldReimport = true;
     };
 }

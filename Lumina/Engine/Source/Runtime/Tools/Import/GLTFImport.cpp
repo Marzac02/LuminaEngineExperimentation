@@ -20,79 +20,73 @@ namespace Lumina::Import::Mesh::GLTF
 {
     namespace
     {
-        bool ExtractAsset(fastgltf::Asset* OutAsset, const FString& InPath)
+        TExpected<fastgltf::Asset, FString> ExtractAsset(FStringView InPath)
         {
-            std::filesystem::path FSPath = InPath.c_str();
+            std::filesystem::path FSPath(InPath.begin(), InPath.end());
         
-            fastgltf::Parser gltf_parser;
-            fastgltf::GltfDataBuffer data_buffer;
+            fastgltf::GltfDataBuffer Buffer;
 
-            if (!data_buffer.loadFromFile(FSPath))
+            if (!Buffer.loadFromFile(FSPath))
             {
-                LOG_ERROR("Failed to load glTF model with path: {0}. Aborting import.", FSPath.string());
-                return false;
+                return TUnexpected(std::format("Failed to load glTF model with path: {0}. Aborting import.", FSPath.string()).c_str());
             }
 
-            fastgltf::GltfType SourceType = fastgltf::determineGltfFileType(&data_buffer);
+            fastgltf::GltfType SourceType = fastgltf::determineGltfFileType(&Buffer);
 
             if (SourceType == fastgltf::GltfType::Invalid)
             {
-                LOG_ERROR("Failed to determine glTF file type with path: {0}. Aborting import.", FSPath.string());
-                return false;
+                return TUnexpected(std::format("Failed to determine glTF file type with path: {0}. Aborting import.", FSPath.string()).c_str());
             }
 
-            constexpr fastgltf::Options options = fastgltf::Options::DontRequireValidAssetMember |
-                fastgltf::Options::LoadGLBBuffers | fastgltf::Options::LoadExternalBuffers| fastgltf::Options::GenerateMeshIndices | fastgltf::Options::DecomposeNodeMatrices;
+            constexpr fastgltf::Options options = fastgltf::Options::DontRequireValidAssetMember 
+            | fastgltf::Options::LoadGLBBuffers 
+            | fastgltf::Options::LoadExternalBuffers 
+            | fastgltf::Options::GenerateMeshIndices 
+            | fastgltf::Options::DecomposeNodeMatrices;
 
-            fastgltf::Expected<fastgltf::Asset> expected_asset(fastgltf::Error::None);
+            fastgltf::Expected<fastgltf::Asset> Asset(fastgltf::Error::None);
 
+            fastgltf::Parser Parser;
             if (SourceType == fastgltf::GltfType::glTF)
             {
-                expected_asset = gltf_parser.loadGltf(&data_buffer, FSPath.parent_path(), options);
+                Asset = Parser.loadGltf(&Buffer, FSPath.parent_path(), options);
             }
             else if (SourceType == fastgltf::GltfType::GLB)
             {
-                expected_asset = gltf_parser.loadGltfBinary(&data_buffer, FSPath.parent_path(), options);
+                Asset = Parser.loadGltfBinary(&Buffer, FSPath.parent_path(), options);
             }
-            else
+
+            if (const fastgltf::Error& Error = Asset.error(); Error != fastgltf::Error::None)
             {
-                LOG_ERROR("GLTF Source Type Invalid");
-                return false;
+                return TUnexpected(std::format("Failed to load asset source with path: {0}. [{1}]: {2} Aborting import.", FSPath.string(),
+                fastgltf::getErrorName(Error), fastgltf::getErrorMessage(Error)).c_str());
             }
 
-            if (const auto error = expected_asset.error(); error != fastgltf::Error::None)
-            {
-                LOG_ERROR("Failed to load asset source with path: {0}. [{1}]: {2} Aborting import.", FSPath.string(),
-                fastgltf::getErrorName(error), fastgltf::getErrorMessage(error));
-
-                return false;
-            }
-
-            *OutAsset = std::move(expected_asset.get());
-            return true;
+            return Move(Asset.get());
         }
     }
     
 
-    bool ImportGLTF(FMeshImportData& OutData, const FMeshImportOptions& ImportOptions, FStringView FilePath)
+    TExpected<FMeshImportData, FString> ImportGLTF(const FMeshImportOptions& ImportOptions, FStringView FilePath)
     {
-        fastgltf::Asset Asset;
-        if (!ExtractAsset(&Asset, FilePath.data()))
+        TExpected<fastgltf::Asset, FString> ExpectedAsset = ExtractAsset(FilePath.data());
+        if (ExpectedAsset.IsError())
         {
-            OutData = {};
-            return false;
+            return TUnexpected(ExpectedAsset.Error());
         }
+        
+        const fastgltf::Asset& Asset = ExpectedAsset.Value();
         
         FString Name = Paths::FileName(FilePath.data(), true);
         
-        OutData.Resources.clear();
-        OutData.Resources.reserve(Asset.meshes.size());
+        FMeshImportData ImportData;
+        //ImportData.Resources.reserve(Asset.meshes.size());
 
-        for (fastgltf::Mesh& Mesh : Asset.meshes)
+        for (const fastgltf::Mesh& Mesh : Asset.meshes)
         {
             TUniquePtr<FMeshResource> NewResource = MakeUniquePtr<FMeshResource>();
             NewResource->GeometrySurfaces.reserve(Mesh.primitives.size());
-            NewResource->Name = Mesh.name.empty() ? FName(Name + "_" + eastl::to_string(OutData.Resources.size())) : Mesh.name.c_str();
+            NewResource->Name = Mesh.name.empty() ? FName(Name + "_" + eastl::to_string(ImportData.Resources.size())) : Mesh.name.c_str();
 
             SIZE_T IndexCount = 0;
 
@@ -113,7 +107,7 @@ namespace Lumina::Import::Mesh::GLTF
                     FMeshImportImage GLTFImage;
                     GLTFImage.ByteOffset = URI.fileByteOffset;
                     GLTFImage.RelativePath = URI.uri.c_str();
-                    OutData.Textures.emplace(GLTFImage);
+                    ImportData.Textures.emplace(GLTFImage);
                 }
             }
             
@@ -130,7 +124,7 @@ namespace Lumina::Import::Mesh::GLTF
                 
                 SIZE_T InitialVert = NewResource->Vertices.size();
             
-                fastgltf::Accessor& IndexAccessor = Asset.accessors[Primitive.indicesAccessor.value()];
+                const fastgltf::Accessor& IndexAccessor = Asset.accessors[Primitive.indicesAccessor.value()];
                 NewResource->Indices.reserve(NewResource->Indices.size() + IndexAccessor.count);
             
                 fastgltf::iterateAccessor<uint32>(Asset, IndexAccessor, [&](uint32 Index)
@@ -140,7 +134,7 @@ namespace Lumina::Import::Mesh::GLTF
                     IndexCount++;
                 });
             
-                fastgltf::Accessor& PosAccessor = Asset.accessors[Primitive.findAttribute("POSITION")->second];
+                const fastgltf::Accessor& PosAccessor = Asset.accessors[Primitive.findAttribute("POSITION")->second];
                 NewResource->Vertices.resize(NewResource->Vertices.size() + PosAccessor.count);
             
                 // Initialize all vertices with defaults
@@ -198,30 +192,15 @@ namespace Lumina::Import::Mesh::GLTF
             
             if (ImportOptions.bOptimize)
             {
-                for (FGeometrySurface& Section : NewResource->GeometrySurfaces)
-                {
-                    meshopt_optimizeVertexCache(&NewResource->Indices[Section.StartIndex], &NewResource->Indices[Section.StartIndex], Section.IndexCount, NewResource->Vertices.size());
-                    
-                    // Reorder indices for overdraw, balancing overdraw and vertex cache efficiency.
-                    // Allow up to 5% worse ACMR to get more reordering opportunities for overdraw.
-                    constexpr float Threshold = 1.05f;
-                    meshopt_optimizeOverdraw(&NewResource->Indices[Section.StartIndex], &NewResource->Indices[Section.StartIndex], Section.IndexCount, (float*)NewResource->Vertices.data(), NewResource->Vertices.size(), sizeof(FVertex), Threshold);
-                }
-
-                // Vertex fetch optimization should go last as it depends on the final index order
-                meshopt_optimizeVertexFetch(NewResource->Vertices.data(), NewResource->Indices.data(), NewResource->Indices.size(), NewResource->Vertices.data(), NewResource->Vertices.size(), sizeof(FVertex));
+                OptimizeNewlyImportedMesh(*NewResource);
             }
-
-            NewResource->ShadowIndices = TVector<uint32>(NewResource->Indices.size());
-            meshopt_generateShadowIndexBuffer(NewResource->ShadowIndices.data(), NewResource->Indices.data(), NewResource->Indices.size(), &NewResource->Vertices[0].Position, NewResource->Vertices.size(), sizeof(glm::vec4), sizeof(FVertex));
-            meshopt_optimizeVertexCache(NewResource->ShadowIndices.data(), NewResource->ShadowIndices.data(), NewResource->ShadowIndices.size(), NewResource->Vertices.size());
-
-
-            OutData.MeshStatistics.VertexFetchStatics.push_back(meshopt_analyzeVertexFetch(NewResource->Indices.data(), NewResource->Indices.size(), NewResource->Vertices.size(), sizeof(FVertex)));
-            OutData.MeshStatistics.OverdrawStatics.push_back(meshopt_analyzeOverdraw(NewResource->Indices.data(), NewResource->Indices.size(), (float*)NewResource->Vertices.data(), NewResource->Vertices.size(), sizeof(FVertex)));
-            OutData.Resources.push_back(eastl::move(NewResource));
+        
+            GenerateShadowBuffers(*NewResource);
+            AnalyzeMeshStatistics(*NewResource, ImportData.MeshStatistics);
+            
+            ImportData.Resources.push_back(eastl::move(NewResource));
         }
 
-        return true;
+        return Move(ImportData);
     }
 }

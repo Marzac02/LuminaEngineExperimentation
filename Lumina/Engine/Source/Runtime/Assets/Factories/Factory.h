@@ -3,6 +3,7 @@
 #include "Core/Object/ObjectMacros.h"
 #include "Core/Object/Object.h"
 #include "Core/Object/Cast.h"
+#include "EASTL/any.h"
 #include "Factory.generated.h"
 
 namespace Lumina
@@ -50,13 +51,11 @@ namespace Lumina
         
         virtual CObject* CreateNew(const FName& Name, CPackage* Package) { return nullptr; }
 
-        void Import(const FString& ImportFile, const FString& DestinationPath);
+        void Import(const FString& ImportFile, const FString& DestinationPath, const eastl::any& ImportSettings = eastl::any());
         
         virtual bool CanImport() { return false; }
-        virtual void TryImport(const FString& ImportFilePath, const FString& DestinationPath) { }
+        virtual void TryImport(const FString& ImportFilePath, const FString& DestinationPath, const eastl::any& ImportSettings) { }
         
-        
-
         virtual bool IsExtensionSupported(const FString& Ext) { return false; }
         
         static bool ShowImportDialogue(CFactory* Factory, const FString& RawPath, const FString& DestinationPath);
@@ -67,7 +66,7 @@ namespace Lumina
         
     protected:
         
-        virtual bool DrawImportDialogue(const FString& RawPath, const FString& DestinationPath, bool& bShouldClose) { return true; }
+        virtual bool DrawImportDialogue(const FString& RawPath, const FString& DestinationPath, eastl::any& ImportSettings, bool& bShouldClose, bool& bShouldReimport) { return true; }
         virtual bool DrawCreationDialogue(const FString& Path, bool& bShouldClose) { return true; }
         
     };

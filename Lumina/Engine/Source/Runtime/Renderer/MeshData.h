@@ -43,14 +43,14 @@ namespace Lumina
         TVector<FGeometrySurface>   GeometrySurfaces;
         FMeshBuffers                MeshBuffers;
         
-        SIZE_T GetNumSurfaces() const { return GeometrySurfaces.size(); }
+        FORCEINLINE SIZE_T GetNumSurfaces() const { return GeometrySurfaces.size(); }
         
-        bool IsSurfaceIndexValid(SIZE_T Slot) const
+        FORCEINLINE bool IsSurfaceIndexValid(SIZE_T Slot) const
         {
             return Slot < GetNumSurfaces();
         }
         
-        const FGeometrySurface& GetSurface(SIZE_T Slot) const
+        FORCEINLINE const FGeometrySurface& GetSurface(SIZE_T Slot) const
         {
             return GeometrySurfaces[Slot];
         }

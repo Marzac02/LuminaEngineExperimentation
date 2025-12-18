@@ -22,7 +22,7 @@ namespace Lumina
         bool IsExtensionSupported(const FString& Ext) override { return Ext == ".png" || Ext == ".jpg"; }
         bool CanImport() override { return true; }
         
-        void TryImport(const FString& RawPath, const FString& DestinationPath) override;
+        void TryImport(const FString& RawPath, const FString& DestinationPath, const eastl::any& ImportSettings) override;
 
     private:
 

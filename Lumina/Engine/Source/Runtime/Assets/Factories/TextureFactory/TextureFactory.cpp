@@ -19,7 +19,7 @@ namespace Lumina
         return NewObject<CTexture>(Package, Name);
     }
     
-    void CTextureFactory::TryImport(const FString& RawPath, const FString& DestinationPath)
+    void CTextureFactory::TryImport(const FString& RawPath, const FString& DestinationPath, const eastl::any& ImportSettings)
     {
         FString VirtualPath = Paths::ConvertToVirtualPath(DestinationPath);
         FString FileName = Paths::FileName(DestinationPath, true);

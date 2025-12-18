@@ -5,6 +5,7 @@
 #include "Containers/Name.h"
 #include "Containers/String.h"
 #include "Core/Templates/Optional.h"
+#include "Core/Utils/Expected.h"
 #include "Memory/SmartPtr.h"
 #include "Module/API.h"
 #include "Platform/Platform.h"
@@ -85,29 +86,33 @@ namespace Lumina::Import
         using FMeshImportTextureMap = THashSet<FMeshImportImage, FMeshImportImageHasher, FMeshImportImageEqual>;
 
         
-        struct FMeshStatistics
+        struct FMeshStatistics : INonCopyable
         {
             TVector<meshopt_OverdrawStatistics>         OverdrawStatics;
             TVector<meshopt_VertexFetchStatistics>      VertexFetchStatics;
         };
 
-        struct FMeshImportData
+        struct FMeshImportData : INonCopyable
         {
-            TVector<TUniquePtr<FMeshResource>>          Resources;
             FMeshStatistics                             MeshStatistics;
             FMeshImportTextureMap                       Textures;
+            TVector<TUniquePtr<FMeshResource>>          Resources;
         };
         
+        void OptimizeNewlyImportedMesh(FMeshResource& MeshResource);
+        void GenerateShadowBuffers(FMeshResource& MeshResource);
+        void AnalyzeMeshStatistics(FMeshResource& MeshResource, FMeshStatistics& OutMeshStats);
+        
+
         namespace OBJ
         {
-            
-            NODISCARD LUMINA_API bool ImportOBJ(FMeshImportData& OutData, const FMeshImportOptions& ImportOptions, FStringView FilePath);
+            NODISCARD LUMINA_API TExpected<FMeshImportData, FString> ImportOBJ( const FMeshImportOptions& ImportOptions, FStringView FilePath);
         }
 
         
         namespace GLTF
         {
-            LUMINA_API bool ImportGLTF(FMeshImportData& OutData, const FMeshImportOptions& ImportOptions, FStringView FilePath);
+            NODISCARD LUMINA_API TExpected<FMeshImportData, FString> ImportGLTF(const FMeshImportOptions& ImportOptions, FStringView FilePath);
         }
     }
     
