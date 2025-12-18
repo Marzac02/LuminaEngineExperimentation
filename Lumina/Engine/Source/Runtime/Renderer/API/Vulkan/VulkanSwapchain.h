@@ -31,7 +31,7 @@ namespace Lumina
         void SetPresentMode(VkPresentModeKHR NewMode);
 
         FORCEINLINE const VkSurfaceFormatKHR& GetSurfaceFormat() const { return SurfaceFormat; }
-        FORCEINLINE uint32 GetNumFramesInFlight() const { return FramesInFlight.size(); }
+        FORCEINLINE uint32 GetNumFramesInFlight() const { return (uint32)FramesInFlight.size(); }
         FORCEINLINE uint32 GetCurrentImageIndex() const { return CurrentImageIndex; }
         FORCEINLINE uint32 GetImageCount() const { return (uint32)SwapchainImages.size(); }
         FORCEINLINE VkPresentModeKHR GetPresentMode() const { return CurrentPresentMode; }
