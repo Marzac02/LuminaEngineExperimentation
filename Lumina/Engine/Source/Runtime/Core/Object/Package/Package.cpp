@@ -602,14 +602,12 @@ namespace Lumina
 
             if (Export.ObjectName == Name)
             {
-                CClass* ObjectClass = FindObject<CClass>(Export.ClassName);
-
-                CObject* Object = nullptr;
-                Object = FindObjectImpl(Export.ObjectGUID);
+                CObject* Object = FindObjectImpl(Export.ObjectGUID);
 
                 if (Object == nullptr)
                 {
-                    Object = NewObject(ObjectClass, this, NAME_None, Export.ObjectGUID);
+                    CClass* ObjectClass = FindObject<CClass>(Export.ClassName);
+                    Object = NewObject(ObjectClass, this, Export.ObjectName, Export.ObjectGUID);
                     Object->SetFlag(OF_NeedsLoad);
                     
                     if (Object->IsAsset())

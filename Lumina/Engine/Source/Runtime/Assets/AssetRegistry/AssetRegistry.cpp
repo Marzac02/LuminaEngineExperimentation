@@ -175,4 +175,18 @@ namespace Lumina
     {
         OnAssetRegistryUpdated.Broadcast();
     }
+
+    bool FClassPredicate::Evaluate(const FAssetData& Asset) const
+    {
+        if (!bIncludeDerived)
+        {
+            return Asset.AssetClass == ClassName;
+        }
+
+        const CClass* A = FindObject<CClass>(ClassName);
+        const CClass* B = FindObject<CClass>(Asset.AssetClass);
+        LUM_ASSERT(A && B)
+        
+        return ClassName == Asset.AssetClass || A->IsChildOf(B);
+    }
 }

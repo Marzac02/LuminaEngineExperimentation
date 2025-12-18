@@ -65,7 +65,7 @@ namespace Lumina
         
     private:
 
-        LUMINA_API void AddObject(const FName& Name, int32 InInternalIndex = -1);
+        LUMINA_API void AddObject();
         
     public:
         

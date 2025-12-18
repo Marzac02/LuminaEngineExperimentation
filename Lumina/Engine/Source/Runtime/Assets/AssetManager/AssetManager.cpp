@@ -36,6 +36,12 @@ namespace Lumina
         bool bAlreadyInQueue = false;
         TSharedPtr<FAssetRequest> ActiveRequest = CreateOrFindAssetRequest(PackagePath, RequestedAsset, bAlreadyInQueue);
         
+        if (bAlreadyInQueue)
+        {
+            FlushAsyncLoading();
+            return ActiveRequest->GetPendingObject();
+        }
+        
         ActiveRequest->Process();
         NotifyAssetRequestCompleted(ActiveRequest);
         
@@ -92,9 +98,10 @@ namespace Lumina
 
 
             FAssetTask(FAssetManager* InManager, const TSharedPtr<FAssetRequest>& InRequest)
-                : Manager(InManager), Request(InRequest)
+                : ITaskSet(1)
+                , Manager(InManager)
+                , Request(InRequest)
             {
-                m_SetSize = 1;
                 Deleter.SetDependency(Deleter.Dependency, this);
             }
 

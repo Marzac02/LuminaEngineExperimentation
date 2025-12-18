@@ -70,7 +70,7 @@ namespace Lumina
         uint64 AddNode(CEdGraphNode* InNode);
 
         PROPERTY()
-        TVector<TObjectPtr<CEdGraphNode>>            Nodes;
+        TVector<TObjectPtr<CEdGraphNode>>               Nodes;
         
         PROPERTY()
         TVector<uint16>                                 Connections;

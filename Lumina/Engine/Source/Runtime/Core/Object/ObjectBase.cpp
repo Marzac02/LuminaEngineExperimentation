@@ -7,6 +7,7 @@
 #include "Class.h"
 #include "DeferredRegistry.h"
 #include "Lumina.h"
+#include "ObjectAllocator.h"
 #include "ObjectArray.h"
 #include "ObjectHash.h"
 #include "Core/Console/ConsoleVariable.h"
@@ -71,8 +72,7 @@ namespace Lumina
         ClassPrivate = const_cast<CClass*>(OI.Params.Class);
         PackagePrivate = OI.Package;
 
-        int32 Index = GObjectArray.AllocateObject(this).Index;
-        AddObject(NamePrivate, Index);
+        AddObject();
     }
 
     CObjectBase::CObjectBase(EObjectFlags InFlags)
@@ -114,12 +114,10 @@ namespace Lumina
         Assert(ClassPrivate == nullptr)
         ClassPrivate = InClass;
 
-        int32 Index = GObjectArray.AllocateObject(this).Index;
-        AddObject(NamePrivate, Index);
+        AddObject();
         AddToRoot();
     }
-
-
+    
     void CObjectBase::ForceDestroyNow()
     {
         if (HasAnyFlag(OF_MarkedDestroy))
@@ -184,10 +182,9 @@ namespace Lumina
         ClearFlags(OF_Rooted);
     }
 
-    void CObjectBase::AddObject(const FName& Name, int32 InInternalIndex)
+    void CObjectBase::AddObject()
     {
-        InternalIndex = InInternalIndex;
-
+        InternalIndex = GObjectArray.AllocateObject(this).Index;
         FObjectHashTables::Get().AddObject(this);
     }
 

@@ -169,4 +169,5 @@ namespace Lumina::Hash
     {
         seed ^= GetHash(v) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
     }
+    
 }

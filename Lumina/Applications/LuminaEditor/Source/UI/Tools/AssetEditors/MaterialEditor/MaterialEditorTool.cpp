@@ -28,12 +28,14 @@ namespace Lumina
 
     FMaterialEditorTool::FMaterialEditorTool(IEditorToolContext* Context, CObject* InAsset)
         : FAssetEditorTool(Context, InAsset->GetName().c_str(), InAsset, NewObject<CWorld>())
+        , MeshEntity()
+        , DirectionalLightEntity()
         , CompilationResult()
         , NodeGraph(nullptr)
     {
     }
 
-
+    
     void FMaterialEditorTool::OnInitialize()
     {
         FAssetEditorTool::OnInitialize();
@@ -103,7 +105,7 @@ namespace Lumina
         FAssetEditorTool::SetupWorldForTool();
 
         DirectionalLightEntity = World->ConstructEntity("Directional Light");
-        World->GetEntityRegistry().emplace<SDirectionalLightComponent>(DirectionalLightEntity);
+        World->GetEntityRegistry().emplace<SPointLightComponent>(DirectionalLightEntity);
         World->GetEntityRegistry().emplace<SEnvironmentComponent>(DirectionalLightEntity);
 
         MeshEntity = World->ConstructEntity("MeshEntity");
@@ -190,7 +192,6 @@ namespace Lumina
         GetPropertyTable()->DrawTree();
     }
     
-
     void FMaterialEditorTool::DrawGLSLPreview(const FUpdateContext& UpdateContext)
     {
         ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(12, 12));
@@ -330,7 +331,7 @@ namespace Lumina
                 CMaterial* Material = Cast<CMaterial>(Asset.Get());
 
                 FRHIPixelShaderRef PixelShader = GRenderContext->CreatePixelShader(Header);
-                FRHIVertexShaderRef VertexShader = GRenderContext->GetShaderLibrary()->GetShader("GeometryPass.vert").As<FRHIVertexShader>();
+                FRHIVertexShaderRef VertexShader = GRenderContext->GetShaderLibrary()->GetVertexShader("GeometryPass.vert");
                 
                 {
                     Material->PixelShaderBinaries.assign(Header.Binaries.begin(), Header.Binaries.end());
@@ -355,7 +356,6 @@ namespace Lumina
                 
             Material->PostLoad();
             Material->GetPackage()->MarkDirty();
-            
         }
     }
 
@@ -363,7 +363,6 @@ namespace Lumina
     {
         FAssetEditorTool::OnSave();
     }
-
 
     void FMaterialEditorTool::InitializeDockingLayout(ImGuiID InDockspaceID, const ImVec2& InDockspaceSize) const
     {

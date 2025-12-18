@@ -97,10 +97,12 @@ namespace Lumina
     void FCObjectArray::AllocateObjectPool(int32 InMaxCObjects)
     {
         LUM_ASSERT(!bInitialized && "Object pool already allocated!")
-    
-        ChunkedArray.Initialize(InMaxCObjects);
+
+        const int32 MaxObjects = Math::Min(1000, InMaxCObjects);
+        
+        ChunkedArray.Initialize(MaxObjects);
             
-        FreeIndices.reserve(InMaxCObjects / 4);
+        FreeIndices.reserve(MaxObjects / 4);
     
         bInitialized = true;
     }

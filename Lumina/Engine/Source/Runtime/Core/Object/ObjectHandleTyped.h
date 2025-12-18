@@ -1,5 +1,4 @@
 #pragma once
-#include "ObjectAllocator.h"
 #include "ObjectArray.h"
 #include "Core/Templates/LuminaTemplate.h"
 
@@ -13,9 +12,6 @@ namespace Lumina
     template <typename T>
     char (&ResolveTypeIsComplete(...))[1];
     
-    //=============================================================================
-    // TObjectPtr - Strong Reference (just a raw pointer wrapper)
-    //=============================================================================
     template<typename T>
     class TObjectPtr
     {

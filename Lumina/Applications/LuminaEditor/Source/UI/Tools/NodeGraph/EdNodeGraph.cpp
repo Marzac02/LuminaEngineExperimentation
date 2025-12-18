@@ -130,7 +130,7 @@ namespace Lumina
             {
                 for (CEdNodeGraphPin* Connection : InputPin->GetConnections())
                 {
-                    Links.emplace_back(TPair(InputPin, Connection));
+                    Links.emplace_back(InputPin, Connection);
                 }
                 
                 NodeBuilder.Input(InputPin->GetPinGUID());
@@ -185,7 +185,6 @@ namespace Lumina
             Index++;
         }
     
-        // Background context menu
         NodeEditor::Suspend();
         {
             if (NodeEditor::ShowBackgroundContextMenu())
@@ -201,7 +200,6 @@ namespace Lumina
         }
         NodeEditor::Resume();
     
-        // Handle node selection
         bool bAnyNodeSelected = false;
         for (CEdGraphNode* Node : Nodes)
         {
@@ -220,14 +218,12 @@ namespace Lumina
             NodeSelectedCallback(nullptr);
         }
         
-        // Draw all links
         uint32 LinkID = 1;
         for (auto& [Start, End] : Links)
         {
             NodeEditor::Link(LinkID++, Start->GetPinGUID(), End->GetPinGUID());
         }
         
-        // Handle link creation
         if (NodeEditor::BeginCreate())
         {
             NodeEditor::PinId StartPinID, EndPinID;
@@ -277,16 +273,14 @@ namespace Lumina
         NodeEditor::EndCreate();
 
         
-        // Handle deletion
         if (NodeEditor::BeginDelete())
         {
-            // Handle node deletion
             NodeEditor::NodeId NodeId = 0;
             while (NodeEditor::QueryDeletedNode(&NodeId))
             {
                 // Unfortunately the way we do this now is a bit gross, it's too much of a pain to keep these nodes and the internal NodeEditor nodes in sync.
                 // This is the way it's done in the examples, and even though it's essentially O(n^2), it seems to be working correctly.
-                // Realistically it shouldn't matter too much, and should be fine.
+                // Realistically it shouldn't matter too much.
                 auto NodeItr = eastl::find_if(Nodes.begin(), Nodes.end(), [NodeId] (const TObjectPtr<CEdGraphNode>& A)
                 {
                     return A->GetNodeID() == NodeId.Get();

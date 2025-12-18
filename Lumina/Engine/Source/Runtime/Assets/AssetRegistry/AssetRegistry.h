@@ -1,9 +1,11 @@
 #pragma once
 
 #include "AssetData.h"
+#include "Containers/Name.h"
 #include "Core/DisableAllWarnings.h"
 #include "Subsystems/Subsystem.h"
 #include "Core/Delegates/Delegate.h"
+#include "Core/Object/ObjectCore.h"
 #include "Core/Serialization/MemoryArchiver.h"
 #include "Core/Templates/LuminaTemplate.h"
 #include "Core/Threading/Thread.h"
@@ -201,20 +203,10 @@ namespace Lumina
         bool bIncludeDerived;
     
     public:
-        explicit FClassPredicate(FName InClassName, bool bDerived = true)
+        explicit FClassPredicate(const FName& InClassName, bool bDerived = true)
             : ClassName(InClassName), bIncludeDerived(bDerived) {}
     
-        bool Evaluate(const FAssetData& Asset) const override
-        {
-            if (!bIncludeDerived)
-            {
-                return Asset.AssetClass == ClassName;
-            }
-
-            // Check class hierarchy - would need reflection system integration
-            // For now, simplified direct match
-            return Asset.AssetClass == ClassName;
-        }
+        NODISCARD bool Evaluate(const FAssetData& Asset) const override;
     
         FString ToString() const override
         {
