@@ -105,16 +105,15 @@ namespace Lumina
         FAssetEditorTool::SetupWorldForTool();
 
         DirectionalLightEntity = World->ConstructEntity("Directional Light");
-        World->GetEntityRegistry().emplace<SPointLightComponent>(DirectionalLightEntity);
+        World->GetEntityRegistry().emplace<SDirectionalLightComponent>(DirectionalLightEntity);
         World->GetEntityRegistry().emplace<SEnvironmentComponent>(DirectionalLightEntity);
 
-        MeshEntity = World->ConstructEntity("MeshEntity");
-        World->GetEntityRegistry().get<STransformComponent>(MeshEntity).SetLocation(glm::vec3(0.0f, 0.0f,  0.0f));
         
+        MeshEntity = World->ConstructEntity("MeshEntity");
         SStaticMeshComponent& StaticMeshComponent = World->GetEntityRegistry().emplace<SStaticMeshComponent>(MeshEntity);
         StaticMeshComponent.StaticMesh = CThumbnailManager::Get().SphereMesh;
-        StaticMeshComponent.MaterialOverrides.resize(CThumbnailManager::Get().SphereMesh->Materials.size());
-        StaticMeshComponent.MaterialOverrides[0] = CastAsserted<CMaterialInterface>(Asset.Get());
+        
+        StaticMeshComponent.MaterialOverrides.push_back(CastAsserted<CMaterialInterface>(Asset.Get()));
     }
 
     bool FMaterialEditorTool::DrawViewport(const FUpdateContext& UpdateContext, ImTextureRef ViewportTexture)
