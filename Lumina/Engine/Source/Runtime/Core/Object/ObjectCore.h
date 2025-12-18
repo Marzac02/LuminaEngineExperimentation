@@ -59,7 +59,7 @@ namespace Lumina
     template<Concept::IsACObject T>
     T* LoadObject(const FGuid& GUID)
     {
-        return (T*)StaticLoadObject(T::StaticClass(), GUID);
+        return static_cast<T*>(StaticLoadObject(T::StaticClass(), GUID));
     }
     
     LUMINA_API CObject* NewObject(CClass* InClass, CPackage* Package = nullptr, const FName& Name = NAME_None, const FGuid& GUID = FGuid::New(), EObjectFlags Flags = OF_None);

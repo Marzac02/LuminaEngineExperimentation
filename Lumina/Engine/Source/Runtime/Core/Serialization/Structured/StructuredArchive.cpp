@@ -1,12 +1,38 @@
 #include "pch.h"
 #include "StructuredArchive.h"
 
-
 namespace Lumina
 {
+    //------------------------------------------------------------------------------------------------------
+    // FArchiveSlot
+    //------------------------------------------------------------------------------------------------------
+    
     FArchiveRecord FArchiveSlot::EnterRecord()
     {
-        return {};
+        int32 ElementIdx = StructuredArchive.EnterSlotAsType(*this, StructuredArchive::EElementType::Record);
+        StructuredArchive.EnterRecord();
+        return FArchiveRecord(StructuredArchive, Depth + 1, StructuredArchive.CurrentScope[ElementIdx].ID);
+    }
+
+    FArchiveArray FArchiveSlot::EnterArray(int32& NumElements)
+    {
+        int32 ElementIdx = StructuredArchive.EnterSlotAsType(*this, StructuredArchive::EElementType::Array);
+        StructuredArchive.EnterArray(NumElements);
+        return FArchiveArray(StructuredArchive, Depth + 1, StructuredArchive.CurrentScope[ElementIdx].ID);
+    }
+
+    FArchiveStream FArchiveSlot::EnterStream()
+    {
+        int32 ElementIdx = StructuredArchive.EnterSlotAsType(*this, StructuredArchive::EElementType::Stream);
+        StructuredArchive.EnterStream();
+        return FArchiveStream(StructuredArchive, Depth + 1, StructuredArchive.CurrentScope[ElementIdx].ID);
+    }
+
+    FArchiveMap FArchiveSlot::EnterMap(int32& NumElements)
+    {
+        int32 ElementIdx = StructuredArchive.EnterSlotAsType(*this, StructuredArchive::EElementType::Map);
+        StructuredArchive.EnterMap(NumElements);
+        return FArchiveMap(StructuredArchive, Depth + 1, StructuredArchive.CurrentScope[ElementIdx].ID);
     }
 
     void FArchiveSlot::Serialize(uint8& Value)
@@ -121,9 +147,74 @@ namespace Lumina
         StructuredArchive.LeaveSlot();
     }
 
+    //------------------------------------------------------------------------------------------------------
+    // FArchiveRecord
+    //------------------------------------------------------------------------------------------------------
+
+    FArchiveRecord::~FArchiveRecord()
+    {
+        StructuredArchive.LeaveRecord();
+    }
+
+    FArchiveSlot FArchiveRecord::EnterField(FName FieldName)
+    {
+        return StructuredArchive.EnterField(FieldName);
+    }
+
+    //------------------------------------------------------------------------------------------------------
+    // FArchiveArray
+    //------------------------------------------------------------------------------------------------------
+
+    FArchiveArray::~FArchiveArray()
+    {
+        StructuredArchive.LeaveArray();
+    }
+
+    FArchiveSlot FArchiveArray::EnterElement()
+    {
+        return StructuredArchive.EnterArrayElement();
+    }
+
+    //------------------------------------------------------------------------------------------------------
+    // FArchiveStream
+    //------------------------------------------------------------------------------------------------------
+
+    FArchiveStream::~FArchiveStream()
+    {
+        StructuredArchive.LeaveStream();
+    }
+
+    FArchiveSlot FArchiveStream::EnterElement()
+    {
+        return StructuredArchive.EnterStreamElement();
+    }
+
+    //------------------------------------------------------------------------------------------------------
+    // FArchiveMap
+    //------------------------------------------------------------------------------------------------------
+
+    FArchiveMap::~FArchiveMap()
+    {
+        StructuredArchive.LeaveMap();
+    }
+
+    FArchiveSlot FArchiveMap::EnterKey()
+    {
+        return StructuredArchive.EnterMapKey();
+    }
+
+    FArchiveSlot FArchiveMap::EnterValue()
+    {
+        return StructuredArchive.EnterMapValue();
+    }
+
+    //------------------------------------------------------------------------------------------------------
+    // IStructuredArchive
+    //------------------------------------------------------------------------------------------------------
+
     FArchiveSlot IStructuredArchive::Open()
     {
-        Assert(RootElementID == 0)
+        Assert(RootElementID == 0);
 
         RootElementID = IDGenerator.Generate();
         CurrentScope.emplace_back(RootElementID, StructuredArchive::EElementType::Root);
@@ -131,19 +222,25 @@ namespace Lumina
         CurrentSlotID = IDGenerator.Generate();
         
         return FArchiveSlot(*this, 0, CurrentSlotID);
-        
     }
 
     void IStructuredArchive::Close()
     {
+        while (!CurrentScope.empty())
+        {
+            CurrentScope.pop_back();
+        }
         
+        RootElementID = 0;
+        CurrentSlotID = 0;
     }
 
     void IStructuredArchive::SetScope(FSlotPosition Slot)
     {
-        Assert(Slot.Depth < CurrentScope.size() && CurrentScope[Slot.ID].ID == Slot.ID)
+        Assert(Slot.Depth < CurrentScope.size() && CurrentScope[Slot.Depth].ID == Slot.ID);
 
-        CurrentScope.erase(CurrentScope.begin() + Slot.ID + 1, CurrentScope.end());
+        CurrentScope.erase(CurrentScope.begin() + Slot.Depth + 1, CurrentScope.end());
+        CurrentSlotID = Slot.ID;
     }
 
     int32 IStructuredArchive::EnterSlotAsType(FSlotPosition Slot, StructuredArchive::EElementType Type)
@@ -152,22 +249,177 @@ namespace Lumina
 
         int32 NewSlotDepth = Slot.Depth + 1;
 
-        if (NewSlotDepth < CurrentScope.size() && CurrentScope[NewSlotDepth].Type == StructuredArchive::EElementType::AttributedValue)
+        // Check if we need to handle attributed values
+        if (NewSlotDepth < (int32)CurrentScope.size() && 
+            CurrentScope[NewSlotDepth].Type == StructuredArchive::EElementType::AttributedValue)
         {
-            
+            ++NewSlotDepth;
         }
 
-        return 0;
+        // Ensure scope is large enough
+        if (NewSlotDepth >= (int32)CurrentScope.size())
+        {
+            StructuredArchive::FSlotID NewID = IDGenerator.Generate();
+            CurrentScope.emplace_back(NewID, Type);
+            CurrentSlotID = NewID;
+        }
+        else
+        {
+            // Replace existing scope
+            CurrentScope[NewSlotDepth].Type = Type;
+            CurrentSlotID = CurrentScope[NewSlotDepth].ID;
+        }
+
+        return NewSlotDepth;
     }
 
     void IStructuredArchive::EnterSlot(FSlotPosition Slot, bool bEnteringAttributedValue)
     {
+        SetScope(Slot);
     }
+
+    //------------------------------------------------------------------------------------------------------
+    // FBinaryStructuredArchive
+    //------------------------------------------------------------------------------------------------------
 
     FBinaryStructuredArchive::FBinaryStructuredArchive(FArchive& InAr)
         : IStructuredArchive(InAr)
     {
     }
-    
+
+    void FBinaryStructuredArchive::EnterSlot(FSlotPosition Slot, bool bEnteringAttributedValue)
+    {
+        IStructuredArchive::EnterSlot(Slot, bEnteringAttributedValue);
+        
+        // For binary format, we don't need to write any metadata for simple slots
+        // The structure is implicit in the order of reads/writes
+    }
+
+    void FBinaryStructuredArchive::LeaveSlot()
+    {
+        // Nothing to do for binary format - structure is implicit
+    }
+
+    void FBinaryStructuredArchive::EnterRecord()
+    {
+        if (IsSaving())
+        {
+
+        }
+    }
+
+    void FBinaryStructuredArchive::LeaveRecord()
+    {
+        if (!CurrentScope.empty() && CurrentScope.back().Type == StructuredArchive::EElementType::Record)
+        {
+            CurrentScope.pop_back();
+        }
+    }
+
+    FArchiveSlot FBinaryStructuredArchive::EnterField(FName FieldName)
+    {
+        if (IsSaving())
+        {
+            InnerAr << FieldName;
+        }
+        else if (IsLoading())
+        {
+            FName ReadFieldName;
+            InnerAr << ReadFieldName;
+            Assert(ReadFieldName == FieldName)
+        }
+
+        StructuredArchive::FSlotID NewSlotID = IDGenerator.Generate();
+        uint32 NewDepth = CurrentScope.size();
+        
+        return FArchiveSlot(*this, NewDepth, NewSlotID);
+    }
+
+    void FBinaryStructuredArchive::LeaveField()
+    {
+        // Nothing to do for binary format
+    }
+
+    void FBinaryStructuredArchive::EnterArray(int32& NumElements)
+    {
+        InnerAr << NumElements;
+        
+        if (IsLoading())
+        {
+            Assert(NumElements >= 0)
+        }
+    }
+
+    void FBinaryStructuredArchive::LeaveArray()
+    {
+        if (!CurrentScope.empty() && CurrentScope.back().Type == StructuredArchive::EElementType::Array)
+        {
+            CurrentScope.pop_back();
+        }
+    }
+
+    FArchiveSlot FBinaryStructuredArchive::EnterArrayElement()
+    {
+        StructuredArchive::FSlotID NewSlotID = IDGenerator.Generate();
+        uint32 NewDepth = CurrentScope.size();
+        
+        return FArchiveSlot(*this, NewDepth, NewSlotID);
+    }
+
+    void FBinaryStructuredArchive::EnterStream()
+    {
+        // Streams don't have a fixed count, so no metadata needed
+    }
+
+    void FBinaryStructuredArchive::LeaveStream()
+    {
+        if (!CurrentScope.empty() && CurrentScope.back().Type == StructuredArchive::EElementType::Stream)
+        {
+            CurrentScope.pop_back();
+        }
+    }
+
+    FArchiveSlot FBinaryStructuredArchive::EnterStreamElement()
+    {
+        StructuredArchive::FSlotID NewSlotID = IDGenerator.Generate();
+        uint32 NewDepth = CurrentScope.size();
+        
+        return FArchiveSlot(*this, NewDepth, NewSlotID);
+    }
+
+    void FBinaryStructuredArchive::EnterMap(int32& NumElements)
+    {
+        InnerAr << NumElements;
+        
+        if (IsLoading())
+        {
+            Assert(NumElements >= 0)
+        }
+    }
+
+    void FBinaryStructuredArchive::LeaveMap()
+    {
+        if (!CurrentScope.empty() && CurrentScope.back().Type == StructuredArchive::EElementType::Map)
+        {
+            CurrentScope.pop_back();
+        }
+    }
+
+    FArchiveSlot FBinaryStructuredArchive::EnterMapKey()
+    {
+        StructuredArchive::FSlotID NewSlotID = IDGenerator.Generate();
+        uint32 NewDepth = CurrentScope.size();
+        
+        return FArchiveSlot(*this, NewDepth, NewSlotID);
+    }
+
+    FArchiveSlot FBinaryStructuredArchive::EnterMapValue()
+    {
+        StructuredArchive::FSlotID NewSlotID = IDGenerator.Generate();
+        uint32 NewDepth = CurrentScope.size();
+        
+        return FArchiveSlot(*this, NewDepth, NewSlotID);
+    }
+
     //------------------------------------------------------------------------------------------------------
 }

@@ -108,7 +108,9 @@ namespace Lumina
         LUMINA_API virtual void AddProperty(FProperty* Property);
 
         LUMINA_API void SerializeTaggedProperties(FArchive& Ar, void* Data);
-        LUMINA_API void SerializeTaggedProperties(IStructuredArchive::FSlot Slot, void* Data);
+        
+        void Serialize(FArchive& Ar) override;
+        void Serialize(IStructuredArchive::FSlot Slot) override;
 
         
         template<typename PropertyType>

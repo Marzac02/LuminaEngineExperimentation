@@ -24,21 +24,15 @@ namespace Lumina
 {
     void CObject::Serialize(FArchive& Ar)
     {
-        CClass* Class = GetClass();
-        if (Class)
+        if (CClass* Class = GetClass())
         {
-            SerializeReflectedProperties(Ar);
+            GetClass()->SerializeTaggedProperties(Ar, this);
         }
-    }
-
-    void CObject::SerializeReflectedProperties(FArchive& Ar)
-    {
-        GetClass()->SerializeTaggedProperties(Ar, this);
     }
 
     void CObject::Serialize(IStructuredArchive::FSlot Slot)
     {
-        
+        GetClass()->Serialize(Slot);
     }
 
     void CObject::PostInitProperties()
@@ -52,8 +46,7 @@ namespace Lumina
         {
             return true;
         }
-
-
+        
         HandleNameChange(NewName, NewPackage);
         return true;
     }

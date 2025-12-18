@@ -9,6 +9,7 @@ namespace Lumina
     void FObjectHashTables::AddObject(CObjectBase* Object)
     {
         LUMINA_PROFILE_SCOPE();
+        FWriteScopeLock Lock(Mutex);
 
         const FGuid& ObjectGUID = Object->GetGUID();
         auto It = ObjectGUIDHash.find(ObjectGUID);
@@ -21,6 +22,8 @@ namespace Lumina
     void FObjectHashTables::RemoveObject(CObjectBase* Object)
     {
         LUMINA_PROFILE_SCOPE();
+        FWriteScopeLock Lock(Mutex);
+
 
         const FGuid& ObjectGUID = Object->GetGUID();
         auto It = ObjectGUIDHash.find(ObjectGUID);
@@ -35,7 +38,7 @@ namespace Lumina
     CObjectBase* FObjectHashTables::FindObject(const FGuid& GUID)
     {
         LUMINA_PROFILE_SCOPE();
-        FScopeLock Lock(Mutex);
+        FReadScopeLock Lock(Mutex);
 
         auto It = ObjectGUIDHash.find(GUID);
         if (It == ObjectGUIDHash.end())
@@ -49,7 +52,7 @@ namespace Lumina
     CObjectBase* FObjectHashTables::FindObject(const FName& Name, CClass* Class)
     {
         LUMINA_PROFILE_SCOPE();
-        FScopeLock Lock(Mutex);
+        FReadScopeLock Lock(Mutex);
 
         auto It = ObjectClassBucket.find(Class);
         if (It == ObjectClassBucket.end())
@@ -71,8 +74,7 @@ namespace Lumina
 
     void FObjectHashTables::Clear()
     {
-        FScopeLock Lock(Mutex);
-
+        FWriteScopeLock Lock(Mutex);
         ObjectGUIDHash.clear();
     }
 }

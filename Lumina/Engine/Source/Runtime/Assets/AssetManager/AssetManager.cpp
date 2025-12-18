@@ -18,10 +18,10 @@ namespace Lumina
         return Instance;
     }
     
-    TSharedPtr<FAssetRequest> FAssetManager::LoadAsset(const FString& PackagePath, const FGuid& RequestedAsset)
+    TSharedPtr<FAssetRequest> FAssetManager::LoadAssetAsync(const FString& PackagePath, const FGuid& RequestedAsset)
     {
         bool bAlreadyInQueue = false;
-        TSharedPtr<FAssetRequest> ActiveRequest = TryFindActiveRequest(PackagePath, RequestedAsset, bAlreadyInQueue);
+        TSharedPtr<FAssetRequest> ActiveRequest = CreateOrFindAssetRequest(PackagePath, RequestedAsset, bAlreadyInQueue);
         
         if (!bAlreadyInQueue)
         {
@@ -29,6 +29,17 @@ namespace Lumina
         }
 
         return ActiveRequest;
+    }
+
+    CObject* FAssetManager::LoadAssetSynchronous(const FString& PackagePath, const FGuid& RequestedAsset)
+    {
+        bool bAlreadyInQueue = false;
+        TSharedPtr<FAssetRequest> ActiveRequest = CreateOrFindAssetRequest(PackagePath, RequestedAsset, bAlreadyInQueue);
+        
+        ActiveRequest->Process();
+        NotifyAssetRequestCompleted(ActiveRequest);
+        
+        return ActiveRequest->GetPendingObject();
     }
 
     void FAssetManager::NotifyAssetRequestCompleted(const TSharedPtr<FAssetRequest>& Request)
@@ -49,7 +60,7 @@ namespace Lumina
         GTaskSystem->WaitForAll();
     }
 
-    TSharedPtr<FAssetRequest> FAssetManager::TryFindActiveRequest(const FString& InAssetPath, const FGuid& GUID, bool& bAlreadyInQueue)
+    TSharedPtr<FAssetRequest> FAssetManager::CreateOrFindAssetRequest(const FString& InAssetPath, const FGuid& GUID, bool& bAlreadyInQueue)
     {
         FScopeLock Lock(RequestMutex);
         

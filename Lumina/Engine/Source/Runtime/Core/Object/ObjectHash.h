@@ -14,11 +14,12 @@ namespace Lumina
 
 namespace Lumina
 {
-
     using FObjectHashBucket = TFixedHashSet<CObjectBase*, 4>;
 
     template<typename TKey>
     using TObjectHashMap = TFixedHashMap<TKey, FObjectHashBucket, 12>;
+    
+    using FObjectGUIDMap = TFixedHashMap<FGuid, CObjectBase*, 12>; 
 
     class FObjectHashTables : public TSingleton<FObjectHashTables>
     {
@@ -33,8 +34,8 @@ namespace Lumina
 
         void Clear();
 
-        mutable FMutex                  Mutex;
-        THashMap<FGuid, CObjectBase*>   ObjectGUIDHash;
+        mutable FSharedMutex            Mutex;
+        FObjectGUIDMap                  ObjectGUIDHash;
         TObjectHashMap<CClass*>         ObjectClassBucket;
     };
 }

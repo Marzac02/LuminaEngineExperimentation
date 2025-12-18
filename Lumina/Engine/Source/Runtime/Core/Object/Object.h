@@ -51,9 +51,6 @@ namespace Lumina
         /** Serializes object data. Can be overridden by derived classes. */
         LUMINA_API virtual void Serialize(FArchive& Ar);
 
-        /** Serializes any reflected properties in this class */
-        LUMINA_API virtual void SerializeReflectedProperties(FArchive& Ar);
-
         /** Used during serialization to and from a structured archive (Packaging, Network, etc.). */
         LUMINA_API virtual void Serialize(IStructuredArchive::FSlot Slot);
         

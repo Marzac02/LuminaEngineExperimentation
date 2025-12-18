@@ -61,9 +61,7 @@ namespace Lumina
         
         if (const FAssetData* Data = FAssetQuery().WithGuid(GUID).ExecuteFirst())
         {
-            TSharedPtr<FAssetRequest> Request = FAssetManager::Get().LoadAsset(Data->FilePath, GUID);
-            FAssetManager::Get().FlushAsyncLoading();
-            return Request->GetPendingObject();
+            return FAssetManager::Get().LoadAssetSynchronous(Data->FilePath, GUID);
         }
         
         return nullptr;

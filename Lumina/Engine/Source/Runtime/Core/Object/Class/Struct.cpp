@@ -120,7 +120,7 @@ namespace Lumina
             uint32 NumProperties = 0;
             int64 NumPropertiesWritePos = Ar.Tell();
             Ar << NumProperties;
-        
+            
             for (FProperty* Current = LinkedProperty; Current; Current = (FProperty*)Current->Next)
             {
                 FPropertyTag PropertyTag;
@@ -208,8 +208,13 @@ namespace Lumina
             }
         }
     }
+    
+    void CStruct::Serialize(FArchive& Ar)
+    {
+        
+    }
 
-    void CStruct::SerializeTaggedProperties(IStructuredArchive::FSlot Slot, void* Data)
+    void CStruct::Serialize(IStructuredArchive::FSlot Slot)
     {
         
     }

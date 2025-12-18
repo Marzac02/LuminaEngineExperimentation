@@ -1,33 +1,34 @@
 ﻿#pragma once
 #include "Containers/Array.h"
-#include "Core/Assertions/Assert.h"
 #include "Core/Serialization/Archiver.h"
-#include "Core/Templates/Optional.h"
 
 namespace Lumina
 {
     class FName;
     class FArchiveRecord;
+    class FArchiveArray;
+    class FArchiveStream;
+    class FArchiveMap;
 
-    
     namespace StructuredArchive
     {
         using FSlotID = uint64;
 
         enum class EElementType : uint8
-	    {
-	    	Root,
-	    	Record,
-	    	Array,
-	    	Stream,
-	    	Map,
-	    	AttributedValue,
-	    };
+        {
+            Root,
+            Record,
+            Array,
+            Stream,
+            Map,
+            AttributedValue,
+        };
         
         template<typename T>
         class TNamedValue
         {
-            TNamedValue(FName InName, T& InValue)
+        public:
+            TNamedValue(const FName& InName, T& InValue)
                 : Name(InName)
                 , Value(InValue)
             {}
@@ -40,7 +41,6 @@ namespace Lumina
     class FSlotPosition
     {
     public:
-
         FSlotPosition() = default;
 
         FSlotPosition(uint32 InDepth, StructuredArchive::FSlotID InID = 0)
@@ -49,23 +49,29 @@ namespace Lumina
         {}
 
         uint32 Depth = 0;
-        StructuredArchive::FSlotID ID      = 0;
-        
+        StructuredArchive::FSlotID ID = 0;
     };
 
+    class IStructuredArchive;
+    
     class FArchiveSlot : protected FSlotPosition
     {
         friend class IStructuredArchive;
+        friend class FArchiveRecord;
+        friend class FArchiveArray;
 
     public:
-
         FArchiveSlot(IStructuredArchive& InAr, uint32 InDepth, StructuredArchive::FSlotID InID)
             : FSlotPosition(InDepth, InID)
             , StructuredArchive(InAr)
         {}
 
         LUMINA_API FArchiveRecord EnterRecord();
-        
+        LUMINA_API FArchiveArray EnterArray(int32& NumElements);
+        LUMINA_API FArchiveStream EnterStream();
+        LUMINA_API FArchiveMap EnterMap(int32& NumElements);
+
+        // Basic type serialization
         void Serialize(uint8& Value);
         void Serialize(uint16& Value);
         void Serialize(uint32& Value);
@@ -84,28 +90,108 @@ namespace Lumina
         void Serialize(void* Data, uint64 DataSize);
 
         template<typename T>
-        FORCEINLINE void operator << (StructuredArchive::TNamedValue<T> Item)
-        {
-            
-        }
+        FORCEINLINE void operator<<(StructuredArchive::TNamedValue<T> Item);
 
         template<typename T>
         void Serialize(TVector<T>& Value);
         
-    protected:
+    
 
+    protected:
+        
         IStructuredArchive& StructuredArchive;
     };
 
     class FArchiveRecord : protected FSlotPosition
     {
-        
+        friend class FArchiveSlot;
+        friend class FArchiveArray;
+
+    public:
+        FArchiveRecord(IStructuredArchive& InAr, uint32 InDepth, StructuredArchive::FSlotID InID)
+            : FSlotPosition(InDepth, InID)
+            , StructuredArchive(InAr)
+        {}
+
+        ~FArchiveRecord();
+
+        LUMINA_API FArchiveSlot EnterField(FName FieldName);
+
+        template<typename T>
+        FORCEINLINE void operator<<(StructuredArchive::TNamedValue<T> Item)
+        {
+            FArchiveSlot Field = EnterField(Item.Name);
+            Field.Serialize(Item.Value);
+        }
+
+    protected:
+        IStructuredArchive& StructuredArchive;
     };
-    
+
+    class FArchiveArray : protected FSlotPosition
+    {
+        friend class FArchiveSlot;
+
+    public:
+        FArchiveArray(IStructuredArchive& InAr, uint32 InDepth, StructuredArchive::FSlotID InID)
+            : FSlotPosition(InDepth, InID)
+            , StructuredArchive(InAr)
+        {}
+
+        ~FArchiveArray();
+
+        LUMINA_API FArchiveSlot EnterElement();
+
+    protected:
+        
+        IStructuredArchive& StructuredArchive;
+    };
+
+    class FArchiveStream : protected FSlotPosition
+    {
+        friend class FArchiveSlot;
+
+    public:
+        FArchiveStream(IStructuredArchive& InAr, uint32 InDepth, StructuredArchive::FSlotID InID)
+            : FSlotPosition(InDepth, InID)
+            , StructuredArchive(InAr)
+        {}
+
+        ~FArchiveStream();
+
+        LUMINA_API FArchiveSlot EnterElement();
+
+    protected:
+        IStructuredArchive& StructuredArchive;
+    };
+
+    class FArchiveMap : protected FSlotPosition
+    {
+        friend class FArchiveSlot;
+
+    public:
+        FArchiveMap(IStructuredArchive& InAr, uint32 InDepth, StructuredArchive::FSlotID InID)
+            : FSlotPosition(InDepth, InID)
+            , StructuredArchive(InAr)
+        {}
+
+        ~FArchiveMap();
+
+        LUMINA_API FArchiveSlot EnterKey();
+
+        LUMINA_API FArchiveSlot EnterValue();
+
+    protected:
+        IStructuredArchive& StructuredArchive;
+    };
 
     class IStructuredArchive
     {
         friend class FArchiveSlot;
+        friend class FArchiveRecord;
+        friend class FArchiveArray;
+        friend class FArchiveStream;
+        friend class FArchiveMap;
     
     public:
         using FSlot = FArchiveSlot;
@@ -129,7 +215,6 @@ namespace Lumina
                 : ID(InID)
                 , Type(InType)
             {}
-            
         };
 
         virtual ~IStructuredArchive() = default;
@@ -138,9 +223,7 @@ namespace Lumina
             : RootElementID(0)
             , CurrentSlotID(0)
             , InnerAr(InInnerAr)
-        {
-        }
-        
+        {}
 
         /** Begins writing an archive at the root slot */
         LUMINA_API FArchiveSlot Open();
@@ -156,22 +239,35 @@ namespace Lumina
 
         /** Enters the current slot for serializing a value */
         virtual void EnterSlot(FSlotPosition Slot, bool bEnteringAttributedValue = false);
-
-        
-        virtual void EnterRecord() = 0;
-        virtual void LeaveRecord() = 0;
-    
         virtual void LeaveSlot() = 0;
 
-        NODISCARD virtual FArchiveSlot EnterField(FName FieldName) = 0;
+        // Record operations
+        virtual void EnterRecord() = 0;
+        virtual void LeaveRecord() = 0;
+        virtual FArchiveSlot EnterField(FName FieldName) = 0;
         virtual void LeaveField() = 0;
 
+        // Array operations
+        virtual void EnterArray(int32& NumElements) = 0;
+        virtual void LeaveArray() = 0;
+        virtual FArchiveSlot EnterArrayElement() = 0;
+
+        // Stream operations
+        virtual void EnterStream() = 0;
+        virtual void LeaveStream() = 0;
+        virtual FArchiveSlot EnterStreamElement() = 0;
+
+        // Map operations
+        virtual void EnterMap(int32& NumElements) = 0;
+        virtual void LeaveMap() = 0;
+        virtual FArchiveSlot EnterMapKey() = 0;
+        virtual FArchiveSlot EnterMapValue() = 0;
+
         FArchive& GetInnerAr() const { return InnerAr; }
-        bool IsLoading() const { return InnerAr.IsReading(); }
-        bool IsSaving() const { return InnerAr.IsWriting(); }
+        NODISCARD bool IsLoading() const { return InnerAr.IsReading(); }
+        NODISCARD bool IsSaving() const { return InnerAr.IsWriting(); }
 
     protected:
-
         TFixedVector<FElement, 32>      CurrentScope;
         FIDGenerator                    IDGenerator;
         StructuredArchive::FSlotID      RootElementID;
@@ -179,21 +275,68 @@ namespace Lumina
         FArchive&                       InnerAr;
     };
 
-    
     class FBinaryStructuredArchive final : public IStructuredArchive
     {
     public:
         LUMINA_API FBinaryStructuredArchive(FArchive& InAr);
-    
-    private:
 
+        virtual void EnterSlot(FSlotPosition Slot, bool bEnteringAttributedValue = false) override;
+        virtual void LeaveSlot() override;
+
+        virtual void EnterRecord() override;
+        virtual void LeaveRecord() override;
+        virtual FArchiveSlot EnterField(FName FieldName) override;
+        virtual void LeaveField() override;
+
+        virtual void EnterArray(int32& NumElements) override;
+        virtual void LeaveArray() override;
+        virtual FArchiveSlot EnterArrayElement() override;
+
+        virtual void EnterStream() override;
+        virtual void LeaveStream() override;
+        virtual FArchiveSlot EnterStreamElement() override;
+
+        virtual void EnterMap(int32& NumElements) override;
+        virtual void LeaveMap() override;
+        virtual FArchiveSlot EnterMapKey() override;
+        virtual FArchiveSlot EnterMapValue() override;
+
+    private:
+        struct FFieldInfo
+        {
+            FName FieldName;
+            uint64 Offset;
+        };
+
+        THashMap<StructuredArchive::FSlotID, TVector<FFieldInfo>> RecordFields;
     };
 
-
     template <typename T>
-    void FArchiveSlot::Serialize(TVector<T>& Value)
+    void FArchiveSlot::operator<<(StructuredArchive::TNamedValue<T> Item)
     {
-        StructuredArchive.InnerAr << Value;
+        FArchiveRecord Record = EnterRecord();
+        FArchiveSlot Field = Record.EnterField(Item.Name);
+        Field.Serialize(Item.Value);
     }
 
+    template<typename T>
+    void FArchiveSlot::Serialize(TVector<T>& Value)
+    {
+        int32 NumElements = Value.Num();
+        FArchiveArray Array = EnterArray(NumElements);
+        
+        if (StructuredArchive.IsLoading())
+        {
+            Value.SetNum(NumElements);
+        }
+        
+        for (int32 i = 0; i < NumElements; ++i)
+        {
+            FArchiveSlot ElementSlot = Array.EnterElement();
+            ElementSlot.Serialize(Value[i]);
+        }
+    }
+
+    // Helper macro for easy field serialization
+    #define SERIALIZE_NAMED_FIELD(Archive, Field) Archive << StructuredArchive::TNamedValue(#Field, Field)
 }
