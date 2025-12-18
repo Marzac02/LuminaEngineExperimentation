@@ -131,9 +131,6 @@ namespace Lumina
 				glfwSetWindowPos(Window, newX, newY);
 			}
 
-			
-
-
 			LOG_TRACE("Initializing Window: {0} (Width: {1}p Height: {2}p)", Specs.Title, Specs.Extent.x, Specs.Extent.y);
 			
 			GLFWimage Icon;
@@ -206,6 +203,7 @@ namespace Lumina
 	{
 		glfwSetWindowSize(Window, X, Y);
 	}
+	
 
 	bool FWindow::ShouldClose() const
 	{

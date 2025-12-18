@@ -20,10 +20,9 @@ namespace Lumina::Logging
 
 	using FLogQueue = TRingBuffer<FConsoleMessage>;
 
-	/** DO NOT COPY THIS ARRAY. It can become very large and will become incredibly expensive */
 	LUMINA_API const FLogQueue& GetConsoleLogQueue();
-	LUMINA_API std::shared_ptr<spdlog::logger> GetLogger();
-	LUMINA_API std::shared_ptr<spdlog::sinks::sink> GetSink();
+	LUMINA_API const std::shared_ptr<spdlog::logger>& GetLogger();
+	LUMINA_API const std::shared_ptr<spdlog::sinks::sink>& GetSink();
 	
 
 	
@@ -31,10 +30,9 @@ namespace Lumina::Logging
 
 /* Core Logging Macros */
 
-#define LOG_CRITICAL(...) ::Lumina::Logging::GetLogger()->critical(__VA_ARGS__)
-#define LOG_ERROR(...) ::Lumina::Logging::GetLogger()->error(__VA_ARGS__)
-#define LOG_WARN(...) ::Lumina::Logging::GetLogger()->warn(__VA_ARGS__)
-#define LOG_TRACE(...) ::Lumina::Logging::GetLogger()->trace(__VA_ARGS__)
-#define LOG_DEBUG(...) ::Lumina::Logging::GetLogger()->debug(__VA_ARGS__)
-#define LOG_INFO(...) ::Lumina::Logging::GetLogger()->info(__VA_ARGS__)
-#define LOG_INFO_TAGGED(Tag, ...) ::Lumina::Logging::GetLogger()->info("[{}] {}", Tag, __VA_ARGS__)
+#define LOG_CRITICAL(...)	::Lumina::Logging::GetLogger()->critical(__VA_ARGS__)
+#define LOG_ERROR(...)		::Lumina::Logging::GetLogger()->error(__VA_ARGS__)
+#define LOG_WARN(...)		::Lumina::Logging::GetLogger()->warn(__VA_ARGS__)
+#define LOG_TRACE(...)		::Lumina::Logging::GetLogger()->trace(__VA_ARGS__)
+#define LOG_DEBUG(...)		::Lumina::Logging::GetLogger()->debug(__VA_ARGS__)
+#define LOG_INFO(...)		::Lumina::Logging::GetLogger()->info(__VA_ARGS__)

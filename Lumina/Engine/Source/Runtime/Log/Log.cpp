@@ -11,9 +11,8 @@ PRAGMA_ENABLE_ALL_WARNINGS
 
 namespace Lumina::Logging
 {
-	
-	LUMINA_API std::shared_ptr<spdlog::logger> Logger;
-	LUMINA_API FLogQueue Logs(300);
+	static std::shared_ptr<spdlog::logger> Logger;
+	static FLogQueue Logs(300);
 	
 	bool IsInitialized()
 	{
@@ -28,12 +27,6 @@ namespace Lumina::Logging
 		Logger->set_level(spdlog::level::trace);
 	
 		LOG_TRACE("------- Log Initialized -------");
-
-	}
-
-	std::shared_ptr<spdlog::sinks::sink> GetSink()
-	{
-		return Logger->sinks().front();
 	}
 
 	void Shutdown()
@@ -48,9 +41,14 @@ namespace Lumina::Logging
 		return Logs;
 	}
 
-	std::shared_ptr<spdlog::logger> GetLogger()
+	const std::shared_ptr<spdlog::logger>& GetLogger()
 	{
 		return Logger;
+	}
+	
+	const std::shared_ptr<spdlog::sinks::sink>& GetSink()
+	{
+		return Logger->sinks().front();
 	}
 	
 }
