@@ -9,22 +9,21 @@ namespace Lumina::FileHelper
 {
     bool SaveArrayToFile(const TVector<uint8>& Array, FStringView Path, uint32 WriteFlags)
     {
-        std::filesystem::path FilePath = Path.data();
+        std::filesystem::path FilePath(Path.begin(), Path.end());
         
-        std::ofstream outFile(FilePath, std::ios::binary | std::ios::trunc);
-        if (!outFile)
+        std::ofstream OutFile(FilePath, std::ios::binary | std::ios::trunc);
+        if (!OutFile)
         {
             LOG_ERROR("Failed to open file for writing: {0}", FilePath.string());
             return false;
         }
 
-        if (!outFile.write(reinterpret_cast<const char*>(Array.data()), Array.size()))
+        if (!OutFile.write(reinterpret_cast<const char*>(Array.data()), static_cast<int64>(Array.size())))
         {
             LOG_ERROR("Failed to write data to file: {0}", FilePath.string());
             return false;
         }
 
-        outFile.close();
         return true;
     }
 
@@ -59,7 +58,6 @@ namespace Lumina::FileHelper
             return false;
         }
 
-        InFile.close();
         return true;
     }
 
@@ -95,7 +93,6 @@ namespace Lumina::FileHelper
             return false;
         }
 
-        InFile.close();
         return true;
     }
 
@@ -163,7 +160,6 @@ namespace Lumina::FileHelper
         }
 
         file << String.data();
-        file.close();
 
         return true;
     }
@@ -194,7 +190,6 @@ namespace Lumina::FileHelper
             return false;
         }
 
-        File.close();
         return true;
     }
 
