@@ -114,8 +114,9 @@ namespace Lumina
 
         void OnInitialize() override;
         void OnDeinitialize(const FUpdateContext& UpdateContext) override;
-
+        
         void Update(const FUpdateContext& UpdateContext) override;
+        void EndFrame() override;
 
         void DrawToolMenu(const FUpdateContext& UpdateContext) override;
         void InitializeDockingLayout(ImGuiID InDockspaceID, const ImVec2& InDockspaceSize) const override;
@@ -137,6 +138,8 @@ namespace Lumina
         void NotifyPlayInEditorStop();
 
         void SetWorld(CWorld* InWorld) override;
+        
+        void OnEntityDestroyed(entt::registry& Registry, entt::entity Entity);
         
     protected:
 

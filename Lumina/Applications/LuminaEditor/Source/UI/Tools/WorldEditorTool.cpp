@@ -171,6 +171,8 @@ namespace Lumina
 
         OutlinerListView.MarkTreeDirty();
         SystemsListView.MarkTreeDirty();
+        
+        World->GetEntityRegistry().on_destroy<entt::entity>().connect<&FWorldEditorTool::OnEntityDestroyed>(this);
     }
 
     void FWorldEditorTool::OnDeinitialize(const FUpdateContext& UpdateContext)
@@ -241,6 +243,11 @@ namespace Lumina
                 EntityDestroyRequests.push(SelectedEntity);
             }
         }
+    }
+
+    void FWorldEditorTool::EndFrame()
+    {
+        FEditorTool::EndFrame();
     }
 
     void FWorldEditorTool::DrawToolMenu(const FUpdateContext& UpdateContext)
@@ -516,7 +523,7 @@ namespace Lumina
         ImGuizmo::SetDrawlist(ImGui::GetCurrentWindow()->DrawList);
         ImGuizmo::SetRect(ImGui::GetWindowPos().x, ImGui::GetWindowPos().y, ViewportSize.x, ViewportSize.y);
 
-        if (SelectedEntity != entt::null)
+        if (World->GetEntityRegistry().valid(SelectedEntity))
         {
             STransformComponent& SelectedTransformComponent = World->GetEntityRegistry().get<STransformComponent>(SelectedEntity);
             if (CameraComponent.GetViewVolume().GetFrustum().IsInside(SelectedTransformComponent.WorldTransform.Location))
@@ -720,6 +727,11 @@ namespace Lumina
             }
             else
             {
+                if (ImGui::IsKeyPressed(ImGuiKey_Escape))
+                {
+                    SetWorldNewSimulate(false);
+                }
+                
                 if (ImGuiX::IconButton(LE_ICON_COG_BOX, "Stop Simulating World", 4278190335, ImVec2(ButtonWidth + 64.0f, 0)))
                 {
                     SetWorldNewSimulate(false);
@@ -1097,6 +1109,14 @@ namespace Lumina
         
         SystemsListView.MarkTreeDirty();
         OutlinerListView.MarkTreeDirty();
+    }
+
+    void FWorldEditorTool::OnEntityDestroyed(entt::registry& Registry, entt::entity Entity)
+    {
+        if (SelectedEntity == Entity)
+        {
+            SetSelectedEntity(entt::null);
+        }
     }
 
     void FWorldEditorTool::SetWorldNewSimulate(bool bShouldSimulate)
@@ -2087,7 +2107,7 @@ namespace Lumina
     
         ImGui::BeginChild("Property Editor", ImGui::GetContentRegionAvail(), true);
     
-        if (SelectedEntity != entt::null)
+        if (SelectedEntity != entt::null && World->GetEntityRegistry().valid(SelectedEntity))
         {
             DrawEntityProperties();
         }
