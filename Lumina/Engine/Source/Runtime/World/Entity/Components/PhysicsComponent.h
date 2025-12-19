@@ -25,7 +25,10 @@ namespace Lumina
 
         PROPERTY(Editable, Category = "Physics")
         EBodyType BodyType = EBodyType::Dynamic;
-
+        
+        PROPERTY(Visible, Category = "Physics")
+        uint64 BodyID = UINT64_MAX;
+        
         PROPERTY(Editable, Category = "Physics")
         float Mass = 1.0f;
 

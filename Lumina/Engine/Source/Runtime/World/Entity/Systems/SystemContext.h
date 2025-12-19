@@ -1,16 +1,22 @@
 ﻿#pragma once
+#include "Physics/Ray/RayCast.h"
 #include "TaskSystem/TaskSystem.h"
 #include "World/Entity/Components/TransformComponent.h"
 
 
 namespace Lumina
 {
+    namespace Physics
+    {
+        class IPhysicsScene;
+    }
+
     struct FSystemContext : INonCopyable
     {
         friend class CWorld;
         
         FSystemContext(CWorld* InWorld);
-        ~FSystemContext();
+        ~FSystemContext() = default;
         
         static void RegisterWithLua(sol::state& Lua);
 
@@ -131,15 +137,16 @@ namespace Lumina
             return Registry.emplace_or_replace<T>(entity, std::forward<TArgs>(Args)...);
         }
 
+        LUMINA_API TOptional<FRayResult> CastRay(const glm::vec3& Start, const glm::vec3& End, bool bDrawDebug = false, uint32 LayerMask = 0xFFFFFFFF, int64 IgnoreBody = -1) const;
+
+        
         LUMINA_API STransformComponent& GetEntityTransform(uint32 Entity);
         LUMINA_API void MarkEntityTransformDirty(uint32 Entity);
 
         LUMINA_API entt::entity Create(const FName& Name, const FTransform& Transform = FTransform()) const;
 
-        LUMINA_API entt::entity Create() const
-        {
-            return Registry.create();
-        }
+        LUMINA_API entt::entity Create() const { return Registry.create(); }
+        LUMINA_API void Destroy(entt::entity Entity) const { Registry.destroy(Entity); }
 
         
         
@@ -156,8 +163,9 @@ namespace Lumina
         double              DeltaTime = 0.0;
         double              Time = 0.0;
 
-        FEntityRegistry&    Registry;
-        entt::dispatcher&   Dispatcher;
+        CWorld*                 World = nullptr;
+        FEntityRegistry&        Registry;
+        entt::dispatcher&       Dispatcher;
     };
     
     

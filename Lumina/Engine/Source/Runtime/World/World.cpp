@@ -525,6 +525,16 @@ namespace Lumina
         Batcher.DrawViewVolume(ViewVolume, Color, Thickness, Duration);
     }
 
+    TOptional<FRayResult> CWorld::CastRay(const glm::vec3& Start, const glm::vec3& End, bool bDrawDebug, uint32 LayerMask, int64 IgnoreBody) const
+    {
+        if (PhysicsScene == nullptr)
+        {
+            return eastl::nullopt;
+        }
+        
+        return PhysicsScene->CastRay(Start,End, bDrawDebug, LayerMask, IgnoreBody);
+    }
+
     void CWorld::SetEntityTransform(entt::entity Entity, const FTransform& NewTransform)
     {
         EntityRegistry.emplace_or_replace<STransformComponent>(Entity, NewTransform);

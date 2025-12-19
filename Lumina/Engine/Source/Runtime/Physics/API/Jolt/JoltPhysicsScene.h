@@ -110,11 +110,6 @@ namespace Lumina::Physics
     private:
         JPH::BroadPhaseLayer					ObjectToBroadPhase[Layers::NUM_LAYERS];
     };
-
-    struct LUMINA_API FJoltBodyComponent
-    {
-        JPH::BodyID Body;
-    };
     
     class FJoltPhysicsScene : public IPhysicsScene
     {
@@ -129,6 +124,8 @@ namespace Lumina::Physics
         void PostUpdate() override;
         void OnWorldSimulate() override;
         void OnWorldStopSimulate() override;
+    	
+    	TOptional<FRayResult> CastRay(const glm::vec3& Start, const glm::vec3& End, bool bDrawDebug, uint32 LayerMask, int64 IgnoreBody) override;
 
     	void OnCharacterComponentConstructed(entt::registry& Registry, entt::entity Entity);
     	void OnRigidBodyComponentConstructed(entt::registry& Registry, entt::entity EntityID);

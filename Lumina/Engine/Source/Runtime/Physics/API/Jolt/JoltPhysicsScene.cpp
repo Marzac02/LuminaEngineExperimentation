@@ -6,6 +6,8 @@
 #include <Jolt/Physics/Collision/Shape/RotatedTranslatedShape.h>
 
 #include <algorithm>
+#include <Jolt/Physics/Collision/CastResult.h>
+#include <Jolt/Physics/Collision/RayCast.h>
 
 #include "JoltPhysics.h"
 #include "JoltUtils.h"
@@ -138,17 +140,17 @@ namespace Lumina::Physics
         const JPH::BodyLockInterfaceNoLock& LockInterface = JoltSystem->GetBodyLockInterfaceNoLock();
         JPH::BodyInterface& BodyInterface = JoltSystem->GetBodyInterface();
         
-        auto BodySyncView = Registry.view<FJoltBodyComponent, STransformComponent, FNeedsTransformUpdate>();
-        BodySyncView.each([&](const FJoltBodyComponent& BodyComponent, const STransformComponent& TransformComponent, const FNeedsTransformUpdate&)
+        auto BodySyncView = Registry.view<SRigidBodyComponent, STransformComponent, FNeedsTransformUpdate>();
+        BodySyncView.each([&](const SRigidBodyComponent& BodyComponent, const STransformComponent& TransformComponent, const FNeedsTransformUpdate&)
         {
-            JPH::BodyLockRead Lock(LockInterface, BodyComponent.Body);
+            JPH::BodyLockRead Lock(LockInterface, JPH::BodyID(BodyComponent.BodyID));
             if (Lock.Succeeded())
             {
                 const JPH::Body& Body = Lock.GetBody();
 
                 if (Body.IsKinematic())
                 {
-                    BodyInterface.SetPositionAndRotationWhenChanged(BodyComponent.Body,
+                    BodyInterface.SetPositionAndRotationWhenChanged(JPH::BodyID(BodyComponent.BodyID),
                         JoltUtils::ToJPHRVec3(TransformComponent.GetLocation()),
                         JoltUtils::ToJPHQuat(TransformComponent.GetRotation()),
                         JPH::EActivation::Activate);
@@ -255,10 +257,10 @@ namespace Lumina::Physics
         const JPH::BodyLockInterfaceNoLock& LockInterface = JoltSystem->GetBodyLockInterfaceNoLock();
         entt::registry& Registry = World->GetEntityRegistry();
 
-        auto View = Registry.view<FJoltBodyComponent, STransformComponent>();
-        View.each([&](entt::entity EntityID, const FJoltBodyComponent& BodyComponent, STransformComponent& TransformComponent)
+        auto View = Registry.view<SRigidBodyComponent, STransformComponent>();
+        View.each([&](entt::entity EntityID, const SRigidBodyComponent& BodyComponent, STransformComponent& TransformComponent)
         {
-            const JPH::Body* Body = LockInterface.TryGetBody(BodyComponent.Body);
+            const JPH::Body* Body = LockInterface.TryGetBody(JPH::BodyID(BodyComponent.BodyID));
             
             if (Body == nullptr || !Body->IsActive())
             {
@@ -324,7 +326,7 @@ namespace Lumina::Physics
         entt::registry& Registry = World->GetEntityRegistry();
 
         
-        auto View = Registry.view<SRigidBodyComponent, STransformComponent>(entt::exclude<FJoltBodyComponent>);
+        auto View = Registry.view<SRigidBodyComponent, STransformComponent>();
         
         View.each([&] (entt::entity EntityID, SRigidBodyComponent&, STransformComponent&)
         {
@@ -339,8 +341,7 @@ namespace Lumina::Physics
         });
         
         JoltSystem->OptimizeBroadPhase();
-
-
+        
         Registry.on_construct<SCharacterPhysicsComponent>().connect<&FJoltPhysicsScene::OnCharacterComponentConstructed>(this);
         Registry.on_construct<SRigidBodyComponent>().connect<&FJoltPhysicsScene::OnRigidBodyComponentConstructed>(this);
         Registry.on_destroy<SRigidBodyComponent>().connect<&FJoltPhysicsScene::OnRigidBodyComponentDestroyed>(this);
@@ -356,11 +357,71 @@ namespace Lumina::Physics
         Registry.on_construct<SRigidBodyComponent>().disconnect<&FJoltPhysicsScene::OnRigidBodyComponentConstructed>(this);
         Registry.on_destroy<SRigidBodyComponent>().disconnect<&FJoltPhysicsScene::OnRigidBodyComponentDestroyed>(this);
 
-        auto View = Registry.view<SRigidBodyComponent, FJoltBodyComponent>();
-        View.each([&] (entt::entity EntityID, SRigidBodyComponent&, FJoltBodyComponent&)
+        auto View = Registry.view<SRigidBodyComponent>();
+        View.each([&] (entt::entity EntityID, SRigidBodyComponent&)
         {
            OnRigidBodyComponentDestroyed(Registry, EntityID); 
         });
+    }
+
+    TOptional<FRayResult> FJoltPhysicsScene::CastRay(const glm::vec3& Start, const glm::vec3& End, bool bDrawDebug, uint32 LayerMask, int64 IgnoreBody)
+    {
+        JPH::Vec3 JPHStart  = JoltUtils::ToJPHVec3(Start);
+        JPH::Vec3 JPHEnd    = JoltUtils::ToJPHVec3(End);
+        JPH::Vec3 Direction = JPHEnd - JPHStart;
+        
+        if (Direction.Length() < LE_SMALL_NUMBER)
+        {
+            return eastl::nullopt;
+        }
+        
+        JPH::RRayCast Ray;
+        Ray.mOrigin = JPHStart;
+        Ray.mDirection = Direction;
+        
+        class IgnoreFilter : public JPH::BodyFilter
+        {
+        public:
+            IgnoreFilter(JPH::BodyID inIgnoreBodyID)
+                : mIgnoreBodyID(inIgnoreBodyID) {}
+        
+            bool ShouldCollide(const JPH::BodyID& inBodyID) const override
+            {
+                return inBodyID != mIgnoreBodyID;
+            }
+
+            JPH::BodyID mIgnoreBodyID;
+            JPH::RayCastResult mHit;
+        };
+        
+        IgnoreFilter IgnoreFilter{JPH::BodyID(IgnoreBody)};
+        
+        
+        
+        JPH::RayCastResult Hit;
+        bool bHit = JoltSystem->GetNarrowPhaseQuery().CastRay(Ray, Hit, {}, {}, IgnoreFilter);
+        if (!bHit)
+        {
+            return eastl::nullopt;
+        }
+        
+        const JPH::BodyLockInterfaceNoLock& LockInterface = JoltSystem->GetBodyLockInterfaceNoLock();
+        
+        JPH::Body* Body = LockInterface.TryGetBody(Hit.mBodyID);
+        if (!Body)
+        {
+            return eastl::nullopt;
+        }
+        
+        FRayResult Result;
+        Result.BodyID = Hit.mBodyID.GetIndexAndSequenceNumber();
+        Result.Entity = static_cast<uint32>(Body->GetUserData());
+        Result.Start = Start;
+        Result.End = End;
+        Result.Location = JoltUtils::FromJPHRVec3(Ray.GetPointOnRay(Hit.mFraction));
+        Result.Fraction = Hit.mFraction;
+        
+        return Result;
     }
 
     void FJoltPhysicsScene::OnCharacterComponentConstructed(entt::registry& Registry, entt::entity Entity)
@@ -425,7 +486,7 @@ namespace Lumina::Physics
         JPH::ObjectLayer Layer      = ToJoltObjectType(RigidBodyComponent.BodyType);
         JPH::EMotionType MotionType = ToJoltMotionType(RigidBodyComponent.BodyType);
 
-        glm::quat Rotation = TransformComponent.GetRotation();
+        glm::quat Rotation      = TransformComponent.GetRotation();
         glm::vec3 Position      = TransformComponent.GetLocation();
 
         JPH::BodyCreationSettings Settings(
@@ -443,20 +504,19 @@ namespace Lumina::Physics
         JPH::BodyInterface& BodyInterface = JoltSystem->GetBodyInterface();
         
         JPH::Body* Body = BodyInterface.CreateBody(Settings);
+        Body->SetUserData(static_cast<uint64>(EntityID));
         BodyInterface.AddBody(Body->GetID(), JPH::EActivation::Activate);
-        Registry.emplace<FJoltBodyComponent>(EntityID, Body->GetID());
+        RigidBodyComponent.BodyID = static_cast<uint64>(Body->GetID().GetIndexAndSequenceNumber());
     }
 
     void FJoltPhysicsScene::OnRigidBodyComponentDestroyed(entt::registry& Registry, entt::entity EntityID)
     {
-        if (FJoltBodyComponent* JoltBodyComponent = Registry.try_get<FJoltBodyComponent>(EntityID))
-        {
-            JPH::BodyInterface& BodyInterface = JoltSystem->GetBodyInterface();
+        SRigidBodyComponent& RigidBodyComponent = Registry.get<SRigidBodyComponent>(EntityID);
+        JPH::BodyInterface& BodyInterface = JoltSystem->GetBodyInterface();
+        JPH::BodyID BodyID(RigidBodyComponent.BodyID);
         
-            BodyInterface.RemoveBody(JoltBodyComponent->Body);
-            BodyInterface.DestroyBody(JoltBodyComponent->Body);
-            Registry.remove<FJoltBodyComponent>(EntityID);
-        }
+        BodyInterface.RemoveBody(BodyID);
+        BodyInterface.DestroyBody(BodyID);
     }
 
     void FJoltPhysicsScene::OnColliderComponentAdded(entt::registry& Registry, entt::entity EntityID)

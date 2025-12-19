@@ -12,6 +12,7 @@
 #include "Scene/RenderScene/RenderScene.h"
 #include "Subsystems/FCameraManager.h"
 #include "World.generated.h"
+#include "Physics/Ray/RayCast.h"
 
 
 namespace Lumina
@@ -128,6 +129,9 @@ namespace Lumina
         void DrawArrow(const glm::vec3& Start, const glm::vec3& Direction, float Length, const glm::vec4& Color, float Thickness = 1.0f, float Duration = 1.0f, float HeadSize = 0.2f);
         void DrawViewVolume(const FViewVolume& ViewVolume, const glm::vec4& Color, float Thickness = 1.0f, float Duration = 1.0f);
         //~ End Debug Drawing
+        
+        TOptional<FRayResult> CastRay(const glm::vec3& Start, const glm::vec3& End, bool bDrawDebug = false, uint32 LayerMask = 0xFFFFFFFF, int64 IgnoreBody = -1) const;
+        
 
         void SetIsPlayWorld(bool bValue) { bIsPlayWorld = bValue; }
         FORCEINLINE bool IsPlayWorld() const { return bIsPlayWorld; }

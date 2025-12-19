@@ -9,13 +9,9 @@
 namespace Lumina
 {
     FSystemContext::FSystemContext(CWorld* InWorld)
-        : Registry(InWorld->EntityRegistry)
+        : World(InWorld)
+        , Registry(InWorld->EntityRegistry)
         , Dispatcher(InWorld->SingletonDispatcher)
-    {
-        
-    }
-    
-    FSystemContext::~FSystemContext()
     {
         
     }
@@ -36,6 +32,11 @@ namespace Lumina
         
     }
 
+
+    TOptional<FRayResult> FSystemContext::CastRay(const glm::vec3& Start, const glm::vec3& End, bool bDrawDebug, uint32 LayerMask, int64 IgnoreBody) const
+    {
+        return World->CastRay(Start, End, bDrawDebug, LayerMask, IgnoreBody);
+    }
 
     STransformComponent& FSystemContext::GetEntityTransform(uint32 Entity)
     {
