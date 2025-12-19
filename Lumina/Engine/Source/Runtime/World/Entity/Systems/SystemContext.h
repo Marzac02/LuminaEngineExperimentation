@@ -54,7 +54,7 @@ namespace Lumina
         {
             return Registry.view<Ts...>(std::forward<TArgs>(Args)...);
         }
-
+        
         template<typename... Ts, typename TFunc, typename... TArgs>
         void ForEach(TFunc&& Function, TArgs&&... Args)
         {
@@ -84,7 +84,7 @@ namespace Lumina
             return Registry.ctx();
         }
 
-        FEntityRegistry& GetRegistry() const
+        entt::registry& GetRegistry() const
         {
             return Registry;
         }
@@ -139,12 +139,14 @@ namespace Lumina
 
         LUMINA_API TOptional<FRayResult> CastRay(const glm::vec3& Start, const glm::vec3& End, bool bDrawDebug = false, uint32 LayerMask = 0xFFFFFFFF, int64 IgnoreBody = -1) const;
 
-        
+
         LUMINA_API STransformComponent& GetEntityTransform(uint32 Entity);
         LUMINA_API void MarkEntityTransformDirty(uint32 Entity);
 
-        LUMINA_API entt::entity Create(const FName& Name, const FTransform& Transform = FTransform()) const;
+        LUMINA_API entt::runtime_view CreateRuntimeView(const TVector<FName>& Components);
+        LUMINA_API entt::runtime_view CreateRuntimeView(const TVector<entt::id_type>& Components);
 
+        LUMINA_API entt::entity Create(const FName& Name, const FTransform& Transform = FTransform()) const;
         LUMINA_API entt::entity Create() const { return Registry.create(); }
         LUMINA_API void Destroy(entt::entity Entity) const { Registry.destroy(Entity); }
 
@@ -153,8 +155,8 @@ namespace Lumina
     private:
 
         void LuaSetActiveCamera(uint32 Entity);
-        sol::table LuaEmplace(uint32 Entity, sol::table Type);
-        sol::table MakeLuaView(sol::variadic_args Types);
+        sol::object LuaEmplace(entt::entity Entity, const sol::object& Component);
+        sol::reference LuaGet(entt::entity Entity, const sol::object& Type);
         void BindLuaEvent(sol::table Table, sol::function Function);
         
     private:
@@ -164,7 +166,7 @@ namespace Lumina
         double              Time = 0.0;
 
         CWorld*                 World = nullptr;
-        FEntityRegistry&        Registry;
+        entt::registry&         Registry;
         entt::dispatcher&       Dispatcher;
     };
     

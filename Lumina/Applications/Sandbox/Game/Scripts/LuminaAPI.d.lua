@@ -164,31 +164,13 @@ UpdateStage = {
 ScriptContext = {}
 
 
----@class ScriptTypeEnum
----@field System string
----@field EventBind string
----@field Component string
----@field Command string
----@field Resource string
-
----@type ScriptTypeEnum
-ScriptType = {
-    System = "System",
-    EventBind = "EventBind",
-    Component = "Component",
-    Command = "Command",
-    Resource = "Resource"
-}
-
 ---@class SystemDescriptor
----@field Name? string Name of the system (default: "UnnamedSystem")
 ---@field Stage? UpdateStage Stage when the system should execute (default: UpdateStage.FrameStart)
 ---@field Priority? number Execution priority within the stage (default: 0)
 ---@field Execute fun(world: any, deltaTime: number) Function called every frame
 
 ---@class SystemResult
 ---@field Type string The type identifier (ScriptType.System)
----@field Name string Name of the system
 ---@field Stage UpdateStage Stage when the system should execute
 ---@field Priority number Execution priority within the stage
 ---@field Execute fun(world: any, deltaTime: number) Function called every frame
@@ -198,8 +180,7 @@ ScriptType = {
 ---@return SystemResult
 function System(descriptor)
     return {
-        Type = ScriptType.System,
-        Name = descriptor.Name or "UnnamedSystem",
+        Type = "System",
         Stage = descriptor.Stage or UpdateStage.FrameStart, ---@type UpdateStage
         Priority = descriptor.Priority or 0,
         Execute = descriptor.Execute,
@@ -224,7 +205,7 @@ end
 ---@return EventBindResult
 function EventBind(descriptor)
     return {
-        Type = ScriptType.EventBind,
+        Type = "EventBind",
         Name = descriptor.Name or "UnnamedEventBind",
         Events = descriptor.Events or {},
         Handler = descriptor.Handler,
@@ -250,7 +231,7 @@ end
 ---@return ComponentResult
 function Component(descriptor)
     return {
-        Type = ScriptType.Component,
+        Type = "Component",
         Name = descriptor.Name,
         Fields = descriptor.Fields or {},
         OnCreate = descriptor.OnCreate,
@@ -281,7 +262,7 @@ end
 ---@return CommandResult
 function Command(descriptor)
     return {
-        Type = ScriptType.Command,
+        Type = "Command",
         Name = descriptor.Name,
         Description = descriptor.Description or "",
         Parameters = descriptor.Parameters or {},

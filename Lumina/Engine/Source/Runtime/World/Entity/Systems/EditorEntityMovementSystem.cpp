@@ -78,17 +78,6 @@ namespace Lumina
             
             Transform.Transform.Location += Velocity.Velocity * (float)DeltaTime;
             
-            if (FInputProcessor::Get().IsKeyDown(EKeyCode::T))
-            {
-                TOptional<FRayResult> Result = SystemContext.CastRay(Transform.GetLocation(), Transform.GetLocation() + (Transform.GetForward() * 500.0f));
-            
-                if (Result.has_value())
-                {
-                    SystemContext.Destroy(static_cast<entt::entity>(Result->Entity));
-                    LOG_INFO("Result {0}", Result->Entity);
-                }
-            }
-            
             if (FInputProcessor::Get().IsMouseButtonDown(EMouseCode::ButtonRight))
             {
                 FInputProcessor::Get().SetCursorMode(GLFW_CURSOR_DISABLED);

@@ -31,6 +31,7 @@ namespace Lumina
         : SingletonEntity(entt::null)
         , SystemContext(this)
     {
+        
     }
 
     void CWorld::Serialize(FArchive& Ar)
@@ -451,31 +452,14 @@ namespace Lumina
             {
                 for (uint32 i = 0; i < (uint32)EUpdateStage::Max; ++i)
                 {
-                    LuaContainerComponent.Scripts[i].clear();
+                    LuaContainerComponent.Systems[i].clear();
                 }
-    
-                Scripting::FScriptingContext::Get().ForEachScript([&](const Scripting::FLuaScriptEntry& Script)
+
+                using namespace Scripting;
+                FScriptingContext::Get().ForEachScript("System", [&](const FLuaScriptEntry& Script)
                 {
-                    if (sol::optional<sol::table> StagesTable = Script.Table["Stages"])
-                    {
-                        if (!StagesTable.has_value())
-                        {
-                            return;
-                        }
-                        
-                        for (const auto& [Key, Stage] : StagesTable.value())
-                        {
-                            if (Stage.is<EUpdateStage>())
-                            {
-                                EUpdateStage UpdateStage = Stage.as<EUpdateStage>();
-                                LuaContainerComponent.Scripts[(uint32)UpdateStage].push_back(Script);
-                            }
-                        }
-                    }
-                    else
-                    {
-                        LuaContainerComponent.Scripts[(uint32)EUpdateStage::FrameStart].push_back(Script);
-                    }
+                    const FLuaSystemScriptEntry& SystemScript = Script.As<FLuaSystemScriptEntry>();
+                    LuaContainerComponent.Systems[SystemScript.Stage].emplace_back(&SystemScript);
                 });
             });
             

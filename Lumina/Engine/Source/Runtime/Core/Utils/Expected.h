@@ -69,7 +69,6 @@ namespace Lumina
             requires(eastl::is_move_constructible_v<T> && eastl::is_move_constructible_v<E>)
         = default;
 
-        // Forwarding value constructor
         template<typename U = T>
         constexpr explicit(!eastl::is_convertible_v<U, T>) TExpected(U&& InValue)
             noexcept(eastl::is_nothrow_constructible_v<T, U>)
@@ -81,7 +80,6 @@ namespace Lumina
         {
         }
 
-        // Unexpected constructors
         template<typename G>
         constexpr explicit(!eastl::is_convertible_v<const G&, E>) TExpected(const TUnexpected<G>& Unex)
             noexcept(eastl::is_nothrow_constructible_v<E, const G&>)
@@ -98,7 +96,6 @@ namespace Lumina
         {
         }
 
-        // In-place constructors
         template<typename... Args>
         constexpr explicit TExpected(InPlaceT, Args&&... InArgs)
             noexcept(eastl::is_nothrow_constructible_v<T, Args...>)
@@ -115,16 +112,13 @@ namespace Lumina
         {
         }
 
-        // Destructor
         ~TExpected() = default;
 
-        // Copy assignment - only if both T and E support it
         constexpr TExpected& operator=(const TExpected&)
             requires(eastl::is_copy_constructible_v<T> && eastl::is_copy_assignable_v<T> &&
                      eastl::is_copy_constructible_v<E> && eastl::is_copy_assignable_v<E>)
         = default;
 
-        // Move assignment - only if both T and E support it
         constexpr TExpected& operator=(TExpected&&)
             noexcept(eastl::is_nothrow_move_constructible_v<T> && eastl::is_nothrow_move_assignable_v<T> &&
                      eastl::is_nothrow_move_constructible_v<E> && eastl::is_nothrow_move_assignable_v<E>)
@@ -132,7 +126,6 @@ namespace Lumina
                      eastl::is_move_constructible_v<E> && eastl::is_move_assignable_v<E>)
         = default;
 
-        // Value assignment
         template<typename U = T>
         constexpr TExpected& operator=(U&& InValue)
             requires(!eastl::is_same_v<eastl::remove_cvref_t<U>, TExpected> &&
@@ -144,7 +137,6 @@ namespace Lumina
             return *this;
         }
 
-        // Unexpected assignment
         template<typename G>
         constexpr TExpected& operator=(const TUnexpected<G>& Unex)
         {
@@ -159,7 +151,6 @@ namespace Lumina
             return *this;
         }
 
-        // Observers
         NODISCARD constexpr const T* operator->() const noexcept 
         { 
             return &eastl::get<0>(Storage); 
@@ -245,7 +236,6 @@ namespace Lumina
             return eastl::move(eastl::get<1>(Storage)); 
         }
 
-        // Value or default
         template<typename U>
         NODISCARD constexpr T ValueOr(U&& DefaultValue) const&
         {

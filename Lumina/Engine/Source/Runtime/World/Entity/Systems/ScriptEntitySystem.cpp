@@ -8,14 +8,7 @@ namespace Lumina
 {
     void CScriptEntitySystem::RegisterEventListeners(FSystemContext& SystemContext)
     {
-        auto View = SystemContext.CreateView<FLuaScriptsContainerComponent>();
-        View.each([&](FLuaScriptsContainerComponent& ScriptContainer)
-        {
-            for (Scripting::FLuaScriptEntry& Entry : ScriptContainer.Scripts[(uint32)SystemContext.GetUpdateStage()])
-            {
-                Entry.Environment["ScriptContext"] = &SystemContext;
-            }
-        });
+
     }
     
     void CScriptEntitySystem::Update(FSystemContext& SystemContext)
@@ -25,18 +18,23 @@ namespace Lumina
         auto View = SystemContext.CreateView<FLuaScriptsContainerComponent>();
         View.each([&](FLuaScriptsContainerComponent& ScriptContainer)
         {
-            for (Scripting::FLuaScriptEntry& Entry : ScriptContainer.Scripts[(uint32)SystemContext.GetUpdateStage()])
+            for (const Scripting::FLuaSystemScriptEntry* Entry : ScriptContainer.Systems[(uint32)SystemContext.GetUpdateStage()])
             {
-                Entry.Environment["ScriptContext"] = &SystemContext;
-                if (sol::optional<sol::function> UpdateFunc = Entry.Table["OnUpdate"])
+                entt::runtime_view RuntimeView = SystemContext.CreateRuntimeView(Entry->Queries);
+                std::vector<entt::entity> Entities(RuntimeView.begin(), RuntimeView.end());
+
+                if (Entities.empty())
                 {
-                    sol::protected_function_result Result = (*UpdateFunc)(Entry.Table);
+                    continue;
+                }
                 
-                    if (!Result.valid())
-                    {
-                        sol::error Error = Result;
-                        LOG_INFO("[Sol] Error calling OnUpdate: {}", Error.what());
-                    }
+                try
+                {
+                    Entry->ExecuteFunc(SystemContext, Entities, SystemContext.GetDeltaTime());
+                }
+                catch (sol::error& Error)
+                {
+                    LOG_ERROR("Script Error: {0}", Error.what());
                 }
             }
         });

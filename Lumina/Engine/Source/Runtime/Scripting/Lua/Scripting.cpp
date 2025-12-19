@@ -7,6 +7,7 @@
 #include "Memory/SmartPtr.h"
 #include "Paths/Paths.h"
 #include "Scripting/DeferredScriptRegistry.h"
+#include "Scripting/ScriptFactory.h"
 #include "World/Entity/Components/TagComponent.h"
 #include "World/Entity/Systems/SystemContext.h"
 
@@ -55,81 +56,12 @@ namespace Lumina::Scripting
     void FScriptingContext::OnScriptReloaded(FStringView ScriptPath)
     {
         FScopeLock Lock(Mutex);
-
-        TUniquePtr<FLuaScriptEntry>* FoundEntryPtr = nullptr;
-        for (auto& [Name, PathVector] : RegisteredScripts)
-        {
-            for (size_t i = 0; i < PathVector.size(); ++i)
-            {
-                TUniquePtr<FLuaScriptEntry>& Path = PathVector[i];
-                if (Paths::PathsEqual(ScriptPath, Path->Path))
-                {
-                    FoundEntryPtr = &Path;
-                    break;
-                }
-            }
-        
-            if (FoundEntryPtr)
-            {
-                break;
-            }
-        }
-
-        if (FoundEntryPtr)
-        {
-            if (TUniquePtr<FLuaScriptEntry> NewScript = LoadScript(ScriptPath))
-            {
-                *FoundEntryPtr = Move(NewScript);
-                LOG_INFO("Script reloaded: {}", ScriptPath);
-            }
-            else
-            {
-                LOG_ERROR("Failed to reload script: {}", ScriptPath);
-            }
-
-            return;
-        }
-
-        FString ParentPath = Paths::Parent(ScriptPath);
-        Paths::NormalizePath(ParentPath);
-
-        if (TUniquePtr<FLuaScriptEntry> NewScript = LoadScript(ScriptPath))
-        {
-            RegisteredScripts[ParentPath].push_back(Move(NewScript));
-        }
     }
 
     void FScriptingContext::OnScriptCreated(FStringView ScriptPath)
     {
         FScopeLock Lock(Mutex);
 
-        FString ScriptDirectory = Paths::Parent(ScriptPath);
-        Paths::NormalizePath(ScriptDirectory);
-
-        bool bAlreadyExists = false;
-        for (auto& [Name, PathVector] : RegisteredScripts)
-        {
-            for (size_t i = 0; i < PathVector.size(); ++i)
-            {
-                TUniquePtr<FLuaScriptEntry>& Path = PathVector[i];
-                if (Paths::PathsEqual(ScriptPath, Path->Path))
-                {
-                    bAlreadyExists = true;
-                    break;
-                }
-            }
-        }
-
-        if (bAlreadyExists)
-        {
-            LOG_ERROR("Newly scripted script already exists! {}", ScriptPath);
-            return;
-        }
-
-        if (TUniquePtr<FLuaScriptEntry> NewScript = LoadScript(ScriptPath))
-        {
-            RegisteredScripts[FName(ScriptDirectory)].emplace_back(Move(NewScript));
-        }
     }
 
     void FScriptingContext::OnScriptRenamed(FStringView NewPath, FStringView OldPath)
@@ -179,9 +111,11 @@ namespace Lumina::Scripting
                 FString ScriptDirectory = Itr.path().parent_path().generic_string().c_str();
                 Paths::NormalizePath(ScriptDirectory);
 
-                if (TUniquePtr<FLuaScriptEntry> NewScript = LoadScript(ScriptPath))
+                TVector<TUniquePtr<FLuaScriptEntry>> NewlyLoadedScripts = LoadScript(ScriptPath);
+                
+                for (TUniquePtr<FLuaScriptEntry>& Script : NewlyLoadedScripts)
                 {
-                    RegisteredScripts[FName(ScriptDirectory)].emplace_back(Move(NewScript));
+                    RegisteredScripts[Script->Type].emplace_back(Move(Script));
                 }
             }
         }
@@ -194,6 +128,42 @@ namespace Lumina::Scripting
 
     void FScriptingContext::RegisterCoreTypes()
     {
+
+        State.set_function("System", [](const sol::table& Descriptor)
+        {
+            sol::state_view lua(Descriptor.lua_state());
+            
+            sol::table result = lua.create_table_with(
+                "Type", "System",
+                "Name", Descriptor.get_or("Name", std::string("UnnamedSystem")),
+                "Stage", Descriptor.get_or("Stage", 0),
+                "Priority", Descriptor.get_or("Priority", 0)
+            );
+            
+            result["Execute"] = Descriptor["Execute"];
+            result["Query"] = Descriptor.get_or("Query", lua.create_table());
+            
+            return result;
+        });
+
+        State.set_function("Metadata", [](const sol::table& Descriptor)
+        {
+            sol::state_view lua(Descriptor.lua_state());
+            
+            return lua.create_table_with(
+                "Type", "Metadata",
+                "Name", Descriptor.get_or("Name", std::string("")),
+                "Author", Descriptor.get_or("Author", std::string("")),
+                "Version", Descriptor.get_or("Version", std::string("1.0.0")),
+                "Description", Descriptor.get_or("Description", std::string(""))
+            );
+        });
+
+        State.new_usertype<entt::entity>("Entity",
+        sol::meta_function::to_string, [](const entt::entity& e)
+        {
+            return std::to_string(static_cast<uint32>(e));
+        });
 
         // vec2
         State.new_usertype<glm::vec2>("vec2",
@@ -363,11 +333,11 @@ namespace Lumina::Scripting
             "Paused",           EUpdateStage::Paused);
         
         FSystemContext::RegisterWithLua(State);
+        
     }
 
     void FScriptingContext::SetupInput()
     {
-
         State.set_function("print", [&](const sol::variadic_args& args)
         {
             FString Output;
@@ -648,7 +618,7 @@ namespace Lumina::Scripting
         return it->second.From(Object);
     }
 
-    TUniquePtr<FLuaScriptEntry> FScriptingContext::LoadScript(FStringView ScriptPath, bool bFailSilently)
+    TVector<TUniquePtr<FLuaScriptEntry>> FScriptingContext::LoadScript(FStringView ScriptPath, bool bFailSilently)
     {
         sol::environment Environment(State, sol::create, State.globals());
     
@@ -660,9 +630,12 @@ namespace Lumina::Scripting
             {
                 LOG_ERROR("[Sol] - Error loading script! {}", Error.what());
             }
-            return nullptr;
+            return {};
         }
-    
+
+        TVector<CScriptFactory*> Factories;
+        CScriptFactoryRegistry::Get().GetFactories(Factories);
+
         sol::object ReturnedObject = Result;
         if (!ReturnedObject.is<sol::table>())
         {
@@ -670,17 +643,41 @@ namespace Lumina::Scripting
             {
                 LOG_ERROR("[Sol] Script {} did not return a table", ScriptPath);
             }
-            return nullptr;
+            return {};
         }
 
-        OnScriptLoaded.Broadcast();
+        sol::table ScriptTable = ReturnedObject.as<sol::table>();
+        TVector<TUniquePtr<FLuaScriptEntry>> Entries;
 
-        TUniquePtr<FLuaScriptEntry> Entry = MakeUniquePtr<FLuaScriptEntry>();
-        Entry->Path = ScriptPath;
-        Entry->Environment = Environment;
-        Entry->Table = ReturnedObject.as<sol::table>();
-        Entry->Type = ELuaScriptType::System;
+        for (const auto& [key, value] : ScriptTable)
+        {
+            if (!value.is<sol::table>() || !key.is<const char*>())
+            {
+                continue;
+            }
+
+            
+    
+            sol::table EntryTable = value.as<sol::table>();
+    
+            sol::object TypeObj = EntryTable["Type"];
+            if (!TypeObj.valid() || !TypeObj.is<std::string>())
+            {
+                continue;
+            }
+    
+            for (CScriptFactory* Factory : Factories)
+            {
+                if (auto Expected = Factory->ProcessScript(key.as<const char*>(), EntryTable))
+                {
+                    Entries.push_back(Move(Expected.Value()));
+                    break;
+                }
+            }
+        }
         
-        return Entry;
+        OnScriptLoaded.Broadcast();
+        
+        return Move(Entries);
     }
 }

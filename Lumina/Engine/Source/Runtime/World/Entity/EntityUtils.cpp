@@ -50,33 +50,33 @@ namespace Lumina::ECS::Utils
                 if (Set.contains(Entity))
                 {
                     void* ComponentPointer = Set.value(Entity);
-                    if (auto ReturnValue = entt::resolve(Set.type()).invoke("staticstruct"_hs, {}))
+                    entt::meta_type MetaType = entt::resolve(Set.info());
+                    if (entt::meta_any ReturnValue = InvokeMetaFunc(MetaType, "static_struct"_hs))
                     {
-                        void** Type = ReturnValue.try_cast<void*>();
-                        if (CStruct* StructType = *(CStruct**)Type)
-                        {
-                            FName Name = StructType->GetName();
-                            Ar << Name;
-                            
-                            int64 ComponentStart = Ar.Tell();
+                        CStruct* StructType = ReturnValue.cast<CStruct*>();
+                        LUM_ASSERT(StructType)
 
-                            int64 ComponentSize = 0;
-                            Ar << ComponentSize;
+                        FName Name = StructType->GetName();
+                        Ar << Name;
+                        
+                        int64 ComponentStart = Ar.Tell();
 
-                            int64 StartOfComponentData = Ar.Tell();
+                        int64 ComponentSize = 0;
+                        Ar << ComponentSize;
 
-                            StructType->SerializeTaggedProperties(Ar, ComponentPointer);
+                        int64 StartOfComponentData = Ar.Tell();
 
-                            int64 EndOfComponentData = Ar.Tell();
+                        StructType->SerializeTaggedProperties(Ar, ComponentPointer);
 
-                            ComponentSize = EndOfComponentData - StartOfComponentData;
+                        int64 EndOfComponentData = Ar.Tell();
 
-                            Ar.Seek(ComponentStart);
-                            Ar << ComponentSize;
-                            Ar.Seek(EndOfComponentData);
-                            
-                            NumComponents++;
-                        }
+                        ComponentSize = EndOfComponentData - StartOfComponentData;
+
+                        Ar.Seek(ComponentStart);
+                        Ar << ComponentSize;
+                        Ar.Seek(EndOfComponentData);
+                        
+                        NumComponents++;
                     }
                 }
             }
@@ -139,7 +139,10 @@ namespace Lumina::ECS::Utils
                         entt::hashed_string HashString(Struct->GetName().c_str());
                         if (entt::meta_type Meta = entt::resolve(HashString))
                         {
-                            Meta.invoke("addcomponentwithmemory"_hs, {}, entt::forward_as_meta(Ar), Entity, entt::forward_as_meta(Registry));
+                            entt::meta_any Any = ECS::InvokeMetaFunc(Meta, "create_instance"_hs);
+                            
+                            ECS::InvokeMetaFunc(Meta, "serialize"_hs, entt::forward_as_meta(Ar), entt::forward_as_meta(Any));
+                            ECS::InvokeMetaFunc(Meta, "emplace"_hs, entt::forward_as_meta(Registry), Entity, entt::forward_as_meta(Any));
                         }
                     }
                 }

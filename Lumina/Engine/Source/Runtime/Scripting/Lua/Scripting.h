@@ -64,7 +64,7 @@ namespace Lumina::Scripting
 
 
         template<typename TFunc>
-        void ForEachScript(TFunc&& Func);
+        void ForEachScript(FName Type, TFunc&& Func);
         
         template<typename T>
         bool RegisterLuaConverterByName(FName Name);
@@ -75,7 +75,7 @@ namespace Lumina::Scripting
 
     private:
 
-        TUniquePtr<FLuaScriptEntry> LoadScript(FStringView ScriptPath, bool bFailSilently = false);
+        TVector<TUniquePtr<FLuaScriptEntry>> LoadScript(FStringView ScriptPath, bool bFailSilently = false);
     
     private:
         
@@ -91,13 +91,29 @@ namespace Lumina::Scripting
 
 
     template <typename TFunc>
-    void FScriptingContext::ForEachScript(TFunc&& Func)
+    void FScriptingContext::ForEachScript(FName Type, TFunc&& Func)
     {
+        if (Type != NAME_None)
+        {
+            auto It = RegisteredScripts.find(Type);
+            if (It == RegisteredScripts.end())
+            {
+                return;
+            }
+            
+            for (FScriptEntryHandle& LuaScriptEntry : It->second)
+            {
+                eastl::invoke(Func, *LuaScriptEntry.get());
+            }
+
+            return;
+        }
+        
         for (auto& [_, ScriptVector] : RegisteredScripts)
         {
             for (FScriptEntryHandle& LuaScriptEntry : ScriptVector)
             {
-                Func(*LuaScriptEntry.get());
+                eastl::invoke(Func, *LuaScriptEntry.get());
             }
         }
     }

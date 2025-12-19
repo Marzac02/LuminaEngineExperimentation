@@ -6,17 +6,33 @@
 
 namespace Lumina::Scripting
 {
-    enum class ELuaScriptType : uint8
+    struct FLuaScriptMetadata
     {
-        System,
-        Component,
+        FName Name;
+        FName Author;
+        FName Version;
+        FName Description;
     };
-
+    
     struct FLuaScriptEntry
     {
-        FString Path;
+        FString             Path;
         sol::environment    Environment;
-        sol::table          Table;
-        ELuaScriptType      Type;
+        FName               Type;
+
+        template<typename T>
+        const T& As() const
+        {
+            return *static_cast<const T*>(this);
+        }
+    };
+
+    struct FLuaSystemScriptEntry : FLuaScriptEntry
+    {
+        FName                   Name;
+        int                     Stage;
+        int                     Priority;
+        TVector<entt::id_type>  Queries;
+        sol::function           ExecuteFunc;
     };
 }

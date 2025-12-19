@@ -19,6 +19,6 @@ namespace Lumina
 
     struct LUMINA_API FLuaScriptsContainerComponent
     {
-        TArray<TVector<Scripting::FLuaScriptEntry>, (uint32)EUpdateStage::Max> Scripts;
+        TArray<TVector<const Scripting::FLuaSystemScriptEntry*>, (uint32)EUpdateStage::Max> Systems;
     };
 }

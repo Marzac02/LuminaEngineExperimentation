@@ -89,7 +89,7 @@ namespace PF
 
 #endif
 
-
+#define LUMINA_PURE_VIRTUAL(...) { LUMINA_NO_ENTRY() }
 
 #define DECLARE_CLASS(TNamespace, TClass, TBaseClass, TPackage, TAPI) \
 private: \

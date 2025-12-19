@@ -935,21 +935,20 @@ namespace Lumina
                 for(auto&& [_, MetaType]: entt::resolve())
                 {
                     using namespace entt::literals;
-                    entt::meta_any Any = MetaType.invoke("staticstruct"_hs, {});
-                    if (void** Type = Any.try_cast<void*>())
+                    entt::meta_any Any = ECS::InvokeMetaFunc(MetaType, "static_struct"_hs);
+                    CStruct* Type = Any.cast<CStruct*>();
+                    LUM_ASSERT(Type)
+                    
+                    const char* ComponentName = Type->GetName().c_str();
+                    
+                    if (!Filter->PassFilter(ComponentName))
                     {
-                        CStruct* Struct = *(CStruct**)Type;
-                        const char* ComponentName = Struct->GetName().c_str();
-                        
-                        if (!Filter->PassFilter(ComponentName))
-                        {
-                            continue;
-                        }
-                        
-                        // Categorize component (you can enhance this logic)
-                        const char* Category = "General";
-                        Components.push_back({ComponentName, Category, MetaType});
+                        continue;
                     }
+                    
+                    // Categorize component (you can enhance this logic)
+                    const char* Category = "General";
+                    Components.push_back({ComponentName, Category, MetaType});
                 }
                 
                 // Sort by category, then name
@@ -988,7 +987,7 @@ namespace Lumina
                     {
                         using namespace entt::literals;
 
-                        entt::meta_any RetVal = CompInfo.MetaType.invoke("addcomponent"_hs, {}, SelectedEntity, entt::forward_as_meta(World->GetEntityRegistry()));
+                        ECS::InvokeMetaFunc(CompInfo.MetaType, "emplace"_hs, entt::forward_as_meta(World->GetEntityRegistry()), SelectedEntity);
                         bComponentAdded = true;
                     }
                     
@@ -1194,8 +1193,7 @@ namespace Lumina
     
         if (ImGui::BeginPopup("CreateEntityMenu", ImGuiWindowFlags_NoMove))
         {
-            // Header
-            ImGui::PushFont(ImGui::GetIO().Fonts->Fonts[0]); // Use larger/bold font if available
+            ImGui::PushFont(ImGui::GetIO().Fonts->Fonts[0]);
             ImGui::TextColored(ImVec4(0.8f, 0.9f, 1.0f, 1.0f), LE_ICON_PLUS " Create New Entity");
             ImGui::PopFont();
             
@@ -1203,7 +1201,6 @@ namespace Lumina
             ImGui::Separator();
             ImGui::Spacing();
             
-            // Search bar
             ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 4.0f);
             ImGui::PushStyleColor(ImGuiCol_FrameBg, ImVec4(0.15f, 0.15f, 0.18f, 1.0f));
             ImGui::SetNextItemWidth(-1);
@@ -1215,7 +1212,6 @@ namespace Lumina
             
             ImGui::Spacing();
             
-            // Component template list
             ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(4.0f, 4.0f));
             ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(4.0f, 4.0f));
             
@@ -1225,39 +1221,37 @@ namespace Lumina
                 {
                     using namespace entt::literals;
                     
-                    auto Any = MetaType.invoke("staticstruct"_hs, {});
-                    if (void** Type = Any.try_cast<void*>())
+                    entt::meta_any Any = ECS::InvokeMetaFunc(MetaType, "static_struct"_hs);
+                    CStruct* Struct = Any.cast<CStruct*>();
+                    LUM_ASSERT(Struct)
+                    
+                    if (Struct == STransformComponent::StaticStruct() || Struct == SNameComponent::StaticStruct() || Struct == STagComponent::StaticStruct())
                     {
-                        CStruct* Struct = *(CStruct**)Type;
-                        if (Struct == STransformComponent::StaticStruct() || Struct == SNameComponent::StaticStruct() || Struct == STagComponent::StaticStruct())
-                        {
-                            continue;
-                        }
-
-                        
-                        ImGui::PushID(Struct);
-                    
-                        ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.18f, 0.18f, 0.21f, 1.0f));
-                        ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.25f, 0.35f, 0.45f, 1.0f));
-                        ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.2f, 0.3f, 0.4f, 1.0f));
-                        ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 6.0f);
-                        ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(12.0f, 10.0f));
-                    
-                        const float ButtonWidth = ImGui::GetContentRegionAvail().x;
-                    
-                        if (ImGui::Button(Struct->GetName().c_str(), ImVec2(ButtonWidth, 0.0f)))
-                        {
-                            CreateEntityWithComponent(Struct);
-                            ImGui::CloseCurrentPopup();
-                        }
-                    
-                        ImGui::PopStyleVar(2);
-                        ImGui::PopStyleColor(3);
-                        
-                        ImGui::PopID();
-                    
-                        ImGui::Spacing();
+                        continue;
                     }
+
+                    
+                    ImGui::PushID(Struct);
+                    
+                    ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.18f, 0.18f, 0.21f, 1.0f));
+                    ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.25f, 0.35f, 0.45f, 1.0f));
+                    ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.2f, 0.3f, 0.4f, 1.0f));
+                    ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 6.0f);
+                    ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(12.0f, 10.0f));
+                    
+                    const float ButtonWidth = ImGui::GetContentRegionAvail().x;
+                    
+                    if (ImGui::Button(Struct->GetName().c_str(), ImVec2(ButtonWidth, 0.0f)))
+                    {
+                        CreateEntityWithComponent(Struct);
+                        ImGui::CloseCurrentPopup();
+                    }
+                    
+                    ImGui::PopStyleVar(2);
+                    ImGui::PopStyleColor(3);
+                    
+                    ImGui::PopID();
+                    ImGui::Spacing();
                 }
             }
             ImGui::EndChild();
@@ -2143,18 +2137,23 @@ namespace Lumina
             {
                 if (Set.contains(SelectedEntity))
                 {
-                    if (auto func = entt::resolve(Set.type()).func("staticstruct"_hs); func)
+                    entt::meta_type MetaType = entt::resolve(Set.type());
+                    if (!MetaType)
                     {
-                        auto ReturnValue = func.invoke(Set.type());
-                        void** Type = ReturnValue.try_cast<void*>();
-                        
-                        if (Type != nullptr)
-                        {
-                            void* ComponentPtr = Set.value(SelectedEntity);
-                            TUniquePtr<FPropertyTable> NewTable = MakeUniquePtr<FPropertyTable>(ComponentPtr, *(CStruct**)Type);
-                            PropertyTables.emplace_back(Move(NewTable))->RebuildTree();
-                        }
+                        continue;
                     }
+                    
+                    entt::meta_any Any = ECS::InvokeMetaFunc(MetaType, "static_struct"_hs);
+                    if (!Any)
+                    {
+                        continue;
+                    }
+                    
+                    CStruct* Type = Any.cast<CStruct*>();
+                    void* ComponentPtr = Set.value(SelectedEntity);
+                    
+                    TUniquePtr<FPropertyTable> NewTable = MakeUniquePtr<FPropertyTable>(ComponentPtr, Type);
+                    PropertyTables.emplace_back(Move(NewTable))->RebuildTree();
                 }
             }
         }
@@ -2167,23 +2166,16 @@ namespace Lumina
 
     void FWorldEditorTool::CreateEntityWithComponent(const CStruct* Component)
     {
-        entt::entity CreatedEntity;
-        for(auto &&[_, MetaType]: entt::resolve())
-        {
-            using namespace entt::literals;
-            auto Any = MetaType.invoke("staticstruct"_hs, {});
-            if (void** Type = Any.try_cast<void*>())
-            {
-                CStruct* Struct = *(CStruct**)Type;
-                if (Struct == Component)
-                {
-                    CreatedEntity = World->ConstructEntity("Entity");
-                    World->GetEntityRegistry().get<SNameComponent>(CreatedEntity).Name = Struct->GetName().ToString() + "_" + eastl::to_string((uint32)CreatedEntity);
+        using namespace entt::literals;
+        
+        entt::entity CreatedEntity = entt::null;
 
-                    entt::meta_any RetVal = MetaType.invoke("addcomponent"_hs, {}, CreatedEntity, entt::forward_as_meta(World->GetEntityRegistry()));
-                }
-            }
-        }
+        entt::hashed_string Hash = entt::hashed_string(Component->GetName().c_str());
+        entt::meta_type MetaType = entt::resolve(Hash);
+        
+        CreatedEntity = World->ConstructEntity("Entity");
+        World->GetEntityRegistry().get<SNameComponent>(CreatedEntity).Name = Component->GetName().ToString() + "_" + eastl::to_string((uint32)CreatedEntity);
+        ECS::InvokeMetaFunc(MetaType, "emplace"_hs, entt::forward_as_meta(World->GetEntityRegistry()), CreatedEntity);
 
         if (CreatedEntity != entt::null)
         {

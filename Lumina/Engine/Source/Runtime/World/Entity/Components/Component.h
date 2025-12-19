@@ -10,49 +10,198 @@
 
 namespace Lumina
 {
-#define ENTITY_COMPONENT(Type) \
-    static void* GetComponentStructType() { return Type::StaticStruct(); } \
-    static void* AddComponent(entt::entity e, entt::registry& Registry) { return &Registry.emplace_or_replace<Type>(e); } \
-    static void* AddComponentWithMemory(FArchive& Ar, entt::entity e, entt::registry& Registry) \
-    { \
-        Type T; \
-        StaticStruct()->SerializeTaggedProperties(Ar, &T); \
-        return &Registry.emplace<Type>(e, T); \
-    } \
-    static sol::object ToLua(sol::state_view Lua, void* ComponentPtr) { return sol::make_object(Lua, std::ref(*static_cast<Type*>(ComponentPtr))); } \
-    static void Serialize(FArchive& Ar, void* Data) \
-    { \
-        CStruct* Struct = StaticStruct(); \
-        Struct->SerializeTaggedProperties(Ar, Data); \
-    } \
-    \
-    \
-    static void RegisterMeta() { \
-        using namespace entt::literals; \
-        entt::meta_factory<Type>(GEngine->GetEngineMetaContext()) \
-        .type(#Type ## _hs) \
-        .func<&Type::GetComponentStructType>("staticstruct"_hs) \
-        .func<&Type::AddComponent>("addcomponent"_hs) \
-        .func<&Type::AddComponentWithMemory>("addcomponentwithmemory"_hs) \
-        .func<&Type::ToLua>("tolua"_hs) \
-        .func<&Type::Serialize>("serialize"_hs); \
-    } \
-    struct DeferredAutoRegister { \
-        DeferredAutoRegister() { \
-            Lumina::ECS::AddDeferredComponentRegistry(&Type::RegisterMeta); \
-        } \
-    }; \
-    static inline DeferredAutoRegister DeferredAutoRegisterInstance;
+    namespace Meta
+    {
+        inline bool IsValid(const entt::registry& Registry, entt::entity Entity)
+        {
+            return Registry.valid(Entity);
+        }
+
+        template<typename TComponent>
+        auto HasComponent(entt::registry& Registry, entt::entity Entity)
+        {
+            return Registry.any_of<TComponent>(Entity);
+        }
+
+        template<typename TComponent>
+        auto RemoveComponent(entt::registry& Registry, entt::entity Entity)
+        {
+            return Registry.remove<TComponent>(Entity);
+        }
+
+        template<typename TComponent>
+        void ClearComponent(entt::registry& Registry)
+        {
+            Registry.clear<TComponent>();
+        }
+
+        template<typename TComponent>
+        TComponent& EmplaceComponent(entt::registry& Registry, entt::entity Entity, entt::meta_any& Any)
+        {
+            if (Any)
+            {
+                return Registry.emplace_or_replace<TComponent>(Entity, Any ? Any.cast<const TComponent&>() : TComponent{});
+            }
+            
+            return Registry.emplace_or_replace<TComponent>(Entity);
+        }
+
+        template<typename TComponent>
+        TComponent& GetComponent(entt::registry& Registry, entt::entity Entity)
+        {
+            return Registry.get_or_emplace<TComponent>(Entity);
+        }
+
+        template<typename TComponent>
+        void Serialize(FArchive& Ar, entt::meta_any& Any)
+        {
+            CStruct* Struct = TComponent::StaticStruct();
+            TComponent& Instance = Any.cast<TComponent&>();
+            Struct->SerializeTaggedProperties(Ar, &Instance);
+        }
+
+        template<typename TComponent>
+        TComponent CreateInstance()
+        {
+            return TComponent{};
+        }
+
+
+        template<typename TComponent>
+        CStruct* GetStructType()
+        {
+            return TComponent::StaticStruct();
+        }
+
+        // Begin Lua variants
+    
+        template<typename TComponent>
+        sol::reference EmplaceComponentLua(entt::registry& Registry, entt::entity Entity, const sol::table& Instance, sol::state_view S)
+        {
+            auto& Component = Registry.emplace<TComponent>(Entity, Instance.valid() ? Move(Instance.as<TComponent&&>()) : TComponent{});
+            return sol::make_reference(S, std::ref(Component));
+        }
+    
+        template<typename TComponent>
+        sol::reference GetComponentLua(entt::registry& Registry, entt::entity Entity, sol::state_view S)
+        {
+            auto& Component = Registry.get_or_emplace<TComponent>(Entity);
+            return sol::make_reference(S, std::ref(Component));
+        }
+
+        // End lua variants
+
+        template<typename TComponent>
+        void RegisterComponentMeta()
+        {
+            using namespace entt::literals;
+            entt::hashed_string TypeName = entt::hashed_string(TComponent::StaticStruct()->GetName().c_str());
+            entt::meta_factory<TComponent>(GEngine->GetEngineMetaContext())
+                .type(TypeName)
+                .template func<&CreateInstance<TComponent>>("create_instance"_hs)
+                .template func<&GetStructType<TComponent>>("static_struct"_hs)
+                .template func<&HasComponent<TComponent>>("has"_hs)
+                .template func<&GetComponent<TComponent>>("get"_hs)
+                .template func<&RemoveComponent<TComponent>>("remove"_hs)
+                .template func<&ClearComponent<TComponent>>("clear"_hs)
+                .template func<&EmplaceComponent<TComponent>>("emplace"_hs)
+                .template func<&Serialize<TComponent>>("serialize"_hs)
+            
+                .template func<&EmplaceComponentLua<TComponent>>("emplace_lua"_hs)
+                .template func<&GetComponentLua<TComponent>>("get_lua"_hs);
+        }
+        
+        template<typename TComponent>
+        struct TComponentAutoRegister
+        {
+            TComponentAutoRegister()
+            {
+                ECS::AddDeferredComponentRegistry(&RegisterComponentMeta<TComponent>); \
+            }
+        };
+    }
 }
 
-template<typename T, typename = void>
-struct THasSolComponentReflection : std::false_type {};
-
-template<typename T>
-struct THasSolComponentReflection<T, std::void_t<decltype(T::RegisterLua(std::declval<sol::state_view>()))>> : std::true_type {};
-
+    
+#define ENTITY_COMPONENT(Type) \
+static constexpr auto in_place_delete = true; \
+static inline ::Lumina::Meta::TComponentAutoRegister<Type> DeferredAutoRegisterInstance{}; \
+    
 namespace Lumina::ECS
 {
+    NODISCARD inline entt::id_type GetTypeID(const sol::table& Table)
+    {
+        const auto F = Table["__type"].get<sol::function>();
+        LUM_ASSERT(F.valid() && "__type not exposed to lua!")
+        
+        const char* Name = F().get<const char*>();
+        return entt::hashed_string(Name);
+    }
+
+    NODISCARD inline entt::id_type GetTypeID(FStringView Name)
+    {
+        return entt::hashed_string(Name.data());
+    }
+
+    template<typename T>
+    NODISCARD entt::id_type DeduceType(T&& Obj)
+    {
+        switch (Obj.get_type())
+        {
+            case sol::type::number: return Obj.template as<entt::id_type>();
+            case sol::type::table:  return GetTypeID(Obj);
+            case sol::type::string: return GetTypeID(Obj.template as<const char*>());
+        }
+
+        LUMINA_NO_ENTRY()
+    }
+
+    NODISCARD inline auto CollectTypes(const sol::variadic_args& Args)
+    {
+        THashSet<entt::id_type> Types;
+        
+        eastl::transform(Args.cbegin(), Args.cend(), eastl::inserter(Types, Types.begin()), [](const sol::object& Object)
+        {
+            return DeduceType(Object);
+        });
+        
+        return Types;
+    }
+
+    NODISCARD inline auto CollectTypes(const sol::table& Args)
+    {
+        THashSet<entt::id_type> Types;
+        
+        for (const auto& [key, value] : Args)
+        {
+            Types.insert(DeduceType(value));
+        }
+        
+        return Types;
+    }
+
+    template<typename ... TArgs>
+    auto InvokeMetaFunc(const entt::meta_type& MetaType, entt::id_type FunctionID, TArgs&&... Args)
+    {
+        if (!MetaType)
+        {
+            LOG_WARN("Meta type not found! {}", MetaType.info().name());
+            return entt::meta_any{};
+        }
+
+        if (auto&& F = MetaType.func(FunctionID); F)
+        {
+            return F.invoke({}, Forward<TArgs>(Args)...);
+        }
+        
+    }
+
+    template<typename ... TArgs>
+    auto InvokeMetaFunc(const entt::id_type& TypeID, entt::id_type FunctionID, TArgs&&... Args)
+    {
+        return InvokeMetaFunc(entt::resolve(TypeID), FunctionID, Forward<TArgs>(Args)...);
+    }
+    
     LUMINA_API inline auto GetSharedMetaCtxHandle()
     {
         return entt::locator<entt::meta_ctx>::handle();

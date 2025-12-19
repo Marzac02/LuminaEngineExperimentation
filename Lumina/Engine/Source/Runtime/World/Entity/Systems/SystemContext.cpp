@@ -18,20 +18,64 @@ namespace Lumina
 
     void FSystemContext::RegisterWithLua(sol::state& Lua)
     {
-        sol::usertype<FSystemContext> ContextType = Lua.new_usertype<FSystemContext>("SystemContext", sol::no_constructor);
-        
-        ContextType["GetDeltaTime"]     = &FSystemContext::GetDeltaTime;
-        ContextType["GetTime"]          = &FSystemContext::GetTime;
-        ContextType["GetUpdateStage"]   = &FSystemContext::GetUpdateStage;
-        ContextType["GetTransform"]     = &FSystemContext::GetEntityTransform;
-        ContextType["View"]             = &FSystemContext::MakeLuaView;
-        ContextType["BindEvent"]        = &FSystemContext::BindLuaEvent;
-        ContextType["DirtyTransform"]   = &FSystemContext::MarkEntityTransformDirty;
-        ContextType["Emplace"]          = &FSystemContext::LuaEmplace;
-        ContextType["SetActiveCamera"]  = &FSystemContext::LuaSetActiveCamera;
+        Lua.new_usertype<FSystemContext>("SystemContext",
+            sol::no_constructor,
+            "GetDeltaTime",     &FSystemContext::GetDeltaTime,
+            "GetTime",          &FSystemContext::GetTime,
+            "GetUpdateStage",   &FSystemContext::GetUpdateStage,
+            "GetTransform",     &FSystemContext::GetEntityTransform,
+            "BindEvent",        &FSystemContext::BindLuaEvent,
+            "DirtyTransform",   &FSystemContext::MarkEntityTransformDirty,
+            "Emplace",          &FSystemContext::LuaEmplace,
+            "Get",              &FSystemContext::LuaGet,
+            "SetActiveCamera",  &FSystemContext::LuaSetActiveCamera);
         
     }
 
+    entt::runtime_view FSystemContext::CreateRuntimeView(const TVector<FName>& Components)
+    {
+        LUMINA_PROFILE_SCOPE();
+
+        entt::runtime_view RuntimeView;
+        
+        for (const FName& ComponentName : Components)
+        {
+            entt::hashed_string HashedString = entt::hashed_string(ComponentName.c_str());
+            entt::meta_type Meta = entt::resolve(HashedString);
+            if (!Meta)
+            {
+                continue;
+            }
+
+            if (entt::basic_sparse_set<>* Storage = Registry.storage(Meta.info().hash()))
+            {
+                RuntimeView.iterate(*Storage);
+            }
+        }
+
+        return RuntimeView;
+    }
+
+    entt::runtime_view FSystemContext::CreateRuntimeView(const TVector<entt::id_type>& Components)
+    {
+        entt::runtime_view RuntimeView;
+        
+        for (entt::id_type Type : Components)
+        {
+            entt::meta_type Meta = entt::resolve(Type);
+            if (!Meta)
+            {
+                continue;
+            }
+
+            if (entt::basic_sparse_set<>* Storage = Registry.storage(Meta.info().hash()))
+            {
+                RuntimeView.iterate(*Storage);
+            }
+        }
+
+        return RuntimeView;
+    }
 
     TOptional<FRayResult> FSystemContext::CastRay(const glm::vec3& Start, const glm::vec3& End, bool bDrawDebug, uint32 LayerMask, int64 IgnoreBody) const
     {
@@ -62,113 +106,29 @@ namespace Lumina
         Dispatcher.trigger<FSwitchActiveCameraEvent>(FSwitchActiveCameraEvent{(entt::entity)Entity});
     }
 
-    sol::table FSystemContext::LuaEmplace(uint32 Entity, sol::table Type)
+    sol::object FSystemContext::LuaEmplace(entt::entity Entity, const sol::object& Component)
     {
-        const char* ComponentName = Type["__type"].get<const char*>();
-        entt::hashed_string HashedString = entt::hashed_string(ComponentName);
-            
-        // This type is resolvable, so we use the emplacement function there.
-        if (entt::meta_type Meta = entt::resolve(HashedString))
-        {
-            using namespace entt::literals;
-            entt::meta_any NewComponent = Meta.invoke("addcomponent"_hs, {}, (entt::entity)Entity, entt::forward_as_meta(Registry));
-            void* ComponentType = *NewComponent.try_cast<void*>();
-                
-            return Scripting::FScriptingContext::Get().ConvertToSolObjectFromName(FName(ComponentName), Type.lua_state(), ComponentType);
-        }
+        LUMINA_PROFILE_SCOPE();
 
-        // This type is not native resolvable, so we're assuming the user created a new lua type.
-            
-        SLuaComponent& NewComponent = Registry.storage<SLuaComponent>(HashedString).emplace((entt::entity)Entity);
-            
-        NewComponent.TypeName = ComponentName;
-        NewComponent.LuaTable = Type;
-
-        return NewComponent.LuaTable;
-    }
-
-    sol::table FSystemContext::MakeLuaView(sol::variadic_args Types)
-    {
-        LUMINA_PROFILE_SECTION("FSystemContext::ScriptView");
         using namespace entt::literals;
 
-        entt::runtime_view RuntimeView;
+        entt::id_type TypeID = ECS::DeduceType(Component);
+        const entt::meta_any& MaybeAny = ECS::InvokeMetaFunc(TypeID, "emplace_lua"_hs, entt::forward_as_meta(Registry), Entity, Component, sol::state_view(Component.lua_state()));
 
-        struct FComponentInfo
-        {
-            FName Name;
-            entt::basic_sparse_set<>* Storage;
-            Scripting::FLuaConverter::ToFunctionType* ConversionFunctionPtr;
-        };
-        
-        TFixedVector<FComponentInfo, 4> Storages;
-        
-
-        for (auto Arg : Types)
-        {
-            if (Arg.is<sol::table>())
-            {
-                sol::table ComponentTable = Arg.as<sol::table>();
-                if (!ComponentTable["__type"].valid())
-                {
-                    LOG_WARN("No __type found for component!");
-                    continue;
-                }
-                
-                FName LuaName = ComponentTable["__type"].get<const char*>();
-
-                auto HashedComponentName = entt::hashed_string(LuaName.c_str());
-                entt::meta_type Meta = entt::resolve(HashedComponentName);
-            
-                if (entt::basic_sparse_set<>* Storage = Registry.storage(Meta.info().hash()))
-                {
-                    Scripting::FLuaConverter::ToFunctionType* FunctionPtr = Scripting::FScriptingContext::Get().GetSolConverterFunctionPtrByName(LuaName);
-                    Storages.emplace_back(FComponentInfo{ LuaName, Storage, FunctionPtr });
-                    RuntimeView.iterate(*Storage);
-                }
-            }
-            else if (Arg.is<const char*>())
-            {
-                FName LuaName = Arg.get<const char*>();
-                uint32 HashedComponentName = entt::hashed_string(LuaName.c_str());
-                if (entt::basic_sparse_set<>* Storage = Registry.storage(HashedComponentName))
-                {
-                    Scripting::FLuaConverter::ToFunctionType* FunctionPtr = Scripting::FScriptingContext::Get().GetSolConverterFunctionPtrByName("STagComponent");
-                    Storages.emplace_back(FComponentInfo{ LuaName, Storage, FunctionPtr });
-                    RuntimeView.iterate(*Storage);
-                }
-            }
-        }
-        
-        sol::state_view StateView(Types.lua_state());
-
-        int EstimatedSize = (int)RuntimeView.size_hint();
-        sol::table ViewTable = StateView.create_table(EstimatedSize);
-
-        uint32 NumEntities = 0;
-        int TableSize = 1 + (int)Storages.size();
-        RuntimeView.each([&] (entt::entity EntityID)
-        {
-            NumEntities++;
-
-            sol::table Row = StateView.create_table(0, TableSize);
-            Row["Entity"] = (int)EntityID;
-            
-            for (FComponentInfo& Info : Storages)
-            {
-                Row[Info.Name.c_str()] = Info.ConversionFunctionPtr(StateView, Info.Storage->value(EntityID));
-            }
-            
-            ViewTable[(uint32)EntityID] = Row;
-        });
-
-        sol::table meta = StateView.create_table();
-        meta[sol::meta_function::length] = [NumEntities](sol::table) { return NumEntities; };
-        ViewTable[sol::metatable_key] = meta;
-        
-        return ViewTable;
+        return MaybeAny ? MaybeAny.cast<sol::reference>() : sol::nil;
     }
-    
+
+    sol::reference FSystemContext::LuaGet(entt::entity Entity, const sol::object& Type)
+    {
+        LUMINA_PROFILE_SCOPE();
+
+        using namespace entt::literals;
+        
+        entt::id_type TypeID = ECS::DeduceType(Type);
+        const entt::meta_any& MaybeAny = ECS::InvokeMetaFunc(TypeID, "get_lua"_hs, entt::forward_as_meta(Registry), Entity, sol::state_view(Type.lua_state()));
+
+        return MaybeAny ? MaybeAny.cast<sol::reference>() : sol::nil;
+    }
 
     void FSystemContext::BindLuaEvent(sol::table Table, sol::function Function)
     {

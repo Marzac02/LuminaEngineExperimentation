@@ -5,14 +5,17 @@ local MyScript =
     MovementSystem = System
     {
         Name = "PlayerMovementSystem",
-        Stage = UpdateStage.FrameStart,
+        Stage = UpdateStage.Paused,
         Priority = 100,
-        Query = { "Transform", "Velocity", "PlayerController" },
+        Query = { "STransformComponent", "SStaticMeshComponent" },
         
-        Execute = function(entities, deltaTime)
+        Execute = function(Context, Entities, DeltaTime)
 
-            print('test')
-
+            for _, entity in ipairs(Entities) do
+                local Transform = Context:Get(entity, "STransformComponent")
+                Transform:Translate(vec3(0.0, 0.0, 0.01))
+                Context:DirtyTransform(entity)
+            end
         end,
     },
     

@@ -1,0 +1,18 @@
+﻿#pragma once
+#include "Core/Object/ObjectMacros.h"
+#include "ScriptFactory.h"
+#include "ScriptFactory_System.generated.h"
+
+namespace Lumina
+{
+    REFLECT()
+    class LUMINA_API CScriptFactory_System : public CScriptFactory
+    {
+        GENERATED_BODY()
+        
+    public:
+
+        FScriptExpected ProcessScript(FName Name, const sol::table& ScriptTable) const override;
+        
+    };
+}
