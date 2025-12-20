@@ -188,16 +188,17 @@ namespace Lumina
         using namespace entt::literals;
         
         sol::variadic_results Results;
+        Results.reserve(Args.size());
         for (const sol::object Proxy : Args)
         {
             entt::id_type TypeID = ECS::DeduceType(Proxy);
             if (const entt::meta_any& MaybeAny = ECS::InvokeMetaFunc(TypeID, "get_lua"_hs, entt::forward_as_meta(Registry), Entity, sol::state_view(Args.lua_state())))
             {
-                Results.push_back(MaybeAny.cast<sol::reference>());
+                Results.emplace_back(MaybeAny.cast<sol::reference>());
             }
             else
             {
-                Results.push_back(sol::nil);
+                Results.emplace_back(sol::nil);
             }
         }
         
