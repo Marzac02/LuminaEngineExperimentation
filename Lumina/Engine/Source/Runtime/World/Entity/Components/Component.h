@@ -181,19 +181,20 @@ namespace Lumina::ECS
     }
 
     template<typename ... TArgs>
-    auto InvokeMetaFunc(const entt::meta_type& MetaType, entt::id_type FunctionID, TArgs&&... Args)
+    entt::meta_any InvokeMetaFunc(const entt::meta_type& MetaType, entt::id_type FunctionID, TArgs&&... Args)
     {
         if (!MetaType)
         {
-            LOG_WARN("Meta type not found! {}", MetaType.info().name());
             return entt::meta_any{};
         }
 
-        if (auto&& F = MetaType.func(FunctionID); F)
+        auto&& F = MetaType.func(FunctionID);
+        if (!F)
         {
-            return F.invoke({}, Forward<TArgs>(Args)...);
+            return entt::meta_any{};
         }
         
+        return F.invoke({}, Forward<TArgs>(Args)...);
     }
 
     template<typename ... TArgs>

@@ -1,8 +1,15 @@
 #pragma once
 
 #include "Module/API.h"
+#include "Physics/PhysicsTypes.h"
 
 namespace Lumina
 {
-    struct LUMINA_API FNeedsTransformUpdate { uint8 Foobar:1; };
+    enum class EMoveMode;
+
+    struct LUMINA_API FNeedsTransformUpdate
+    {
+        EMoveMode MoveMode = EMoveMode::MoveKinematic;
+        bool bActivate = true;
+    };
 }

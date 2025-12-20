@@ -25,13 +25,30 @@ namespace Lumina
             "GetUpdateStage",   &FSystemContext::GetUpdateStage,
             "GetTransform",     &FSystemContext::GetEntityTransform,
             "BindEvent",        &FSystemContext::BindLuaEvent,
-            "DirtyTransform",   &FSystemContext::MarkEntityTransformDirty,
             "Emplace",          &FSystemContext::LuaEmplace,
             "Get",              &FSystemContext::LuaGet,
-            "SetActiveCamera",  &FSystemContext::LuaSetActiveCamera);
+            "SetActiveCamera",  &FSystemContext::LuaSetActiveCamera,
+            "DirtyTransform",   sol::overload(
+                [&](FSystemContext& Self, entt::entity Entity)
+                {
+                    Self.MarkEntityTransformDirty(Entity);
+                },
+                [&](FSystemContext& Self, entt::entity Entity, EMoveMode MoveMode)
+                {
+                    Self.MarkEntityTransformDirty(Entity, MoveMode);
+                },
+                [&](FSystemContext& Self, entt::entity Entity, EMoveMode MoveMode, bool bActivate)
+                {
+                    Self.MarkEntityTransformDirty(Entity, MoveMode, bActivate);
+                }));
+        
+        Lua.new_enum("EMoveMode",
+            "Teleport",       EMoveMode::Teleport,
+            "MoveKinematic",  EMoveMode::MoveKinematic,
+            "ActivateOnly",   EMoveMode::ActivateOnly);
         
     }
-
+    
     entt::runtime_view FSystemContext::CreateRuntimeView(const TVector<FName>& Components)
     {
         LUMINA_PROFILE_SCOPE();
@@ -82,14 +99,14 @@ namespace Lumina
         return World->CastRay(Start, End, bDrawDebug, LayerMask, IgnoreBody);
     }
 
-    STransformComponent& FSystemContext::GetEntityTransform(uint32 Entity)
+    STransformComponent& FSystemContext::GetEntityTransform(entt::entity Entity)
     {
-        return Get<STransformComponent>((entt::entity)Entity);
+        return Get<STransformComponent>(Entity);
     }
 
-    void FSystemContext::MarkEntityTransformDirty(uint32 Entity)
+    void FSystemContext::MarkEntityTransformDirty(entt::entity Entity, EMoveMode MoveMode, bool bActivate)
     {
-        EmplaceOrReplace<FNeedsTransformUpdate>((entt::entity)(Entity));  
+        EmplaceOrReplace<FNeedsTransformUpdate>(Entity, FNeedsTransformUpdate{MoveMode, bActivate});  
     }
 
     entt::entity FSystemContext::Create(const FName& Name, const FTransform& Transform) const

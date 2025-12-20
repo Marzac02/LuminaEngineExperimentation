@@ -116,7 +116,9 @@ namespace Lumina::Physics
     public:
 
         FJoltPhysicsScene(CWorld* InWorld);
-        ~FJoltPhysicsScene() override;
+        ~FJoltPhysicsScene() override = default;
+    	
+    	LE_NO_COPYMOVE(FJoltPhysicsScene);
 
 
         void PreUpdate() override;
@@ -124,6 +126,8 @@ namespace Lumina::Physics
         void PostUpdate() override;
         void OnWorldSimulate() override;
         void OnWorldStopSimulate() override;
+    	
+    	void SyncTransforms();
     	
     	TOptional<FRayResult> CastRay(const glm::vec3& Start, const glm::vec3& End, bool bDrawDebug, uint32 LayerMask, int64 IgnoreBody) override;
 

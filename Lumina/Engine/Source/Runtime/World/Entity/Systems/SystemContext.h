@@ -1,4 +1,5 @@
 ﻿#pragma once
+#include "Physics/PhysicsTypes.h"
 #include "Physics/Ray/RayCast.h"
 #include "TaskSystem/TaskSystem.h"
 #include "World/Entity/Components/TransformComponent.h"
@@ -6,6 +7,8 @@
 
 namespace Lumina
 {
+    enum class EMoveMode;
+
     namespace Physics
     {
         class IPhysicsScene;
@@ -140,9 +143,10 @@ namespace Lumina
         LUMINA_API TOptional<FRayResult> CastRay(const glm::vec3& Start, const glm::vec3& End, bool bDrawDebug = false, uint32 LayerMask = 0xFFFFFFFF, int64 IgnoreBody = -1) const;
 
 
-        LUMINA_API STransformComponent& GetEntityTransform(uint32 Entity);
-        LUMINA_API void MarkEntityTransformDirty(uint32 Entity);
-
+        LUMINA_API STransformComponent& GetEntityTransform(entt::entity Entity);
+        
+        LUMINA_API void MarkEntityTransformDirty(entt::entity Entity, EMoveMode MoveMode = EMoveMode::Teleport, bool bActivate = true);
+        
         LUMINA_API entt::runtime_view CreateRuntimeView(const TVector<FName>& Components);
         LUMINA_API entt::runtime_view CreateRuntimeView(const TVector<entt::id_type>& Components);
 

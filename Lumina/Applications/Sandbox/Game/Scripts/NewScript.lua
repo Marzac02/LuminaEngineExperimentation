@@ -5,7 +5,7 @@ local MyScript =
     MovementSystem = System
     {
         Name = "PlayerMovementSystem",
-        Stage = UpdateStage.Paused,
+        Stage = UpdateStage.PrePhysics,
         Priority = 100,
         Query = { "STransformComponent", "SStaticMeshComponent" },
         
