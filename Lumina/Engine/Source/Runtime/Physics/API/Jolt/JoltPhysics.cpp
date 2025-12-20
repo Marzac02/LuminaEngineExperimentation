@@ -81,9 +81,7 @@ namespace Lumina::Physics
 
     void FJoltPhysicsContext::Shutdown()
     {
-
         JPH::UnregisterTypes();
-
         JoltData.reset();
         Memory::Delete(JPH::Factory::sInstance);
     }
@@ -111,6 +109,7 @@ namespace JPH
     {
         
     }
+    
     ExternalProfileMeasurement::~ExternalProfileMeasurement()
     {
         

@@ -337,11 +337,10 @@ namespace Lumina::Physics
     void FJoltPhysicsScene::OnWorldSimulate()
     {
         entt::registry& Registry = World->GetEntityRegistry();
-
         
-        auto View = Registry.view<SRigidBodyComponent, STransformComponent>();
+        auto View = Registry.view<SRigidBodyComponent>();
         
-        View.each([&] (entt::entity EntityID, SRigidBodyComponent&, STransformComponent&)
+        View.each([&] (entt::entity EntityID, SRigidBodyComponent&)
         {
             OnRigidBodyComponentConstructed(Registry, EntityID);
         });
@@ -356,6 +355,7 @@ namespace Lumina::Physics
         JoltSystem->OptimizeBroadPhase();
         
         Registry.on_construct<SCharacterPhysicsComponent>().connect<&FJoltPhysicsScene::OnCharacterComponentConstructed>(this);
+        
         Registry.on_construct<SRigidBodyComponent>().connect<&FJoltPhysicsScene::OnRigidBodyComponentConstructed>(this);
         Registry.on_destroy<SRigidBodyComponent>().connect<&FJoltPhysicsScene::OnRigidBodyComponentDestroyed>(this);
     }
@@ -365,7 +365,6 @@ namespace Lumina::Physics
         entt::registry& Registry = World->GetEntityRegistry();
 
         Registry.on_construct<SCharacterPhysicsComponent>().disconnect<&FJoltPhysicsScene::OnCharacterComponentConstructed>(this);
-
         
         Registry.on_construct<SRigidBodyComponent>().disconnect<&FJoltPhysicsScene::OnRigidBodyComponentConstructed>(this);
         Registry.on_destroy<SRigidBodyComponent>().disconnect<&FJoltPhysicsScene::OnRigidBodyComponentDestroyed>(this);
@@ -394,19 +393,13 @@ namespace Lumina::Physics
                 return;
             }
             
-            JPH::Vec3 LinearVel = Body->GetLinearVelocity();
-            JPH::Vec3 AngularVel = Body->GetAngularVelocity();
-
-            if (LinearVel.LengthSq() > FLT_EPSILON || AngularVel.LengthSq() > FLT_EPSILON)
-            {
-                JPH::RVec3 Pos = Body->GetPosition();
-                JPH::Quat Rot = Body->GetRotation();
+            JPH::RVec3 Pos = Body->GetPosition();
+            JPH::Quat Rot = Body->GetRotation();
         
-                TransformComponent.SetLocation(JoltUtils::FromJPHRVec3(Pos));
-                TransformComponent.SetRotation(JoltUtils::FromJPHQuat(Rot));
+            TransformComponent.SetLocation(JoltUtils::FromJPHRVec3(Pos));
+            TransformComponent.SetRotation(JoltUtils::FromJPHQuat(Rot));
             
-                Registry.emplace_or_replace<FNeedsTransformUpdate>(EntityID);
-            }
+            Registry.emplace_or_replace<FNeedsTransformUpdate>(EntityID);
         });
 
         auto CharacterView = Registry.view<SCharacterPhysicsComponent, STransformComponent>();
@@ -422,7 +415,7 @@ namespace Lumina::Physics
         });
     }
 
-    TOptional<FRayResult> FJoltPhysicsScene::CastRay(const glm::vec3& Start, const glm::vec3& End, bool bDrawDebug, uint32 LayerMask, int64 IgnoreBody)
+    TOptional<FRayResult> FJoltPhysicsScene::CastRay(const glm::vec3& Start, const glm::vec3& End, uint32 LayerMask, TSpan<const int64> IgnoreBody)
     {
         JPH::Vec3 JPHStart  = JoltUtils::ToJPHVec3(Start);
         JPH::Vec3 JPHEnd    = JoltUtils::ToJPHVec3(End);
@@ -440,20 +433,25 @@ namespace Lumina::Physics
         class IgnoreFilter : public JPH::BodyFilter
         {
         public:
-            IgnoreFilter(JPH::BodyID inIgnoreBodyID)
-                : mIgnoreBodyID(inIgnoreBodyID) {}
+            IgnoreFilter(TSpan<const int64> InIgnoreBodies)
+            {
+                eastl::transform(
+                         InIgnoreBodies.begin(), 
+                         InIgnoreBodies.end(),
+                         eastl::insert_iterator(IgnoreBodies, IgnoreBodies.end()),
+                         [](const int64& Body) { return Body; }
+                     );
+            }
         
             bool ShouldCollide(const JPH::BodyID& inBodyID) const override
             {
-                return inBodyID != mIgnoreBodyID;
+                return IgnoreBodies.find(inBodyID.GetIndexAndSequenceNumber()) == IgnoreBodies.end();
             }
 
-            JPH::BodyID mIgnoreBodyID;
-            JPH::RayCastResult mHit;
+            TFixedHashSet<int64, 4> IgnoreBodies;
         };
         
-        IgnoreFilter IgnoreFilter{JPH::BodyID(IgnoreBody)};
-        
+        IgnoreFilter IgnoreFilter{IgnoreBody};
         
         
         JPH::RayCastResult Hit;
@@ -471,11 +469,15 @@ namespace Lumina::Physics
             return eastl::nullopt;
         }
         
+        JPH::Vec3 SurfaceNormal = Body->GetWorldSpaceSurfaceNormal(Hit.mSubShapeID2, Ray.GetPointOnRay(Hit.mFraction));
+
+        
         FRayResult Result;
         Result.BodyID = Hit.mBodyID.GetIndexAndSequenceNumber();
         Result.Entity = static_cast<uint32>(Body->GetUserData());
         Result.Start = Start;
         Result.End = End;
+        Result.Normal = glm::normalize(JoltUtils::FromJPHVec3(SurfaceNormal));
         Result.Location = JoltUtils::FromJPHRVec3(Ray.GetPointOnRay(Hit.mFraction));
         Result.Fraction = Hit.mFraction;
         
@@ -564,7 +566,7 @@ namespace Lumina::Physics
         JPH::Body* Body = BodyInterface.CreateBody(Settings);
         Body->SetUserData(static_cast<uint64>(EntityID));
         BodyInterface.AddBody(Body->GetID(), JPH::EActivation::Activate);
-        RigidBodyComponent.BodyID = static_cast<uint64>(Body->GetID().GetIndexAndSequenceNumber());
+        RigidBodyComponent.BodyID = Body->GetID().GetIndexAndSequenceNumber();
     }
 
     void FJoltPhysicsScene::OnRigidBodyComponentDestroyed(entt::registry& Registry, entt::entity EntityID)

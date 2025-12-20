@@ -1,5 +1,7 @@
 #include "pch.h"
 #include "World.h"
+
+#include "imgui.h"
 #include "WorldManager.h"
 #include "Core/Delegates/CoreDelegates.h"
 #include "Core/Engine/Engine.h"
@@ -17,6 +19,7 @@
 #include "Entity/Components/NameComponent.h"
 #include "Entity/Components/SingletonEntityComponent.h"
 #include "Entity/Components/VelocityComponent.h"
+#include "Events/KeyCodes.h"
 #include "glm/gtx/matrix_decompose.hpp"
 #include "Physics/Physics.h"
 #include "Scene/RenderScene/Forward/ForwardRenderScene.h"
@@ -509,14 +512,50 @@ namespace Lumina
         Batcher.DrawViewVolume(ViewVolume, Color, Thickness, Duration);
     }
 
-    TOptional<FRayResult> CWorld::CastRay(const glm::vec3& Start, const glm::vec3& End, bool bDrawDebug, uint32 LayerMask, int64 IgnoreBody) const
+    TOptional<FRayResult> CWorld::CastRay(const FRayCastSettings& Settings)
     {
+        LUMINA_PROFILE_SCOPE();
+        
         if (PhysicsScene == nullptr)
         {
             return eastl::nullopt;
         }
         
-        return PhysicsScene->CastRay(Start,End, bDrawDebug, LayerMask, IgnoreBody);
+        TOptional<FRayResult> Result = PhysicsScene->CastRay(Settings.Start,Settings.End, Settings.LayerMask, Settings.IgnoreBodies);
+        
+        if (Settings.bDrawDebug)
+        {
+            if (Result.has_value())
+            {
+                FRayResult RayResult = Result.value();
+                DrawDebugLine(Settings.Start, RayResult.Location, FColor(Settings.DebugMissColor));
+                
+                glm::vec3 NormalEnd = RayResult.Location + RayResult.Normal * 0.5f;
+                DrawDebugLine(RayResult.Location, NormalEnd, FColor::Blue);
+                
+                DrawDebugBox(RayResult.Location, glm::vec3(0.05f), glm::quat(1.0f, 0.0f, 0.0f, 0.0f), FColor::Yellow);
+                
+                DrawDebugLine(RayResult.Location, Settings.End, FColor(Settings.DebugHitColor));
+            }
+            else
+            {
+                DrawDebugLine(Settings.Start, Settings.End, FColor(Settings.DebugMissColor));
+            }
+        }
+        
+        return Result;
+    }
+
+    TOptional<FRayResult> CWorld::CastRay(const glm::vec3& Start, const glm::vec3& End, bool bDrawDebug, uint32 LayerMask, int64 IgnoreBody)
+    {
+        FRayCastSettings Settings;
+        Settings.Start = Start;
+        Settings.End = End;
+        Settings.LayerMask = LayerMask;
+        Settings.bDrawDebug = bDrawDebug;
+        Settings.IgnoreBodies.push_back(IgnoreBody);
+        
+        return CastRay(Settings);
     }
 
     void CWorld::SetEntityTransform(entt::entity Entity, const FTransform& NewTransform)

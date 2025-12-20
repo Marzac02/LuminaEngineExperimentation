@@ -130,7 +130,8 @@ namespace Lumina
         void DrawViewVolume(const FViewVolume& ViewVolume, const glm::vec4& Color, float Thickness = 1.0f, float Duration = 1.0f);
         //~ End Debug Drawing
         
-        TOptional<FRayResult> CastRay(const glm::vec3& Start, const glm::vec3& End, bool bDrawDebug = false, uint32 LayerMask = 0xFFFFFFFF, int64 IgnoreBody = -1) const;
+        TOptional<FRayResult> CastRay(const FRayCastSettings& Settings);
+        TOptional<FRayResult> CastRay(const glm::vec3& Start, const glm::vec3& End, bool bDrawDebug = false, uint32 LayerMask = 0xFFFFFFFF, int64 IgnoreBody = -1);
         
 
         void SetIsPlayWorld(bool bValue) { bIsPlayWorld = bValue; }

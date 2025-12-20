@@ -55,6 +55,7 @@ namespace Lumina
 
         void CheckInstanceBufferResize(uint32 NumInstances);
         void CheckLightBufferResize(uint32 NumLights);
+        void CheckSimpleVertexResize(uint32 NumVertices);
         
         FRHIImageRef GetRenderTarget() const override;
         ERenderSceneDebugFlags GetDebugMode() const override;

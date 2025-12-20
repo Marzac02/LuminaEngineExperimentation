@@ -133,8 +133,8 @@ namespace Lumina::ECS
     {
         const auto F = Table["__type"].get<sol::function>();
         LUM_ASSERT(F.valid() && "__type not exposed to lua!")
-        
-        const char* Name = F().get<const char*>();
+
+        auto Name = F().get<const char*>();
         return entt::hashed_string(Name);
     }
 

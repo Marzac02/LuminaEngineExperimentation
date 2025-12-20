@@ -2,29 +2,22 @@
 
 local MyScript =
 {
-    MovementSystem = System
+    CoolSystem = System
     {
-        Name = "PlayerMovementSystem",
         Stage = UpdateStage.PrePhysics,
         Priority = 100,
-        Query = { "STransformComponent", "SStaticMeshComponent" },
+        Query = { "STransformComponent", "SStaticMeshComponent", "SRigidBodyComponent" },
         
         Execute = function(Context, Entities, DeltaTime)
 
             for _, entity in ipairs(Entities) do
-                local Transform = Context:Get(entity, "STransformComponent")
-                Transform:Translate(vec3(0.0, 0.0, 0.01))
-                Context:DirtyTransform(entity)
+                local Transform, RigidBody = Context:Get(entity, "STransformComponent", "SRigidBodyComponent")
+                
+                Context:CastRay(Transform:GetLocation(), vec3(0.0, 0.0, 0.0), true, 0, RigidBody.BodyID)
+                Context:TranslateEntity(entity, vec3(0.0, 0.0, 1.5 * DeltaTime))
+
             end
         end,
-    },
-    
-    Metadata = Metadata
-    {
-        Name = "Player Gameplay Script",
-        Author = "YourName",
-        Version = "1.0.0",
-        Description = "Handles player movement, input, and collision"
     }
 }
 

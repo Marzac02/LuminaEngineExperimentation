@@ -15,7 +15,7 @@ namespace Lumina::Physics
         virtual void PostUpdate() = 0;
         virtual void OnWorldSimulate() = 0;
         virtual void OnWorldStopSimulate() = 0;
-        virtual TOptional<FRayResult> CastRay(const glm::vec3& Start, const glm::vec3& End, bool bDrawDebug = false, uint32 LayerMask = 0xFFFFFFFF, int64 IgnoreBody = -1) = 0;
+        virtual TOptional<FRayResult> CastRay(const glm::vec3& Start, const glm::vec3& End, uint32 LayerMask = 0xFFFFFFFF, TSpan<const int64> IgnoreBody = TSpan<const int64>()) = 0;
 
         
     };

@@ -129,7 +129,7 @@ namespace Lumina::Physics
     	
     	void SyncTransforms();
     	
-    	TOptional<FRayResult> CastRay(const glm::vec3& Start, const glm::vec3& End, bool bDrawDebug, uint32 LayerMask, int64 IgnoreBody) override;
+    	TOptional<FRayResult> CastRay(const glm::vec3& Start, const glm::vec3& End, uint32 LayerMask, TSpan<const int64> IgnoreBody) override;
 
     	void OnCharacterComponentConstructed(entt::registry& Registry, entt::entity Entity);
     	void OnRigidBodyComponentConstructed(entt::registry& Registry, entt::entity EntityID);

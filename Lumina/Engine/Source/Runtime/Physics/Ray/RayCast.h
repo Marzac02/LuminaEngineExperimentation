@@ -33,12 +33,30 @@ namespace Lumina
         float Fraction;
     };
     
+    REFLECT()
     struct FRayCastSettings
     {
-        glm::vec3 Start;
-        glm::vec3 End;
-        bool bDrawDebug;
+        GENERATED_BODY()
+        
+        PROPERTY(Script)
+        glm::vec3 Start = glm::vec3(0.0f);
+        
+        PROPERTY(Script)
+        glm::vec3 End = glm::vec3(0.0f);
+        
+        PROPERTY(Script)
+        bool bDrawDebug = false;
+        
+        PROPERTY(Script)
+        glm::vec3 DebugHitColor = glm::vec3(0.0, 1.0f, 0.0f);
+        
+        PROPERTY(Script)
+        glm::vec3 DebugMissColor = glm::vec3(1.0f, 0.0f, 0.0f);
+        
+        PROPERTY(Script)
         uint32 LayerMask;
-        int64 IgnoreBody;
+        
+        PROPERTY(Script)
+        TVector<int64> IgnoreBodies;
     };
 }

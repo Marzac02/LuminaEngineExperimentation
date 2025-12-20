@@ -35,6 +35,8 @@ namespace Lumina
 
         static void Initialize();
         static void Shutdown();
+        
+        enki::TaskScheduler& GetScheduler() { return Scheduler; }
 
         /**
          * When scheduling tasks, the number specified is the number of iterations you want. EnkiTS will -

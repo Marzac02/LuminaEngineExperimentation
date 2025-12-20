@@ -22,24 +22,24 @@ namespace Lumina
     {
         GENERATED_BODY()
         ENTITY_COMPONENT(SRigidBodyComponent)
-
-        PROPERTY(Editable, Category = "Physics")
-        EBodyType BodyType = EBodyType::Dynamic;
         
-        PROPERTY(Visible, Category = "Physics")
-        uint64 BodyID = UINT64_MAX;
+        PROPERTY(Script, Visible, Category = "Physics")
+        uint32 BodyID = UINT32_MAX;
         
-        PROPERTY(Editable, Category = "Physics")
+        PROPERTY(Script, Editable, Category = "Physics")
         float Mass = 1.0f;
 
-        PROPERTY(Editable, Category = "Physics")
-        bool bUseGravity = true;
-
-        PROPERTY(Editable, ClampMin = 0.001f, ClampMax = 1.0f, Category = "Physics")
+        PROPERTY(Script, Editable, ClampMin = 0.001f, ClampMax = 1.0f, Category = "Physics")
         float LinearDamping = 0.0f;
 
-        PROPERTY(Editable, ClampMin = 0.001f, ClampMax = 1.0f, Category = "Physics")
+        PROPERTY(Script, Editable, ClampMin = 0.001f, ClampMax = 1.0f, Category = "Physics")
         float AngularDamping = 0.05f;
+        
+        PROPERTY(Script, Editable, Category = "Physics")
+        EBodyType BodyType = EBodyType::Dynamic;
+        
+        PROPERTY(Script, Editable, Category = "Physics")
+        bool bUseGravity = true;
     };
 
     REFLECT()

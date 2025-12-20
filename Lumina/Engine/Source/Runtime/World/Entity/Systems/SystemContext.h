@@ -142,8 +142,12 @@ namespace Lumina
 
         LUMINA_API TOptional<FRayResult> CastRay(const glm::vec3& Start, const glm::vec3& End, bool bDrawDebug = false, uint32 LayerMask = 0xFFFFFFFF, int64 IgnoreBody = -1) const;
 
-
         LUMINA_API STransformComponent& GetEntityTransform(entt::entity Entity);
+        
+        LUMINA_API void TranslateEntity(entt::entity Entity, const glm::vec3& Translation);
+        LUMINA_API void SetEntityLocation(entt::entity Entity, const glm::vec3& Location);
+        LUMINA_API void SetEntityRotation(entt::entity Entity, const glm::quat& Rotation);
+        LUMINA_API void SetEntityScale(entt::entity Entity, const glm::vec3& Scale);
         
         LUMINA_API void MarkEntityTransformDirty(entt::entity Entity, EMoveMode MoveMode = EMoveMode::Teleport, bool bActivate = true);
         
@@ -160,7 +164,7 @@ namespace Lumina
 
         void LuaSetActiveCamera(uint32 Entity);
         sol::object LuaEmplace(entt::entity Entity, const sol::object& Component);
-        sol::reference LuaGet(entt::entity Entity, const sol::object& Type);
+        sol::variadic_results LuaGet(entt::entity Entity, const sol::variadic_args& Args);
         void BindLuaEvent(sol::table Table, sol::function Function);
         
     private:

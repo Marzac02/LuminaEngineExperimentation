@@ -520,6 +520,7 @@ namespace Lumina
         
                 CheckInstanceBufferResize(InstanceData.size());
                 CheckLightBufferResize(LightData.NumLights);
+                CheckSimpleVertexResize(SimpleVertices.size());
                 
                 const SIZE_T SimpleVertexSize = SimpleVertices.size() * sizeof(FSimpleElementVertex);
                 const SIZE_T InstanceDataSize = InstanceData.size() * sizeof(FInstanceData);
@@ -1287,7 +1288,7 @@ namespace Lumina
 
             FGraphicsState GraphicsState; GraphicsState
                 .SetRenderPass(RenderPass)
-                .AddVertexBuffer({SimpleVertexBuffer})
+                .AddVertexBuffer(FVertexBufferBinding{SimpleVertexBuffer})
                 .SetViewportState(MakeViewportStateFromImage(HDRRenderTarget))
                 .SetPipeline(GRenderContext->CreateGraphicsPipeline(Desc, RenderPass))
                 .AddBindingSet(BindingSet)
@@ -1485,7 +1486,7 @@ namespace Lumina
         }
 
         {
-            SimpleVertexBuffer = FRHITypedVertexBuffer<FSimpleElementVertex>::CreateEmpty(10'000);
+            SimpleVertexBuffer = FRHITypedVertexBuffer<FSimpleElementVertex>::CreateEmpty(1'000);
         }
 
         {
@@ -1859,6 +1860,17 @@ namespace Lumina
                 GRenderContext->CreateBindingSetAndLayout(Visibility, 0, SetDesc, LightCullLayout, LightCullSet);
             }
             
+        }
+    }
+
+    void FForwardRenderScene::CheckSimpleVertexResize(uint32 NumVertices)
+    {
+        uint32 SizeRequiredBytes = NumVertices * sizeof(FSimpleElementVertex);
+        uint32 NumToReallocate = NumVertices * 2;
+        
+        if (SimpleVertexBuffer->GetDescription().Size < SizeRequiredBytes)
+        {
+            SimpleVertexBuffer = FRHITypedVertexBuffer<FSimpleElementVertex>::CreateEmpty(NumToReallocate);
         }
     }
 

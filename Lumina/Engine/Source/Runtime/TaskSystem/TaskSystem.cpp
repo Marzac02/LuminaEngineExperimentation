@@ -29,7 +29,8 @@ namespace Lumina
 
         void ObWaitForTaskCompleteStart(uint32_t threadNum)
         {
-            
+            const char* TaskStartTxt = "Wait For Task Complete";
+            TracyMessage(TaskStartTxt, strlen(TaskStartTxt));
         }
 
         void* CustomAllocFunc(size_t alignment, size_t size, void* userData_, const char* file_, int line_)
