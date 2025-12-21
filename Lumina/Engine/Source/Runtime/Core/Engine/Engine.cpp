@@ -216,6 +216,8 @@ namespace Lumina
                 #endif
                 
                 RenderManager->FrameEnd(UpdateContext, RenderGraph);
+                
+                Scripting::FScriptingContext::Get().ProcessDeferredActions();
 
                 OnUpdateStage(UpdateContext);
 

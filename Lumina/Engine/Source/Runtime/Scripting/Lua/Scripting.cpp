@@ -87,7 +87,15 @@ namespace Lumina::Scripting
 
     void FScriptingContext::Shutdown()
     {
-        RegisteredScripts.clear();
+        ScriptRegistry = {};
+    }
+
+    void FScriptingContext::ProcessDeferredActions()
+    {
+        DeferredActions.ProcessAllOf<FScriptReload>([&](const FScriptReload& Reload)
+        {
+            LoadScriptPath(Reload.Path);
+        });
     }
 
     SIZE_T FScriptingContext::GetScriptMemoryUsage() const
@@ -97,37 +105,35 @@ namespace Lumina::Scripting
 
     void FScriptingContext::OnScriptReloaded(FStringView ScriptPath)
     {
-        FScopeLock Lock(Mutex);
+        FScopeLock Lock(LoadMutex);
+        
+        DeferredActions.EnqueueAction<FScriptReload>(FString(ScriptPath));
     }
 
     void FScriptingContext::OnScriptCreated(FStringView ScriptPath)
     {
-        FScopeLock Lock(Mutex);
+        FScopeLock Lock(LoadMutex);
 
     }
 
     void FScriptingContext::OnScriptRenamed(FStringView NewPath, FStringView OldPath)
     {
-        FScopeLock Lock(Mutex);
+        FScopeLock Lock(LoadMutex);
         
 
     }
 
     void FScriptingContext::OnScriptDeleted(FStringView ScriptPath)
     {
-        FScopeLock Lock(Mutex);
-
-        for (auto& [Name, PathVector] : RegisteredScripts)
-        {
-            
-        }
+        FScopeLock Lock(LoadMutex);
+        
     }
     
     void FScriptingContext::LoadScriptsInDirectoryRecursively(FStringView Directory)
     {
-        FScopeLock Lock(Mutex);
+        FScopeLock Lock(LoadMutex);
         
-        RegisteredScripts.clear();
+        ScriptRegistry = {};
         for (auto& Itr : std::filesystem::recursive_directory_iterator(Directory.data()))
         {
             if (Itr.is_directory())
@@ -141,24 +147,13 @@ namespace Lumina::Scripting
                 FString ScriptDirectory = Itr.path().parent_path().generic_string().c_str();
                 Paths::NormalizePath(ScriptDirectory);
 
-                TVector<TUniquePtr<FLuaScriptEntry>> NewlyLoadedScripts = LoadScript(ScriptPath);
-                
-                for (TUniquePtr<FLuaScriptEntry>& Script : NewlyLoadedScripts)
-                {
-                    RegisteredScripts[Script->Type].emplace_back(Move(Script));
-                }
+                LoadScriptPath(ScriptPath);
             }
         }
-    }
-    
-    const TVector<FScriptEntryHandle>& FScriptingContext::GetScriptsUnderDirectory(FName Directory)
-    {
-        return RegisteredScripts[Directory];
     }
 
     void FScriptingContext::RegisterCoreTypes()
     {
-
         State.set_function("System", [](const sol::table& Descriptor)
         {
             sol::state_view lua(Descriptor.lua_state());
@@ -231,8 +226,6 @@ namespace Lumina::Scripting
             "Distance", [](const glm::vec2& a, const glm::vec2& b){ return glm::distance(a, b); }
         );
         
-        RegisterLuaConverterByName<glm::vec2>("vec2");
-        
         // vec3
         State.new_usertype<glm::vec3>("vec3",
             sol::call_constructor,
@@ -273,8 +266,6 @@ namespace Lumina::Scripting
             "Lerp", [](const glm::vec3& a, const glm::vec3& b, float t){ return glm::mix(a, b, t); }
         );
         
-        RegisterLuaConverterByName<glm::vec3>("vec3");
-        
         // vec4
         State.new_usertype<glm::vec4>("vec4",
             sol::call_constructor,
@@ -313,8 +304,6 @@ namespace Lumina::Scripting
             "Distance", [](const glm::vec4& a, const glm::vec4& b){ return glm::distance(a, b); }
         );
         
-        RegisterLuaConverterByName<glm::vec4>("vec4");
-        
         // quat
         State.new_usertype<glm::quat>("quat",
             sol::call_constructor,
@@ -351,8 +340,6 @@ namespace Lumina::Scripting
             "AngleAxis", [](float angle, const glm::vec3& axis){ return glm::angleAxis(angle, axis); },
             "FromEuler", [](const glm::vec3& euler){ return glm::quat(euler); }
         );
-        
-        RegisterLuaConverterByName<glm::quat>("quat");
         
         State.new_enum("UpdateStage",
             "FrameStart",       EUpdateStage::FrameStart,
@@ -476,7 +463,7 @@ namespace Lumina::Scripting
         InputTable.set_function("IsKeyUp",          [] (EKeyCode Key) { return FInputProcessor::Get().IsKeyUp(Key); }),
         InputTable.set_function("IsKeyRepeated",    [] (EKeyCode Key) { return FInputProcessor::Get().IsKeyRepeated(Key); }),
         
-        InputTable.new_enum("Key",
+        InputTable.new_enum("EKeyCode",
             "Space",        EKeyCode::Space,
             "Apostrophe",   EKeyCode::Apostrophe,
             "Comma",        EKeyCode::Comma,
@@ -608,49 +595,17 @@ namespace Lumina::Scripting
             "Menu",         EKeyCode::Menu
         );
     }
-    
-    sol::object FScriptingContext::ConvertToSolObjectFromName(FName Name, const sol::state_view& View, void* Data)
-    {
-        LUMINA_PROFILE_SCOPE();
 
-        auto it = LuaConverters.find(Name);
-        if (it == LuaConverters.end())
-        {
-            return sol::nil;
-        }
-
-        return it->second.To(View, Data);
-    }
-
-    
-    FLuaConverter::ToFunctionType* FScriptingContext::GetSolConverterFunctionPtrByName(FName Name)
-    {
-        LUMINA_PROFILE_SCOPE();
-
-        auto it = LuaConverters.find(Name);
-        if (it == LuaConverters.end())
-        {
-            return nullptr;
-        }
-
-        return it->second.To;
-    }
-    
-
-    void* FScriptingContext::ConvertFromSolObjectToVoidPtrByName(FName Name, const sol::object& Object)
-    {
-        auto it = LuaConverters.find(Name);
-        if (it == LuaConverters.end())
-        {
-            return nullptr;
-        }
-
-        return it->second.From(Object);
-    }
-
-    TVector<TUniquePtr<FLuaScriptEntry>> FScriptingContext::LoadScript(FStringView ScriptPath, bool bFailSilently)
+    TVector<entt::entity> FScriptingContext::LoadScriptPath(FStringView ScriptPath, bool bFailSilently)
     {
         sol::environment Environment(State, sol::create, State.globals());
+        
+        for (entt::entity EntityToRemove : PathToScriptEntities[FName(ScriptPath.data())])
+        {
+            ScriptRegistry.destroy(EntityToRemove);
+        };
+        
+        PathToScriptEntities[FName(ScriptPath.data())].clear();
     
         sol::protected_function_result Result = State.safe_script_file(ScriptPath.data(), Environment);
         if (!Result.valid())
@@ -677,30 +632,29 @@ namespace Lumina::Scripting
         }
 
         sol::table ScriptTable = ReturnedObject.as<sol::table>();
-        TVector<TUniquePtr<FLuaScriptEntry>> Entries;
-
+        TVector<entt::entity> NewScriptEntities;
+        
         for (const auto& [key, value] : ScriptTable)
         {
             if (!value.is<sol::table>() || !key.is<const char*>())
             {
                 continue;
             }
-
             
-    
             sol::table EntryTable = value.as<sol::table>();
     
             sol::object TypeObj = EntryTable["Type"];
-            if (!TypeObj.valid() || !TypeObj.is<std::string>())
+            if (!TypeObj.valid() || !TypeObj.is<const char*>())
             {
                 continue;
             }
     
             for (CScriptFactory* Factory : Factories)
             {
-                if (auto Expected = Factory->ProcessScript(key.as<const char*>(), EntryTable))
+                if (entt::entity Entity = Factory->ProcessScript(key.as<const char*>(), EntryTable, ScriptRegistry); Entity != entt::null)
                 {
-                    Entries.push_back(Move(Expected.Value()));
+                    PathToScriptEntities[FName(ScriptPath.data())].push_back(Entity);
+                    NewScriptEntities.push_back(Entity);
                     break;
                 }
             }
@@ -708,6 +662,6 @@ namespace Lumina::Scripting
         
         OnScriptLoaded.Broadcast();
         
-        return Move(Entries);
+        return NewScriptEntities;
     }
 }

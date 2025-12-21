@@ -183,7 +183,6 @@ namespace Lumina
         double                                          DeltaTime = 0.0;
         double                                          TimeSinceCreation = 0.0;
 
-        uint32                                          bHasNewlyLoadedScripts:1 = true;
         uint32                                          bPaused:1 = true;
         uint32                                          bSimulating:1 = false;
         uint32                                          bActive:1 = true;

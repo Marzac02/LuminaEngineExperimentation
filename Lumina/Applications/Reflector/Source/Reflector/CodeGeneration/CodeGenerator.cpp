@@ -396,6 +396,38 @@ namespace Lumina::Reflection
 
         Stream += "static void " + FileID + "_" + "LuaRegistration(sol::state_view State)\n";
         Stream += "{\n";
+        
+        for (const eastl::shared_ptr<FReflectedType>& Type : ReflectedTypes)
+        {
+            if (Type->Type != FReflectedType::EType::Enum)
+            {
+                continue;
+            }
+            
+            eastl::shared_ptr<FReflectedEnum> Enum = eastl::static_pointer_cast<FReflectedEnum>(Type);
+            
+            if (Enum->Constants.empty())
+            {
+                continue;
+            }
+            
+            Stream += "\t State.new_enum(\"" + Type->DisplayName + "\",\n";
+
+            for (size_t i = 0; i < Enum->Constants.size(); ++i)
+            {
+                const FReflectedEnum::FConstant& Constant = Enum->Constants[i];
+                Stream += "\t\t\"" + Constant.Label + "\", " + Type->Namespace + "::" + Type->DisplayName + "::" + Constant.Label;
+                
+                if (i != Enum->Constants.size() - 1)
+                {
+                    Stream += ",\n";
+                }
+            }
+            
+            Stream += ");";
+        }
+        
+        Stream += "\n\n";
 
         for (const eastl::shared_ptr<FReflectedType>& Type : ReflectedTypes)
         {
@@ -446,8 +478,6 @@ namespace Lumina::Reflection
             }
 
             Stream += "\t);\n";
-
-            Stream += "\tLumina::Scripting::FScriptingContext::Get().RegisterLuaConverterByName<" + Type->Namespace + "::" + Type->DisplayName + ">" + "(\"" + Type->DisplayName + "\");\n";
             
         }
         

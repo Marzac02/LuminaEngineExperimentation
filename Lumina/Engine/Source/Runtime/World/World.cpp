@@ -63,11 +63,7 @@ namespace Lumina
         EntityRegistry.emplace<FHideInSceneOutliner>(SingletonEntity);
         EntityRegistry.emplace<FLuaScriptsContainerComponent>(SingletonEntity);
 
-        ScriptUpdatedDelegateHandle = Scripting::FScriptingContext::Get().OnScriptLoaded.AddLambda([this]
-        {
-            bHasNewlyLoadedScripts = true;
-        });
-        
+        ScriptUpdatedDelegateHandle = Scripting::FScriptingContext::Get().OnScriptLoaded.AddMember(this, &ThisClass::ProcessAnyNewlyLoadedScripts);
         
         PhysicsScene    = Physics::GetPhysicsContext()->CreatePhysicsScene(this);
         CameraManager   = MakeUniquePtr<FCameraManager>(this);
@@ -93,6 +89,8 @@ namespace Lumina
         EntityRegistry.on_construct<SSineWaveMovementComponent>().connect<&ThisClass::OnSineWaveMovementComponentCreated>(this);
         EntityRegistry.on_destroy<FRelationshipComponent>().connect<&ThisClass::OnRelationshipComponentDestroyed>(this);
         SystemContext.EventSink<FSwitchActiveCameraEvent>().connect<&ThisClass::OnChangeCameraEvent>(this);
+        
+        ProcessAnyNewlyLoadedScripts();
     }
     
     void CWorld::Update(const FUpdateContext& Context)
@@ -121,8 +119,6 @@ namespace Lumina
         {
             System->Update(SystemContext);
         }
-
-        ProcessAnyNewlyLoadedScripts();
     }
 
     void CWorld::Paused(const FUpdateContext& Context)
@@ -141,8 +137,6 @@ namespace Lumina
         {
             System->Update(SystemContext);
         }
-
-        ProcessAnyNewlyLoadedScripts();
     }
 
     void CWorld::Render(FRenderGraph& RenderGraph)
@@ -157,10 +151,12 @@ namespace Lumina
 
     void CWorld::ShutdownWorld()
     {
+        Scripting::FScriptingContext::Get().OnScriptLoaded.Remove(ScriptUpdatedDelegateHandle);
+
         RenderScene->Shutdown();
         
         FCoreDelegates::PostWorldUnload.Broadcast();
-
+        
         GEngine->GetEngineSubsystem<FWorldManager>()->RemoveWorld(this);
     }
 
@@ -448,26 +444,21 @@ namespace Lumina
 
     void CWorld::ProcessAnyNewlyLoadedScripts()
     {
-        if (bHasNewlyLoadedScripts)
+        using namespace Scripting;
+        
+        auto View = EntityRegistry.view<FLuaScriptsContainerComponent>();
+        View.each([&](FLuaScriptsContainerComponent& LuaContainerComponent)
         {
-            auto View = EntityRegistry.view<FLuaScriptsContainerComponent>();
-            View.each([&](FLuaScriptsContainerComponent& LuaContainerComponent)
+            for (uint32 i = 0; i < (uint32)EUpdateStage::Max; ++i)
             {
-                for (uint32 i = 0; i < (uint32)EUpdateStage::Max; ++i)
-                {
-                    LuaContainerComponent.Systems[i].clear();
-                }
+                LuaContainerComponent.Systems[i].clear();
+            }
 
-                using namespace Scripting;
-                FScriptingContext::Get().ForEachScript("System", [&](const FLuaScriptEntry& Script)
-                {
-                    const FLuaSystemScriptEntry& SystemScript = Script.As<FLuaSystemScriptEntry>();
-                    LuaContainerComponent.Systems[SystemScript.Stage].emplace_back(&SystemScript);
-                });
+            FScriptingContext::Get().ForEachScript<FLuaSystemScriptEntry>([&](FLuaSystemScriptEntry& Script)
+            {
+                LuaContainerComponent.Systems[Script.Stage].emplace_back(Script);
             });
-            
-            bHasNewlyLoadedScripts = false;
-        }
+        });
     }
 
     void CWorld::DrawDebugLine(const glm::vec3& Start, const glm::vec3& End, const glm::vec4& Color, float Thickness, float Duration)

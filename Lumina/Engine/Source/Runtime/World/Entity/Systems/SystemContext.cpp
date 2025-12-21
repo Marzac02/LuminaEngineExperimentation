@@ -23,11 +23,17 @@ namespace Lumina
             "GetDeltaTime",         &FSystemContext::GetDeltaTime,
             "GetTime",              &FSystemContext::GetTime,
             "GetUpdateStage",       &FSystemContext::GetUpdateStage,
+            "GetNumEntities",       &FSystemContext::GetNumEntities,
+            "IsValidEntity",        &FSystemContext::IsValidEntity,
             "GetTransform",         &FSystemContext::GetEntityTransform,
-            "BindEvent",            &FSystemContext::BindLuaEvent,
-            "Emplace",              &FSystemContext::LuaEmplace,
-            "Get",                  &FSystemContext::LuaGet,
-            "SetActiveCamera",      &FSystemContext::LuaSetActiveCamera,
+            "Destroy",              &FSystemContext::Destroy,
+            "View",                 &FSystemContext::Lua_View,
+            "AllOf",                &FSystemContext::Lua_HasAllOf,
+            "AnyOf",                &FSystemContext::Lua_HasAnyOf,
+            "BindEvent",            &FSystemContext::Lua_BindEvent,
+            "Emplace",              &FSystemContext::Lua_Emplace,
+            "Get",                  &FSystemContext::Lua_Get,
+            "SetActiveCamera",      &FSystemContext::Lua_SetActiveCamera,
             "TranslateEntity",      &FSystemContext::TranslateEntity,
             "SetEntityLocation",    &FSystemContext::SetEntityLocation,
             "SetEntityRotation",    &FSystemContext::SetEntityRotation,
@@ -116,20 +122,42 @@ namespace Lumina
         return RuntimeView;
     }
 
+    entt::runtime_view FSystemContext::CreateRuntimeView(const THashSet<entt::id_type>& Components)
+    {
+        entt::runtime_view RuntimeView;
+        
+        for (entt::id_type Type : Components)
+        {
+            entt::meta_type Meta = entt::resolve(Type);
+            if (!Meta)
+            {
+                continue;
+            }
+
+            if (entt::basic_sparse_set<>* Storage = Registry.storage(Meta.info().hash()))
+            {
+                RuntimeView.iterate(*Storage);
+            }
+        }
+
+        return RuntimeView;
+    }
+
     TOptional<FRayResult> FSystemContext::CastRay(const glm::vec3& Start, const glm::vec3& End, bool bDrawDebug, uint32 LayerMask, int64 IgnoreBody) const
     {
         return World->CastRay(Start, End, bDrawDebug, LayerMask, IgnoreBody);
     }
 
-    STransformComponent& FSystemContext::GetEntityTransform(entt::entity Entity)
+    STransformComponent& FSystemContext::GetEntityTransform(entt::entity Entity) const
     {
         return Get<STransformComponent>(Entity);
     }
 
-    void FSystemContext::TranslateEntity(entt::entity Entity, const glm::vec3& Translation)
+    glm::vec3 FSystemContext::TranslateEntity(entt::entity Entity, const glm::vec3& Translation)
     {
-        Registry.get<STransformComponent>(Entity).Translate(Translation);
+        glm::vec3 NewLocation = Registry.get<STransformComponent>(Entity).Translate(Translation);
         MarkEntityTransformDirty(Entity);
+        return NewLocation;
     }
 
     void FSystemContext::SetEntityLocation(entt::entity Entity, const glm::vec3& Location)
@@ -164,12 +192,56 @@ namespace Lumina
         return EntityID;
     }
 
-    void FSystemContext::LuaSetActiveCamera(uint32 Entity)
+    size_t FSystemContext::GetNumEntities() const
+    {
+        return Registry.storage<entt::entity>().size();
+    }
+
+    bool FSystemContext::IsValidEntity(entt::entity Entity) const
+    {
+        return Registry.valid(Entity);
+    }
+
+    bool FSystemContext::Lua_HasAllOf(entt::entity Entity, const sol::variadic_args& Args)
+    {
+        return eastl::all_of(Args.cbegin(), Args.cend(), [&](const sol::object& Object)
+        {
+            return Lua_Has(Entity, Object);
+        });
+    }
+
+    bool FSystemContext::Lua_HasAnyOf(entt::entity Entity, const sol::variadic_args& Args)
+    {
+        return eastl::any_of(Args.cbegin(), Args.cend(), [&](const sol::object& Object)
+        {
+            return Lua_Has(Entity, Object);
+        });
+    }
+
+    bool FSystemContext::Lua_Has(entt::entity Entity, const sol::object& Type)
+    {
+        using namespace entt::literals;
+        entt::meta_any Any = ECS::InvokeMetaFunc(ECS::DeduceType(Type), "has"_hs, entt::forward_as_meta(Registry), Entity);
+        return Any ? Any.cast<bool>() : false;
+    }
+
+    void FSystemContext::Lua_View(const sol::variadic_args& Args, const sol::function& Callback)
+    {
+        const THashSet<entt::id_type>& Types = ECS::CollectTypes(Args);
+        entt::runtime_view View = CreateRuntimeView(Types);
+        
+        View.each([&](entt::entity Itr)
+        {
+            Callback(Itr);
+        });
+    }
+
+    void FSystemContext::Lua_SetActiveCamera(uint32 Entity)
     {
         Dispatcher.trigger<FSwitchActiveCameraEvent>(FSwitchActiveCameraEvent{(entt::entity)Entity});
     }
 
-    sol::object FSystemContext::LuaEmplace(entt::entity Entity, const sol::object& Component)
+    sol::object FSystemContext::Lua_Emplace(entt::entity Entity, const sol::object& Component)
     {
         LUMINA_PROFILE_SCOPE();
 
@@ -182,7 +254,7 @@ namespace Lumina
         return MaybeAny ? MaybeAny.cast<sol::reference>() : sol::nil;
     }
 
-    sol::variadic_results FSystemContext::LuaGet(entt::entity Entity, const sol::variadic_args& Args)
+    sol::variadic_results FSystemContext::Lua_Get(entt::entity Entity, const sol::variadic_args& Args)
     {
         LUMINA_PROFILE_SCOPE();
 
@@ -190,10 +262,14 @@ namespace Lumina
         
         sol::variadic_results Results;
         Results.reserve(Args.size());
+        
+        entt::id_type FunctionID = "get_lua"_hs;
+        sol::state_view LuaState(Args.lua_state());
+        
         for (const sol::object Proxy : Args)
         {
             entt::id_type TypeID = ECS::DeduceType(Proxy);
-            if (const entt::meta_any& MaybeAny = ECS::InvokeMetaFunc(TypeID, "get_lua"_hs, entt::forward_as_meta(Registry), Entity, sol::state_view(Args.lua_state())))
+            if (const entt::meta_any& MaybeAny = ECS::InvokeMetaFunc(TypeID, FunctionID, entt::forward_as_meta(Registry), Entity, LuaState))
             {
                 Results.emplace_back(MaybeAny.cast<sol::reference>());
             }
@@ -206,7 +282,7 @@ namespace Lumina
         return Results;
     }
 
-    void FSystemContext::BindLuaEvent(sol::table Table, sol::function Function)
+    void FSystemContext::Lua_BindEvent(sol::table Table, sol::function Function)
     {
         
     }

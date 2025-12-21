@@ -32,11 +32,8 @@ namespace Lumina
     {
         GENERATED_BODY()
     public:
-        using FScriptExpected = TExpected<TUniquePtr<Scripting::FLuaScriptEntry>, FString>;
-
+        
         void PostCreateCDO() override;
-        
-        
-        virtual FScriptExpected ProcessScript(FName Name, const sol::table& ScriptTable) const LUMINA_PURE_VIRTUAL()
+        virtual entt::entity ProcessScript(FName Name, const sol::table& ScriptTable, entt::registry& ScriptRegistry) const LUMINA_PURE_VIRTUAL()
     };
 }

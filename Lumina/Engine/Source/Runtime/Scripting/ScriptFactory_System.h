@@ -12,7 +12,7 @@ namespace Lumina
         
     public:
 
-        FScriptExpected ProcessScript(FName Name, const sol::table& ScriptTable) const override;
+        entt::entity ProcessScript(FName Name, const sol::table& ScriptTable, entt::registry& ScriptRegistry) const override;
         
     };
 }

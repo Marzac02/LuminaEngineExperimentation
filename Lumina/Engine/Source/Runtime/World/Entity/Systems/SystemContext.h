@@ -142,9 +142,9 @@ namespace Lumina
 
         LUMINA_API TOptional<FRayResult> CastRay(const glm::vec3& Start, const glm::vec3& End, bool bDrawDebug = false, uint32 LayerMask = 0xFFFFFFFF, int64 IgnoreBody = -1) const;
 
-        LUMINA_API STransformComponent& GetEntityTransform(entt::entity Entity);
+        LUMINA_API STransformComponent& GetEntityTransform(entt::entity Entity) const;
         
-        LUMINA_API void TranslateEntity(entt::entity Entity, const glm::vec3& Translation);
+        LUMINA_API glm::vec3 TranslateEntity(entt::entity Entity, const glm::vec3& Translation);
         LUMINA_API void SetEntityLocation(entt::entity Entity, const glm::vec3& Location);
         LUMINA_API void SetEntityRotation(entt::entity Entity, const glm::quat& Rotation);
         LUMINA_API void SetEntityScale(entt::entity Entity, const glm::vec3& Scale);
@@ -153,19 +153,26 @@ namespace Lumina
         
         LUMINA_API entt::runtime_view CreateRuntimeView(const TVector<FName>& Components);
         LUMINA_API entt::runtime_view CreateRuntimeView(const TVector<entt::id_type>& Components);
+        LUMINA_API entt::runtime_view CreateRuntimeView(const THashSet<entt::id_type>& Components);
 
         LUMINA_API entt::entity Create(const FName& Name, const FTransform& Transform = FTransform()) const;
         LUMINA_API entt::entity Create() const { return Registry.create(); }
         LUMINA_API void Destroy(entt::entity Entity) const { Registry.destroy(Entity); }
 
-        
+        LUMINA_API size_t GetNumEntities() const;
+        LUMINA_API bool IsValidEntity(entt::entity Entity) const;
         
     private:
-
-        void LuaSetActiveCamera(uint32 Entity);
-        sol::object LuaEmplace(entt::entity Entity, const sol::object& Component);
-        sol::variadic_results LuaGet(entt::entity Entity, const sol::variadic_args& Args);
-        void BindLuaEvent(sol::table Table, sol::function Function);
+        
+        bool Lua_HasAllOf(entt::entity Entity, const sol::variadic_args& Args);
+        bool Lua_HasAnyOf(entt::entity Entity, const sol::variadic_args& Args);
+        bool Lua_Has(entt::entity Entity, const sol::object& Type);
+        
+        void Lua_View(const sol::variadic_args& Args, const sol::function& Callback);
+        void Lua_SetActiveCamera(uint32 Entity);
+        sol::object Lua_Emplace(entt::entity Entity, const sol::object& Component);
+        sol::variadic_results Lua_Get(entt::entity Entity, const sol::variadic_args& Args);
+        void Lua_BindEvent(sol::table Table, sol::function Function);
         
     private:
 

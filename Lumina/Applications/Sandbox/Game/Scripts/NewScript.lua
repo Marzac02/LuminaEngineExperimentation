@@ -6,16 +6,17 @@ local MyScript =
     {
         Stage = UpdateStage.PrePhysics,
         Priority = 100,
-        Query = { "STransformComponent", "SStaticMeshComponent", "SRigidBodyComponent" },
+        Query = { "STransformComponent", "SRigidBodyComponent" },
         
         Execute = function(Context, Entities, DeltaTime)
 
-            for _, entity in ipairs(Entities) do
-                local Transform, RigidBody = Context:Get(entity, "STransformComponent", "SRigidBodyComponent")
+            for _, Entity in ipairs(Entities) do
+                local Transform, RigidBody = Context:Get(Entity, "STransformComponent", "SRigidBodyComponent")
                 
-                Context:CastRay(Transform:GetLocation(), vec3(0.0, 0.0, 0.0), true, 0, RigidBody.BodyID)
-                Context:TranslateEntity(entity, vec3(0.0, 0.0, 1.5 * DeltaTime))
-                
+                if RigidBody.BodyType == EBodyType.Static then
+                    Context:CastRay(vec3(0.0, 0.0, 0.0), Transform:GetLocation(), true, 0, RigidBody.BodyID)
+                end
+                --Context:TranslateEntity(Entity, vec3(0.0, -0.2 * DeltaTime, 0.25 * DeltaTime))                
             end
         end,
     }

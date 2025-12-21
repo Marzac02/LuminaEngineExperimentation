@@ -18,7 +18,7 @@ namespace Lumina
         }
 
         template<typename TComponent>
-        auto HasComponent(entt::registry& Registry, entt::entity Entity)
+        bool HasComponent(entt::registry& Registry, entt::entity Entity)
         {
             return Registry.any_of<TComponent>(Entity);
         }

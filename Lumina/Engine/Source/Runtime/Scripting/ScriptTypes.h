@@ -16,15 +16,7 @@ namespace Lumina::Scripting
     
     struct FLuaScriptEntry
     {
-        FString             Path;
         sol::environment    Environment;
-        FName               Type;
-
-        template<typename T>
-        const T& As() const
-        {
-            return *static_cast<const T*>(this);
-        }
     };
 
     struct FLuaSystemScriptEntry : FLuaScriptEntry
