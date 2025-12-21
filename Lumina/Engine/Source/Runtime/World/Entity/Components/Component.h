@@ -36,14 +36,9 @@ namespace Lumina
         }
 
         template<typename TComponent>
-        TComponent& EmplaceComponent(entt::registry& Registry, entt::entity Entity, entt::meta_any& Any)
+        TComponent& EmplaceComponent(entt::registry& Registry, entt::entity Entity, const entt::meta_any& Any)
         {
-            if (Any)
-            {
-                return Registry.emplace_or_replace<TComponent>(Entity, Any ? Any.cast<const TComponent&>() : TComponent{});
-            }
-            
-            return Registry.emplace_or_replace<TComponent>(Entity);
+            return Registry.emplace_or_replace<TComponent>(Entity, Any ? Any.cast<const TComponent&>() : TComponent{});
         }
 
         template<typename TComponent>

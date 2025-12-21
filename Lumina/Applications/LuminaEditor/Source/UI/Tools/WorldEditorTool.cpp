@@ -951,7 +951,6 @@ namespace Lumina
                     Components.push_back({ComponentName, Category, MetaType});
                 }
                 
-                // Sort by category, then name
                 eastl::sort(Components.begin(), Components.end(), [](const ComponentInfo& a, const ComponentInfo& b)
                 {
                     int categoryCompare = strcmp(a.Category, b.Category);
@@ -987,7 +986,7 @@ namespace Lumina
                     {
                         using namespace entt::literals;
 
-                        ECS::InvokeMetaFunc(CompInfo.MetaType, "emplace"_hs, entt::forward_as_meta(World->GetEntityRegistry()), SelectedEntity);
+                        ECS::InvokeMetaFunc(CompInfo.MetaType, "emplace"_hs, entt::forward_as_meta(World->GetEntityRegistry()), SelectedEntity, entt::forward_as_meta(entt::meta_any{}));
                         bComponentAdded = true;
                     }
                     
@@ -2175,7 +2174,7 @@ namespace Lumina
         
         CreatedEntity = World->ConstructEntity("Entity");
         World->GetEntityRegistry().get<SNameComponent>(CreatedEntity).Name = Component->GetName().ToString() + "_" + eastl::to_string((uint32)CreatedEntity);
-        ECS::InvokeMetaFunc(MetaType, "emplace"_hs, entt::forward_as_meta(World->GetEntityRegistry()), CreatedEntity);
+        ECS::InvokeMetaFunc(MetaType, "emplace"_hs, entt::forward_as_meta(World->GetEntityRegistry()), CreatedEntity, entt::forward_as_meta(entt::meta_any{}));
 
         if (CreatedEntity != entt::null)
         {
