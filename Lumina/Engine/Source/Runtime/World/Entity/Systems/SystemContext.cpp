@@ -176,7 +176,8 @@ namespace Lumina
         using namespace entt::literals;
 
         entt::id_type TypeID = ECS::DeduceType(Component);
-        const entt::meta_any& MaybeAny = ECS::InvokeMetaFunc(TypeID, "emplace_lua"_hs, entt::forward_as_meta(Registry), Entity, Component, sol::state_view(Component.lua_state()));
+        const entt::meta_any& MaybeAny = ECS::InvokeMetaFunc(TypeID, "emplace_lua"_hs, 
+            entt::forward_as_meta(Registry), Entity, entt::forward_as_meta(Component), sol::state_view(Component.lua_state()));
 
         return MaybeAny ? MaybeAny.cast<sol::reference>() : sol::nil;
     }

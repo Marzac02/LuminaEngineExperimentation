@@ -15,6 +15,41 @@ namespace Lumina::Scripting
 {
     static TUniquePtr<FScriptingContext> GScriptingContext;
     
+    int SolExceptionHandler(lua_State* L, sol::optional<const std::exception&> MaybeException, sol::string_view Desc) 
+    {
+        // L is the lua state, which you can wrap in a state_view if necessary
+        // maybe_exception will contain exception, if it exists
+        // description will either be the what() of the exception or a description saying that we hit the general-case catch(...)
+        FInlineString ErrorString;
+        if (MaybeException) 
+        {
+            const std::exception& ex = *MaybeException;
+            ErrorString = ex.what();
+        }
+        else 
+        {
+            ErrorString = FInlineString(Desc.data(), Desc.length());
+        }
+        
+        LOG_ERROR("An exception occured in a script function {0}", ErrorString.c_str());
+
+
+        // you must push 1 element onto the stack to be
+        // transported through as the error object in Lua
+        // note that Lua -- and 99.5% of all Lua users and libraries -- expects a string
+        // so we push a single string (in our case, the description of the error)
+        return sol::stack::push(L, Desc);
+    }
+    
+    inline void SolPanicHandler(sol::optional<std::string> MaybeMsg) 
+    {
+        LOG_ERROR("Lua is in a panic state and will now abort() the application");
+        if (MaybeMsg) 
+        {
+            LOG_ERROR("Error Message: {0}", MaybeMsg.value());
+        }
+        // When this function exits, Lua will exhibit default behavior and abort()
+    }
     void Initialize()
     {
         GScriptingContext = MakeUniquePtr<FScriptingContext>();
@@ -34,6 +69,8 @@ namespace Lumina::Scripting
 
     void FScriptingContext::Initialize()
     {
+        State.set_exception_handler(&SolExceptionHandler);
+        State.set_panic(sol::c_call<decltype(&SolPanicHandler), &SolPanicHandler>);
         State.open_libraries(
             sol::lib::base,
             sol::lib::package,
@@ -51,6 +88,11 @@ namespace Lumina::Scripting
     void FScriptingContext::Shutdown()
     {
         RegisteredScripts.clear();
+    }
+
+    SIZE_T FScriptingContext::GetScriptMemoryUsage() const
+    {
+        return State.memory_used();
     }
 
     void FScriptingContext::OnScriptReloaded(FStringView ScriptPath)
@@ -77,21 +119,9 @@ namespace Lumina::Scripting
 
         for (auto& [Name, PathVector] : RegisteredScripts)
         {
-            for (size_t i = 0; i < PathVector.size(); ++i)
-            {
-                TUniquePtr<FLuaScriptEntry>& Path = PathVector[i];
-                if (Paths::PathsEqual(ScriptPath, Path->Path))
-                {
-                    PathVector.erase(PathVector.begin() + i);
-                    
-                    LOG_INFO("Script {} Deleted", ScriptPath);
-
-                    break;
-                }
-            }
+            
         }
     }
-
     
     void FScriptingContext::LoadScriptsInDirectoryRecursively(FStringView Directory)
     {

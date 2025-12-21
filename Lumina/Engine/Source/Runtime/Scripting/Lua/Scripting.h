@@ -45,8 +45,10 @@ namespace Lumina::Scripting
         LUMINA_API sol::state_view GetState() { return sol::state_view(State); }
 
         void Initialize();
+        void SetPanicHandler();
         void Shutdown();
 
+        LUMINA_API SIZE_T GetScriptMemoryUsage() const;
         LUMINA_API void OnScriptReloaded(FStringView ScriptPath);
         LUMINA_API void OnScriptCreated(FStringView ScriptPath);
         LUMINA_API void OnScriptRenamed(FStringView NewPath, FStringView OldPath);

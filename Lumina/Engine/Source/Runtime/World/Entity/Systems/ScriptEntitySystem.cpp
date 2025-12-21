@@ -27,14 +27,11 @@ namespace Lumina
                 {
                     continue;
                 }
-                
-                try
+
+                if (sol::protected_function_result Result = Entry->ExecuteFunc(std::ref(SystemContext), std::ref(Entities), SystemContext.GetDeltaTime()); !Result.valid())
                 {
-                    Entry->ExecuteFunc(SystemContext, Entities, SystemContext.GetDeltaTime());
-                }
-                catch (sol::error& Error)
-                {
-                    LOG_ERROR("Script Error: {0}", Error.what());
+                    sol::error Error = Result;
+                    LOG_ERROR("Script Error in system '{0}': {1}", Entry->Name, Error.what());
                 }
             }
         });

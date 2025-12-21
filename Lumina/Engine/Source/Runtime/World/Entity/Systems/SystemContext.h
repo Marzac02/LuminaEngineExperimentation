@@ -29,7 +29,7 @@ namespace Lumina
 
 
         template<typename T>
-        auto EventSink(entt::id_type ID = entt::type_hash<T>())
+        NODISCARD auto EventSink(entt::id_type ID = entt::type_hash<T>())
         {
             return Dispatcher.sink<T>(ID);
         }
@@ -53,7 +53,7 @@ namespace Lumina
         }
         
         template<typename... Ts, typename... TArgs>
-        auto CreateView(TArgs&&... Args) -> decltype(std::declval<entt::registry>().view<Ts...>(std::forward<TArgs>(Args)...))
+        NODISCARD auto CreateView(TArgs&&... Args) -> decltype(std::declval<entt::registry>().view<Ts...>(std::forward<TArgs>(Args)...))
         {
             return Registry.view<Ts...>(std::forward<TArgs>(Args)...);
         }
@@ -82,30 +82,30 @@ namespace Lumina
             });
         }
 
-        auto GetRegistryContext() const
+        NODISCARD auto GetRegistryContext() const
         {
             return Registry.ctx();
         }
 
-        entt::registry& GetRegistry() const
+        NODISCARD entt::registry& GetRegistry() const
         {
             return Registry;
         }
         
         template<typename... Ts, typename ... TArgs>
-        auto CreateGroup(TArgs&&... Args)
+        NODISCARD auto CreateGroup(TArgs&&... Args)
         {
             return Registry.group<Ts...>(std::forward<TArgs>(Args)...);
         }
 
         template<typename... Ts>
-        decltype(auto) Get(entt::entity entity) const
+        NODISCARD decltype(auto) Get(entt::entity entity) const
         {
             return Registry.get<Ts...>(entity);
         }
 
         template<typename... Ts>
-        decltype(auto) TryGet(entt::entity entity) const
+        NODISCARD decltype(auto) TryGet(entt::entity entity) const
         {
             return Registry.try_get<Ts...>(entity);
         }
@@ -117,13 +117,13 @@ namespace Lumina
         }
 
         template<typename... Ts>
-        bool HasAnyOf(entt::entity EntityID) const
+        NODISCARD bool HasAnyOf(entt::entity EntityID) const
         {
             return Registry.any_of<Ts...>(EntityID);
         }
 
         template<typename ... Ts>
-        bool HasAllOf(entt::entity EntityID) const
+        NODISCARD bool HasAllOf(entt::entity EntityID) const
         {
             return Registry.any_of<Ts...>(EntityID);
         }
@@ -169,13 +169,12 @@ namespace Lumina
         
     private:
 
-        EUpdateStage        UpdateStage = EUpdateStage::FrameStart;
-        double              DeltaTime = 0.0;
-        double              Time = 0.0;
-
+        double                  DeltaTime = 0.0;
+        double                  Time = 0.0;
         CWorld*                 World = nullptr;
         entt::registry&         Registry;
         entt::dispatcher&       Dispatcher;
+        EUpdateStage            UpdateStage = EUpdateStage::FrameStart;
     };
     
     

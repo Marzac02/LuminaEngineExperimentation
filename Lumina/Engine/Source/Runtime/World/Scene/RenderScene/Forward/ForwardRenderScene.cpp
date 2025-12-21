@@ -1264,7 +1264,7 @@ namespace Lumina
                 .SetRenderArea(HDRRenderTarget->GetExtent());
             
             FRasterState RasterState; RasterState
-                .SetLineWidth(5.0f)
+                .SetLineWidth(3.5f)
                 .EnableDepthClip();
 
             FDepthStencilState DepthState; DepthState
