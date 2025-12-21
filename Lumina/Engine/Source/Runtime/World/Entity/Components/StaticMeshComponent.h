@@ -17,6 +17,9 @@ namespace Lumina
         
         CMaterialInterface* GetMaterialForSlot(SIZE_T Slot) const;
         
+        FUNCTION(Script)
+        FAABB GetAABB() const;
+        
         PROPERTY(Editable, Category = "Mesh")
         TObjectPtr<CStaticMesh> StaticMesh;
 

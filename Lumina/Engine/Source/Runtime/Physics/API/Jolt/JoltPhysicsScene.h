@@ -127,6 +127,10 @@ namespace Lumina::Physics
         void OnWorldSimulate() override;
         void OnWorldStopSimulate() override;
     	
+    	void ActivateBody(uint32 BodyID) override;
+    	void DeactivateBody(uint32 BodyID) override;
+    	void ChangeBodyMotionType(uint32 BodyID, EBodyType NewType) override;
+    	
     	void SyncTransforms();
     	
     	TOptional<FRayResult> CastRay(const glm::vec3& Start, const glm::vec3& End, uint32 LayerMask, TSpan<const int64> IgnoreBody) override;

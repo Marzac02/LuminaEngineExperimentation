@@ -600,12 +600,14 @@ namespace Lumina::Scripting
     {
         sol::environment Environment(State, sol::create, State.globals());
         
-        for (entt::entity EntityToRemove : PathToScriptEntities[FName(ScriptPath.data())])
+        FString NormalizedPath(ScriptPath);
+        Paths::NormalizePath(NormalizedPath);
+        for (entt::entity EntityToRemove : PathToScriptEntities[NormalizedPath])
         {
             ScriptRegistry.destroy(EntityToRemove);
         };
         
-        PathToScriptEntities[FName(ScriptPath.data())].clear();
+        PathToScriptEntities[NormalizedPath].clear();
     
         sol::protected_function_result Result = State.safe_script_file(ScriptPath.data(), Environment);
         if (!Result.valid())
@@ -653,7 +655,7 @@ namespace Lumina::Scripting
             {
                 if (entt::entity Entity = Factory->ProcessScript(key.as<const char*>(), EntryTable, ScriptRegistry); Entity != entt::null)
                 {
-                    PathToScriptEntities[FName(ScriptPath.data())].push_back(Entity);
+                    PathToScriptEntities[NormalizedPath].push_back(Entity);
                     NewScriptEntities.push_back(Entity);
                     break;
                 }

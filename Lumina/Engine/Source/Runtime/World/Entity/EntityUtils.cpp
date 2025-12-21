@@ -247,10 +247,14 @@ namespace Lumina::ECS::Utils
 
         return !Ar.HasError();
     }
-
-
+    
     bool EntityHasTag(FName Tag, FEntityRegistry& Registry, entt::entity Entity)
     {
         return Registry.storage<STagComponent>(entt::hashed_string(Tag.c_str())).contains(Entity);
+    }
+
+    void SetEntityBodyType(FEntityRegistry& Registry, entt::entity Entity)
+    {
+        Registry.emplace_or_replace<FNeedsPhysicsBodyUpdate>(Entity);
     }
 }

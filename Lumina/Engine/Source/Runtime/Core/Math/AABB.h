@@ -1,14 +1,21 @@
 #pragma once
 #include "glm/glm.hpp"
 #include "Platform/Platform.h"
-#include "Core/Profiler/Profile.h"
-#include <limits>
+#include "Core/Object/ObjectMacros.h"
+#include "AABB.generated.h"
+
 
 namespace Lumina
 {
+    REFLECT()
     struct FAABB
     {
+        GENERATED_BODY()
+        
+        PROPERTY(Script, Editable)
         glm::vec3 Min;
+        
+        PROPERTY(Script, Editable)
         glm::vec3 Max;
         
         FAABB()
@@ -19,13 +26,16 @@ namespace Lumina
             : Min(InMin), Max(InMax)
         {}
 
-        NODISCARD glm::vec3 GetSize() const { return Max - Min; }
-        NODISCARD glm::vec3 GetCenter() const { return Min + GetSize() * 0.5f; }
+        FUNCTION(Script)
+        FORCEINLINE glm::vec3 GetSize() const { return Max - Min; }
+        
+        FUNCTION(Script)
+        FORCEINLINE glm::vec3 GetCenter() const { return Min + GetSize() * 0.5f; }
 
         NODISCARD FAABB ToWorld(const glm::mat4& World) const
         {
-            glm::vec3 NewMin(std::numeric_limits<float>::max());
-            glm::vec3 NewMax(-std::numeric_limits<float>::max());
+            glm::vec3 NewMin(eastl::numeric_limits<float>::max());
+            glm::vec3 NewMax(-eastl::numeric_limits<float>::max());
 
             for (int i = 0; i < 8; i++)
             {

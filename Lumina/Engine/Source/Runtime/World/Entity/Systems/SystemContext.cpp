@@ -23,6 +23,16 @@ namespace Lumina
             "GetDeltaTime",         &FSystemContext::GetDeltaTime,
             "GetTime",              &FSystemContext::GetTime,
             "GetUpdateStage",       &FSystemContext::GetUpdateStage,
+            
+            "DrawDebugLine",        &FSystemContext::DrawDebugLine,
+            "DrawDebugBox",         &FSystemContext::DrawDebugBox,
+            "DrawDebugSphere",      &FSystemContext::DrawDebugSphere,
+            "DrawDebugArrow",       &FSystemContext::DrawDebugArrow,
+            
+            "ActivateBody",         &FSystemContext::ActivateBody,
+            "DeactivateBody",       &FSystemContext::DeactivateBody,
+            "ChangeBodyMotionType", &FSystemContext::ChangeBodyMotionType,
+
             "GetNumEntities",       &FSystemContext::GetNumEntities,
             "IsValidEntity",        &FSystemContext::IsValidEntity,
             "GetTransform",         &FSystemContext::GetEntityTransform,
@@ -30,7 +40,7 @@ namespace Lumina
             "View",                 &FSystemContext::Lua_View,
             "AllOf",                &FSystemContext::Lua_HasAllOf,
             "AnyOf",                &FSystemContext::Lua_HasAnyOf,
-            "BindEvent",            &FSystemContext::Lua_BindEvent,
+            "ConnectEvent",         &FSystemContext::Lua_ConnectEvent,
             "Emplace",              &FSystemContext::Lua_Emplace,
             "Get",                  &FSystemContext::Lua_Get,
             "SetActiveCamera",      &FSystemContext::Lua_SetActiveCamera,
@@ -143,6 +153,21 @@ namespace Lumina
         return RuntimeView;
     }
 
+    void FSystemContext::ActivateBody(uint32 BodyID)
+    {
+        World->PhysicsScene->ActivateBody(BodyID);
+    }
+
+    void FSystemContext::DeactivateBody(uint32 BodyID)
+    {
+        World->PhysicsScene->DeactivateBody(BodyID);
+    }
+
+    void FSystemContext::ChangeBodyMotionType(uint32 BodyID, EBodyType NewType)
+    {
+        World->PhysicsScene->ChangeBodyMotionType(BodyID, NewType);
+    }
+
     TOptional<FRayResult> FSystemContext::CastRay(const glm::vec3& Start, const glm::vec3& End, bool bDrawDebug, uint32 LayerMask, int64 IgnoreBody) const
     {
         return World->CastRay(Start, End, bDrawDebug, LayerMask, IgnoreBody);
@@ -183,6 +208,36 @@ namespace Lumina
         EmplaceOrReplace<FNeedsTransformUpdate>(Entity, FNeedsTransformUpdate{MoveMode, bActivate});  
     }
 
+    void FSystemContext::DrawDebugLine(const glm::vec3& Start, const glm::vec3& End, const glm::vec4& Color, float Thickness, float Duration)
+    {
+        World->DrawDebugLine(Start, End, Color, Thickness, Duration);
+    }
+
+    void FSystemContext::DrawDebugBox(const glm::vec3& Center, const glm::vec3& Extents, const glm::quat& Rotation, const glm::vec4& Color, float Thickness, float Duration)
+    {
+        World->DrawDebugBox(Center, Extents, Rotation, Color, Duration);
+    }
+
+    void FSystemContext::DrawDebugSphere(const glm::vec3& Center, float Radius, const glm::vec4& Color, uint8 Segments, float Thickness, float Duration)
+    {
+        World->DrawDebugSphere(Center, Radius, Color, Segments, Thickness, Duration);
+    }
+
+    void FSystemContext::DrawDebugCone(const glm::vec3& Apex, const glm::vec3& Direction, float AngleRadians, float Length, const glm::vec4& Color, uint8 Segments, uint8 Stacks, float Thickness, float Duration)
+    {
+        World->DrawDebugCone(Apex, Direction, AngleRadians, Length, Color, Segments, Stacks, Thickness, Duration);
+    }
+
+    void FSystemContext::DrawFrustum(const glm::mat4& Matrix, float zNear, float zFar, const glm::vec4& Color, float Thickness, float Duration)
+    {
+        World->DrawFrustum(Matrix, zNear, zFar, Color, Thickness, Duration);
+    }
+
+    void FSystemContext::DrawDebugArrow(const glm::vec3& Start, const glm::vec3& Direction, float Length, const glm::vec4& Color, float Thickness, float Duration, float HeadSize)
+    {
+        World->DrawArrow(Start, Direction, Length, Color, Thickness, Duration, HeadSize);
+    }
+
     entt::entity FSystemContext::Create(const FName& Name, const FTransform& Transform) const
     {
         entt::entity EntityID = Registry.create();
@@ -200,6 +255,27 @@ namespace Lumina
     bool FSystemContext::IsValidEntity(entt::entity Entity) const
     {
         return Registry.valid(Entity);
+    }
+
+    void FSystemContext::Lua_TriggerEvent(const sol::object& Event)
+    {
+    }
+
+    entt::meta_any FSystemContext::Lua_ConnectEvent(const sol::object& Event, const sol::function& Listener)
+    {
+        using namespace entt::literals;
+        
+        if (!Listener.valid())
+        {
+            return entt::meta_any{};
+        }
+        
+        if (const entt::id_type EventID = ECS::DeduceType(Event))
+        {
+            return ECS::InvokeMetaFunc(EventID, "connect_listener_lua"_hs, entt::forward_as_meta(Dispatcher), Listener);
+        }
+        
+        return entt::meta_any{};
     }
 
     bool FSystemContext::Lua_HasAllOf(entt::entity Entity, const sol::variadic_args& Args)
@@ -280,10 +356,5 @@ namespace Lumina
         }
         
         return Results;
-    }
-
-    void FSystemContext::Lua_BindEvent(sol::table Table, sol::function Function)
-    {
-        
     }
 }

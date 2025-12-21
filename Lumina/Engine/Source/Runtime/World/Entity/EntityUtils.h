@@ -8,13 +8,11 @@ namespace Lumina::ECS::Utils
     LUMINA_API bool SerializeRegistry(FArchive& Ar, FEntityRegistry& Registry);
     LUMINA_API bool EntityHasTag(FName Tag, FEntityRegistry& Registry, entt::entity Entity);
     
-
-
     inline FArchive& operator << (FArchive& Ar, entt::entity& Entity)
     {
-        uint32 UintEntity = (uint32)Entity;
+        uint32 UintEntity = static_cast<uint32>(Entity);
         Ar << UintEntity;
-        Entity = (entt::entity)UintEntity;
+        Entity = static_cast<entt::entity>(UintEntity);
         
         return Ar;
     }

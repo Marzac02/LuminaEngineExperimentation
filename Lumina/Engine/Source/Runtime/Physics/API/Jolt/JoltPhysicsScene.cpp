@@ -376,6 +376,24 @@ namespace Lumina::Physics
         });
     }
 
+    void FJoltPhysicsScene::ActivateBody(uint32 BodyID)
+    {
+        JPH::BodyInterface& BodyInterface = JoltSystem->GetBodyInterface();
+        BodyInterface.ActivateBody(JPH::BodyID(BodyID));
+    }
+
+    void FJoltPhysicsScene::DeactivateBody(uint32 BodyID)
+    {
+        JPH::BodyInterface& BodyInterface = JoltSystem->GetBodyInterface();
+        BodyInterface.DeactivateBody(JPH::BodyID(BodyID));
+    }
+
+    void FJoltPhysicsScene::ChangeBodyMotionType(uint32 BodyID, EBodyType NewType)
+    {
+        JPH::BodyInterface& BodyInterface = JoltSystem->GetBodyInterface();
+        BodyInterface.SetMotionType(JPH::BodyID(BodyID), JoltUtils::ToJoltMotionType(NewType), JPH::EActivation::Activate);
+    }
+
     void FJoltPhysicsScene::SyncTransforms()
     {
         LUMINA_PROFILE_SCOPE();

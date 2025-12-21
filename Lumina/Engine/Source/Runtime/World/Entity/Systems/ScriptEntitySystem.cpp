@@ -27,7 +27,7 @@ namespace Lumina
                 {
                     continue;
                 }
-
+                
                 if (sol::protected_function_result Result = Entry.ExecuteFunc(std::ref(SystemContext), std::ref(Entities), SystemContext.GetDeltaTime()); !Result.valid())
                 {
                     sol::error Error = Result;

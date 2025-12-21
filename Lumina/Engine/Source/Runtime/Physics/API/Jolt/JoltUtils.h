@@ -1,5 +1,8 @@
 ﻿#pragma once
 #include <Jolt/Core/Color.h>
+#include <Jolt/Physics/Body/MotionType.h>
+
+#include "Physics/PhysicsTypes.h"
 
 namespace Lumina::JoltUtils
 {
@@ -30,4 +33,6 @@ namespace Lumina::JoltUtils
     // Transform conversions (position + rotation)
     JPH::RMat44 ToJPHRMat44(const glm::mat4& Mat);
     glm::mat4 FromJPHRMat44(const JPH::RMat44& Mat);
+    
+    JPH::EMotionType ToJoltMotionType(EBodyType Type);
 }

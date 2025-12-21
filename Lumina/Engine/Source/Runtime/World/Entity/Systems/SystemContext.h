@@ -29,21 +29,9 @@ namespace Lumina
 
 
         template<typename T>
-        NODISCARD auto EventSink(entt::id_type ID = entt::type_hash<T>())
+        NODISCARD auto EventSink() const
         {
-            return Dispatcher.sink<T>(ID);
-        }
-        
-        template<typename T, typename ... TArgs>
-        void EnqueueEvent(const entt::id_type& IDType = entt::type_hash<T>::value(), TArgs&&... Args)
-        {
-            Dispatcher.enqueue_hint<T, TArgs...>(IDType, Forward<TArgs>(Args)...);
-        }
-
-        template<typename T, typename ... TArgs>
-        void DispatchEvent(const entt::id_type& IDType = entt::type_hash<T>::value(), TArgs&&... Args)
-        {
-            Dispatcher.trigger<T, TArgs...>(IDType, Forward<TArgs>(Args)...);
+            return Dispatcher.sink<T>();
         }
 
         template<typename T, typename ... TArgs>
@@ -139,7 +127,11 @@ namespace Lumina
         {
             return Registry.emplace_or_replace<T>(entity, std::forward<TArgs>(Args)...);
         }
-
+        
+        LUMINA_API void ActivateBody(uint32 BodyID);
+        LUMINA_API void DeactivateBody(uint32 BodyID);
+        LUMINA_API void ChangeBodyMotionType(uint32 BodyID, EBodyType NewType);
+        
         LUMINA_API TOptional<FRayResult> CastRay(const glm::vec3& Start, const glm::vec3& End, bool bDrawDebug = false, uint32 LayerMask = 0xFFFFFFFF, int64 IgnoreBody = -1) const;
 
         LUMINA_API STransformComponent& GetEntityTransform(entt::entity Entity) const;
@@ -150,6 +142,15 @@ namespace Lumina
         LUMINA_API void SetEntityScale(entt::entity Entity, const glm::vec3& Scale);
         
         LUMINA_API void MarkEntityTransformDirty(entt::entity Entity, EMoveMode MoveMode = EMoveMode::Teleport, bool bActivate = true);
+        
+        //~ Begin Debug Drawing
+        LUMINA_API void DrawDebugLine(const glm::vec3& Start, const glm::vec3& End, const glm::vec4& Color, float Thickness = 1.0f, float Duration = 1.0f);
+        LUMINA_API void DrawDebugBox(const glm::vec3& Center, const glm::vec3& Extents, const glm::quat& Rotation, const glm::vec4& Color, float Thickness = 1.0f, float Duration = 1.0f);
+        LUMINA_API void DrawDebugSphere(const glm::vec3& Center, float Radius, const glm::vec4& Color, uint8 Segments = 16, float Thickness = 1.0f, float Duration = 1.0f);
+        LUMINA_API void DrawDebugCone(const glm::vec3& Apex, const glm::vec3& Direction, float AngleRadians, float Length, const glm::vec4& Color, uint8 Segments = 16, uint8 Stacks = 4, float Thickness = 1.0f, float Duration = 1.0f);
+        LUMINA_API void DrawFrustum(const glm::mat4& Matrix, float zNear, float zFar, const glm::vec4& Color, float Thickness = 1.0f, float Duration = 1.0f);
+        LUMINA_API void DrawDebugArrow(const glm::vec3& Start, const glm::vec3& Direction, float Length, const glm::vec4& Color, float Thickness = 1.0f, float Duration = 1.0f, float HeadSize = 0.2f);
+        //~ End Debug Drawing
         
         LUMINA_API entt::runtime_view CreateRuntimeView(const TVector<FName>& Components);
         LUMINA_API entt::runtime_view CreateRuntimeView(const TVector<entt::id_type>& Components);
@@ -164,6 +165,8 @@ namespace Lumina
         
     private:
         
+        void Lua_TriggerEvent(const sol::object& Event);
+        entt::meta_any Lua_ConnectEvent(const sol::object& Event, const sol::function& Listener);
         bool Lua_HasAllOf(entt::entity Entity, const sol::variadic_args& Args);
         bool Lua_HasAnyOf(entt::entity Entity, const sol::variadic_args& Args);
         bool Lua_Has(entt::entity Entity, const sol::object& Type);
@@ -172,7 +175,6 @@ namespace Lumina
         void Lua_SetActiveCamera(uint32 Entity);
         sol::object Lua_Emplace(entt::entity Entity, const sol::object& Component);
         sol::variadic_results Lua_Get(entt::entity Entity, const sol::variadic_args& Args);
-        void Lua_BindEvent(sol::table Table, sol::function Function);
         
     private:
 

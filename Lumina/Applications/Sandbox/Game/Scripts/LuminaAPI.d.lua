@@ -155,9 +155,9 @@ UpdateStage = {
 ---@meta
 
 ---@class SystemContext
+---@field GetTime fun(self: SystemContext): number Get time in seconds
 ---@field GetDeltaTime fun(self: SystemContext): number Get delta time in seconds
 ---@field GetUpdateStage fun(self: SystemContext): integer Get current update stage
----@field View fun(self: SystemContext): table Query entities with components
 
 ---Global script context available in all scripts
 ---@type SystemContext
@@ -188,28 +188,23 @@ function System(descriptor)
 end
 
 ---@class EventBindDescriptor
----@field Name? string Name of the event binding (default: "UnnamedEventBind")
----@field Events? string[] List of event names to bind to
----@field Handler fun(eventName: string, eventData: any) Function called when events are triggered
----@field Priority? number Handler execution priority (default: 0)
+---@field Event? Event to bind to
+---@field Handler fun(EventData: any) Function called when events are triggered
 
 ---@class EventBindResult
 ---@field Type string The type identifier (ScriptType.EventBind)
----@field Name string Name of the event binding
----@field Events string[] List of event names to bind to
----@field Handler fun(eventName: string, eventData: any) Function called when events are triggered
----@field Priority number Handler execution priority
+---@field Event? Event to bind to
+---@field Handler fun(EventData: any) Function called when events are triggered
 
 ---Helper to create an event binding descriptor
 ---@param descriptor EventBindDescriptor
 ---@return EventBindResult
 function EventBind(descriptor)
-    return {
+    return 
+    {
         Type = "EventBind",
-        Name = descriptor.Name or "UnnamedEventBind",
-        Events = descriptor.Events or {},
+        Event = descriptor.Event or {},
         Handler = descriptor.Handler,
-        Priority = descriptor.Priority or 0
     }
 end
 

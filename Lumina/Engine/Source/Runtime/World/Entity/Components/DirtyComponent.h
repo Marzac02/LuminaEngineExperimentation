@@ -12,4 +12,9 @@ namespace Lumina
         EMoveMode MoveMode = EMoveMode::MoveKinematic;
         bool bActivate = true;
     };
+    
+    struct LUMINA_API FNeedsPhysicsBodyUpdate
+    {
+        bool bFoobar;
+    };
 }

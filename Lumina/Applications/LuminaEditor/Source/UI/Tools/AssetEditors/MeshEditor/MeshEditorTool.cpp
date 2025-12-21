@@ -2,7 +2,6 @@
 
 #include "ImGuiDrawUtils.h"
 #include "Core/Object/Cast.h"
-#include "Core/Reflection/Type/LuminaTypes.h"
 #include "glm/glm.hpp"
 #include "glm/gtx/string_cast.hpp"
 #include "Tools/UI/ImGui/ImGuiFonts.h"
@@ -10,8 +9,6 @@
 #include "world/entity/components/environmentcomponent.h"
 #include "World/Entity/Components/LightComponent.h"
 #include "World/Entity/Components/StaticMeshComponent.h"
-#include "World/Entity/Components/VelocityComponent.h"
-#include "World/Scene/RenderScene/RenderScene.h"
 #include "World/Scene/RenderScene/SceneRenderTypes.h"
 
 

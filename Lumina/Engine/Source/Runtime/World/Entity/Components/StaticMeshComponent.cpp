@@ -24,4 +24,9 @@ namespace Lumina
 
         return nullptr;
     }
+
+    FAABB SStaticMeshComponent::GetAABB() const
+    {
+        return StaticMesh ? StaticMesh->GetAABB() : FAABB();
+    }
 }

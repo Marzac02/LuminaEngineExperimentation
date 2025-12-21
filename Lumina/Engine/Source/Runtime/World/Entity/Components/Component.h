@@ -10,6 +10,16 @@
 
 namespace Lumina
 {
+    
+    namespace Concept
+    {
+        template<typename T>
+        concept TEventType = requires 
+        { 
+            { T::IsEvent } -> std::convertible_to<bool>; 
+        } && T::IsEvent;
+    }
+    
     namespace Meta
     {
         inline bool IsValid(const entt::registry& Registry, entt::entity Entity)
@@ -83,7 +93,53 @@ namespace Lumina
             auto& Component = Registry.get_or_emplace<TComponent>(Entity);
             return sol::make_reference(S, std::ref(Component));
         }
+        
+        template<typename TEvent>
+        auto ConnectListener_Lua(entt::dispatcher& Dispatcher, const sol::function& Function)
+        {
+            struct FScriptListener
+            {
+                FScriptListener(entt::dispatcher& Dispatcher, const sol::function& Function)
+                    : Callback(Function)
+                {
+                    Connection = Dispatcher.sink<TEvent>().template connect<&FScriptListener::Receive>(*this);
+                }
+                
+                ~FScriptListener()
+                {
+                    Connection.release();
+                    Callback.abandon();
+                }
+                
+                LE_NO_COPYMOVE(FScriptListener);
+                
+                void Receive(const TEvent& Event)
+                {
+                    if (Connection && Callback.valid())
+                    {
+                        Callback(Event);
+                    }
+                }
+                
+                sol::function Callback;
+                entt::connection Connection;
+            };
+            
+            return std::make_unique<FScriptListener>(Dispatcher, Function);
+        }
 
+        template <typename TEvent>
+        void TriggerEvent_Lua(entt::dispatcher& Dispatcher, const sol::table& Event) 
+        {
+            Dispatcher.trigger(Event.as<TEvent>());
+        }
+        
+        template <typename TEvent>
+        void EnqueueEvent_Lua(entt::dispatcher& Dispatcher, const sol::table& Event) 
+        {
+            Dispatcher.enqueue(Event.as<TEvent>());
+        }
+        
         // End lua variants
 
         template<typename TComponent>
@@ -91,7 +147,7 @@ namespace Lumina
         {
             using namespace entt::literals;
             entt::hashed_string TypeName = entt::hashed_string(TComponent::StaticStruct()->GetName().c_str());
-            entt::meta_factory<TComponent>(GEngine->GetEngineMetaContext())
+            auto Meta = entt::meta_factory<TComponent>(GEngine->GetEngineMetaContext())
                 .type(TypeName)
                 .template func<&CreateInstance<TComponent>>("create_instance"_hs)
                 .template func<&GetStructType<TComponent>>("static_struct"_hs)
@@ -103,7 +159,11 @@ namespace Lumina
                 .template func<&Serialize<TComponent>>("serialize"_hs)
             
                 .template func<&EmplaceComponentLua<TComponent>>("emplace_lua"_hs)
-                .template func<&GetComponentLua<TComponent>>("get_lua"_hs);
+                .template func<&GetComponentLua<TComponent>>("get_lua"_hs)
+            
+                .template func<&ConnectListener_Lua<TComponent>>("connect_listener_lua"_hs)
+                .template func<&TriggerEvent_Lua<TComponent>>("trigger_event_lua"_hs);
+            
         }
         
         template<typename TComponent>

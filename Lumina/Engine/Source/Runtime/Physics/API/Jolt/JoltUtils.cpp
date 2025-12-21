@@ -118,4 +118,16 @@ namespace Lumina::JoltUtils
         Result[3][3] = 1.0f;
         return Result;
     }
+
+    JPH::EMotionType ToJoltMotionType(EBodyType Type)
+    {
+        switch (Type)
+        {
+            case EBodyType::Static: return JPH::EMotionType::Static;
+            case EBodyType::Dynamic: return JPH::EMotionType::Dynamic;
+            case EBodyType::Kinematic: return JPH::EMotionType::Kinematic;
+        }
+        
+        LUMINA_NO_ENTRY()
+    }
 }

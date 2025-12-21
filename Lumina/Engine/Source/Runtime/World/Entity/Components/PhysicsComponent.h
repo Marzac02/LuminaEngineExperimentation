@@ -2,21 +2,11 @@
 
 #include "Core/Object/ObjectMacros.h"
 #include "Component.h"
+#include "Physics/PhysicsTypes.h"
 #include "PhysicsComponent.generated.h"
 
 namespace Lumina
 {
-
-    REFLECT()
-    enum class LUMINA_API EBodyType : uint8
-    {
-        None,
-        Static,
-        Kinematic,
-        Dynamic,
-    };    
-    
-    
     REFLECT()
     struct LUMINA_API SRigidBodyComponent
     {
