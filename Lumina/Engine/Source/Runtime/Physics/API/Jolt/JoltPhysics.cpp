@@ -23,14 +23,44 @@ namespace Lumina::Physics
             DebugDrawSettings.mDrawShape = eastl::get<bool>(Var);
         });
 
+    static TAutoConsoleVariable CVarJoltDebugShapeWireframe("Jolt.Debug.ShapeWireframe", DebugDrawSettings.mDrawShapeWireframe, "Toggles wireframe rendering for shapes", [](const auto& Var)
+        {
+            DebugDrawSettings.mDrawShapeWireframe = eastl::get<bool>(Var);
+        });
+
     static TAutoConsoleVariable CVarJoltDebugAABB("Jolt.Debug.AABB", DebugDrawSettings.mDrawBoundingBox, "Toggles debugging AABB for Jolt Physics", [](const auto& Var)
         {
             DebugDrawSettings.mDrawBoundingBox = eastl::get<bool>(Var);
         });
 
-    static TAutoConsoleVariable CVarJoltDebugVelocity("Jolt.Debug.Velocity", DebugDrawSettings.mDrawVelocity, "Toggles debugging velocity for Jolt Physics", [](const auto& Var)
+    static TAutoConsoleVariable CVarJoltDebugVelocity("Jolt.Debug.Velocity", DebugDrawSettings.mDrawVelocity, "Toggles debugging velocity vectors for Jolt Physics", [](const auto& Var)
         {
             DebugDrawSettings.mDrawVelocity = eastl::get<bool>(Var);
+        });
+
+    static TAutoConsoleVariable CVarJoltDebugCenterOfMass("Jolt.Debug.CenterOfMass", DebugDrawSettings.mDrawCenterOfMassTransform, "Toggles center of mass visualization", [](const auto& Var)
+        {
+            DebugDrawSettings.mDrawCenterOfMassTransform = eastl::get<bool>(Var);
+        });
+
+    static TAutoConsoleVariable CVarJoltDebugWorldTransform("Jolt.Debug.WorldTransform", DebugDrawSettings.mDrawWorldTransform, "Toggles world transform axes visualization", [](const auto& Var)
+        {
+            DebugDrawSettings.mDrawWorldTransform = eastl::get<bool>(Var);
+        });
+
+    static TAutoConsoleVariable CVarJoltDebugSleepStats("Jolt.Debug.SleepStats", DebugDrawSettings.mDrawSleepStats, "Toggles sleep statistics visualization", [](const auto& Var)
+        {
+            DebugDrawSettings.mDrawSleepStats = eastl::get<bool>(Var);
+        });
+
+    static TAutoConsoleVariable CVarJoltDebugGetSupport("Jolt.Debug.GetSupport", DebugDrawSettings.mDrawGetSupportFunction, "Toggles GetSupport function visualization for collision detection", [](const auto& Var)
+        {
+            DebugDrawSettings.mDrawGetSupportFunction = eastl::get<bool>(Var);
+        });
+
+    static TAutoConsoleVariable CVarJoltDebugGetSupportDirection("Jolt.Debug.GetSupportDir", DebugDrawSettings.mDrawGetSupportingFace, "Toggles GetSupportingFace visualization", [](const auto& Var)
+        {
+            DebugDrawSettings.mDrawGetSupportingFace = eastl::get<bool>(Var);
         });
     
     static void JoltTraceCallback(const char* format, ...)
@@ -75,7 +105,7 @@ namespace Lumina::Physics
     static bool JoltAssertionFailed(const char* expr, const char* msg, const char* file, uint32 line)
     {
         LOG_CRITICAL("JOLT ASSERT FAILED: Message {}, File: {} - {}", expr, msg, file, line);
-        return true; // return true to break into debugger (if attached)
+        return true;
     }
     
     void FJoltPhysicsContext::Initialize()

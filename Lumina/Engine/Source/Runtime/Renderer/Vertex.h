@@ -5,7 +5,6 @@
 namespace Lumina
 {
 
-    // Pack normalized normal into 10:10:10:2 format
     inline uint32 PackNormal(glm::vec3 normal)
     {
         int x = (int)(glm::clamp(normal.x, -1.0f, 1.0f) * 511.0f);
@@ -14,7 +13,6 @@ namespace Lumina
         return ((x & 0x3FF) << 0) | ((y & 0x3FF) << 10) | ((z & 0x3FF) << 20);
     }
 
-    // Pack color into RGBA8
     inline uint32 PackColor(glm::vec4 color)
     {
         uint8 r = (uint8)(glm::clamp(color.r, 0.0f, 1.0f) * 255.0f);
