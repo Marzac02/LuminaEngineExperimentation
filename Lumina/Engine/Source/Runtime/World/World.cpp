@@ -219,7 +219,7 @@ namespace Lumina
         
         for (auto [ID, Storage]: EntityRegistry.storage())
         {
-            if (Storage.type() == entt::type_id<FRelationshipComponent>() || Storage.type() == entt::type_id<FSelectedInEditorComponent>())
+            if (Storage.info() == entt::type_id<FRelationshipComponent>() || Storage.info() == entt::type_id<FSelectedInEditorComponent>())
             {
                 continue;
             }

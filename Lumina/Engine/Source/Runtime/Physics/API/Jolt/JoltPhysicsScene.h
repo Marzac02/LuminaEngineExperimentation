@@ -1,4 +1,6 @@
 ﻿#pragma once
+#include <Jolt/Renderer/DebugRendererSimple.h>
+
 #include "entt/entt.hpp"
 #include "Memory/SmartPtr.h"
 #include "Physics/PhysicsScene.h"
@@ -28,7 +30,8 @@ namespace Lumina::Physics
         static constexpr uint32 NUM_LAYERS(2);
     };
 
-    	class JoltContactListener : public JPH::ContactListener
+
+	class JoltContactListener : public JPH::ContactListener
 	{
 	public:
 		JoltContactListener(const JPH::BodyLockInterfaceNoLock* InBodyLockInterface)

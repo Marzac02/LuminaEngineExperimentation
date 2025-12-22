@@ -2,27 +2,33 @@
 #include "RenderComponent.h"
 #include "Renderer/Vertex.h"
 #include <glm/gtx/quaternion.hpp>
+#include <Renderer/ViewVolume.h>
 
 namespace Lumina
 {   
     struct LUMINA_API FLineBatcherComponent : SRenderComponent
     {
-        TFixedVector<FSimpleElementVertex, 2024> Vertices;
+        TVector<FSimpleElementVertex> Vertices;
 
         void DrawLine(const glm::vec3& Start, const glm::vec3& End, const glm::vec4& Color, float Thickness = 1.0f, float Duration = 1.0f)
         {
-			Vertices.reserve(Vertices.size() + 2);
+            if (Vertices.capacity() < Vertices.size() + 2)
+            {
+                Vertices.reserve(Vertices.capacity() * 2);
+            }
+
+			uint32 ColorPacked = PackColor(Color);
 
             Vertices.emplace_back(FSimpleElementVertex
             {
-                .Position = glm::vec4(Start, 1.0),
-                .Color = Color,
+                .Position   = Start,
+                .Color      = ColorPacked,
             });
 
             Vertices.emplace_back(FSimpleElementVertex
             {
-                .Position = glm::vec4(End, 1.0),
-                .Color = Color,
+                .Position   = End,
+                .Color      = ColorPacked,
             });
         }
 

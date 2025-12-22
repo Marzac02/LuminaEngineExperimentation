@@ -228,7 +228,7 @@ namespace Lumina::ImGuiX::Notifications
             ImVec4 const textColor = pNotification->GetColor( opacity );
 
             // Generate new unique name for this notification
-            FInlineString windowName(FInlineString::CtorSprintf(), "##Notification%d", i);
+            FFixedString windowName(FFixedString::CtorSprintf(), "##Notification%d", i);
 
             // Draw Notification
             //-------------------------------------------------------------------------

@@ -4,10 +4,10 @@
 
 #include "Includes/SceneGlobals.glsl"
 
-layout(location = 0) in vec4 inColor;
-layout(location = 0) out vec4 outFragColor;
+layout(location = 0) in vec3 inColor;
+layout(location = 0) out vec3 outFragColor;
 
 void main()
 {
-    outFragColor = vec4(inColor.rgb, 1.0);
+    outFragColor = inColor.rgb;
 }

@@ -20,7 +20,7 @@ namespace Lumina::Scripting
         // L is the lua state, which you can wrap in a state_view if necessary
         // maybe_exception will contain exception, if it exists
         // description will either be the what() of the exception or a description saying that we hit the general-case catch(...)
-        FInlineString ErrorString;
+        FFixedString ErrorString;
         if (MaybeException) 
         {
             const std::exception& ex = *MaybeException;
@@ -28,7 +28,7 @@ namespace Lumina::Scripting
         }
         else 
         {
-            ErrorString = FInlineString(Desc.data(), Desc.length());
+            ErrorString = FFixedString(Desc.data(), Desc.length());
         }
         
         LOG_ERROR("An exception occured in a script function {0}", ErrorString.c_str());

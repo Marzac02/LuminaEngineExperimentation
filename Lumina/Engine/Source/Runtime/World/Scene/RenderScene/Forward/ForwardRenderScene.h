@@ -111,7 +111,7 @@ namespace Lumina
         FRHIBindingLayoutRef                LightCullLayout;
 
         FRHITypedVertexBuffer<FSimpleElementVertex> SimpleVertexBuffer;
-        TRenderVector<FSimpleElementVertex>         SimpleVertices;
+        TVector<FSimpleElementVertex>               SimpleVertices;
         FRHIBindingLayoutRef                        SimplePassLayout;
 
         FRHIBufferRef                               CullDataBuffer;

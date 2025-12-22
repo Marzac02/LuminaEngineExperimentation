@@ -25,7 +25,7 @@ namespace Lumina
 
         ClearAssets();
         
-        TFixedVector<FInlineString, 256> PackagePaths;
+        TFixedVector<FFixedString, 256> PackagePaths;
         for (const auto& [ID, Path] : Paths::GetMountedPaths())
         {
             for (const auto& Directory : std::filesystem::recursive_directory_iterator(Path.c_str()))
@@ -42,7 +42,7 @@ namespace Lumina
         {
             for (uint32 i = Start; i < End; ++i)
             {
-                const FInlineString& PathString = PackagePaths[i];
+                const FFixedString& PathString = PackagePaths[i];
                 ProcessPackagePath(PathString);
             }
         

@@ -17,11 +17,13 @@ PRAGMA_ENABLE_ALL_WARNINGS
 
 namespace Lumina
 {
-    using FString = eastl::basic_string<char>;
-    using FStringView = eastl::string_view;
-    template<eastl_size_t S> using TInlineString = eastl::fixed_string<char, S, true>;
-    using FInlineString = eastl::fixed_string<char, 255, true>;
-    using FWString = eastl::basic_string<wchar_t>;
+    using FString                                   = eastl::basic_string<char>;
+    using FStringView                               = eastl::string_view;
+    using FFixedString                              = eastl::fixed_string<char, 255>;
+    template<eastl_size_t S> using TInlineString    = eastl::fixed_string<char, S>;
+    
+    using FWString                                  = eastl::basic_string<wchar_t>;
+    using FFixedWString                             = eastl::fixed_string<wchar_t, 255>;
 
     // Concept: requires a .length() member and .data() returning a const char*
     template<typename T>
@@ -129,7 +131,7 @@ namespace Lumina
         inline void StripTrailingWhitespace( char* string )
         {
             size_t const origStringLength = strlen( string );
-            FInlineString tmp = string;
+            FFixedString tmp = string;
             tmp.rtrim();
             strncpy_s( string, origStringLength + 1, tmp.c_str(), tmp.length() );
         }

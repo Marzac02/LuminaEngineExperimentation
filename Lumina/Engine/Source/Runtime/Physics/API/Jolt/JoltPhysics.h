@@ -1,23 +1,36 @@
 ﻿#pragma once
 #include "Physics/Physics.h"
 #include <Jolt/Jolt.h>
+#include <Jolt/Physics/PhysicsSystem.h>
+#include <Jolt/Renderer/DebugRendererSimple.h>
 #include "Jolt/Core/JobSystemThreadPool.h"
 #include "Jolt/Core/TempAllocator.h"
 
-namespace Lumina
-{
-    class FPhysicsScene;
-}
-
 namespace Lumina::Physics
 {
+    class FJoltDebugRenderer : public JPH::DebugRendererSimple
+    {
+    public:
+        
+        void DrawLine(JPH::RVec3Arg inFrom, JPH::RVec3Arg inTo, JPH::ColorArg inColor) override;
+        void DrawText3D(JPH::RVec3Arg inPosition, const std::string_view& inString, JPH::ColorArg inColor, float inHeight) override {}
+
+        void DrawBodies(JPH::PhysicsSystem* System, CWorld* InWorld);
+
+    private:
+
+        CWorld* World = nullptr;
+    };
+
     struct FJoltData
     {
         TUniquePtr<JPH::TempAllocator> TemporariesAllocator;
         TUniquePtr<JPH::JobSystemThreadPool> JobThreadPool;
+        TUniquePtr<FJoltDebugRenderer> DebugRenderer;
 
         FString LastErrorMessage = "";
     };
+
     
     class FJoltPhysicsContext : public IPhysicsContext
     {
@@ -29,6 +42,7 @@ namespace Lumina::Physics
 
         static JPH::TempAllocator* GetAllocator();
         static JPH::JobSystemThreadPool* GetThreadPool();
+		static FJoltDebugRenderer* GetDebugRenderer();
         
     };
 }

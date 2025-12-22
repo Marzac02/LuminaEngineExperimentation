@@ -35,14 +35,13 @@ namespace Lumina
 
         virtual void SetDragDropPayloadData() const { }
         
-        virtual FInlineString GetDisplayName() const
+        virtual FFixedString GetDisplayName() const
         {
             return GetName().c_str();
         }
 
     private:
 
-        // Disable copies/moves
         FTileViewItem& operator=(FTileViewItem const&) = delete;
         FTileViewItem& operator=(FTileViewItem&&) = delete;
 

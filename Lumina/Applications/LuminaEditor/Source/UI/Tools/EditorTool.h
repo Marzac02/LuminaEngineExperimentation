@@ -79,7 +79,7 @@ namespace Lumina
             return dockspaceID;
         }
 
-        FInlineString GetToolWindowName(const FString& Name) const { return GetToolWindowName(Name.c_str(), CurrDockspaceID); }
+        FFixedString GetToolWindowName(const FString& Name) const { return GetToolWindowName(Name.c_str(), CurrDockspaceID); }
         
         ImGuiWindowClass* GetWindowClass() { return &ToolWindowsClass; }
         EEditorToolFlags GetToolFlags() const { return ToolFlags; }
@@ -181,10 +181,10 @@ namespace Lumina
         }
         
 
-        static FInlineString GetToolWindowName(char const* ToolWindowName, ImGuiID InDockspaceID)
+        static FFixedString GetToolWindowName(char const* ToolWindowName, ImGuiID InDockspaceID)
         {
             Assert(ToolWindowName != nullptr)
-            return { FInlineString::CtorSprintf(), "%s##%08X", ToolWindowName, InDockspaceID };
+            return { FFixedString::CtorSprintf(), "%s##%08X", ToolWindowName, InDockspaceID };
         }
 
     protected:

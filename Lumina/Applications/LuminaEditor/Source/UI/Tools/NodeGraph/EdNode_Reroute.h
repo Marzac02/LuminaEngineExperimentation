@@ -20,7 +20,7 @@ namespace Lumina
         void BuildNode() override;
         bool WantsTitlebar() const override { return false; }
         FString GetNodeDisplayName() const override { return "Reroute"; }
-        FInlineString GetNodeCategory() const override { return "Utility"; }
+        FFixedString GetNodeCategory() const override { return "Utility"; }
         ImVec2 GetMinNodeTitleBarSize() const override { return ImVec2(0, 0); }
         
         CMaterialOutput* Output = nullptr;

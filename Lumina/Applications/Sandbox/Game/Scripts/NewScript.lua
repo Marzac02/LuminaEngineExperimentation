@@ -24,7 +24,7 @@ local MyScript =
                     Color.y = ColorAspect
                 end
 
-                Context:DrawDebugBox(Transform:GetLocation(), (StaticMesh:GetAABB():GetSize() * Transform:GetScale())* 0.5, Transform:GetRotation(), Color, 1.0, 1.0)
+                --Context:DrawDebugBox(Transform:GetLocation(), (StaticMesh:GetAABB():GetSize() * Transform:GetScale())* 0.5, Transform:GetRotation(), Color, 1.0, 1.0)
             end
         end,
     },

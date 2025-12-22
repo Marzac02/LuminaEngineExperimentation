@@ -31,7 +31,7 @@ namespace Lumina
     public:
         void BuildNode() override;
         
-        FInlineString GetNodeCategory() const override { return "Math"; }
+        FFixedString GetNodeCategory() const override { return "Math"; }
         
         CMaterialInput* A = nullptr;
         CMaterialInput* B = nullptr;
@@ -393,7 +393,7 @@ namespace Lumina
         
         void BuildNode() override;
 
-        FInlineString GetNodeCategory() const override { return "Utility"; }
+        FFixedString GetNodeCategory() const override { return "Utility"; }
         FString GetNodeDisplayName() const override;
         void* GetNodeDefaultValue() override { return nullptr; }
         uint32 GenerateExpression(FMaterialCompiler& Compiler) override { return 0; }
@@ -430,7 +430,7 @@ namespace Lumina
         
         void BuildNode() override;
 
-        FInlineString GetNodeCategory() const override { return "Utility"; }
+        FFixedString GetNodeCategory() const override { return "Utility"; }
         FString GetNodeDisplayName() const override { return "Append"; }
         void* GetNodeDefaultValue() override { return nullptr; }
         uint32 GenerateExpression(FMaterialCompiler& Compiler) override { return 0; }
@@ -449,7 +449,7 @@ namespace Lumina
         
         void BuildNode() override;
 
-        FInlineString GetNodeCategory() const override { return "Utility"; }
+        FFixedString GetNodeCategory() const override { return "Utility"; }
         FString GetNodeDisplayName() const override { return "WorldPosition"; }
         void* GetNodeDefaultValue() override { return nullptr; }
         uint32 GenerateExpression(FMaterialCompiler& Compiler) override { return 0; }
@@ -464,7 +464,7 @@ namespace Lumina
         
         void BuildNode() override;
 
-        FInlineString GetNodeCategory() const override { return "Utility"; }
+        FFixedString GetNodeCategory() const override { return "Utility"; }
         FString GetNodeDisplayName() const override { return "CameraPosition"; }
         void* GetNodeDefaultValue() override { return nullptr; }
         uint32 GenerateExpression(FMaterialCompiler& Compiler) override { return 0; }
@@ -479,7 +479,7 @@ namespace Lumina
         
         void BuildNode() override;
 
-        FInlineString GetNodeCategory() const override { return "Utility"; }
+        FFixedString GetNodeCategory() const override { return "Utility"; }
         FString GetNodeDisplayName() const override { return "EntityID"; }
         void* GetNodeDefaultValue() override { return nullptr; }
         uint32 GenerateExpression(FMaterialCompiler& Compiler) override { return 0; }
@@ -494,7 +494,7 @@ namespace Lumina
         
         void BuildNode() override;
 
-        FInlineString GetNodeCategory() const override { return "Utility"; }
+        FFixedString GetNodeCategory() const override { return "Utility"; }
         FString GetNodeDisplayName() const override { return "VertexNormal"; }
         void* GetNodeDefaultValue() override { return nullptr; }
         uint32 GenerateExpression(FMaterialCompiler& Compiler) override { return 0; }
@@ -509,7 +509,7 @@ namespace Lumina
         
         void BuildNode() override;
 
-        FInlineString GetNodeCategory() const override { return "Utility"; }
+        FFixedString GetNodeCategory() const override { return "Utility"; }
         FString GetNodeDisplayName() const override { return "TexCoords"; }
         void* GetNodeDefaultValue() override { return nullptr; }
         uint32 GenerateExpression(FMaterialCompiler& Compiler) override { return 0; }
@@ -526,7 +526,7 @@ namespace Lumina
     public:
         
         
-        FInlineString GetNodeCategory() const override { return "Constants"; }
+        FFixedString GetNodeCategory() const override { return "Constants"; }
         void DrawContextMenu() override;
         void DrawNodeTitleBar() override;
         void BuildNode() override;

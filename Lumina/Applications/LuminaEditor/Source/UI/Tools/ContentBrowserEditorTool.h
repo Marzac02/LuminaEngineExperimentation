@@ -59,9 +59,9 @@ namespace Lumina
             bool HasContextMenu() override { return true; }
             
             
-            FInlineString GetDisplayName() const override
+            FFixedString GetDisplayName() const override
             {
-                return FInlineString()
+                return FFixedString()
                 .append(LE_ICON_FOLDER)
                 .append(" ")
                 .append(GetName().c_str());
@@ -141,7 +141,7 @@ namespace Lumina
 
             FName GetName() const override
             {
-                FInlineString NameString;
+                FFixedString NameString;
                 NameString.append(Paths::FileName(Path, true).c_str());
                 return NameString;
             }

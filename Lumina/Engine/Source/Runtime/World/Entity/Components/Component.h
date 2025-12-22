@@ -263,8 +263,8 @@ namespace Lumina::ECS
         return entt::locator<entt::meta_ctx>::handle();
     }
 
-    LUMINA_API inline void SetMetaContext(auto sharedCtx)
+    void SetMetaContext(auto SharedCtx)
     {
-        entt::locator<entt::meta_ctx>::reset(sharedCtx);
+        entt::locator<entt::meta_ctx>::reset(SharedCtx);
     }
 }

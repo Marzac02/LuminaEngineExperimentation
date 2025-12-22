@@ -45,8 +45,8 @@ namespace Lumina
 
     struct FSimpleElementVertex
     {
-        glm::vec4   Position;
-        glm::vec4      Color;
+        glm::vec3   Position;
+        uint32      Color;
     };
 
     static_assert(offsetof(FVertex, Position) == 0, "Required FVertex::Position to be the first member.");

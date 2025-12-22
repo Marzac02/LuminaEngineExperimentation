@@ -94,9 +94,7 @@ namespace Lumina
         {
             return FTransformPropertyCustomization::MakeInstance();
         });
-
-
-
+        
         
         EditorWindowClass.ClassId = ImHashStr("EditorWindowClass");
         EditorWindowClass.DockingAllowUnclassed = false;
@@ -642,7 +640,7 @@ namespace Lumina
         // Helper to build an array of strings pointer into the same contiguous memory buffer.
         struct ContiguousStringArrayBuilder
         {
-            void AddEntry( const char* data, size_t dataLength )
+            void AddEntry(const char* data, size_t dataLength)
             {
                 const int32 bufferSize = (int32_t) m_buffer.size();
                 m_offsets.push_back( bufferSize );
@@ -668,8 +666,8 @@ namespace Lumina
 
         for (FEditorTool::FToolWindow* Window : SourceTool->GetToolWindows())
         {
-            const FInlineString sourceToolWindowName = FEditorTool::GetToolWindowName(Window->Name.c_str(), sourceToolID);
-            const FInlineString destinationToolWindowName = FEditorTool::GetToolWindowName(Window->Name.c_str(), destinationToolID);
+            const FFixedString sourceToolWindowName = FEditorTool::GetToolWindowName(Window->Name.c_str(), sourceToolID);
+            const FFixedString destinationToolWindowName = FEditorTool::GetToolWindowName(Window->Name.c_str(), destinationToolID);
             namePairsBuilder.AddEntry( sourceToolWindowName.c_str(), sourceToolWindowName.length() + 1 );
             namePairsBuilder.AddEntry( destinationToolWindowName.c_str(), destinationToolWindowName.length() + 1 );
         }
@@ -895,7 +893,7 @@ namespace Lumina
             {
                 LUMINA_PROFILE_SECTION("Setup and Draw Tool Window");
 
-                const FInlineString ToolWindowName = FEditorTool::GetToolWindowName(Window->Name.c_str(), Tool->GetCurrentDockspaceID());
+                const FFixedString ToolWindowName = FEditorTool::GetToolWindowName(Window->Name.c_str(), Tool->GetCurrentDockspaceID());
 
                 // When multiple documents are open, floating tools only appear for focused one
                 if (!bIsLastFocusedTool)
@@ -1328,7 +1326,7 @@ namespace Lumina
                                         
                                         // Flags column
                                         ImGui::TableSetColumnIndex(2);
-                                        FInlineString FlagsStr = ObjectFlagsToString(Object->GetFlags());
+                                        FFixedString FlagsStr = ObjectFlagsToString(Object->GetFlags());
                                         ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.9f, 0.7f, 0.4f, 1.0f));
                                         ImGui::TextUnformatted(FlagsStr.c_str());
                                         ImGui::PopStyleColor();

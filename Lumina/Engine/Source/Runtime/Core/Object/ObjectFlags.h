@@ -39,9 +39,9 @@ namespace Lumina
 
     ENUM_CLASS_FLAGS(EObjectFlags);
 
-    LUMINA_API inline FInlineString ObjectFlagsToString(EObjectFlags Flags)
+    LUMINA_API inline FFixedString ObjectFlagsToString(EObjectFlags Flags)
     {
-        FInlineString Result;
+        FFixedString Result;
 
         if (Flags == OF_None)
         {

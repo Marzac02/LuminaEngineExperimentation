@@ -9,7 +9,6 @@
 enum class EName : uint32;
 PRAGMA_DISABLE_ALL_WARNINGS
 #include "EASTL/hash_map.h"
-#include "EASTL/hash_set.h"
 PRAGMA_ENABLE_ALL_WARNINGS
 
 #include "Module/API.h"
@@ -131,8 +130,10 @@ namespace Lumina
         
         FName(const TCHAR* Str) : FName(StringUtils::FromWideString(Str)) {}
         FName(const FString& Str) : FName(Str.c_str()) {}
-        FName(const FInlineString& Str) : FName(Str.c_str()) {}
-        
+        FName(const FWString& Str) : FName(Str.c_str()) {}
+        FName(const FFixedString& Str) : FName(Str.c_str()) {}
+        FName(const FFixedWString& Str) : FName(Str.c_str()) {}
+
         explicit FName(uint64 InID)
             : ID(InID) 
         {
@@ -150,7 +151,7 @@ namespace Lumina
         FString ToString() const
         {
             const char* Str = c_str();
-            return FString(Str);
+            return { Str };
         }
 
         SIZE_T Length() const

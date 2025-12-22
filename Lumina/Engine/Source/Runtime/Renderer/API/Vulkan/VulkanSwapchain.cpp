@@ -113,7 +113,7 @@ namespace Lumina
 
         	TRefCountPtr<FVulkanImage> Image = MakeRefCount<FVulkanImage>(Context->GetDevice(), ImageDescription, RawImage, FVulkanImage::EInternal::ExternallyManaged);
 
-        	FInlineString ObjectName = FInlineString("SwapchainImage: ").append(eastl::to_string(i).c_str());
+        	FFixedString ObjectName = FFixedString("SwapchainImage: ").append(eastl::to_string(i).c_str());
         	Context->SetObjectName(Image, ObjectName.c_str(), EAPIResourceType::Image);
 			SwapchainImages.push_back(Image);
         }

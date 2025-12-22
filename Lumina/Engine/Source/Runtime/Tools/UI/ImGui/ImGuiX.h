@@ -35,7 +35,7 @@ namespace Lumina::ImGuiX
 
     LUMINA_API void ItemTooltip(const char* fmt, ...);
     LUMINA_API void TextTooltip(const char* fmt, ...);
-    LUMINA_API void TextColoredUnformatted(const ImVec4& Color, const FInlineString& String);
+    LUMINA_API void TextColoredUnformatted(const ImVec4& Color, const FFixedString& String);
 
     template <typename... TArgs>
     void Text(std::format_string<TArgs...> fmt, TArgs&&... Args)

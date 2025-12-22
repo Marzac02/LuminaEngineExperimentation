@@ -222,14 +222,12 @@ namespace Lumina
                 const char* Icon = GetLevelIcon(Message.Level);
                 const bool bIsError = (Message.Level == spdlog::level::err || Message.Level == spdlog::level::critical);
 
-                // Optional row highlighting for errors
                 if (bIsError && !Settings.bColorWholeRow)
                 {
                     ImU32 ErrorBgColor = ImGui::ColorConvertFloat4ToU32(ImVec4(0.3f, 0.1f, 0.1f, 0.3f));
                     ImGui::TableSetBgColor(ImGuiTableBgTarget_RowBg0, ErrorBgColor);
                 }
 
-                // Timestamp column
                 if (Settings.bShowTimestamps)
                 {
                     ImGui::TableSetColumnIndex(0);
@@ -259,7 +257,6 @@ namespace Lumina
                     }
                 }
 
-                // Message column
                 ImGui::TableSetColumnIndex(ColumnCount - 1);
                 
                 if (Settings.bColorWholeRow)
@@ -303,25 +300,9 @@ namespace Lumina
                     ImGui::PopStyleColor();
                 }
 
-                // Context menu per message
-                //if (ImGui::BeginPopupContextItem())
-                //{
-                //    if (ImGui::MenuItem("Copy Message"))
-                //    {
-                //        ImGui::SetClipboardText(Message.Message.c_str());
-                //    }
-                //    if (ImGui::MenuItem("Copy Line"))
-                //    {
-                //        FString FullLine = Message.Time + " | " + Message.LoggerName + " | " + Message.Message;
-                //        ImGui::SetClipboardText(FullLine.c_str());
-                //    }
-                //    ImGui::EndPopup();
-                //}
-
                 ImGui::PopID();
             }
 
-            // Auto scroll
             if (bNeedsScrollToBottom)
             {
                 ImGui::SetScrollHereY(1.0f);
@@ -340,7 +321,6 @@ namespace Lumina
         ImGui::PopStyleVar();
         ImGui::PopStyleColor();
     
-        // Command input
         ImGui::Spacing();
         ImGui::SetNextItemWidth(-1);
         
@@ -365,12 +345,6 @@ namespace Lumina
 
         CurrentCommand = InputBuffer;
 
-        //ImGui::SameLine();
-        //if (ImGui::Button(LE_ICON_HISTORY " History"))
-        //{
-        //    bShowHistory = !bShowHistory;
-        //}
-
         if (bExecuteCommand && !CurrentCommand.empty())
         {
             ProcessCommand(CurrentCommand);
@@ -378,13 +352,11 @@ namespace Lumina
             CurrentCommand.clear();
             bNeedsScrollToBottom = true;
             bShowAutoComplete = false;
-            //ImGui::SetKeyboardFocusHere(-1);
         }
 
         bool bInputFocused = ImGui::IsItemFocused();
         if (bInputFocused && bShowAutoComplete && !AutoCompleteCandidates.empty())
         {
-            // Tab to accept auto-complete
             if (ImGui::IsKeyPressed(ImGuiKey_Tab))
             {
                 if (AutoCompleteSelectedIndex >= 0 && AutoCompleteSelectedIndex < (int32)AutoCompleteCandidates.size())
@@ -393,7 +365,6 @@ namespace Lumina
                     bShowAutoComplete = false;
                 }
             }
-            // Navigate auto-complete with arrow keys
             else if (ImGui::IsKeyPressed(ImGuiKey_DownArrow))
             {
                 AutoCompleteSelectedIndex = (AutoCompleteSelectedIndex + 1) % AutoCompleteCandidates.size();
@@ -407,7 +378,6 @@ namespace Lumina
                 }
             }
         }
-        // History navigation (only when auto-complete is not shown)
         else if (bInputFocused && !bShowAutoComplete)
         {
             if (ImGui::IsKeyPressed(ImGuiKey_UpArrow))
@@ -436,12 +406,6 @@ namespace Lumina
         if (bShowHistory)
         {
             DrawHistoryPopup();
-        }
-
-        // Autofocus input when window is focused
-        if (bIsFocused && !ImGui::IsAnyItemActive())
-        {
-            //ImGui::SetKeyboardFocusHere(-1);
         }
     }
 
@@ -571,7 +535,6 @@ namespace Lumina
         AutoCompleteCandidates.clear();
         AutoCompleteSelectedIndex = 0;
 
-        // Only show auto-complete if there's input
         if (CurrentInput.empty())
         {
             bShowAutoComplete = false;
@@ -580,7 +543,6 @@ namespace Lumina
         
         const FConsoleRegistry::FConsoleContainer& Container = FConsoleRegistry::Get().GetAll();
 
-        // Calculate match scores and filter
         for (const auto& [Name, Var] : Container)
         {
             float Score = CalculateMatchScore(Name, CurrentInput);
@@ -595,13 +557,11 @@ namespace Lumina
             }
         }
 
-        // Sort by match score (highest first)
         eastl::sort(AutoCompleteCandidates.begin(), AutoCompleteCandidates.end(), [](const FAutoCompleteCandidate& A, const FAutoCompleteCandidate& B)
         {
             return A.MatchScore > B.MatchScore;
         });
 
-        // Limit to top 10 matches
         if (AutoCompleteCandidates.size() > 10)
         {
             AutoCompleteCandidates.resize(10);
@@ -621,6 +581,8 @@ namespace Lumina
             ImGuiWindowFlags_NoMove |
             ImGuiWindowFlags_NoScrollbar |
             ImGuiWindowFlags_NoSavedSettings |
+            ImGuiWindowFlags_NoFocusOnAppearing |
+            ImGuiWindowFlags_NoNavFocus |
             ImGuiWindowFlags_AlwaysAutoResize;
 
         ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(8, 6));
@@ -630,11 +592,9 @@ namespace Lumina
 
         if (ImGui::Begin("##AutoComplete", nullptr, PopupFlags))
         {
-            // Header
             ImGui::TextColored(ImVec4(0.6f, 0.6f, 0.6f, 1.0f), "Auto-Complete (%zu matches)", AutoCompleteCandidates.size());
             ImGui::Separator();
 
-            // Render candidates
             for (int32 i = 0; i < (int32)AutoCompleteCandidates.size(); ++i)
             {
                 const FAutoCompleteCandidate& Candidate = AutoCompleteCandidates[i];
@@ -656,17 +616,14 @@ namespace Lumina
 
                 ImGui::SameLine(0, 4);
 
-                // Command name
                 ImGui::TextColored(ImVec4(0.8f, 1.0f, 0.8f, 1.0f), "%s", Candidate.Name.data());
                 
-                // Current value
                 if (!Candidate.CurrentValue.empty())
                 {
                     ImGui::SameLine();
                     ImGui::TextColored(ImVec4(0.5f, 0.7f, 1.0f, 1.0f), "= %s", Candidate.CurrentValue.c_str());
                 }
 
-                // Description on next line if available
                 if (!Candidate.Description.empty())
                 {
                     ImGui::Indent(20.0f);
@@ -682,7 +639,6 @@ namespace Lumina
                 }
             }
 
-            // Footer with hints
             ImGui::Separator();
             ImGui::TextColored(ImVec4(0.5f, 0.5f, 0.5f, 1.0f), LE_ICON_ARROW_UP_DOWN " Navigate  " LE_ICON_KEYBOARD_TAB " Accept  " LE_ICON_KEYBOARD_ESC " Cancel");
         }
@@ -694,7 +650,7 @@ namespace Lumina
 
     void FConsoleLogEditorTool::DrawHistoryPopup()
     {
-               ImGui::SetNextWindowPos(ImVec2(
+        ImGui::SetNextWindowPos(ImVec2(
             ImGui::GetItemRectMin().x,
             ImGui::GetItemRectMin().y - 5
         ), ImGuiCond_Always, ImVec2(0.0f, 1.0f));
@@ -714,9 +670,7 @@ namespace Lumina
 
         if (ImGui::Begin("##CommandHistory", nullptr, PopupFlags))
         {
-            // Header
-            ImGui::TextColored(ImVec4(0.6f, 0.6f, 0.6f, 1.0f), 
-                LE_ICON_HISTORY " Command History (%zu)", CommandHistory.size());
+            ImGui::TextColored(ImVec4(0.6f, 0.6f, 0.6f, 1.0f), LE_ICON_HISTORY " Command History (%zu)", CommandHistory.size());
             
             ImGui::SameLine();
             if (ImGui::SmallButton("Clear"))
@@ -749,28 +703,8 @@ namespace Lumina
                     {
                         CurrentCommand = Cmd;
                         bShowHistory = false;
-                        //ImGui::SetKeyboardFocusHere(-1); // Focus back to input
                     }
 
-                    //if (ImGui::BeginPopupContextItem())
-                    //{
-                    //    if (ImGui::MenuItem("Execute"))
-                    //    {
-                    //        CurrentCommand = Cmd;
-                    //        ProcessCommand(CurrentCommand);
-                    //        bShowHistory = false;
-                    //    }
-                    //    if (ImGui::MenuItem("Copy"))
-                    //    {
-                    //        ImGui::SetClipboardText(Cmd.c_str());
-                    //    }
-                    //    if (ImGui::MenuItem("Delete"))
-                    //    {
-                    //        CommandHistory.erase(CommandHistory.begin() + i);
-                    //        HistoryIndex = std::min(HistoryIndex, CommandHistory.size());
-                    //    }
-                    //    ImGui::EndPopup();
-                    //}
 
                     ImGui::PopID();
                 }

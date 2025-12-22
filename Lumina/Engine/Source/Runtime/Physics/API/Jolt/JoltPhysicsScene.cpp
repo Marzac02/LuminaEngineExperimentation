@@ -8,9 +8,11 @@
 #include <algorithm>
 #include <Jolt/Physics/Collision/CastResult.h>
 #include <Jolt/Physics/Collision/RayCast.h>
+#include <Jolt/Renderer/DebugRendererSimple.h>
 
 #include "JoltPhysics.h"
 #include "JoltUtils.h"
+#include "Core/Console/ConsoleVariable.h"
 #include "Core/Profiler/Profile.h"
 #include "Jolt/Physics/Body/BodyCreationSettings.h"
 #include "Jolt/Physics/Collision/Shape/BoxShape.h"
@@ -28,7 +30,6 @@ using namespace JPH::literals;
 
 namespace Lumina::Physics
 {
-
     constexpr JPH::EMotionType ToJoltMotionType(EBodyType BodyType)
     {
         switch (BodyType)
@@ -125,6 +126,7 @@ namespace Lumina::Physics
 
         JPH::PhysicsSettings JoltSettings;
         JoltSystem->SetPhysicsSettings(JoltSettings);
+        
     }
 
     void FJoltPhysicsScene::PreUpdate()
@@ -314,6 +316,12 @@ namespace Lumina::Physics
         CollisionSteps = static_cast<int>(Accumulator / FixedTimeStep);
         CollisionSteps = std::min(CollisionSteps, MaxSteps);
         
+        if (FConsoleRegistry::Get().GetAs<bool>("Jolt.Debug.Draw"))
+        {
+            FJoltDebugRenderer* DebugRenderer = FJoltPhysicsContext::GetDebugRenderer();
+            DebugRenderer->DrawBodies(JoltSystem.get(), World);
+        }
+        
         if (CollisionSteps > 0)
         {
             PreUpdate();
@@ -332,6 +340,8 @@ namespace Lumina::Physics
         }
         
         SyncTransforms();
+        
+        FJoltPhysicsContext::GetDebugRenderer()->NextFrame();
     }
 
     void FJoltPhysicsScene::OnWorldSimulate()

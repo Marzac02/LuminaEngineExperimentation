@@ -5,11 +5,33 @@
 #include "Core/Threading/Thread.h"
 #include "Jolt/RegisterTypes.h"
 #include "Jolt/Core/Factory.h"
+#include "World/World.h"
+#include "Physics/API/Jolt/JoltUtils.h"
+#include <Core/Console/ConsoleVariable.h>
 
 
 namespace Lumina::Physics
 {
     static TUniquePtr<FJoltData> JoltData;
+
+    static JPH::BodyManager::DrawSettings DebugDrawSettings;
+
+    static TAutoConsoleVariable CVarJoltDebug("Jolt.Debug.Draw", false, "Toggles debug drawing for Jolt Physics, has severe performance impact.");
+
+    static TAutoConsoleVariable CVarJoltDebugShapes("Jolt.Debug.Shapes", DebugDrawSettings.mDrawShape, "Toggles debugging shapes for Jolt Physics", [](const auto& Var)
+        {
+            DebugDrawSettings.mDrawShape = eastl::get<bool>(Var);
+        });
+
+    static TAutoConsoleVariable CVarJoltDebugAABB("Jolt.Debug.AABB", DebugDrawSettings.mDrawBoundingBox, "Toggles debugging AABB for Jolt Physics", [](const auto& Var)
+        {
+            DebugDrawSettings.mDrawBoundingBox = eastl::get<bool>(Var);
+        });
+
+    static TAutoConsoleVariable CVarJoltDebugVelocity("Jolt.Debug.Velocity", DebugDrawSettings.mDrawVelocity, "Toggles debugging velocity for Jolt Physics", [](const auto& Var)
+        {
+            DebugDrawSettings.mDrawVelocity = eastl::get<bool>(Var);
+        });
     
     static void JoltTraceCallback(const char* format, ...)
     {
@@ -66,23 +88,27 @@ namespace Lumina::Physics
         JPH::Free               = JPHCustomFree;
         JPH::AlignedAllocate    = JPHCustomAlignedAllocate;
         JPH::AlignedFree        = JPHCustomAlignedFree;
-        
+
+        JoltData = MakeUniquePtr<FJoltData>();
+		JoltData->DebugRenderer = MakeUniquePtr<FJoltDebugRenderer>();
+
         JPH::Factory::sInstance = Memory::New<JPH::Factory>();
+        JPH::DebugRenderer::sInstance = JoltData->DebugRenderer.get();
 
         JPH::RegisterTypes();
         
-        JoltData = MakeUniquePtr<FJoltData>();
 
         JoltData->TemporariesAllocator = MakeUniquePtr<JPH::TempAllocatorImpl>(300 * 1024 * 1024);
 
-        JoltData->JobThreadPool = MakeUniquePtr<JPH::JobSystemThreadPool>(2048, 8, Threading::GetNumThreads() - 2);
-        
+        JoltData->JobThreadPool = MakeUniquePtr<JPH::JobSystemThreadPool>(2048, 8, Threading::GetNumThreads() - 1);
+
     }
 
     void FJoltPhysicsContext::Shutdown()
     {
         JPH::UnregisterTypes();
         JoltData.reset();
+		JPH::DebugRenderer::sInstance = nullptr;
         Memory::Delete(JPH::Factory::sInstance);
     }
 
@@ -99,6 +125,27 @@ namespace Lumina::Physics
     JPH::JobSystemThreadPool* FJoltPhysicsContext::GetThreadPool()
     {
         return JoltData->JobThreadPool.get();
+    }
+
+    FJoltDebugRenderer* FJoltPhysicsContext::GetDebugRenderer()
+    {
+        return JoltData->DebugRenderer.get();
+    }
+
+    void FJoltDebugRenderer::DrawLine(JPH::RVec3Arg inFrom, JPH::RVec3Arg inTo, JPH::ColorArg inColor)
+    {
+        World->DrawDebugLine(JoltUtils::FromJPHVec3(inFrom), JoltUtils::FromJPHVec3(inTo), glm::vec4(inColor.r, inColor.g, inColor.b, inColor.a));
+    }
+
+    void FJoltDebugRenderer::DrawBodies(JPH::PhysicsSystem* System, CWorld* InWorld)
+    {
+        World = InWorld;
+        
+        if (SCameraComponent* Camera = World->GetActiveCamera())
+        {
+            SetCameraPos(JoltUtils::ToJPHRVec3(Camera->GetPosition()));
+            System->DrawBodies(DebugDrawSettings, this);
+        }
     }
 }
 

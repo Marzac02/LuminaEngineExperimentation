@@ -143,7 +143,7 @@ namespace Lumina
             Flags |= ImGuiTreeNodeFlags_Selected;
         }
         
-        FInlineString DisplayName = ItemToDraw->GetDisplayName();
+        FFixedString DisplayName = ItemToDraw->GetDisplayName();
         if (ItemToDraw->HasChildren())
         {
             DisplayName.append(" (");

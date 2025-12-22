@@ -35,7 +35,7 @@ namespace Lumina
         
         virtual void BuildNode() { }
         
-        virtual FInlineString GetNodeCategory() const { return "General"; }
+        virtual FFixedString GetNodeCategory() const { return "General"; }
         
         FString GetNodeFullName() { return FullName; }
         virtual bool WantsTitlebar() const { return true; }

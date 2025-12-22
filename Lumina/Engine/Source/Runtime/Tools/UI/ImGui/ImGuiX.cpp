@@ -43,7 +43,7 @@ namespace Lumina::ImGuiX
         ImGui::PopStyleVar();
     }
 
-    void TextColoredUnformatted(const ImVec4& Color, const FInlineString& String)
+    void TextColoredUnformatted(const ImVec4& Color, const FFixedString& String)
     {
     	ImGui::PushStyleColor(ImGuiCol_Text, Color);
     	ImGui::TextUnformatted(String.c_str());

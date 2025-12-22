@@ -56,16 +56,16 @@ namespace Lumina
         template<typename... Ts, typename TFunc, typename... TArgs>
         void ParallelForEach(TFunc&& Function, TArgs&&... Args)
         {
-            auto View = Registry.view<Ts...>(std::forward<TArgs>(Args)...);
+            auto View = Registry.view<Ts...>(eastl::forward<TArgs>(Args)...);
             auto Entities = View.handle();
     
-            Task::ParallelFor(Entities.size(), Entities.size(), [&, View](uint32 Index)
+            Task::ParallelFor(Entities.size(), Entities.size(), [&](uint32 Index)
             {
                 entt::entity EntityID = (*Entities)[Index];
                 
                 if (View.contains(EntityID))
                 {
-                    std::apply(Function, View.get(EntityID));
+                    eastl::apply(Function, View.get(EntityID));
                 }
             });
         }

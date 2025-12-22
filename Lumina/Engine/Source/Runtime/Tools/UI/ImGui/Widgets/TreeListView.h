@@ -40,7 +40,7 @@ namespace Lumina
 
         virtual uint64 GetHash() const = 0;
         
-        virtual FInlineString GetDisplayName() const
+        virtual FFixedString GetDisplayName() const
         {
             return GetName().c_str();
         }

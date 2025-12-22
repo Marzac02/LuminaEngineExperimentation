@@ -19,7 +19,7 @@ namespace Lumina
 {
     
     static TAutoConsoleVariable<float> CVarShadowCascadeLambda(
-        "r.Shadows.CascadeLambda",
+        "Rendering.Shadows.CascadeLambda",
         0.95f,
         "Changes the lambda of the cascade selection");
     
@@ -239,7 +239,9 @@ namespace Lumina
             {
                 SimpleVertices.resize(LineBatcherComponent.Vertices.size());
                 Memory::Memcpy(SimpleVertices.data(), LineBatcherComponent.Vertices.data(), LineBatcherComponent.Vertices.size() * sizeof(FSimpleElementVertex));
+
                 LineBatcherComponent.Vertices.clear();
+				LineBatcherComponent.Vertices.shrink_to_fit();
             });
         }
         

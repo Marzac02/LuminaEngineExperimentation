@@ -245,7 +245,7 @@ namespace Lumina
                     break;
                 }
             
-                FInlineString String;
+                FFixedString String;
                 String.sprintf("CommandBuffer: %s", QueueName);
                 RenderContext->SetVulkanObjectName(String.data(), VK_OBJECT_TYPE_COMMAND_BUFFER, (uintptr_t)Buffer);
             }

@@ -68,9 +68,6 @@ namespace Lumina
         {
             return Str;
         }
-
-        
-        
     }
 
     struct LUMINA_API FConsoleVariable
@@ -90,10 +87,6 @@ namespace Lumina
         {}
     };
 
-
-
-    
-
     class LUMINA_API FConsoleRegistry
     {
     public:
@@ -107,6 +100,12 @@ namespace Lumina
         void Register(FConsoleVariable&& Var);
 
         FConsoleVariable* Find(FStringView Name);
+
+        template<ValidConsoleVarType T>
+        const T& GetAs(FStringView Name)
+        {
+			return eastl::get<T>(*Find(Name)->ValuePtr);
+        }
 
         const FConsoleContainer& GetAll() const;
 
@@ -147,6 +146,11 @@ namespace Lumina
         T* GetValuePtr() const
         {
             return eastl::get_if<T>(&Storage);
+        }
+
+        explicit operator bool() const
+        {
+            return GetValue();
         }
         
     private:
