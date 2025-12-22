@@ -16,49 +16,49 @@ namespace Lumina::Physics
 
     static JPH::BodyManager::DrawSettings DebugDrawSettings;
 
-    static TAutoConsoleVariable CVarJoltDebug("Jolt.Debug.Draw", false, "Toggles debug drawing for Jolt Physics, has severe performance impact.");
+    static TConsoleVar CVarJoltDebug("Jolt.Debug.Draw", false, "Toggles debug drawing for Jolt Physics, has severe performance impact.");
 
-    static TAutoConsoleVariable CVarJoltDebugShapes("Jolt.Debug.Shapes", DebugDrawSettings.mDrawShape, "Toggles debugging shapes for Jolt Physics", [](const auto& Var)
+    static TConsoleVar CVarJoltDebugShapes("Jolt.Debug.Shapes", DebugDrawSettings.mDrawShape, "Toggles debugging shapes for Jolt Physics", [](const auto& Var)
         {
             DebugDrawSettings.mDrawShape = eastl::get<bool>(Var);
         });
 
-    static TAutoConsoleVariable CVarJoltDebugShapeWireframe("Jolt.Debug.ShapeWireframe", DebugDrawSettings.mDrawShapeWireframe, "Toggles wireframe rendering for shapes", [](const auto& Var)
+    static TConsoleVar CVarJoltDebugShapeWireframe("Jolt.Debug.ShapeWireframe", DebugDrawSettings.mDrawShapeWireframe, "Toggles wireframe rendering for shapes", [](const auto& Var)
         {
             DebugDrawSettings.mDrawShapeWireframe = eastl::get<bool>(Var);
         });
 
-    static TAutoConsoleVariable CVarJoltDebugAABB("Jolt.Debug.AABB", DebugDrawSettings.mDrawBoundingBox, "Toggles debugging AABB for Jolt Physics", [](const auto& Var)
+    static TConsoleVar CVarJoltDebugAABB("Jolt.Debug.AABB", DebugDrawSettings.mDrawBoundingBox, "Toggles debugging AABB for Jolt Physics", [](const auto& Var)
         {
             DebugDrawSettings.mDrawBoundingBox = eastl::get<bool>(Var);
         });
 
-    static TAutoConsoleVariable CVarJoltDebugVelocity("Jolt.Debug.Velocity", DebugDrawSettings.mDrawVelocity, "Toggles debugging velocity vectors for Jolt Physics", [](const auto& Var)
+    static TConsoleVar CVarJoltDebugVelocity("Jolt.Debug.Velocity", DebugDrawSettings.mDrawVelocity, "Toggles debugging velocity vectors for Jolt Physics", [](const auto& Var)
         {
             DebugDrawSettings.mDrawVelocity = eastl::get<bool>(Var);
         });
 
-    static TAutoConsoleVariable CVarJoltDebugCenterOfMass("Jolt.Debug.CenterOfMass", DebugDrawSettings.mDrawCenterOfMassTransform, "Toggles center of mass visualization", [](const auto& Var)
+    static TConsoleVar CVarJoltDebugCenterOfMass("Jolt.Debug.CenterOfMass", DebugDrawSettings.mDrawCenterOfMassTransform, "Toggles center of mass visualization", [](const auto& Var)
         {
             DebugDrawSettings.mDrawCenterOfMassTransform = eastl::get<bool>(Var);
         });
 
-    static TAutoConsoleVariable CVarJoltDebugWorldTransform("Jolt.Debug.WorldTransform", DebugDrawSettings.mDrawWorldTransform, "Toggles world transform axes visualization", [](const auto& Var)
+    static TConsoleVar CVarJoltDebugWorldTransform("Jolt.Debug.WorldTransform", DebugDrawSettings.mDrawWorldTransform, "Toggles world transform axes visualization", [](const auto& Var)
         {
             DebugDrawSettings.mDrawWorldTransform = eastl::get<bool>(Var);
         });
 
-    static TAutoConsoleVariable CVarJoltDebugSleepStats("Jolt.Debug.SleepStats", DebugDrawSettings.mDrawSleepStats, "Toggles sleep statistics visualization", [](const auto& Var)
+    static TConsoleVar CVarJoltDebugSleepStats("Jolt.Debug.SleepStats", DebugDrawSettings.mDrawSleepStats, "Toggles sleep statistics visualization", [](const auto& Var)
         {
             DebugDrawSettings.mDrawSleepStats = eastl::get<bool>(Var);
         });
 
-    static TAutoConsoleVariable CVarJoltDebugGetSupport("Jolt.Debug.GetSupport", DebugDrawSettings.mDrawGetSupportFunction, "Toggles GetSupport function visualization for collision detection", [](const auto& Var)
+    static TConsoleVar CVarJoltDebugGetSupport("Jolt.Debug.GetSupport", DebugDrawSettings.mDrawGetSupportFunction, "Toggles GetSupport function visualization for collision detection", [](const auto& Var)
         {
             DebugDrawSettings.mDrawGetSupportFunction = eastl::get<bool>(Var);
         });
 
-    static TAutoConsoleVariable CVarJoltDebugGetSupportDirection("Jolt.Debug.GetSupportDir", DebugDrawSettings.mDrawGetSupportingFace, "Toggles GetSupportingFace visualization", [](const auto& Var)
+    static TConsoleVar CVarJoltDebugGetSupportDirection("Jolt.Debug.GetSupportDir", DebugDrawSettings.mDrawGetSupportingFace, "Toggles GetSupportingFace visualization", [](const auto& Var)
         {
             DebugDrawSettings.mDrawGetSupportingFace = eastl::get<bool>(Var);
         });

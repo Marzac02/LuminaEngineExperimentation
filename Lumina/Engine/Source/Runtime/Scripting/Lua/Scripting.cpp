@@ -154,6 +154,7 @@ namespace Lumina::Scripting
 
     void FScriptingContext::RegisterCoreTypes()
     {
+
         State.set_function("System", [](const sol::table& Descriptor)
         {
             sol::state_view lua(Descriptor.lua_state());

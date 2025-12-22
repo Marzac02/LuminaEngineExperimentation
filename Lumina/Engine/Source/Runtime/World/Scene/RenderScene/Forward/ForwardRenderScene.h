@@ -135,7 +135,7 @@ namespace Lumina
         TArray<FShadowCascade, NumCascades>           ShadowCascades;
         
         /** Packed array of per-instance data */
-        TRenderVector<FInstanceData>                  InstanceData;
+        TVector<FInstanceData>                  InstanceData;
 
         
         FMeshPass DepthMeshPass;
@@ -144,9 +144,9 @@ namespace Lumina
         FMeshPass ShadowMeshPass;
         
         /** Packed array of all cached mesh draw commands */
-        TRenderVector<FMeshDrawCommand>             DrawCommands;
+        TVector<FMeshDrawCommand>             DrawCommands;
 
         /** Packed indirect draw arguments, gets sent directly to the GPU */
-        TRenderVector<FDrawIndexedIndirectArguments>  IndirectDrawArguments;
+        TVector<FDrawIndexedIndirectArguments>  IndirectDrawArguments;
     };
 }

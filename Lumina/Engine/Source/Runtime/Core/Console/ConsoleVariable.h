@@ -123,14 +123,14 @@ namespace Lumina
 
     
     template<ValidConsoleVarType T>
-    class TAutoConsoleVariable
+    class TConsoleVar
     {
     public:
         
         static void DefaultCallback(const CVarValueType&) {}
 
         
-        constexpr TAutoConsoleVariable(FStringView Name, T DefaultValue, FStringView Hint, void(*InCallback)(const CVarValueType&) = DefaultCallback)
+        constexpr TConsoleVar(FStringView Name, T DefaultValue, FStringView Hint, void(*InCallback)(const CVarValueType&) = DefaultCallback)
             : Storage(DefaultValue)
         {
             FConsoleVariable Var(Name, Hint, &Storage, Storage, InCallback);

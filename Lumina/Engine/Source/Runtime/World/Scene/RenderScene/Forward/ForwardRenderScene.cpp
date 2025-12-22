@@ -17,12 +17,9 @@
 
 namespace Lumina
 {
-    
-    static TAutoConsoleVariable<float> CVarShadowCascadeLambda(
-        "Rendering.Shadows.CascadeLambda",
-        0.95f,
-        "Changes the lambda of the cascade selection");
-    
+    static TConsoleVar CVarShadowCascadeLambda("Rendering.Shadows.CascadeLambda", 0.95f, "Changes the lambda of the cascade selection");
+    static TConsoleVar CVarRenderBasePass("Rendering.Passes.BasePass", true, "Toggles rendering of the base pass");
+
     FForwardRenderScene::FForwardRenderScene(CWorld* InWorld)
         : World(InWorld)
         , LightData(), SceneGlobalData()
@@ -130,8 +127,9 @@ namespace Lumina
             const size_t EntityCount = View.size_hint();
             const size_t EstimatedProxies = EntityCount * 2;
 
-            InstanceData.clear();
             InstanceData.reserve(EstimatedProxies);
+            IndirectDrawArguments.reserve(EstimatedProxies);
+			DrawCommands.reserve(EstimatedProxies);
             
             TFixedHashMap<uint64, uint64, 4> BatchedDraws;
             
@@ -1097,7 +1095,7 @@ namespace Lumina
 
     void FForwardRenderScene::BasePass(FRenderGraph& RenderGraph, const FViewVolume& View)
     {
-        if (DrawCommands.empty())
+        if (DrawCommands.empty() || !CVarRenderBasePass)
         {
             return;
         }

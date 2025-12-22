@@ -21,12 +21,10 @@
 namespace Lumina
 {
 
-    static TAutoConsoleVariable<int32> MaxCObjectCount(
-        "c.MaxCObjectCount",
-        INT16_MAX,
-        "Defined the maximum number of allowed CObjects");
+    static TConsoleVar MaxCObjectCount("Core.CObject.MaxCount", 100'000, "Maximum number of allowed CObjects");
     
     LUMINA_API FCObjectArray GObjectArray;
+
 
     /** Objects that will not be destroyed */
     static THashSet<TObjectPtr<CObjectBase>> GRootedObjects;
