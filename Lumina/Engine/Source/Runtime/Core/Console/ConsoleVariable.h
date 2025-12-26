@@ -106,6 +106,12 @@ namespace Lumina
         {
 			return eastl::get<T>(*Find(Name)->ValuePtr);
         }
+        
+        template<ValidConsoleVarType T>
+        const T* TryGetAs(FStringView Name)
+        {
+			return eastl::get_if<T>(*Find(Name)->ValuePtr);
+        }
 
         const FConsoleContainer& GetAll() const;
 

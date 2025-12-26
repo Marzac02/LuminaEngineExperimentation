@@ -629,7 +629,7 @@ namespace Lumina::Scripting
         {
             if (!bFailSilently)
             {
-                LOG_ERROR("[Sol] Script {} did not return a table", ScriptPath);
+                LOG_WARN("[Sol] Script {} did not return a table", ScriptPath);
             }
             return {};
         }
