@@ -1,4 +1,5 @@
 #include "pch.h"
+#if 0
 // File: 'materialdesignicons-webfont.ttf' (1279992 bytes)
 // Exported using binary_to_compressed_c.cpp
 static constexpr char MD_compressed_data_base85[1063205+1] =
@@ -7599,13 +7600,13 @@ static constexpr char MD_compressed_data_base85[1063205+1] =
     "w?n58b->3)$e$kE&lcL+0M_s/V58J&,;b7D#m8At@eYp&";
 
 //-------------------------------------------------------------------------
-
+#endif
 #include "FontData_MaterialDesign.h"
 
 namespace Lumina::Fonts::MaterialDesignIcons
 {
-    uint8 const* GetData()
+    const uint8* GetData()
     {
-        return (const uint8*) MD_compressed_data_base85;
+        return nullptr;//(const uint8*) MD_compressed_data_base85;
     }
 }

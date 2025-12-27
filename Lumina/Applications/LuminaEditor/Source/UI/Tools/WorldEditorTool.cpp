@@ -439,7 +439,7 @@ namespace Lumina
     
             ImGui::PopStyleColor(3);
             ImGui::EndDisabled();
-    
+   
             GuizmoSnapTranslate = TranslateSnap;
             GuizmoSnapRotate = RotateSnap;
             GuizmoSnapScale = ScaleSnap;

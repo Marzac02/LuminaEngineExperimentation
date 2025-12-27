@@ -16,6 +16,7 @@
 #include <imgui.h>
 #include <implot.h>
 #include "ImGuizmo.h"
+#include "Paths/Paths.h"
 
 namespace Lumina
 {
@@ -48,9 +49,12 @@ namespace Lumina
     	Fonts::GetDecompressedFontData(Fonts::Lexend::Regular::GetData(), FontData);
 		Fonts::GetDecompressedFontData(Fonts::Lexend::Bold::GetData(), BoldFontData);	
 
-		constexpr ImWchar icons_ranges[] = { LE_ICONRANGE_MIN, LE_ICONRANGE_MAX, 0 };
-    	TVector<uint8> iconFontData;
-    	Fonts::GetDecompressedFontData(Fonts::MaterialDesignIcons::GetData(), iconFontData);
+		constexpr ImWchar IconRanges[] = { LE_ICONRANGE_MIN, LE_ICONRANGE_MAX, 0 };
+    	//TVector<uint8> IconFontData;
+		
+		FString IconFontFile = Paths::GetEngineFontDirectory() + "materialdesignicons-webfont.ttf";
+		
+    	//Fonts::GetDecompressedFontData(Fonts::MaterialDesignIcons::GetData(), IconFontData);
 
     	ImFontConfig fontConfig;
     	fontConfig.FontDataOwnedByAtlas = false;
@@ -63,14 +67,15 @@ namespace Lumina
     	iconFontConfig.RasterizerMultiply = 1.5f;
 
     	
-    	auto CreateFont = [&] ( Blob& fontData, float fontSize, float iconFontSize, ImGuiX::Font::EFont fontID, char const* pName, ImVec2 const& glyphOffset )
+    	auto CreateFontFromMemory = [&] (TVector<uint8>& InFontData, float fontSize, float iconFontSize, ImGuiX::Font::EFont fontID, char const* pName, ImVec2 const& glyphOffset )
     	{
-    		ImFont* pFont = io.Fonts->AddFontFromMemoryTTF( fontData.data(), static_cast<int32>(fontData.size()), fontSize, &fontConfig );
+    		ImFont* pFont = io.Fonts->AddFontFromMemoryTTF( InFontData.data(), static_cast<int32>(InFontData.size()), fontSize, &fontConfig);
 		    ImGuiX::Font::GFonts[static_cast<uint8>(fontID)] = pFont;
 
     		iconFontConfig.GlyphOffset = glyphOffset;
     		iconFontConfig.GlyphMinAdvanceX = iconFontSize;
-    		io.Fonts->AddFontFromMemoryTTF( iconFontData.data(), static_cast<int32>(iconFontData.size()), iconFontSize, &iconFontConfig, icons_ranges );
+    		io.Fonts->AddFontFromFileTTF(IconFontFile.c_str(), iconFontSize, &iconFontConfig, IconRanges);
+    		//io.Fonts->AddFontFromMemoryTTF( iconFontData.data(), static_cast<int32>(iconFontData.size()), iconFontSize, &iconFontConfig, icons_ranges);
     	};
 
     	constexpr float DPIScale = 1.0f;
@@ -80,17 +85,17 @@ namespace Lumina
     	float const size18 = std::floor( 18 * DPIScale );
     	float const size24 = std::floor( 24 * DPIScale );
     	
-    	CreateFont(FontData, size12, size14, ImGuiX::Font::EFont::Tiny, "Tiny", ImVec2( 0, 2 ) );
-    	CreateFont(BoldFontData, size12, size14, ImGuiX::Font::EFont::TinyBold, "Tiny Bold", ImVec2( 0, 2 ) );
+    	CreateFontFromMemory(FontData, size12, size14, ImGuiX::Font::EFont::Tiny, "Tiny", ImVec2( 0, 2 ) );
+    	CreateFontFromMemory(BoldFontData, size12, size14, ImGuiX::Font::EFont::TinyBold, "Tiny Bold", ImVec2( 0, 2 ) );
 
-    	CreateFont(FontData, size14, size16, ImGuiX::Font::EFont::Small, "Small", ImVec2( 0, 2 ) );
-    	CreateFont(BoldFontData, size14, size16, ImGuiX::Font::EFont::SmallBold, "Small Bold", ImVec2( 0, 2 ) );
+    	CreateFontFromMemory(FontData, size14, size16, ImGuiX::Font::EFont::Small, "Small", ImVec2( 0, 2 ) );
+    	CreateFontFromMemory(BoldFontData, size14, size16, ImGuiX::Font::EFont::SmallBold, "Small Bold", ImVec2( 0, 2 ) );
 
-    	CreateFont(FontData, size16, size18, ImGuiX::Font::EFont::Medium, "Medium", ImVec2( 0, 2 ) );
-    	CreateFont(BoldFontData, size16, size18, ImGuiX::Font::EFont::MediumBold, "Medium Bold", ImVec2( 0, 2 ) );
+    	CreateFontFromMemory(FontData, size16, size18, ImGuiX::Font::EFont::Medium, "Medium", ImVec2( 0, 2 ) );
+    	CreateFontFromMemory(BoldFontData, size16, size18, ImGuiX::Font::EFont::MediumBold, "Medium Bold", ImVec2( 0, 2 ) );
 
-    	CreateFont(FontData, size24, size24, ImGuiX::Font::EFont::Large, "Large", ImVec2( 0, 2 ) );
-    	CreateFont(BoldFontData, size24, size24, ImGuiX::Font::EFont::LargeBold, "Large Bold", ImVec2( 0, 2 ) );
+    	CreateFontFromMemory(FontData, size24, size24, ImGuiX::Font::EFont::Large, "Large", ImVec2( 0, 2 ) );
+    	CreateFontFromMemory(BoldFontData, size24, size24, ImGuiX::Font::EFont::LargeBold, "Large Bold", ImVec2( 0, 2 ) );
 
     	io.Fonts->TexMinWidth = 4096;
 

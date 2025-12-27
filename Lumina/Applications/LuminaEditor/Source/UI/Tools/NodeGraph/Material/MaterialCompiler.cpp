@@ -21,7 +21,7 @@ namespace Lumina
         if (!FileHelper::LoadFileIntoString(LoadedString, FragmentPath))
         {
             LOG_ERROR("Failed to find ForwardBasePass.frag!");
-            return FString();
+            return {};
         }
 
         const char* Token = "$MATERIAL_INPUTS";

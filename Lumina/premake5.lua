@@ -8,7 +8,7 @@ project "Lumina"
 
     pchheader "pch.h"
     pchsource "Engine/Source/pch.cpp"
-    dependson { "GLFW", "EA", "ImGui", "Tracy", "Reflector" }
+    dependson { "EA", "ImGui", "Tracy", "GLFW", "Reflector" }
 
 
     defines

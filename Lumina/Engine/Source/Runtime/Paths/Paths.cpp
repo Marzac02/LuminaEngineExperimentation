@@ -13,6 +13,7 @@ namespace Lumina::Paths
     namespace
     {
         const char* EngineResourceDirectoryName     = "EngineResourceDirectory";
+        const char* EngineFontDirectoryName         = "EngineFontDirectory";
         const char* EngineContentDirectoryName      = "EngineContentDirectory";
         const char* EngineShadersDirectoryName      = "EngineShadersDirectory";
         const char* EngineDirectoryName             = "EngineDirectory";
@@ -27,9 +28,12 @@ namespace Lumina::Paths
         
         CachedDirectories[EngineResourceDirectoryName] = FString(LuminaDir) + "/Lumina/Engine/Resources";
 
+        CachedDirectories[EngineFontDirectoryName] = FString(GetEngineResourceDirectory() + "/Fonts");
+        
         CachedDirectories[EngineContentDirectoryName] = FString(GetEngineResourceDirectory() + "/Content");
 
         CachedDirectories[EngineShadersDirectoryName] = FString(GetEngineResourceDirectory() + "/Shaders");
+        
     }
 
     void Mount(const FName& VirtualPrefix, const FString& PhysicalPath)
@@ -84,7 +88,7 @@ namespace Lumina::Paths
             return InPath.substr(Dot);
         }
 
-        return FString();
+        return {};
     }
 
     bool HasExtension(const FString& Path, const FString& Ext)
@@ -301,6 +305,11 @@ namespace Lumina::Paths
     const FString& GetEngineResourceDirectory()
     {
         return CachedDirectories[EngineResourceDirectoryName];
+    }
+
+    const FString& GetEngineFontDirectory()
+    {
+        return CachedDirectories[EngineFontDirectoryName];
     }
 
     const FString& GetEngineContentDirectory()

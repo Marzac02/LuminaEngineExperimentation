@@ -82,6 +82,9 @@ namespace Lumina::Paths
     
     /** Gets the path to the engine's resource directory. */
     LUMINA_API const FString& GetEngineResourceDirectory();
+    
+    /** Gets the path to the engine's font directory. */
+    LUMINA_API const FString& GetEngineFontDirectory();
 
     /** Gets the path to the engine's content directory */
     LUMINA_API const FString& GetEngineContentDirectory();
