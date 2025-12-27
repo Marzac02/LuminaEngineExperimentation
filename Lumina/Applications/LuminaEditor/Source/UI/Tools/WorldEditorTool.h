@@ -110,7 +110,7 @@ namespace Lumina
     public:
         
         FWorldEditorTool(IEditorToolContext* Context, CWorld* InWorld);
-        ~FWorldEditorTool() noexcept override { }
+        ~FWorldEditorTool() noexcept override = default;
 
         void OnInitialize() override;
         void OnDeinitialize(const FUpdateContext& UpdateContext) override;
@@ -130,7 +130,7 @@ namespace Lumina
 
 		void OnSave() override;
 
-        bool IsAssetEditorTool() const override;
+        NODISCARD bool IsAssetEditorTool() const override;
         FOnGamePreview& GetOnPreviewStartRequestedDelegate() { return OnGamePreviewStartRequested; }
         FOnGamePreview& GetOnPreviewStopRequestedDelegate() { return OnGamePreviewStopRequested; }
 
@@ -201,6 +201,11 @@ namespace Lumina
         TQueue<entt::entity>                    EntityDestroyRequests;
         TVector<TUniquePtr<FPropertyTable>>     PropertyTables;
 
+        float                                   GuizmoSnapTranslate = 0.0f;
+		float                                   GuizmoSnapRotate = 0.0f;
+		float                                   GuizmoSnapScale = 0.0f;
+
+		bool									bGuizmoSnapEnabled = false;
         bool                                    bGamePreviewRunning = false;
         bool                                    bSimulatingWorld = false;
 

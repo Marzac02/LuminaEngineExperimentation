@@ -267,7 +267,7 @@ namespace Lumina
             {
                 ImGui::SetTooltip("Camera movement speed");
             }
-
+    
             ImGui::PopStyleVar();
             ImGui::EndMenu();
         }
@@ -275,28 +275,34 @@ namespace Lumina
         if (ImGui::BeginMenu(LE_ICON_MOVE_RESIZE" Gizmo"))
         {
             ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(8, 4));
+            ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(8, 8));
             
-            static int currentOpIndex = 0;
-            static int currentModeIndex = 0;
-
+            static int CurrentOpIndex = 0;
+            static int CurrentModeIndex = 0;
+            static bool bSnapEnabled = false;
+            static float TranslateSnap = 1.0f;
+            static float RotateSnap = 15.0f;
+            static float ScaleSnap = 0.1f;
+    
             ImGui::TextColored(ImVec4(1.0f, 0.78f, 0.4f, 1.0f), "Transform Operation");
             ImGui::Separator();
-
+            ImGui::Spacing();
+    
             const char* operations[] = { "Translate", "Rotate", "Scale" };
             constexpr int operationsCount = IM_ARRAYSIZE(operations);
-
+    
             switch (GuizmoOp)
             {
-            case ImGuizmo::TRANSLATE: currentOpIndex = 0; break;
-            case ImGuizmo::ROTATE:    currentOpIndex = 1; break;
-            case ImGuizmo::SCALE:     currentOpIndex = 2; break;
-            default:                  currentOpIndex = 0; break;
+            case ImGuizmo::TRANSLATE: CurrentOpIndex = 0; break;
+            case ImGuizmo::ROTATE:    CurrentOpIndex = 1; break;
+            case ImGuizmo::SCALE:     CurrentOpIndex = 2; break;
+            default:                  CurrentOpIndex = 0; break;
             }
-
+    
             ImGui::SetNextItemWidth(180);
-            if (ImGui::Combo("##Operation", &currentOpIndex, operations, operationsCount))
+            if (ImGui::Combo("##Operation", &CurrentOpIndex, operations, operationsCount))
             {
-                switch (currentOpIndex)
+                switch (CurrentOpIndex)
                 {
                 case 0: GuizmoOp = ImGuizmo::TRANSLATE; break;
                 case 1: GuizmoOp = ImGuizmo::ROTATE;    break;
@@ -304,175 +310,142 @@ namespace Lumina
                 }
             }
             
-
+            ImGui::Spacing();
+            ImGui::Spacing();
+    
             ImGui::TextColored(ImVec4(1.0f, 0.78f, 0.4f, 1.0f), "Transform Space");
             ImGui::Separator();
-
+            ImGui::Spacing();
+    
             const char* modes[] = { "World Space", "Local Space" };
             constexpr int modesCount = IM_ARRAYSIZE(modes);
-
+    
             switch (GuizmoMode)
             {
-            case ImGuizmo::WORLD: currentModeIndex = 0; break;
-            case ImGuizmo::LOCAL: currentModeIndex = 1; break;
-            default:              currentModeIndex = 0; break;
+            case ImGuizmo::WORLD: CurrentModeIndex = 0; break;
+            case ImGuizmo::LOCAL: CurrentModeIndex = 1; break;
+            default:              CurrentModeIndex = 0; break;
             }
-
+    
             ImGui::SetNextItemWidth(180);
-            if (ImGui::Combo("##Mode", &currentModeIndex, modes, modesCount))
+            if (ImGui::Combo("##Mode", &CurrentModeIndex, modes, modesCount))
             {
-                switch (currentModeIndex)
+                switch (CurrentModeIndex)
                 {
                 case 0: GuizmoMode = ImGuizmo::WORLD; break;
                 case 1: GuizmoMode = ImGuizmo::LOCAL; break;
                 }
             }
-
-            ImGui::PopStyleVar();
-            ImGui::EndMenu();
-        }
-        
-        if (ImGui::BeginMenu(LE_ICON_DEBUG_STEP_INTO" Renderer"))
-        {
-            ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(8, 4));
-            
-            IRenderScene* SceneRenderer = World->GetRenderer();
-            FRHICommandListRef CommandList = GRenderContext->CreateCommandList(FCommandListInfo::Graphics());
-
-            ImGui::TextColored(ImVec4(0.4f, 1.0f, 0.6f, 1.0f), "Performance Statistics (Global)");
-            ImGui::Separator();
-            
-            ImGui::BeginTable("##StatsTable", 2, ImGuiTableFlags_None);
-            ImGui::TableSetupColumn("Label", ImGuiTableColumnFlags_WidthFixed, 120.0f);
-            ImGui::TableSetupColumn("Value", ImGuiTableColumnFlags_WidthFixed, 100.0f);
-            
-            ImGui::TableNextRow();
-            ImGui::TableNextColumn();
-            ImGui::TextUnformatted("Draw Calls");
-            ImGui::TableNextColumn();
-            ImGui::Text("%u", CommandList->GetCommandListStats().NumDrawCalls);
-
-            ImGui::TableNextRow();
-            ImGui::TableNextColumn();
-            ImGui::TextUnformatted("Dispatch Calls");
-            ImGui::TableNextColumn();
-            ImGui::Text("%u", CommandList->GetCommandListStats().NumDispatchCalls);
-
-            ImGui::TableNextRow();
-            ImGui::TableNextColumn();
-            ImGui::TextUnformatted("Buffer Writes");
-            ImGui::TableNextColumn();
-            ImGui::Text("%u", CommandList->GetCommandListStats().NumBufferWrites);
-
-            ImGui::TableNextRow();
-            ImGui::TableNextColumn();
-            ImGui::TextUnformatted("Copy Calls");
-            ImGui::TableNextColumn();
-            ImGui::Text("%u", CommandList->GetCommandListStats().NumCopies);
-            
-            ImGui::TableNextRow();
-            ImGui::TableNextColumn();
-            ImGui::TextUnformatted("Blit Calls");
-            ImGui::TableNextColumn();
-            ImGui::Text("%u", CommandList->GetCommandListStats().NumBlitCommands);
-
-            ImGui::TableNextRow();
-            ImGui::TableNextColumn();
-            ImGui::TextUnformatted("Clear Calls");
-            ImGui::TableNextColumn();
-            ImGui::Text("%u", CommandList->GetCommandListStats().NumClearCommands);
-
-            ImGui::TableNextRow();
-            ImGui::TableNextColumn();
-            ImGui::TextUnformatted("Num Bindings");
-            ImGui::TableNextColumn();
-            ImGui::Text("%u", CommandList->GetCommandListStats().NumBindings);
-
-            ImGui::TableNextRow();
-            ImGui::TableNextColumn();
-            ImGui::TextUnformatted("Num Push Constants");
-            ImGui::TableNextColumn();
-            ImGui::Text("%u", CommandList->GetCommandListStats().NumPushConstants);
-            
-            ImGui::TableNextRow();
-            ImGui::TableNextColumn();
-            ImGui::TextUnformatted("Pipeline Barriers");
-            ImGui::TableNextColumn();
-            ImGui::Text("%u", CommandList->GetCommandListStats().NumBarriers);
-
-            ImGui::TableNextRow();
-            ImGui::TableNextColumn();
-            ImGui::TextUnformatted("Pipeline Switches");
-            ImGui::TableNextColumn();
-            ImGui::Text("%u", CommandList->GetCommandListStats().NumPipelineSwitches);
-            
-            
-            ImGui::EndTable();
     
-            ImGui::TextColored(ImVec4(1.0f, 0.5f, 0.8f, 1.0f), "Debug Visualization");
+            ImGui::Spacing();
+            ImGui::Spacing();
+    
+            ImGui::TextColored(ImVec4(0.6f, 1.0f, 0.6f, 1.0f), "Snap Settings");
             ImGui::Separator();
-
-            static const char* DebugLabels[] =
-            {
-                "None",
-                "Position",
-                "Normal",
-                "Albedo",
-                "SSAO",
-                "Ambient Occlusion",
-                "Roughness",
-                "Metallic",
-				"Specular",
-                "Depth",
-                "ShadowAtlas",
-            };
-
-            ERenderSceneDebugFlags DebugMode = SceneRenderer->GetDebugMode();
-            int DebugModeInt = static_cast<int>(DebugMode);
-            
-            ImGui::SetNextItemWidth(220);
-            if (ImGui::Combo("##DebugVis", &DebugModeInt, DebugLabels, IM_ARRAYSIZE(DebugLabels)))
-            {
-                SceneRenderer->SetDebugMode(static_cast<ERenderSceneDebugFlags>(DebugModeInt));
-            }
-
-            ImGui::TextColored(ImVec4(1.0f, 0.5f, 0.8f, 1.0f), "Render Options");
-            ImGui::Separator();
-
-            bool bDrawAABB = (bool)SceneRenderer->GetSceneRenderSettings().bDrawAABB;
-            if (ImGui::Checkbox("Show Bounding Boxes", &bDrawAABB))
-            {
-                SceneRenderer->GetSceneRenderSettings().bDrawAABB = bDrawAABB;
-            }
-            if (ImGui::IsItemHovered())
-            {
-                ImGui::SetTooltip("Visualize axis-aligned bounding boxes");
-            }
-
-            bool bUseInstancing = (bool)SceneRenderer->GetSceneRenderSettings().bUseInstancing;
-            if (ImGui::Checkbox("GPU Instancing", &bUseInstancing))
-            {
-                SceneRenderer->GetSceneRenderSettings().bUseInstancing = bUseInstancing;
-            }
-
-            bool bUseFrustumCull = (bool)SceneRenderer->GetSceneRenderSettings().bFrustumCull;
-            if (ImGui::Checkbox("Frustum Culling", &bUseFrustumCull))
-            {
-                SceneRenderer->GetSceneRenderSettings().bFrustumCull = bUseFrustumCull;
-            }
-
-            bool bUseOcclusionCull = (bool)SceneRenderer->GetSceneRenderSettings().bOcclusionCull;
-            if (ImGui::Checkbox("Occlusion Culling", &bUseOcclusionCull))
-            {
-                SceneRenderer->GetSceneRenderSettings().bOcclusionCull = bUseOcclusionCull;
-            }
+            ImGui::Spacing();
+    
+            ImGui::PushStyleColor(ImGuiCol_CheckMark, ImVec4(0.4f, 1.0f, 0.4f, 1.0f));
+            ImGui::Checkbox("Enable Snapping", &bSnapEnabled);
+            ImGui::PopStyleColor();
             
             if (ImGui::IsItemHovered())
             {
-                ImGui::SetTooltip("Enable hardware instancing for repeated meshes");
+                ImGui::SetTooltip("Toggle grid snapping (Hold Ctrl while transforming)");
             }
-
-            ImGui::PopStyleVar();
+    
+            ImGui::Spacing();
+    
+            ImGui::BeginDisabled(!bSnapEnabled);
+            
+            ImGui::PushStyleColor(ImGuiCol_FrameBg, ImVec4(0.2f, 0.22f, 0.25f, 1.0f));
+            ImGui::PushStyleColor(ImGuiCol_FrameBgHovered, ImVec4(0.25f, 0.27f, 0.3f, 1.0f));
+            ImGui::PushStyleColor(ImGuiCol_FrameBgActive, ImVec4(0.3f, 0.32f, 0.35f, 1.0f));
+    
+            switch (GuizmoOp)
+            {
+            case ImGuizmo::TRANSLATE:
+                ImGui::TextColored(ImVec4(0.8f, 0.8f, 0.8f, 1.0f), "Translation Snap");
+                ImGui::SetNextItemWidth(180);
+                ImGui::DragFloat("##TranslateSnap", &TranslateSnap, 0.1f, 0.01f, 100.0f, "%.2f units");
+                if (ImGui::IsItemHovered())
+                {
+                    ImGui::SetTooltip("Snap to grid increments when moving objects");
+                }
+                
+                // Quick preset buttons
+                ImGui::Spacing();
+                ImGui::Text("Quick Presets:");
+                ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(6, 3));
+                if (ImGui::Button("0.1")) TranslateSnap = 0.1f;
+                ImGui::SameLine();
+                if (ImGui::Button("0.5")) TranslateSnap = 0.5f;
+                ImGui::SameLine();
+                if (ImGui::Button("1.0")) TranslateSnap = 1.0f;
+                ImGui::SameLine();
+                if (ImGui::Button("5.0")) TranslateSnap = 5.0f;
+                ImGui::SameLine();
+                if (ImGui::Button("10")) TranslateSnap = 10.0f;
+                ImGui::PopStyleVar();
+                break;
+    
+            case ImGuizmo::ROTATE:
+                ImGui::TextColored(ImVec4(0.8f, 0.8f, 0.8f, 1.0f), "Rotation Snap");
+                ImGui::SetNextItemWidth(180);
+                ImGui::DragFloat("##RotateSnap", &RotateSnap, 1.0f, 1.0f, 180.0f, "%.1f degrees");
+                if (ImGui::IsItemHovered())
+                {
+                    ImGui::SetTooltip("Snap to angle increments when rotating objects");
+                }
+                
+                ImGui::Spacing();
+                ImGui::Text("Quick Presets:");
+                ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(6, 3));
+                if (ImGui::Button(LE_ICON_ANGLE_ACUTE " 1")) RotateSnap = 1.0f;
+                ImGui::SameLine();
+                if (ImGui::Button(LE_ICON_ANGLE_ACUTE " 5")) RotateSnap = 5.0f;
+                ImGui::SameLine();
+                if (ImGui::Button(LE_ICON_ANGLE_ACUTE " 15")) RotateSnap = 15.0f;
+                ImGui::SameLine();
+                if (ImGui::Button(LE_ICON_ANGLE_ACUTE " 45")) RotateSnap = 45.0f;
+                ImGui::SameLine();
+                if (ImGui::Button(LE_ICON_ANGLE_ACUTE " 90")) RotateSnap = 90.0f;
+                ImGui::PopStyleVar();
+                break;
+    
+            case ImGuizmo::SCALE:
+                ImGui::TextColored(ImVec4(0.8f, 0.8f, 0.8f, 1.0f), "Scale Snap");
+                ImGui::SetNextItemWidth(180);
+                ImGui::DragFloat("##ScaleSnap", &ScaleSnap, 0.01f, 0.01f, 10.0f, "%.2f");
+                if (ImGui::IsItemHovered())
+                {
+                    ImGui::SetTooltip("Snap to scale increments when scaling objects");
+                }
+                
+                ImGui::Spacing();
+                ImGui::Text("Quick Presets:");
+                ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(6, 3));
+                if (ImGui::Button("0.01")) ScaleSnap = 0.01f;
+                ImGui::SameLine();
+                if (ImGui::Button("0.1")) ScaleSnap = 0.1f;
+                ImGui::SameLine();
+                if (ImGui::Button("0.25")) ScaleSnap = 0.25f;
+                ImGui::SameLine();
+                if (ImGui::Button("0.5")) ScaleSnap = 0.5f;
+                ImGui::SameLine();
+                if (ImGui::Button("1.0")) ScaleSnap = 1.0f;
+                ImGui::PopStyleVar();
+                break;
+            }
+    
+            ImGui::PopStyleColor(3);
+            ImGui::EndDisabled();
+    
+            GuizmoSnapTranslate = TranslateSnap;
+            GuizmoSnapRotate = RotateSnap;
+            GuizmoSnapScale = ScaleSnap;
+            bGuizmoSnapEnabled = bSnapEnabled;
+    
+            ImGui::PopStyleVar(2);
             ImGui::EndMenu();
         }
     }
@@ -513,7 +486,6 @@ namespace Lumina
             }
         }
         
-    
         SCameraComponent& CameraComponent = World->GetEntityRegistry().get<SCameraComponent>(EditorEntity);
     
         glm::mat4 ViewMatrix = CameraComponent.GetViewMatrix();
@@ -529,7 +501,38 @@ namespace Lumina
             if (CameraComponent.GetViewVolume().GetFrustum().IsInside(SelectedTransformComponent.WorldTransform.Location))
             {
                 glm::mat4 EntityMatrix = SelectedTransformComponent.GetMatrix();
-                ImGuizmo::Manipulate(glm::value_ptr(ViewMatrix), glm::value_ptr(ProjectionMatrix), GuizmoOp, GuizmoMode, glm::value_ptr(EntityMatrix));
+
+                float* SnapValues = nullptr;
+                float SnapArray[3] = { 0.0f, 0.0f, 0.0f };
+
+                if (bGuizmoSnapEnabled)
+                {
+                    switch (GuizmoOp)
+                    {
+                    case ImGuizmo::TRANSLATE:
+                        SnapArray[0] = GuizmoSnapTranslate;
+                        SnapArray[1] = GuizmoSnapTranslate;
+                        SnapArray[2] = GuizmoSnapTranslate;
+                        SnapValues = SnapArray;
+                        break;
+
+                    case ImGuizmo::ROTATE:
+                        SnapArray[0] = GuizmoSnapRotate;
+                        SnapArray[1] = GuizmoSnapRotate;
+                        SnapArray[2] = GuizmoSnapRotate;
+                        SnapValues = SnapArray;
+                        break;
+
+                    case ImGuizmo::SCALE:
+                        SnapArray[0] = GuizmoSnapScale;
+                        SnapArray[1] = GuizmoSnapScale;
+                        SnapArray[2] = GuizmoSnapScale;
+                        SnapValues = SnapArray;
+                        break;
+                    }
+                }
+
+                ImGuizmo::Manipulate(glm::value_ptr(ViewMatrix), glm::value_ptr(ProjectionMatrix), GuizmoOp, GuizmoMode, glm::value_ptr(EntityMatrix), nullptr, SnapValues);
             
                 if (ImGuizmo::IsUsing())
                 {
@@ -677,7 +680,8 @@ namespace Lumina
                 ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.6f, 0.8f, 1.0f, 1.0f));
                 if (ImGui::MenuItem("Duplicate", "Ctrl+D"))
                 {
-                    // TODO: Implement duplication
+                    entt::entity To;
+                    CopyEntity(To, SelectedEntity);
                     ImGui::CloseCurrentPopup();
                 }
                 ImGui::PopStyleColor();
@@ -685,7 +689,8 @@ namespace Lumina
                 ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.8f, 0.8f, 0.6f, 1.0f));
                 if (ImGui::MenuItem("Copy", "Ctrl+C"))
                 {
-                    // TODO: Implement copy
+                    entt::entity To;
+                    CopyEntity(To, SelectedEntity);
                     ImGui::CloseCurrentPopup();
                 }
                 ImGui::PopStyleColor();
@@ -702,7 +707,7 @@ namespace Lumina
     void FWorldEditorTool::DrawViewportToolbar(const FUpdateContext& UpdateContext)
     {
         ImGui::SameLine();
-        constexpr float ButtonWidth = 120;
+        constexpr float ButtonWidth = 118;
         
         if (!IsAssetEditorTool() && !bSimulatingWorld)
         {
@@ -2136,7 +2141,7 @@ namespace Lumina
             {
                 if (Set.contains(SelectedEntity))
                 {
-                    entt::meta_type MetaType = entt::resolve(Set.type());
+                    entt::meta_type MetaType = entt::resolve(Set.info());
                     if (!MetaType)
                     {
                         continue;

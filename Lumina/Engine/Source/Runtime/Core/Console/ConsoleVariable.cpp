@@ -16,7 +16,7 @@ namespace Lumina
 
     void FConsoleRegistry::Register(FConsoleVariable&& Var)
     {
-        FStringView VarName = Var.Name;
+        FStringView VarName = Var.Name.data();
 
         LUM_ASSERT(ConsoleVariables.find(VarName) == ConsoleVariables.end())
 

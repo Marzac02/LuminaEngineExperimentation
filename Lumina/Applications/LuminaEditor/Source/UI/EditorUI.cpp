@@ -1202,7 +1202,6 @@ namespace Lumina
                 
                 ImGui::SameLine();
                 
-                // Right panel - Object details
                 ImGui::BeginChild("##ObjectDetails", ImVec2(0, 0), true);
                 {
                     if (!SelectedPackage.empty())

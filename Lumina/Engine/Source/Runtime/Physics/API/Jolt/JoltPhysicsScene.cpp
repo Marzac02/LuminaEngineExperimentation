@@ -498,16 +498,17 @@ namespace Lumina::Physics
         }
         
         JPH::Vec3 SurfaceNormal = Body->GetWorldSpaceSurfaceNormal(Hit.mSubShapeID2, Ray.GetPointOnRay(Hit.mFraction));
-
         
-        FRayResult Result;
-        Result.BodyID = Hit.mBodyID.GetIndexAndSequenceNumber();
-        Result.Entity = static_cast<uint32>(Body->GetUserData());
-        Result.Start = Start;
-        Result.End = End;
-        Result.Normal = glm::normalize(JoltUtils::FromJPHVec3(SurfaceNormal));
-        Result.Location = JoltUtils::FromJPHRVec3(Ray.GetPointOnRay(Hit.mFraction));
-        Result.Fraction = Hit.mFraction;
+        FRayResult Result
+        {
+            .BodyID = Hit.mBodyID.GetIndexAndSequenceNumber(),
+            .Entity = static_cast<uint32>(Body->GetUserData()),
+            .Start = Start,
+            .End = End,
+            .Location = glm::normalize(JoltUtils::FromJPHVec3(SurfaceNormal)),
+            .Normal = JoltUtils::FromJPHRVec3(Ray.GetPointOnRay(Hit.mFraction)),
+            .Fraction = Hit.mFraction
+        };
         
         return Result;
     }
@@ -518,7 +519,6 @@ namespace Lumina::Physics
         STransformComponent& TransformComponent = Registry.get<STransformComponent>(Entity);
 
         JPH::Ref<JPH::CharacterVirtualSettings> Settings = Memory::New<JPH::CharacterVirtualSettings>();
-        
         
         JPH::Ref<JPH::Shape> StandingShape = JPH::RotatedTranslatedShapeSettings(
             JPH::Vec3(0, CharacterComponent.HalfHeight, 0),

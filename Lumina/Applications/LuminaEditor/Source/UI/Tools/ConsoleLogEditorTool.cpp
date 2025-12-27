@@ -552,7 +552,7 @@ namespace Lumina
 
                 if (Value.has_value())
                 {
-                    AutoCompleteCandidates.emplace_back(FAutoCompleteCandidate(Name, Var.Hint, Value.value(), Score));
+                    AutoCompleteCandidates.emplace_back(Name, Var.Hint, Value.value(), Score);
                 }
             }
         }
@@ -732,14 +732,13 @@ namespace Lumina
         }
 
         FString LowerCandidate = FString(Candidate.data());
-        FString LowerInput = Input;
 
-        if (LowerCandidate.find(LowerInput) == 0)
+        if (LowerCandidate.find(Input) == 0)
         {
             return 1.0f;
         }
 
-        size_t Pos = LowerCandidate.find(LowerInput);
+        size_t Pos = LowerCandidate.find(Input);
         if (Pos != FString::npos)
         {
             return 0.7f - (float)Pos / (float)LowerCandidate.size() * 0.2f;
@@ -750,10 +749,10 @@ namespace Lumina
         
         for (size_t i = 0; i < Input.size() && CandidatePos < Candidate.size(); ++i)
         {
-            char InputChar = tolower(Input[i]);
+            char InputChar = std::tolower(Input[i]);
             while (CandidatePos < Candidate.size())
             {
-                if (tolower(Candidate[CandidatePos]) == InputChar)
+                if (std::tolower(Candidate[CandidatePos]) == InputChar)
                 {
                     MatchedChars++;
                     CandidatePos++;
@@ -765,7 +764,7 @@ namespace Lumina
 
         if (MatchedChars == Input.size())
         {
-            return 0.5f * (float)MatchedChars / (float)Candidate.size();
+            return 0.5f * static_cast<float>(MatchedChars) / static_cast<float>(Candidate.size());
         }
 
         return 0.0f;

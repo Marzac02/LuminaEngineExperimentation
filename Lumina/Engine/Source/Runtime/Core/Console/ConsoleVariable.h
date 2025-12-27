@@ -1,5 +1,6 @@
 ﻿#pragma once
 #include "Containers/Array.h"
+#include "Containers/Name.h"
 #include "Containers/String.h"
 #include "Core/Templates/LuminaTemplate.h"
 #include "Core/Templates/Optional.h"
