@@ -718,7 +718,7 @@ namespace Lumina
         {
             if (!bSimulatingWorld)
             {
-                if (ImGuiX::IconButton(LE_ICON_PLAY, "Play World", 4278255360, ImVec2(ButtonWidth, 0)))
+                if (ImGuiX::IconButton(LE_ICON_PLAY, "Play World", 4278255360, ImVec2(ButtonWidth - 6.0f, 0)))
                 {
                     OnGamePreviewStartRequested.Broadcast();
                 }
@@ -745,7 +745,7 @@ namespace Lumina
         }
         else
         {
-            if (ImGuiX::IconButton(LE_ICON_STOP, "Stop Playing", 4278190335, ImVec2(ButtonWidth, 0)))
+            if (ImGuiX::IconButton(LE_ICON_STOP, "Stop Playing", 4278190335, ImVec2(ButtonWidth - 2.0f, 0)))
             {
                 OnGamePreviewStopRequested.Broadcast();
             }

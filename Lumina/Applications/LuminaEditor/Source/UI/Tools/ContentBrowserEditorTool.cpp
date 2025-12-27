@@ -803,7 +803,7 @@ namespace Lumina
     {
         constexpr float Padding = 10.0f;
 
-        ImVec2 AdjustedSize = ImVec2(Size.x - 2 * Padding, Size.y - 2 * Padding);
+        ImVec2 AdjustedSize = ImVec2(Size.x - 2 * Padding, 0.0f);
 
         ImGui::SetCursorPos(ImGui::GetCursorPos() + ImVec2(Padding, Padding));
 
@@ -879,11 +879,6 @@ namespace Lumina
         }
 
         ImGui::EndHorizontal();
-
-        ImGuiTextFilter SearchFilter;
-        ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(4, 2));
-        SearchFilter.Draw("##Search", 450.0f);
-        ImGui::PopStyleVar();
 
         ImGui::Separator();
         
