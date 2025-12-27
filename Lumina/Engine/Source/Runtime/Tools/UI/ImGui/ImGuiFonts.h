@@ -7,13 +7,6 @@
 
 namespace Lumina::ImGuiX::Font
 {
-
-#define ROBOTO_LIGHT   "Roboto-Light"
-#define ROBOTO_MEDDIUM "Roboto-Medium"
-#define ROBOTO_BOLD    "Roboto-Bold"
-#define ROBOTO_ITALIC  "Roboto-Italic"
-
-
     enum class EFont : uint8
     {
         Tiny,
@@ -38,12 +31,5 @@ namespace Lumina::ImGuiX::Font
     }
 
     LUMINA_API FORCEINLINE void PopFont() { ImGui::PopFont(); }
-
-    LUMINA_API FORCEINLINE void PushFontAndColor(EFont font, ImColor& color)
-    {
-        ImGui::PushFont(GFonts[(int8) font] );
-        //ImGui::PushStyleColor(ImGuiCol_Text, color);
-    }
-    
 }
 

@@ -8,9 +8,6 @@
 
 #include "Renderer/RenderGraph/RenderGraph.h"
 #include "TaskSystem/TaskSystem.h"
-#include "Tools/UI/Fonts/FontData_Lexend.h"
-#include "Tools/UI/Fonts/FontData_MaterialDesign.h"
-#include "Tools/UI/Fonts/FontDecompressor.h"
 #include "Tools/UI/Notification/ImGuiNotifications.h"
 
 #include <imgui.h>
@@ -41,61 +38,53 @@ namespace Lumina
         ImGuiContext* Context = ImGui::CreateContext();
         ImPlot::CreateContext();
     	ImGuizmo::SetImGuiContext(Context);
-    	
-        ImGuiIO& io = ImGui::GetIO();
+		
+		FString FontFile_Regular = Paths::GetEngineFontDirectory() + "/Lexend/Lexend-Regular.ttf";
+		FString FontFile_Bold = Paths::GetEngineFontDirectory() + "/Lexend/Lexend-Bold.ttf";
 
-    	TVector<uint8> FontData, BoldFontData;
-
-    	Fonts::GetDecompressedFontData(Fonts::Lexend::Regular::GetData(), FontData);
-		Fonts::GetDecompressedFontData(Fonts::Lexend::Bold::GetData(), BoldFontData);	
-
+		FString IconFontFile = Paths::GetEngineFontDirectory() + "/materialdesignicons-webfont.ttf";
 		constexpr ImWchar IconRanges[] = { LE_ICONRANGE_MIN, LE_ICONRANGE_MAX, 0 };
-    	//TVector<uint8> IconFontData;
-		
-		FString IconFontFile = Paths::GetEngineFontDirectory() + "materialdesignicons-webfont.ttf";
-		
-    	//Fonts::GetDecompressedFontData(Fonts::MaterialDesignIcons::GetData(), IconFontData);
 
-    	ImFontConfig fontConfig;
-    	fontConfig.FontDataOwnedByAtlas = false;
+    	ImFontConfig FontConfig;
+    	FontConfig.FontDataOwnedByAtlas = false;
 
-    	ImFontConfig iconFontConfig;
-    	iconFontConfig.FontDataOwnedByAtlas = false;
-    	iconFontConfig.FontLoaderFlags = ImGuiFreeTypeLoaderFlags_LoadColor | ImGuiFreeTypeLoaderFlags_Bitmap;
-    	iconFontConfig.MergeMode = true;
-    	iconFontConfig.PixelSnapH = true;
-    	iconFontConfig.RasterizerMultiply = 1.5f;
+    	ImFontConfig IconFontConfig;
+    	IconFontConfig.FontDataOwnedByAtlas = false;
+    	IconFontConfig.FontLoaderFlags = ImGuiFreeTypeLoaderFlags_LoadColor | ImGuiFreeTypeLoaderFlags_Bitmap;
+    	IconFontConfig.MergeMode = true;
+    	IconFontConfig.PixelSnapH = true;
+    	IconFontConfig.RasterizerMultiply = 1.5f;
 
-    	
-    	auto CreateFontFromMemory = [&] (TVector<uint8>& InFontData, float fontSize, float iconFontSize, ImGuiX::Font::EFont fontID, char const* pName, ImVec2 const& glyphOffset )
+		ImGuiIO& io = ImGui::GetIO();
+    	auto CreateFontFromFile = [&] (FStringView Path, float FontSize, float IconFontSize, ImGuiX::Font::EFont FontID, const ImVec2& GlyphOffset)
     	{
-    		ImFont* pFont = io.Fonts->AddFontFromMemoryTTF( InFontData.data(), static_cast<int32>(InFontData.size()), fontSize, &fontConfig);
-		    ImGuiX::Font::GFonts[static_cast<uint8>(fontID)] = pFont;
+    		ImFont* pFont = io.Fonts->AddFontFromFileTTF(Path.data(), FontSize, &FontConfig);
+		    ImGuiX::Font::GFonts[static_cast<uint8>(FontID)] = pFont;
 
-    		iconFontConfig.GlyphOffset = glyphOffset;
-    		iconFontConfig.GlyphMinAdvanceX = iconFontSize;
-    		io.Fonts->AddFontFromFileTTF(IconFontFile.c_str(), iconFontSize, &iconFontConfig, IconRanges);
-    		//io.Fonts->AddFontFromMemoryTTF( iconFontData.data(), static_cast<int32>(iconFontData.size()), iconFontSize, &iconFontConfig, icons_ranges);
+    		IconFontConfig.GlyphOffset = GlyphOffset;
+    		IconFontConfig.GlyphMinAdvanceX = IconFontSize;
+    		io.Fonts->AddFontFromFileTTF(IconFontFile.c_str(), IconFontSize, &IconFontConfig, IconRanges);
     	};
+		
 
     	constexpr float DPIScale = 1.0f;
-    	float const size12 = std::floor( 12 * DPIScale );
-    	float const size14 = std::floor( 14 * DPIScale );
-    	float const size16 = std::floor( 16 * DPIScale );
-    	float const size18 = std::floor( 18 * DPIScale );
-    	float const size24 = std::floor( 24 * DPIScale );
+    	const float size12 = std::floor(12 * DPIScale);
+    	const float size14 = std::floor(14 * DPIScale);
+    	const float size16 = std::floor(16 * DPIScale);
+    	const float size18 = std::floor(18 * DPIScale);
+    	const float size24 = std::floor(24 * DPIScale);
     	
-    	CreateFontFromMemory(FontData, size12, size14, ImGuiX::Font::EFont::Tiny, "Tiny", ImVec2( 0, 2 ) );
-    	CreateFontFromMemory(BoldFontData, size12, size14, ImGuiX::Font::EFont::TinyBold, "Tiny Bold", ImVec2( 0, 2 ) );
+    	CreateFontFromFile(FontFile_Regular, size12, size14, ImGuiX::Font::EFont::Tiny, ImVec2(0, 2));
+    	CreateFontFromFile(FontFile_Bold, size12, size14, ImGuiX::Font::EFont::TinyBold, ImVec2(0, 2));
 
-    	CreateFontFromMemory(FontData, size14, size16, ImGuiX::Font::EFont::Small, "Small", ImVec2( 0, 2 ) );
-    	CreateFontFromMemory(BoldFontData, size14, size16, ImGuiX::Font::EFont::SmallBold, "Small Bold", ImVec2( 0, 2 ) );
+    	CreateFontFromFile(FontFile_Regular, size14, size16, ImGuiX::Font::EFont::Small, ImVec2(0, 2));
+    	CreateFontFromFile(FontFile_Bold, size14, size16, ImGuiX::Font::EFont::SmallBold, ImVec2(0, 2));
 
-    	CreateFontFromMemory(FontData, size16, size18, ImGuiX::Font::EFont::Medium, "Medium", ImVec2( 0, 2 ) );
-    	CreateFontFromMemory(BoldFontData, size16, size18, ImGuiX::Font::EFont::MediumBold, "Medium Bold", ImVec2( 0, 2 ) );
+    	CreateFontFromFile(FontFile_Regular, size16, size18, ImGuiX::Font::EFont::Medium, ImVec2( 0, 2 ) );
+    	CreateFontFromFile(FontFile_Bold, size16, size18, ImGuiX::Font::EFont::MediumBold, ImVec2( 0, 2 ) );
 
-    	CreateFontFromMemory(FontData, size24, size24, ImGuiX::Font::EFont::Large, "Large", ImVec2( 0, 2 ) );
-    	CreateFontFromMemory(BoldFontData, size24, size24, ImGuiX::Font::EFont::LargeBold, "Large Bold", ImVec2( 0, 2 ) );
+    	CreateFontFromFile(FontFile_Regular, size24, size24, ImGuiX::Font::EFont::Large, ImVec2( 0, 2 ) );
+    	CreateFontFromFile(FontFile_Bold, size24, size24, ImGuiX::Font::EFont::LargeBold, ImVec2( 0, 2 ) );
 
     	io.Fonts->TexMinWidth = 4096;
 
