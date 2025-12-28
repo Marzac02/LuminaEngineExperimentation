@@ -74,34 +74,34 @@ namespace Lumina
     void FEditorUI::Initialize(const FUpdateContext& UpdateContext)
     {
         PropertyCustomizationRegistry = Memory::New<FPropertyCustomizationRegistry>();
-        PropertyCustomizationRegistry->RegisterPropertyCustomization(TBaseStructure<glm::vec2>::Get()->GetName(), [this]()
+        PropertyCustomizationRegistry->RegisterPropertyCustomization(TBaseStructure<glm::vec2>::Get()->GetName(), []()
         {
             return FVec2PropertyCustomization::MakeInstance();
         });
-        PropertyCustomizationRegistry->RegisterPropertyCustomization(TBaseStructure<glm::vec3>::Get()->GetName(), [this]()
+        PropertyCustomizationRegistry->RegisterPropertyCustomization(TBaseStructure<glm::vec3>::Get()->GetName(), []()
         {
             return FVec3PropertyCustomization::MakeInstance();
         });
-        PropertyCustomizationRegistry->RegisterPropertyCustomization(TBaseStructure<glm::vec4>::Get()->GetName(), [this]()
+        PropertyCustomizationRegistry->RegisterPropertyCustomization(TBaseStructure<glm::vec4>::Get()->GetName(), []()
         {
             return FVec4PropertyCustomization::MakeInstance();
         });
-        PropertyCustomizationRegistry->RegisterPropertyCustomization(TBaseStructure<glm::quat>::Get()->GetName(), [this]()
+        PropertyCustomizationRegistry->RegisterPropertyCustomization(TBaseStructure<glm::quat>::Get()->GetName(), []()
         {
             return FVec3PropertyCustomization::MakeInstance();
         });
-        PropertyCustomizationRegistry->RegisterPropertyCustomization(TBaseStructure<FTransform>::Get()->GetName(), [this]()
+        PropertyCustomizationRegistry->RegisterPropertyCustomization(TBaseStructure<FTransform>::Get()->GetName(), []()
         {
             return FTransformPropertyCustomization::MakeInstance();
         });
         
         
-        EditorWindowClass.ClassId = ImHashStr("EditorWindowClass");
-        EditorWindowClass.DockingAllowUnclassed = false;
-        EditorWindowClass.ViewportFlagsOverrideSet = ImGuiViewportFlags_NoAutoMerge;
-        EditorWindowClass.ViewportFlagsOverrideClear = ImGuiViewportFlags_NoTaskBarIcon;
-        EditorWindowClass.ParentViewportId = 0; // Top level window
-        EditorWindowClass.DockingAlwaysTabBar = true;
+        EditorWindowClass.ClassId                       = ImHashStr("EditorWindowClass");
+        EditorWindowClass.DockingAllowUnclassed         = false;
+        EditorWindowClass.ViewportFlagsOverrideSet      = ImGuiViewportFlags_NoAutoMerge;
+        EditorWindowClass.ViewportFlagsOverrideClear    = ImGuiViewportFlags_NoTaskBarIcon;
+        EditorWindowClass.ParentViewportId              = 0; // Top level window
+        EditorWindowClass.DockingAlwaysTabBar           = true;
 
         CWorld* TemporaryWorld = NewObject<CWorld>(OF_Transient);
         WorldEditorTool = CreateTool<FWorldEditorTool>(this, TemporaryWorld);
@@ -137,7 +137,6 @@ namespace Lumina
             // Pops internally.
             DestroyTool(UpdateContext, EditorTools[0]);
         }
-
         
         WorldEditorTool = nullptr;
         ConsoleLogTool = nullptr;
@@ -577,7 +576,7 @@ namespace Lumina
         {
             return;
         }
-
+        
         auto Itr = ActiveAssetTools.find(Asset);
         if (Itr != ActiveAssetTools.end())
         {
@@ -664,7 +663,7 @@ namespace Lumina
 
         ContiguousStringArrayBuilder namePairsBuilder;
 
-        for (FEditorTool::FToolWindow* Window : SourceTool->GetToolWindows())
+        for (auto& Window : SourceTool->ToolWindows)
         {
             const FFixedString sourceToolWindowName = FEditorTool::GetToolWindowName(Window->Name.c_str(), sourceToolID);
             const FFixedString destinationToolWindowName = FEditorTool::GetToolWindowName(Window->Name.c_str(), destinationToolID);
@@ -877,7 +876,7 @@ namespace Lumina
         if (Tool->IsSingleWindowTool())
         {
             Assert(Tool->ToolWindows.size() == 1)
-            Tool->ToolWindows[0]->DrawFunction(UpdateContext, bIsLastFocusedTool);
+            Tool->ToolWindows[0]->DrawFunction(bIsLastFocusedTool);
         }
         else
         {
@@ -889,7 +888,7 @@ namespace Lumina
 
         if (!Tool->IsSingleWindowTool())
         {
-            for (FEditorTool::FToolWindow* Window : Tool->ToolWindows)
+            for (auto& Window : Tool->ToolWindows)
             {
                 LUMINA_PROFILE_SECTION("Setup and Draw Tool Window");
 
@@ -919,8 +918,6 @@ namespace Lumina
 
                     constexpr ImGuiWindowFlags ViewportWindowFlags = ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse | ImGuiWindowFlags_NoNavInputs | ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoNavFocus;
                     ImGui::SetNextWindowClass(&Tool->ToolWindowsClass);
-
-                    //-- Setup viewport for scene.
                     
                     ImGui::SetNextWindowSizeConstraints(ImVec2(128, 128), ImVec2(FLT_MAX, FLT_MAX));
                     ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
@@ -962,7 +959,7 @@ namespace Lumina
                     if (DrawToolWindow)
                     {
                         const bool bToolWindowFocused = ImGui::IsWindowFocused(ImGuiFocusedFlags_ChildWindows | ImGuiFocusedFlags_DockHierarchy);
-                        Window->DrawFunction(UpdateContext, bToolWindowFocused);
+                        Window->DrawFunction(bToolWindowFocused);
                     }
                     
                     ImGui::End();

@@ -164,7 +164,7 @@ namespace Lumina::Physics
 
     void FJoltDebugRenderer::DrawLine(JPH::RVec3Arg inFrom, JPH::RVec3Arg inTo, JPH::ColorArg inColor)
     {
-        World->DrawDebugLine(JoltUtils::FromJPHVec3(inFrom), JoltUtils::FromJPHVec3(inTo), glm::vec4(inColor.r, inColor.g, inColor.b, inColor.a));
+        World->DrawLine(JoltUtils::FromJPHVec3(inFrom), JoltUtils::FromJPHVec3(inTo), glm::vec4(inColor.r, inColor.g, inColor.b, inColor.a));
     }
 
     void FJoltDebugRenderer::DrawBodies(JPH::PhysicsSystem* System, CWorld* InWorld)

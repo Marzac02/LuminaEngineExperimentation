@@ -410,7 +410,7 @@ namespace Lumina
 
         {
             LUMINA_PROFILE_SECTION("vkWaitSemaphores");
-            // Wwait for the command list to catch up.
+            // Wait for the command list to catch up.
             VkResult Result = vkWaitSemaphores(Device->GetDevice(), &WaitInfo, Timeout);
             VK_CHECK(Result);
             return (Result == VK_SUCCESS);

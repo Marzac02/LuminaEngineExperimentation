@@ -74,17 +74,17 @@ namespace Lumina
 
         ResetPass(RenderGraph);
         CompileDrawCommands(RenderGraph);
-        CullPass(RenderGraph, SceneViewport->GetViewVolume());
-        DepthPrePass(RenderGraph, SceneViewport->GetViewVolume());
+        CullPass(RenderGraph);
+        DepthPrePass(RenderGraph);
         DepthPyramidPass(RenderGraph);
-        ClusterBuildPass(RenderGraph, SceneViewport->GetViewVolume());
-        LightCullPass(RenderGraph, SceneViewport->GetViewVolume());
+        ClusterBuildPass(RenderGraph);
+        LightCullPass(RenderGraph);
         PointShadowPass(RenderGraph);
         SpotShadowPass(RenderGraph);
         DirectionalShowPass(RenderGraph);
         EnvironmentPass(RenderGraph);
-        BasePass(RenderGraph, SceneViewport->GetViewVolume());
-        TransparentPass(RenderGraph, SceneViewport->GetViewVolume());
+        BasePass(RenderGraph);
+        TransparentPass(RenderGraph);
         BatchedLineDraw(RenderGraph);
         ToneMappingPass(RenderGraph);
         DebugDrawPass(RenderGraph);
@@ -235,11 +235,51 @@ namespace Lumina
             auto Group = World->GetEntityRegistry().group<FLineBatcherComponent>();
             Group.each([&](FLineBatcherComponent& LineBatcherComponent)
             {
-                SimpleVertices.resize(LineBatcherComponent.Vertices.size());
-                Memory::Memcpy(SimpleVertices.data(), LineBatcherComponent.Vertices.data(), LineBatcherComponent.Vertices.size() * sizeof(FSimpleElementVertex));
-
-                LineBatcherComponent.Vertices.clear();
-				LineBatcherComponent.Vertices.shrink_to_fit();
+                for (int32 i = static_cast<int32>(LineBatcherComponent.Lines.size()) - 1; i >= 0; --i)
+                {
+                    FLineBatcherComponent::FLineInstance& Line = LineBatcherComponent.Lines[i];
+        
+                    if (Line.RemainingLifetime < 0.0f)
+                    {
+                        continue;
+                    }
+        
+                    Line.RemainingLifetime -= SceneGlobalData.DeltaTime;
+        
+                    if (Line.RemainingLifetime <= 0.0f)
+                    {
+                        uint32 VertexIndex = Line.StartVertexIndex;
+        
+                        LineBatcherComponent.Vertices.erase(
+                            LineBatcherComponent.Vertices.begin() + VertexIndex, 
+                            LineBatcherComponent.Vertices.begin() + VertexIndex + 2
+                        );
+        
+                        for (int32 j = i + 1; j < LineBatcherComponent.Lines.size(); ++j)
+                        {
+                            LineBatcherComponent.Lines[j].StartVertexIndex -= 2;
+                        }
+        
+                        LineBatcherComponent.Lines.erase(LineBatcherComponent.Lines.begin() + i);
+                    }
+                }
+        
+                if (!LineBatcherComponent.Vertices.empty())
+                {
+                    SimpleVertices.resize(LineBatcherComponent.Vertices.size());
+                    Memory::Memcpy(SimpleVertices.data(), 
+                                  LineBatcherComponent.Vertices.data(), 
+                                  LineBatcherComponent.Vertices.size() * sizeof(FSimpleElementVertex));
+                }
+        
+                // Optional: Shrink if too much wasted space
+                constexpr size_t MaxWastedSpace = 1024;
+                if (LineBatcherComponent.Vertices.capacity() > MaxWastedSpace && 
+                    LineBatcherComponent.Vertices.size() < LineBatcherComponent.Vertices.capacity() / 4)
+                {
+                    LineBatcherComponent.Vertices.shrink_to_fit();
+                    LineBatcherComponent.Lines.shrink_to_fit();
+                }
             });
         }
         
@@ -563,7 +603,7 @@ namespace Lumina
         }
     }
 
-    void FForwardRenderScene::CullPass(FRenderGraph& RenderGraph, const FViewVolume& View)
+    void FForwardRenderScene::CullPass(FRenderGraph& RenderGraph)
     {
         if (DrawCommands.empty())
         {
@@ -584,12 +624,12 @@ namespace Lumina
             FRHIComputePipelineRef Pipeline = GRenderContext->CreateComputePipeline(PipelineDesc);
 
             FCullData CullData;
-            CullData.Frustum        = View.GetFrustum();
-            CullData.ViewMatrix     = View.GetViewMatrix();
-            CullData.P00            = View.GetProjectionMatrix()[0][0];
-            CullData.P11            = View.GetProjectionMatrix()[1][1];
-            CullData.zNear          = View.GetNear();
-            CullData.zFar           = View.GetFar();
+            CullData.Frustum        = SceneViewport->GetViewVolume().GetFrustum();
+            CullData.ViewMatrix     = SceneViewport->GetViewVolume().GetViewMatrix();
+            CullData.P00            = SceneViewport->GetViewVolume().GetProjectionMatrix()[0][0];
+            CullData.P11            = SceneViewport->GetViewVolume().GetProjectionMatrix()[1][1];
+            CullData.zNear          = SceneViewport->GetViewVolume().GetNear();
+            CullData.zFar           = SceneViewport->GetViewVolume().GetFar();
             CullData.InstanceNum    = (uint32)InstanceData.size();
             CullData.bFrustumCull   = RenderSettings.bFrustumCull;
             CullData.bOcclusionCull = RenderSettings.bOcclusionCull;
@@ -611,7 +651,7 @@ namespace Lumina
         });
     }
 
-    void FForwardRenderScene::DepthPrePass(FRenderGraph& RenderGraph, const FViewVolume& View)
+    void FForwardRenderScene::DepthPrePass(FRenderGraph& RenderGraph)
     {
         if (DrawCommands.empty())
         {
@@ -742,7 +782,7 @@ namespace Lumina
         });
     }
 
-    void FForwardRenderScene::ClusterBuildPass(FRenderGraph& RenderGraph, const FViewVolume& View)
+    void FForwardRenderScene::ClusterBuildPass(FRenderGraph& RenderGraph)
     {
 		if (LightData.NumLights == 0)
         {
@@ -768,8 +808,8 @@ namespace Lumina
             CmdList.SetComputeState(State);
 
             FLightClusterPC ClusterPC;
-            ClusterPC.InverseProjection = View.GetInverseProjectionMatrix();
-            ClusterPC.zNearFar = glm::vec2(View.GetNear(), View.GetFar());
+            ClusterPC.InverseProjection = SceneViewport->GetViewVolume().GetInverseProjectionMatrix();
+            ClusterPC.zNearFar = glm::vec2(SceneViewport->GetViewVolume().GetNear(), SceneViewport->GetViewVolume().GetFar());
             ClusterPC.GridSize = glm::vec4(ClusterGridSizeX, ClusterGridSizeY, ClusterGridSizeZ, 0.0f);
             ClusterPC.ScreenSize = glm::vec2(HDRRenderTarget->GetSizeX(), HDRRenderTarget->GetSizeY());
                 
@@ -780,7 +820,7 @@ namespace Lumina
         });
     }
 
-    void FForwardRenderScene::LightCullPass(FRenderGraph& RenderGraph, const FViewVolume& View)
+    void FForwardRenderScene::LightCullPass(FRenderGraph& RenderGraph)
     {
         if (LightData.NumLights == 0)
         {
@@ -805,7 +845,7 @@ namespace Lumina
             State.AddBindingSet(LightCullSet);
             CmdList.SetComputeState(State);
                 
-            glm::mat4 ViewProj = View.GetViewMatrix();
+            glm::mat4 ViewProj = SceneViewport->GetViewVolume().GetViewMatrix();
                 
             CmdList.SetPushConstants(&ViewProj, sizeof(glm::mat4));
                 
@@ -1093,7 +1133,7 @@ namespace Lumina
         });
     }
 
-    void FForwardRenderScene::BasePass(FRenderGraph& RenderGraph, const FViewVolume& View)
+    void FForwardRenderScene::BasePass(FRenderGraph& RenderGraph)
     {
         if (DrawCommands.empty() || !CVarRenderBasePass)
         {
@@ -1170,7 +1210,7 @@ namespace Lumina
         });
     }
 
-    void FForwardRenderScene::TransparentPass(FRenderGraph& RenderGraph, const FViewVolume& View)
+    void FForwardRenderScene::TransparentPass(FRenderGraph& RenderGraph)
     {
         
     }

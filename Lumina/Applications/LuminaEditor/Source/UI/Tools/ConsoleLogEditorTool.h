@@ -134,7 +134,7 @@ namespace Lumina
         void OnInitialize() override;
         void OnDeinitialize(const FUpdateContext& UpdateContext) override;
         void DrawToolMenu(const FUpdateContext& UpdateContext) override;
-        void DrawLogWindow(const FUpdateContext& UpdateContext, bool bIsFocused);
+        void DrawLogWindow(bool bIsFocused);
 
     private:
         void ProcessCommand(const FString& Command);

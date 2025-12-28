@@ -35,6 +35,7 @@ namespace Lumina
         
         FEditorUI();
         ~FEditorUI() override;
+        LE_NO_COPYMOVE(FEditorUI);
 
         // Begin IEventHandler
         bool OnEvent(FEvent& Event) override;

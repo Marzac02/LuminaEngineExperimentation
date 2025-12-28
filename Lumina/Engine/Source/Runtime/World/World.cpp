@@ -58,6 +58,8 @@ namespace Lumina
     {
         GEngine->GetEngineSubsystem<FWorldManager>()->AddWorld(this);
 
+        EntityRegistry.ctx().emplace<entt::dispatcher&>(SingletonDispatcher);
+        
         SingletonEntity = EntityRegistry.create();
         EntityRegistry.emplace<FSingletonEntityTag>(SingletonEntity);
         EntityRegistry.emplace<FHideInSceneOutliner>(SingletonEntity);
@@ -72,7 +74,6 @@ namespace Lumina
         EntityRegistry.ctx().emplace<Physics::IPhysicsScene*>(PhysicsScene.get());
         EntityRegistry.ctx().emplace<FCameraManager*>(CameraManager.get());
         EntityRegistry.ctx().emplace<IRenderScene*>(RenderScene.get());
-        EntityRegistry.ctx().emplace<entt::dispatcher&>(SingletonDispatcher);
 
         RenderScene->Init();
         
@@ -461,48 +462,12 @@ namespace Lumina
         });
     }
 
-    void CWorld::DrawDebugLine(const glm::vec3& Start, const glm::vec3& End, const glm::vec4& Color, float Thickness, float Duration)
+    void CWorld::DrawLine(const glm::vec3& Start, const glm::vec3& End, const glm::vec4& Color, float Thickness, float Duration)
     {
         FLineBatcherComponent& Batcher = GetOrCreateLineBatcher();
         Batcher.DrawLine(Start, End, Color, Thickness, Duration);
     }
-
-    void CWorld::DrawDebugBox(const glm::vec3& Center, const glm::vec3& Extents, const glm::quat& Rotation, const glm::vec4& Color, float Thickness, float Duration)
-    {
-        FLineBatcherComponent& Batcher = GetOrCreateLineBatcher();
-        Batcher.DrawBox(Center, Extents, Rotation, Color, Thickness, Duration);
-    }
-
-    void CWorld::DrawDebugSphere(const glm::vec3& Center, float Radius, const glm::vec4& Color, uint8 Segments, float Thickness, float Duration)
-    {
-        FLineBatcherComponent& Batcher = GetOrCreateLineBatcher();
-        Batcher.DrawSphere(Center, Radius, Color, Segments, Thickness, Duration);
-    }
-
-    void CWorld::DrawDebugCone(const glm::vec3& Apex, const glm::vec3& Direction, float AngleRadians, float Length, const glm::vec4& Color, uint8 Segments, uint8 Stacks, float Thickness, float Duration)
-    {
-        FLineBatcherComponent& Batcher = GetOrCreateLineBatcher();
-        Batcher.DrawCone(Apex, Direction, AngleRadians, Length, Color, Segments, Stacks, Thickness, Duration);
-    }
-
-    void CWorld::DrawFrustum(const glm::mat4& Matrix, float zNear, float zFar, const glm::vec4& Color, float Thickness, float Duration)
-    {
-        FLineBatcherComponent& Batcher = GetOrCreateLineBatcher();
-        Batcher.DrawFrustum(Matrix, zNear, zFar, Color, Thickness, Duration);
-    }
-
-    void CWorld::DrawArrow(const glm::vec3& Start, const glm::vec3& Direction, float Length, const glm::vec4& Color, float Thickness, float Duration, float HeadSize)
-    {
-        FLineBatcherComponent& Batcher = GetOrCreateLineBatcher();
-        Batcher.DrawArrow(Start, Direction, Length, Color, Thickness, Duration, HeadSize);
-    }
-
-    void CWorld::DrawViewVolume(const FViewVolume& ViewVolume, const glm::vec4& Color, float Thickness, float Duration)
-    {
-        FLineBatcherComponent& Batcher = GetOrCreateLineBatcher();
-        Batcher.DrawViewVolume(ViewVolume, Color, Thickness, Duration);
-    }
-
+    
     TOptional<FRayResult> CWorld::CastRay(const FRayCastSettings& Settings)
     {
         LUMINA_PROFILE_SCOPE();
@@ -519,27 +484,28 @@ namespace Lumina
             if (Result.has_value())
             {
                 FRayResult RayResult = Result.value();
-                DrawDebugLine(Settings.Start, RayResult.Location, FColor(Settings.DebugMissColor));
+                DrawLine(Settings.Start, RayResult.Location, FColor(Settings.DebugMissColor), 1.0f, Settings.DebugDuration);
                 
                 glm::vec3 NormalEnd = RayResult.Location + RayResult.Normal * 0.5f;
-                DrawDebugLine(RayResult.Location, NormalEnd, FColor::Blue);
+                DrawLine(RayResult.Location, NormalEnd, FColor::Blue, 1.0f, Settings.DebugDuration);
                 
-                DrawDebugBox(RayResult.Location, glm::vec3(0.05f), glm::quat(1.0f, 0.0f, 0.0f, 0.0f), FColor::Yellow);
+                DrawBox(RayResult.Location, glm::vec3(0.05f), glm::quat(1.0f, 0.0f, 0.0f, 0.0f), FColor::Yellow, 1.0, Settings.DebugDuration);
                 
-                DrawDebugLine(RayResult.Location, Settings.End, FColor(Settings.DebugHitColor));
+                DrawLine(RayResult.Location, Settings.End, FColor(Settings.DebugHitColor), 1.0f, Settings.DebugDuration);
             }
             else
             {
-                DrawDebugLine(Settings.Start, Settings.End, FColor(Settings.DebugMissColor));
+                DrawLine(Settings.Start, Settings.End, FColor(Settings.DebugMissColor), 1.0f, Settings.DebugDuration);
             }
         }
         
         return Result;
     }
 
-    TOptional<FRayResult> CWorld::CastRay(const glm::vec3& Start, const glm::vec3& End, bool bDrawDebug, uint32 LayerMask, int64 IgnoreBody)
+    TOptional<FRayResult> CWorld::CastRay(const glm::vec3& Start, const glm::vec3& End, bool bDrawDebug, float DebugDuration, uint32 LayerMask, int64 IgnoreBody)
     {
         FRayCastSettings Settings;
+        Settings.DebugDuration = DebugDuration;
         Settings.Start = Start;
         Settings.End = End;
         Settings.LayerMask = LayerMask;

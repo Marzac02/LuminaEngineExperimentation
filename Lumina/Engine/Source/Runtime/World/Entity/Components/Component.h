@@ -129,13 +129,13 @@ namespace Lumina
         }
 
         template <typename TEvent>
-        void TriggerEvent_Lua(entt::dispatcher& Dispatcher, const sol::table& Event) 
+        void TriggerEvent_Lua(entt::dispatcher& Dispatcher, const sol::object& Event) 
         {
             Dispatcher.trigger(Event.as<TEvent>());
         }
         
         template <typename TEvent>
-        void EnqueueEvent_Lua(entt::dispatcher& Dispatcher, const sol::table& Event) 
+        void EnqueueEvent_Lua(entt::dispatcher& Dispatcher, const sol::object& Event) 
         {
             Dispatcher.enqueue(Event.as<TEvent>());
         }
@@ -184,15 +184,22 @@ static inline ::Lumina::Meta::TComponentAutoRegister<Type> DeferredAutoRegisterI
     
 namespace Lumina::ECS
 {
-    NODISCARD inline entt::id_type GetTypeID(const sol::table& Table)
+    NODISCARD inline entt::id_type GetTypeID(const sol::table& Data)
     {
-        const auto F = Table["__type"].get<sol::function>();
-        LUM_ASSERT(F.valid() && "__type not exposed to lua!")
-
-        auto Name = F().get<const char*>();
+        auto Name = Data["__type"].get<const char*>();
+        LUM_ASSERT(Name != nullptr)
+    
         return entt::hashed_string(Name);
     }
-
+    
+    NODISCARD inline entt::id_type GetTypeID(const sol::userdata& Data)
+    {
+        auto Name = Data["__type"].get<const char*>();
+        LUM_ASSERT(Name != nullptr)
+    
+        return entt::hashed_string(Name);
+    }
+    
     NODISCARD inline entt::id_type GetTypeID(FStringView Name)
     {
         return entt::hashed_string(Name.data());
@@ -203,9 +210,10 @@ namespace Lumina::ECS
     {
         switch (Obj.get_type())
         {
-            case sol::type::number: return Obj.template as<entt::id_type>();
-            case sol::type::table:  return GetTypeID(Obj);
-            case sol::type::string: return GetTypeID(Obj.template as<const char*>());
+            case sol::type::number:     return Obj.template as<entt::id_type>();
+            case sol::type::table:      return GetTypeID(Obj.template as<sol::table>());
+            case sol::type::userdata:   return GetTypeID(Obj.template as<sol::userdata>());
+            case sol::type::string:     return GetTypeID(Obj.template as<const char*>());
         }
 
         LUMINA_NO_ENTRY()

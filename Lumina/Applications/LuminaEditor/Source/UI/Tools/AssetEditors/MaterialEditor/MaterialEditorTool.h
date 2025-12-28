@@ -36,9 +36,9 @@ namespace Lumina
         bool ShouldGenerateThumbnailOnLoad() const override { return true; }
         void OnAssetLoadFinished() override;
         void DrawToolMenu(const FUpdateContext& UpdateContext) override;
-        void DrawMaterialGraph(const FUpdateContext& UpdateContext);
-        void DrawMaterialProperties(const FUpdateContext& UpdateContext);
-        void DrawGLSLPreview(const FUpdateContext& UpdateContext);
+        void DrawMaterialGraph();
+        void DrawMaterialProperties();
+        void DrawGLSLPreview();
 
         void Compile();
         void OnSave() override;

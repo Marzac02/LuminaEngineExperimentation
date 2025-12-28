@@ -1,6 +1,8 @@
 #include "pch.h"
 #include "Scripting.h"
 
+#include <glm/gtx/string_cast.hpp>
+
 #include "Core/Math/Color.h"
 #include "Events/KeyCodes.h"
 #include "Input/InputProcessor.h"
@@ -217,8 +219,9 @@ namespace Lumina::Scripting
             ),
             sol::meta_function::unary_minus, [](const glm::vec2& a){ return -a; },
             sol::meta_function::equal_to, [](const glm::vec2& a, const glm::vec2& b){ return a == b; },
-            sol::meta_function::to_string, [](const glm::vec2& v){ 
-                return "vec2(" + std::to_string(v.x) + ", " + std::to_string(v.y) + ")"; 
+            sol::meta_function::to_string, [](const glm::vec2& v)
+            { 
+                return glm::to_string(v);
             },
             
             "Length", [](const glm::vec2& v){ return glm::length(v); },
@@ -254,8 +257,9 @@ namespace Lumina::Scripting
             ),
             sol::meta_function::unary_minus, [](const glm::vec3& a){ return -a; },
             sol::meta_function::equal_to, [](const glm::vec3& a, const glm::vec3& b){ return a == b; },
-            sol::meta_function::to_string, [](const glm::vec3& v){ 
-                return "vec3(" + std::to_string(v.x) + ", " + std::to_string(v.y) + ", " + std::to_string(v.z) + ")"; 
+            sol::meta_function::to_string, [](const glm::vec3& v)
+            { 
+                return glm::to_string(v);
             },
             
             "Length", [](const glm::vec3& v){ return glm::length(v); },
@@ -295,8 +299,9 @@ namespace Lumina::Scripting
             ),
             sol::meta_function::unary_minus, [](const glm::vec4& a){ return -a; },
             sol::meta_function::equal_to, [](const glm::vec4& a, const glm::vec4& b){ return a == b; },
-            sol::meta_function::to_string, [](const glm::vec4& v){ 
-                return "vec4(" + std::to_string(v.x) + ", " + std::to_string(v.y) + ", " + std::to_string(v.z) + ", " + std::to_string(v.w) + ")"; 
+            sol::meta_function::to_string, [](const glm::vec4& v)
+            {
+                return glm::to_string(v);
             },
             
             "Length", [](const glm::vec4& v){ return glm::length(v); },
@@ -326,8 +331,8 @@ namespace Lumina::Scripting
             ),
             sol::meta_function::equal_to, [](const glm::quat& a, const glm::quat& b){ return a == b; },
             sol::meta_function::to_string, [](const glm::quat& q)
-            { 
-                return "quat(" + std::to_string(q.w) + ", " + std::to_string(q.x) + ", " + std::to_string(q.y) + ", " + std::to_string(q.z) + ")"; 
+            {
+                return glm::to_string(q);
             },
             
             "Length", [](const glm::quat& q){ return glm::length(q); },
@@ -356,43 +361,44 @@ namespace Lumina::Scripting
 
     void FScriptingContext::SetupInput()
     {
-        State.set_function("print", [&](const sol::variadic_args& args)
+        State.set_function("print", [&](sol::this_state s, const sol::variadic_args& args)
         {
-            FString Output;
-            
+            sol::state_view lua(s);
+            sol::protected_function LuaStringFunc = lua["tostring"];
+    
+            FFixedString Output;
+    
             for (size_t i = 0; i < args.size(); ++i)
             {
                 sol::object Obj = args[i];
-                
-                // Convert each argument to string
-                if (Obj.is<const char*>())
+        
+                sol::protected_function_result Result = LuaStringFunc(Obj);
+        
+                if (Result.valid())
                 {
-                    Output += Obj.as<const char*>();
-                }
-                else if (Obj.is<double>())
-                {
-                    Output += eastl::to_string(Obj.as<double>());
-                }
-                else if (Obj.is<int>())
-                {
-                    Output += eastl::to_string(Obj.as<int>());
-                }
-                else if (Obj.is<bool>())
-                {
-                    Output += Obj.as<bool>() ? "true" : "false";
+                    if (sol::optional<const char*> str = Result)
+                    {
+                        Output += *str;
+                    }
+                    else
+                    {
+                        Output += "[tostring error]";
+                    }
                 }
                 else
                 {
-                    sol::optional<FString> Str = State["tostring"](Obj);
-                    Output += Str.has_value() ? Str->c_str() : "[unknown type]";
+                    sol::error err = Result;
+                    Output += "[error: ";
+                    Output += err.what();
+                    Output += "]";
                 }
-                
+        
                 if (i < args.size() - 1)
                 {
                     Output += "\t";
                 }
             }
-            
+    
             LOG_INFO("[Lua] {}", Output);
         });
 

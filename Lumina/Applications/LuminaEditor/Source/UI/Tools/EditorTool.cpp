@@ -2,11 +2,13 @@
 #include "EditorTool.h"
 #include "imgui_internal.h"
 #include "ToolFlags.h"
+#include "Core/Functional/FunctionRef.h"
 #include "EASTL/sort.h"
 #include "Tools/UI/ImGui/ImGuiX.h"
 #include "World/WorldManager.h"
 #include "World/Entity/Components/CameraComponent.h"
 #include "World/Entity/Components/EditorComponent.h"
+#include "World/Entity/Components/InputComponent.h"
 #include "World/Entity/Components/VelocityComponent.h"
 #include "World/Entity/Systems/EditorEntityMovementSystem.h"
 
@@ -49,10 +51,7 @@ namespace Lumina
     {
         OnDeinitialize(UpdateContext);
         
-        for (FToolWindow* Window : ToolWindows)
-        {
-            Memory::Delete(Window);
-        }
+        ToolWindows.clear();
         
         if (HasWorld())
         {
@@ -92,6 +91,7 @@ namespace Lumina
     {
         EditorEntity = World->ConstructEntity("Editor Entity");
         World->GetEntityRegistry().emplace<SCameraComponent>(EditorEntity);
+        World->GetEntityRegistry().emplace<SInputComponent>(EditorEntity);
         World->GetEntityRegistry().emplace<FHideInSceneOutliner>(EditorEntity);
         World->GetEntityRegistry().emplace<FEditorComponent>(EditorEntity);
         World->GetEntityRegistry().emplace<SVelocityComponent>(EditorEntity).Speed = 50.0f;
@@ -120,23 +120,22 @@ namespace Lumina
         {
             OnUndo();
         }
-        ImGuiX::ItemTooltip( "Undo" );
+        ImGuiX::ItemTooltip("Undo");
 
         //-------------------------------------------------------------------------
-
         
         if (ImGui::MenuItem(LE_ICON_REDO_VARIANT"##Redo"))
         {
             
         }
-        ImGuiX::ItemTooltip( "Redo" );
+        ImGuiX::ItemTooltip("Redo");
         ImGui::EndDisabled();
 
         if (ImGui::BeginMenu(LE_ICON_HELP_CIRCLE_OUTLINE" Help"))
         {
-            if (ImGui::BeginTable( "HelpTable", 2 ))
+            if (ImGui::BeginTable("HelpTable", 2))
             {
-                DrawHelpMenu(UpdateContext);
+                DrawHelpMenu();
                 ImGui::EndTable();
             }
             ImGui::EndMenu();
@@ -240,38 +239,33 @@ namespace Lumina
 
     void FEditorTool::Internal_CreateViewportTool()
     {
-        FToolWindow* Tool = Internal_CreateToolWindow(ViewportWindowName, nullptr);
+        FToolWindow* Tool = CreateToolWindow(ViewportWindowName, nullptr);
         Tool->bViewport = true;
     }
 
-    FEditorTool::FToolWindow* FEditorTool::Internal_CreateToolWindow(const FString& InName, const TFunction<void(const FUpdateContext&, bool)>& DrawFunction, const ImVec2& WindowPadding, bool DisableScrolling)
+    FEditorTool::FToolWindow* FEditorTool::CreateToolWindow(FName InName, const TFunction<void(bool)>& DrawFunction, const ImVec2& WindowPadding, bool DisableScrolling)
     {
-        for (FToolWindow* Window : ToolWindows)
+        LUM_ASSERT(eastl::none_of(ToolWindows.begin(), ToolWindows.end(), [&](const TUniquePtr<FToolWindow>& W)
         {
-            Assert(Window->Name != InName)
-        }
-
-        auto pToolWindow = ToolWindows.emplace_back(Memory::New<FToolWindow>(InName, DrawFunction, WindowPadding, DisableScrolling));
-        eastl::sort(ToolWindows.begin(), ToolWindows.end(), [] (const FToolWindow* pLHS, const FToolWindow* pRHS)
-        {
-            return pLHS->Name < pRHS->Name;
-        });
+            return W->Name == InName;
+        }))
         
-        return pToolWindow;
+        auto ToolWindow = MakeUniquePtr<FToolWindow>(InName, DrawFunction, WindowPadding, DisableScrolling); 
+        return ToolWindows.emplace_back(Move(ToolWindow)).get();
     }
     
-    void FEditorTool::DrawHelpTextRow(const char* pLabel, const char* pText) const
+    void FEditorTool::DrawHelpTextRow(const char* Label, const char* Text) const
     {
         ImGui::TableNextRow();
 
         ImGui::TableNextColumn();
         {
-            ImGui::Text(pLabel);
+            ImGui::TextUnformatted(Label);
         }
 
         ImGui::TableNextColumn();
         {
-            ImGui::Text(pText);
+            ImGui::TextUnformatted(Text);
         }
     }
 }

@@ -23,6 +23,5 @@ namespace Lumina
 
         PROPERTY(Script, Editable)
         bool bUseControllerRotation = false;
-        
     };
 }

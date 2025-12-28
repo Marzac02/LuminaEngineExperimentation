@@ -307,7 +307,10 @@ namespace Lumina::Reflection::Visitor
         {
         case(CXCursor_CXXBaseSpecifier):
             {
-                Type->Parent = CursorName;
+                if (Type->Parent.empty())
+                {
+                    Type->Parent = CursorName;
+                }
             }
             break;
         case(CXCursor_FieldDecl):

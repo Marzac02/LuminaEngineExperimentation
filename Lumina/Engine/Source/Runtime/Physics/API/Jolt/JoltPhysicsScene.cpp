@@ -25,6 +25,7 @@
 #include "World/Entity/Components/DirtyComponent.h"
 #include "World/Entity/Components/TransformComponent.h"
 #include "world/entity/components/velocitycomponent.h"
+#include "World/Entity/Events/ImpulseEvent.h"
 
 using namespace JPH::literals;
 
@@ -126,6 +127,8 @@ namespace Lumina::Physics
 
         JPH::PhysicsSettings JoltSettings;
         JoltSystem->SetPhysicsSettings(JoltSettings);
+        
+        World->GetEntityRegistry().ctx().get<entt::dispatcher&>().sink<SImpulseEvent>().connect<&FJoltPhysicsScene::OnImpulseEvent>(this);
         
     }
 
@@ -501,13 +504,13 @@ namespace Lumina::Physics
         
         FRayResult Result
         {
-            .BodyID = Hit.mBodyID.GetIndexAndSequenceNumber(),
-            .Entity = static_cast<uint32>(Body->GetUserData()),
-            .Start = Start,
-            .End = End,
-            .Location = glm::normalize(JoltUtils::FromJPHVec3(SurfaceNormal)),
-            .Normal = JoltUtils::FromJPHRVec3(Ray.GetPointOnRay(Hit.mFraction)),
-            .Fraction = Hit.mFraction
+            .BodyID     = Hit.mBodyID.GetIndexAndSequenceNumber(),
+            .Entity     = static_cast<uint32>(Body->GetUserData()),
+            .Start      = Start,
+            .End        = End,
+            .Location   = JoltUtils::FromJPHRVec3(Ray.GetPointOnRay(Hit.mFraction)),
+            .Normal     = glm::normalize(JoltUtils::FromJPHVec3(SurfaceNormal)),
+            .Fraction   = Hit.mFraction
         };
         
         return Result;
@@ -613,5 +616,14 @@ namespace Lumina::Physics
 
     void FJoltPhysicsScene::OnColliderComponentRemoved(entt::registry& Registry, entt::entity EntityID)
     {
+    }
+
+    void FJoltPhysicsScene::OnImpulseEvent(const SImpulseEvent& Impulse)
+    {
+        JPH::BodyInterface& Interface = JoltSystem->GetBodyInterface();
+        JPH::BodyID BodyID = JPH::BodyID(Impulse.BodyID);
+
+        Interface.AddImpulse(BodyID, JoltUtils::ToJPHRVec3(Impulse.Impulse));
+        LOG_INFO("IMPULSE");
     }
 }

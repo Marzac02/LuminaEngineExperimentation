@@ -23,7 +23,7 @@ namespace Lumina
 
 void FMeshEditorTool::OnInitialize()
 {
-    CreateToolWindow(MeshPropertiesName, [this](const FUpdateContext& Cxt, bool bFocused)
+    CreateToolWindow(MeshPropertiesName, [&](bool bFocused)
     {
         CStaticMesh* StaticMesh = Cast<CStaticMesh>(Asset.Get());
         if (!StaticMesh)
@@ -199,7 +199,7 @@ void FMeshEditorTool::OnInitialize()
 
             FAABB AABB = StaticMeshComponent.StaticMesh->GetAABB().ToWorld(Transform.GetMatrix());
             
-            World->DrawDebugBox(AABB.GetCenter(), AABB.GetSize() * 0.5f, glm::quat(1, 0, 0, 0), FColor::Green);
+            World->DrawBox(AABB.GetCenter(), AABB.GetSize() * 0.5f, glm::quat(1, 0, 0, 0), FColor::Green);
         }
     }
 

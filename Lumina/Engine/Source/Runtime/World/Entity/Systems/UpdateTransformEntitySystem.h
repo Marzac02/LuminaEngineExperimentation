@@ -9,7 +9,7 @@ namespace Lumina
     class LUMINA_API CUpdateTransformEntitySystem : public CEntitySystem
     {
         GENERATED_BODY()
-        ENTITY_SYSTEM(RequiresUpdate(EUpdateStage::PostPhysics, EUpdatePriority::High), RequiresUpdate(EUpdateStage::Paused))
+        ENTITY_SYSTEM(RequiresUpdate(EUpdateStage::PostPhysics, EUpdatePriority::Highest), RequiresUpdate(EUpdateStage::Paused))
     public:
 
         

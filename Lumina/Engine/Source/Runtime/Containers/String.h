@@ -285,7 +285,22 @@ namespace std
         template <typename FormatContext>
         auto format(const Lumina::FString& str, FormatContext& ctx) const
         {
-            return std::format_to(ctx.out(), "{}", str.data());
+            return std::format_to(ctx.out(), "{}", str.c_str());
+        }
+    };
+    
+    template <>
+    struct formatter<Lumina::FFixedString>
+    {
+        constexpr auto parse(std::format_parse_context& ctx)
+        {
+            return ctx.begin();
+        }
+
+        template <typename FormatContext>
+        auto format(const Lumina::FFixedString& str, FormatContext& ctx) const
+        {
+            return std::format_to(ctx.out(), "{}", str.c_str());
         }
     };
 

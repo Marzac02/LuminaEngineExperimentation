@@ -438,6 +438,7 @@ namespace Lumina::Reflection
             
             Stream += "\t State.new_usertype<" + Type->Namespace + "::" + Type->DisplayName + ">(\"" + Type->DisplayName + "\",\n";
 
+            Stream += "\t\tsol::call_constructor, sol::constructors<" + Type->Namespace + "::" + Type->DisplayName + "()>(),\n"; 
             Stream += "\t\t\"__type\", sol::readonly_property([]() { return \"" + Type->DisplayName + "\"; })";
 
             if (!Type->Props.empty() || !Type->Functions.empty())

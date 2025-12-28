@@ -116,18 +116,18 @@ namespace Lumina
         template<typename PropertyType>
         PropertyType* GetProperty(const FName& Name)
         {
-            return (PropertyType*)GetProperty(Name);
+            return static_cast<PropertyType*>(GetProperty(Name));
         }
 
         template<typename PropertyType, typename TFunc>
-        requires eastl::is_base_of_v<FProperty, PropertyType>
+        requires (eastl::is_base_of_v<FProperty, PropertyType> && eastl::is_invocable_v<TFunc, PropertyType*>)
         void ForEachProperty(TFunc&& Func)
         {
-            PropertyType* Current = (PropertyType*)LinkedProperty;
+            PropertyType* Current = static_cast<PropertyType*>(LinkedProperty);
             while (Current != nullptr)
             {
-                eastl::forward<TFunc>(Func)(Current);
-                Current = (PropertyType*)Current->Next;
+                eastl::invoke(Func, Current);
+                Current = static_cast<PropertyType*>(Current->Next);
             }
         }
         

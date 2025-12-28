@@ -198,8 +198,8 @@ namespace Lumina
         
         void PushRenameModal(FContentBrowserTileViewItem* ContentItem);
         
-        void DrawDirectoryBrowser(const FUpdateContext& Context, bool bIsFocused, ImVec2 Size);
-        void DrawContentBrowser(const FUpdateContext& Context, bool bIsFocused, ImVec2 Size);
+        void DrawDirectoryBrowser(bool bIsFocused, ImVec2 Size);
+        void DrawContentBrowser(bool bIsFocused, ImVec2 Size);
 
         void DrawDirectoryContextMenu(FContentBrowserTileViewItem* ContentItem);
         void DrawLuaScriptContextMenu(FContentBrowserTileViewItem* ContentItem);

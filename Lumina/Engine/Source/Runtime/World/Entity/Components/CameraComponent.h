@@ -4,8 +4,6 @@
 #include "Scripting/Lua/Scripting.h"
 #include "Renderer/ViewVolume.h"
 #include "Core/Object/Class.h"
-#include "World/Entity/Registry/EntityRegistry.h"
-#include "EntityComponentRegistry.h"
 #include "CameraComponent.generated.h"
 
 
@@ -43,12 +41,18 @@ namespace Lumina
 
         float GetFOV() const { return ViewVolume.GetFOV(); }
         float GetAspectRatio() const { return ViewVolume.GetAspectRatio(); }
-        const glm::vec3& GetPosition() const { return ViewVolume.GetViewPosition(); }
         const glm::mat4& GetViewMatrix() const { return ViewVolume.GetViewMatrix(); }
         const glm::mat4& GetProjectionMatrix() const { return ViewVolume.GetProjectionMatrix(); }
         const glm::mat4& GetViewProjectionMatrix() const { return ViewVolume.GetViewProjectionMatrix(); }
         const FViewVolume& GetViewVolume() const { return ViewVolume; }
+        
+        FUNCTION(Script)
+        const glm::vec3& GetPosition() const { return ViewVolume.GetViewPosition(); }
+        
+        FUNCTION(Script)
         const glm::vec3& GetForwardVector() const { return ViewVolume.GetForwardVector(); }
+        
+        FUNCTION(Script)
         const glm::vec3& GetRightVector() const { return ViewVolume.GetRightVector(); }
 
         PROPERTY(Editable, Category = "Camera")

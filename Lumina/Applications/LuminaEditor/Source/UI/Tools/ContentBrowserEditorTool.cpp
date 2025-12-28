@@ -90,16 +90,16 @@ namespace Lumina
             }
         }
         
-        CreateToolWindow("Content", [this] (const FUpdateContext& Contxt, bool bIsFocused)
+        CreateToolWindow("Content", [&] (bool bIsFocused)
         {
             float Left = 200.0f;
             float Right = ImGui::GetContentRegionAvail().x - Left;
             
-            DrawDirectoryBrowser(Contxt, bIsFocused, ImVec2(Left, 0));
+            DrawDirectoryBrowser(bIsFocused, ImVec2(Left, 0));
             
             ImGui::SameLine();
 
-            DrawContentBrowser(Contxt, bIsFocused, ImVec2(Right, 0));
+            DrawContentBrowser(bIsFocused, ImVec2(Right, 0));
         });
         
         ContentBrowserTileViewContext.DragDropFunction = [this] (FTileViewItem* DropItem)
@@ -790,7 +790,7 @@ namespace Lumina
         });
     }
 
-    void FContentBrowserEditorTool::DrawDirectoryBrowser(const FUpdateContext& Context, bool bIsFocused, ImVec2 Size)
+    void FContentBrowserEditorTool::DrawDirectoryBrowser(bool bIsFocused, ImVec2 Size)
     {
         ImGui::BeginChild("Directories", Size);
 
@@ -799,7 +799,7 @@ namespace Lumina
         ImGui::EndChild();
     }
 
-    void FContentBrowserEditorTool::DrawContentBrowser(const FUpdateContext& Context, bool bIsFocused, ImVec2 Size)
+    void FContentBrowserEditorTool::DrawContentBrowser(bool bIsFocused, ImVec2 Size)
     {
         constexpr float Padding = 10.0f;
 

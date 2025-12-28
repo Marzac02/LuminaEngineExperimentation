@@ -132,7 +132,7 @@ namespace Lumina
         LUMINA_API void DeactivateBody(uint32 BodyID);
         LUMINA_API void ChangeBodyMotionType(uint32 BodyID, EBodyType NewType);
         
-        LUMINA_API TOptional<FRayResult> CastRay(const glm::vec3& Start, const glm::vec3& End, bool bDrawDebug = false, uint32 LayerMask = 0xFFFFFFFF, int64 IgnoreBody = -1) const;
+        LUMINA_API TOptional<FRayResult> CastRay(const glm::vec3& Start, const glm::vec3& End, bool bDrawDebug = false, float DebugDuration = 0.0f, uint32 LayerMask = 0xFFFFFFFF, int64 IgnoreBody = -1) const;
 
         LUMINA_API STransformComponent& GetEntityTransform(entt::entity Entity) const;
         
@@ -165,7 +165,7 @@ namespace Lumina
         
     private:
         
-        void Lua_TriggerEvent(const sol::object& Event);
+        void Lua_DispatchEvent(const sol::object& Event);
         entt::meta_any Lua_ConnectEvent(const sol::object& Event, const sol::function& Listener);
         bool Lua_HasAllOf(entt::entity Entity, const sol::variadic_args& Args);
         bool Lua_HasAnyOf(entt::entity Entity, const sol::variadic_args& Args);

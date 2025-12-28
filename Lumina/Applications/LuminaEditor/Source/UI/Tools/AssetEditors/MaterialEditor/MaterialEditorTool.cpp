@@ -40,19 +40,19 @@ namespace Lumina
     {
         FAssetEditorTool::OnInitialize();
         
-        CreateToolWindow(MaterialGraphName, [this](const FUpdateContext& Cxt, bool bFocused)
+        CreateToolWindow(MaterialGraphName, [&](bool bFocused)
         {
-            DrawMaterialGraph(Cxt);
+            DrawMaterialGraph();
         });
 
-        CreateToolWindow(MaterialPropertiesName, [this](const FUpdateContext& Cxt, bool bFocused)
+        CreateToolWindow(MaterialPropertiesName, [&](bool bFocused)
         {
-            DrawMaterialProperties(Cxt);
+            DrawMaterialProperties();
         });
 
-        CreateToolWindow(GLSLPreviewName, [this](const FUpdateContext& Cxt, bool bFocused)
+        CreateToolWindow(GLSLPreviewName, [&](bool bFocused)
         {
-            DrawGLSLPreview(Cxt);
+            DrawGLSLPreview();
         });
 
         FString GraphName = "AssetMaterialGraph";
@@ -181,17 +181,17 @@ namespace Lumina
         }
     }
 
-    void FMaterialEditorTool::DrawMaterialGraph(const FUpdateContext& UpdateContext)
+    void FMaterialEditorTool::DrawMaterialGraph()
     {
         NodeGraph->DrawGraph();
     }
 
-    void FMaterialEditorTool::DrawMaterialProperties(const FUpdateContext& UpdateContext)
+    void FMaterialEditorTool::DrawMaterialProperties()
     {
         GetPropertyTable()->DrawTree();
     }
     
-    void FMaterialEditorTool::DrawGLSLPreview(const FUpdateContext& UpdateContext)
+    void FMaterialEditorTool::DrawGLSLPreview()
     {
         ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(12, 12));
         ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(8, 8));

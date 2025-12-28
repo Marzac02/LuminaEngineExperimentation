@@ -12,7 +12,7 @@ namespace Lumina
 
     void FArchetypeEditorTool::OnInitialize()
     {
-        CreateToolWindow(ArchetypePropertiesName, [this](const FUpdateContext& Cxt, bool bFocused)
+        CreateToolWindow(ArchetypePropertiesName, [&](bool bFocused)
         {
            ImGui::TextUnformatted("Thingy"); 
         });

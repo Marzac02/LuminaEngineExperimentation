@@ -41,19 +41,19 @@ namespace Lumina
 
     void FWorldEditorTool::OnInitialize()
     {
-        CreateToolWindow("Outliner", [this] (const FUpdateContext& Context, bool bisFocused)
+        CreateToolWindow("Outliner", [&] (bool bFocused)
         {
-            DrawOutliner(Context, bisFocused);
+            DrawOutliner(bFocused);
         });
 
-        CreateToolWindow(SystemOutlinerName, [this] (const FUpdateContext& Context, bool bisFocused)
+        CreateToolWindow(SystemOutlinerName, [&] (bool bFocused)
         {
             if (World->IsSimulating())
             {
                 ImGui::BeginDisabled();
             }
             
-            DrawSystems(Context, bisFocused);
+            DrawSystems(bFocused);
 
             if (World->IsSimulating())
             {
@@ -61,14 +61,14 @@ namespace Lumina
             }
         });
         
-        CreateToolWindow("Details", [this] (const FUpdateContext& Context, bool bisFocused)
+        CreateToolWindow("Details", [&] (bool bFocused)
         {
             if (World->IsSimulating())
             {
                 ImGui::BeginDisabled();
             }
             
-            DrawObjectEditor(Context, bisFocused);
+            DrawObjectEditor(bFocused);
 
             if (World->IsSimulating())
             {
@@ -255,6 +255,12 @@ namespace Lumina
         if (ImGui::BeginMenu(LE_ICON_CAMERA_CONTROL" Camera"))
         {
             ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(8, 4));
+            
+            if (ImGui::Button("Reset Transform", ImVec2(ImGui::GetContentRegionAvail().x, 24)))
+            {
+                World->GetEntityRegistry().get<STransformComponent>(EditorEntity).SetTransform(FTransform{});
+                World->GetEntityRegistry().emplace_or_replace<FNeedsTransformUpdate>(EditorEntity);
+            }
             
             ImGui::TextColored(ImVec4(0.7f, 0.9f, 1.0f, 1.0f), "Movement Settings");
             ImGui::Separator();
@@ -1405,7 +1411,7 @@ namespace Lumina
         }
     }
 
-    void FWorldEditorTool::DrawOutliner(const FUpdateContext& UpdateContext, bool bFocused)
+    void FWorldEditorTool::DrawOutliner(bool bFocused)
     {
         const ImGuiStyle& Style = ImGui::GetStyle();
         const float AvailWidth = ImGui::GetContentRegionAvail().x;
@@ -1539,7 +1545,7 @@ namespace Lumina
         
     }
 
-    void FWorldEditorTool::DrawSystems(const FUpdateContext& UpdateContext, bool bFocused)
+    void FWorldEditorTool::DrawSystems(bool bFocused)
     {
         const ImGuiStyle& Style = ImGui::GetStyle();
         const float AvailWidth = ImGui::GetContentRegionAvail().x;
@@ -2098,7 +2104,7 @@ namespace Lumina
         ImGui::EndGroup();
     }
 
-    void FWorldEditorTool::DrawObjectEditor(const FUpdateContext& UpdateContext, bool bFocused)
+    void FWorldEditorTool::DrawObjectEditor(bool bFocused)
     {
         ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(12.0f, 12.0f));
         ImGui::PushStyleColor(ImGuiCol_ChildBg, ImVec4(0.08f, 0.08f, 0.1f, 1.0f));
@@ -2124,7 +2130,7 @@ namespace Lumina
         ImGui::PopStyleVar();
     }
 
-    void FWorldEditorTool::DrawPropertyEditor(const FUpdateContext& UpdateContext, bool bFocused)
+    void FWorldEditorTool::DrawPropertyEditor(bool bFocused)
     {
         
     }

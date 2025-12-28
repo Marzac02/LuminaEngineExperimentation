@@ -11,8 +11,9 @@
 #include "Entity/Systems/SystemContext.h"
 #include "Scene/RenderScene/RenderScene.h"
 #include "Subsystems/FCameraManager.h"
-#include "World.generated.h"
 #include "Physics/Ray/RayCast.h"
+#include "Renderer/PrimitiveDrawInterface.h"
+#include "World.generated.h"
 
 
 namespace Lumina
@@ -25,7 +26,7 @@ namespace Lumina
 namespace Lumina
 {
     REFLECT()
-    class LUMINA_API CWorld : public CObject
+    class LUMINA_API CWorld : public CObject, public IPrimitiveDrawInterface
     {
         GENERATED_BODY()
         
@@ -121,17 +122,11 @@ namespace Lumina
         void ProcessAnyNewlyLoadedScripts();
 
         //~ Begin Debug Drawing
-        void DrawDebugLine(const glm::vec3& Start, const glm::vec3& End, const glm::vec4& Color, float Thickness = 1.0f, float Duration = 1.0f);
-        void DrawDebugBox(const glm::vec3& Center, const glm::vec3& Extents, const glm::quat& Rotation, const glm::vec4& Color, float Thickness = 1.0f, float Duration = 1.0f);
-        void DrawDebugSphere(const glm::vec3& Center, float Radius, const glm::vec4& Color, uint8 Segments = 16, float Thickness = 1.0f, float Duration = 1.0f);
-        void DrawDebugCone(const glm::vec3& Apex, const glm::vec3& Direction, float AngleRadians, float Length, const glm::vec4& Color, uint8 Segments = 16, uint8 Stacks = 4, float Thickness = 1.0f, float Duration = 1.0f);
-        void DrawFrustum(const glm::mat4& Matrix, float zNear, float zFar, const glm::vec4& Color, float Thickness = 1.0f, float Duration = 1.0f);
-        void DrawArrow(const glm::vec3& Start, const glm::vec3& Direction, float Length, const glm::vec4& Color, float Thickness = 1.0f, float Duration = 1.0f, float HeadSize = 0.2f);
-        void DrawViewVolume(const FViewVolume& ViewVolume, const glm::vec4& Color, float Thickness = 1.0f, float Duration = 1.0f);
+        void DrawLine(const glm::vec3& Start, const glm::vec3& End, const glm::vec4& Color, float Thickness = 1.0f, float Duration = 1.0f) override;
         //~ End Debug Drawing
         
         TOptional<FRayResult> CastRay(const FRayCastSettings& Settings);
-        TOptional<FRayResult> CastRay(const glm::vec3& Start, const glm::vec3& End, bool bDrawDebug = false, uint32 LayerMask = 0xFFFFFFFF, int64 IgnoreBody = -1);
+        TOptional<FRayResult> CastRay(const glm::vec3& Start, const glm::vec3& End, bool bDrawDebug = false, float DebugDuration = 0.0f, uint32 LayerMask = 0xFFFFFFFF, int64 IgnoreBody = -1);
         
 
         void SetIsPlayWorld(bool bValue) { bIsPlayWorld = bValue; }

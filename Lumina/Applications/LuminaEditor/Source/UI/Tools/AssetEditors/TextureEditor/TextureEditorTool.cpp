@@ -17,7 +17,7 @@ namespace Lumina
 
     void FTextureEditorTool::OnInitialize()
     {
-        CreateToolWindow(TexturePreviewName, [this](const FUpdateContext& Cxt, bool bFocused)
+        CreateToolWindow(TexturePreviewName, [&](bool bFocused)
         {
             CTexture* Texture = Cast<CTexture>(Asset.Get());
             if (!Texture || Texture->TextureResource == nullptr)
@@ -25,8 +25,8 @@ namespace Lumina
                 return;
             }
 
-            FRenderManager* RenderManager = Cxt.GetSubsystem<FRenderManager>();
-            ImTextureID TextureID = RenderManager->GetImGuiRenderer()->GetOrCreateImTexture(Texture->TextureResource->RHIImage, FTextureSubresourceSet(CurrentMipLevel, 1, 0, 1));
+            FRenderManager& RenderManager = GetEngineSystem<FRenderManager>();
+            ImTextureID TextureID = RenderManager.GetImGuiRenderer()->GetOrCreateImTexture(Texture->TextureResource->RHIImage, FTextureSubresourceSet(CurrentMipLevel, 1, 0, 1));
 
             const FRHIImageDesc& ImageDesc = Texture->TextureResource->ImageDescription;
             ImVec2 WindowSize = ImGui::GetContentRegionAvail();
@@ -161,7 +161,7 @@ namespace Lumina
             ImGui::PopStyleColor();
         });
     
-        CreateToolWindow(TexturePropertiesName, [this](const FUpdateContext& Cxt, bool bFocused)
+        CreateToolWindow(TexturePropertiesName, [&](bool bFocused)
         {
             CTexture* Texture = Cast<CTexture>(Asset.Get());
             if (!Texture)

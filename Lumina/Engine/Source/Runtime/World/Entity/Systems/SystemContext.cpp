@@ -41,6 +41,7 @@ namespace Lumina
             "AllOf",                &FSystemContext::Lua_HasAllOf,
             "AnyOf",                &FSystemContext::Lua_HasAnyOf,
             "ConnectEvent",         &FSystemContext::Lua_ConnectEvent,
+            "DispatchEvent",        &FSystemContext::Lua_DispatchEvent,
             "Emplace",              &FSystemContext::Lua_Emplace,
             "Get",                  &FSystemContext::Lua_Get,
             "SetActiveCamera",      &FSystemContext::Lua_SetActiveCamera,
@@ -64,19 +65,19 @@ namespace Lumina
                 }),
                 
             "CastRay",              sol::overload(
-                [&](FSystemContext& Self, const glm::vec3& Start, const glm::vec3& End, bool bDrawDebug)
+                [&](FSystemContext& Self, const glm::vec3& Start, const glm::vec3& End, bool bDrawDebug, float DebugDuration)
                 {
-                    TOptional<FRayResult> Result = Self.CastRay(Start, End, bDrawDebug);
+                    TOptional<FRayResult> Result = Self.CastRay(Start, End, bDrawDebug, DebugDuration);
                     return Result.has_value() ? sol::make_optional(Result.value()) : sol::nullopt;
                 },
                 [&](FSystemContext& Self, const glm::vec3& Start, const glm::vec3& End, bool bDrawDebug, uint32 LayerMask)
                 {
-                    TOptional<FRayResult> Result = Self.CastRay(Start, End, bDrawDebug, LayerMask);
+                    TOptional<FRayResult> Result = Self.CastRay(Start, End, bDrawDebug, 0.0f, LayerMask);
                     return Result.has_value() ? sol::make_optional(Result.value()) : sol::nullopt;
                 },
                 [&](FSystemContext& Self, const glm::vec3& Start, const glm::vec3& End, bool bDrawDebug, uint32 LayerMask, uint32 IgnoreBody)
                 {
-                    TOptional<FRayResult> Result = Self.CastRay(Start, End, bDrawDebug, LayerMask, IgnoreBody);
+                    TOptional<FRayResult> Result = Self.CastRay(Start, End, bDrawDebug, 0.0f, LayerMask, IgnoreBody);
                     return Result.has_value() ? sol::make_optional(Result.value()) : sol::nullopt;
                 }));
         
@@ -168,9 +169,9 @@ namespace Lumina
         World->PhysicsScene->ChangeBodyMotionType(BodyID, NewType);
     }
 
-    TOptional<FRayResult> FSystemContext::CastRay(const glm::vec3& Start, const glm::vec3& End, bool bDrawDebug, uint32 LayerMask, int64 IgnoreBody) const
+    TOptional<FRayResult> FSystemContext::CastRay(const glm::vec3& Start, const glm::vec3& End, bool bDrawDebug, float DebugDuration, uint32 LayerMask, int64 IgnoreBody) const
     {
-        return World->CastRay(Start, End, bDrawDebug, LayerMask, IgnoreBody);
+        return World->CastRay(Start, End, bDrawDebug, DebugDuration, LayerMask, IgnoreBody);
     }
 
     STransformComponent& FSystemContext::GetEntityTransform(entt::entity Entity) const
@@ -210,22 +211,22 @@ namespace Lumina
 
     void FSystemContext::DrawDebugLine(const glm::vec3& Start, const glm::vec3& End, const glm::vec4& Color, float Thickness, float Duration)
     {
-        World->DrawDebugLine(Start, End, Color, Thickness, Duration);
+        World->DrawLine(Start, End, Color, Thickness, Duration);
     }
 
     void FSystemContext::DrawDebugBox(const glm::vec3& Center, const glm::vec3& Extents, const glm::quat& Rotation, const glm::vec4& Color, float Thickness, float Duration)
     {
-        World->DrawDebugBox(Center, Extents, Rotation, Color, Duration);
+        World->DrawBox(Center, Extents, Rotation, Color, Duration);
     }
 
     void FSystemContext::DrawDebugSphere(const glm::vec3& Center, float Radius, const glm::vec4& Color, uint8 Segments, float Thickness, float Duration)
     {
-        World->DrawDebugSphere(Center, Radius, Color, Segments, Thickness, Duration);
+        World->DrawSphere(Center, Radius, Color, Segments, Thickness, Duration);
     }
 
     void FSystemContext::DrawDebugCone(const glm::vec3& Apex, const glm::vec3& Direction, float AngleRadians, float Length, const glm::vec4& Color, uint8 Segments, uint8 Stacks, float Thickness, float Duration)
     {
-        World->DrawDebugCone(Apex, Direction, AngleRadians, Length, Color, Segments, Stacks, Thickness, Duration);
+        World->DrawCone(Apex, Direction, AngleRadians, Length, Color, Segments, Stacks, Thickness, Duration);
     }
 
     void FSystemContext::DrawFrustum(const glm::mat4& Matrix, float zNear, float zFar, const glm::vec4& Color, float Thickness, float Duration)
@@ -257,8 +258,14 @@ namespace Lumina
         return Registry.valid(Entity);
     }
 
-    void FSystemContext::Lua_TriggerEvent(const sol::object& Event)
+    void FSystemContext::Lua_DispatchEvent(const sol::object& Event)
     {
+        using namespace entt::literals;
+
+        if (const entt::id_type EventID = ECS::DeduceType(Event))
+        {
+            ECS::InvokeMetaFunc(EventID, "trigger_event_lua"_hs, entt::forward_as_meta(Dispatcher), Event);
+        }
     }
 
     entt::meta_any FSystemContext::Lua_ConnectEvent(const sol::object& Event, const sol::function& Listener)

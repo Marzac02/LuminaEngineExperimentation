@@ -172,21 +172,21 @@ namespace Lumina
     	
         style.GrabRounding = style.FrameRounding =      2.3f;
 
-    	style.FramePadding = ImVec2( 6, 6 );
-    	style.WindowPadding = ImVec2( 8, 8 );
-    	style.ChildBorderSize = 0.0f;
-    	style.TabBorderSize = 1.0f;
-    	style.GrabRounding = 0.0f;
-    	style.GrabMinSize = 8.0f;
-    	style.WindowRounding = 0.0f;
-    	style.WindowBorderSize = 1.0f;
-    	style.FrameRounding = 3.0f;
-    	style.IndentSpacing = 8;
-    	style.ItemSpacing = ImVec2( 4, 6 );
-    	style.TabRounding = 6.0f;
-    	style.ScrollbarSize = 20.0f;
+    	style.FramePadding		= ImVec2(6, 6);
+    	style.WindowPadding		= ImVec2(8, 8);
+    	style.ChildBorderSize	= 0.0f;
+    	style.TabBorderSize		= 1.0f;
+    	style.GrabRounding		= 0.0f;
+    	style.GrabMinSize		= 8.0f;
+    	style.WindowRounding	= 0.0f;
+    	style.WindowBorderSize	= 1.0f;
+    	style.FrameRounding		= 3.0f;
+    	style.IndentSpacing		= 8;
+    	style.ItemSpacing		= ImVec2(4, 6);
+    	style.TabRounding		= 6.0f;
+    	style.ScrollbarSize		= 20.0f;
     	style.ScrollbarRounding = 0.0f;
-    	style.CellPadding = ImVec2( 4, 6 );
+    	style.CellPadding		= ImVec2(4, 6);
     }
 
     void IImGuiRenderer::Deinitialize()
@@ -204,8 +204,8 @@ namespace Lumina
         LUMINA_PROFILE_SCOPE();
 		
     	ImGuiIO& Io = ImGui::GetIO();
-    	Io.DisplaySize.x = (float)GEngine->GetEngineViewport()->GetSize().x;
-    	Io.DisplaySize.y = (float)GEngine->GetEngineViewport()->GetSize().y;
+    	Io.DisplaySize.x = static_cast<float>(FEngine::GetEngineViewport()->GetSize().x);
+    	Io.DisplaySize.y = static_cast<float>(FEngine::GetEngineViewport()->GetSize().y);
 
     	ImGuiX::Notifications::Render();
 		ImGui::Render();

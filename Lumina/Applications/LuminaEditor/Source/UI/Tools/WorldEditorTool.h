@@ -151,8 +151,8 @@ namespace Lumina
         void RebuildSceneOutliner(FTreeListView* View);
         void HandleEntityEditorDragDrop(FTreeListViewItem* DropItem);
 
-        void DrawOutliner(const FUpdateContext& UpdateContext, bool bFocused);
-        void DrawSystems(const FUpdateContext& UpdateContext, bool bFocused);
+        void DrawOutliner(bool bFocused);
+        void DrawSystems(bool bFocused);
         void DrawEntityProperties();
         void DrawEntityActionButtons();
         void DrawComponentList();
@@ -162,9 +162,9 @@ namespace Lumina
         void DrawSystemProperties();
         void DrawEmptyState();
 
-        void DrawObjectEditor(const FUpdateContext& UpdateContext, bool bFocused);
+        void DrawObjectEditor(bool bFocused);
 
-        void DrawPropertyEditor(const FUpdateContext& UpdateContext, bool bFocused);
+        void DrawPropertyEditor(bool bFocused);
 
         void RebuildPropertyTables();
 

@@ -264,7 +264,7 @@ namespace Lumina
 			FRecursiveScopeLock Lock(List.Mutex);
 			for (IRHIResource* Resource : List.ResourceList)
 			{
-				std::forward<TCallable>(Callable)(Resource);
+				eastl::invoke(Callable, Resource);
 			}
 		}
 		

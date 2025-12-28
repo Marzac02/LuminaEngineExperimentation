@@ -9,9 +9,9 @@ namespace Lumina
 {
     void FConsoleLogEditorTool::OnInitialize()
     {
-        CreateToolWindow("Console", [this] (const FUpdateContext& UpdateContext, bool bIsFocused)
+        CreateToolWindow("Console", [&] (bool bIsFocused)
         {
-           DrawLogWindow(UpdateContext, bIsFocused); 
+           DrawLogWindow(bIsFocused); 
         });
 
         RebuildFilteredMessages();
@@ -122,7 +122,7 @@ namespace Lumina
         ImGui::Text("Messages: %zu / %zu", FilteredMessageCount, PreviousMessageSize);
     }
 
-    void FConsoleLogEditorTool::DrawLogWindow(const FUpdateContext& UpdateContext, bool bIsFocused)
+    void FConsoleLogEditorTool::DrawLogWindow(bool bIsFocused)
     {
         const float InputHeight = ImGui::GetFrameHeightWithSpacing() * 1.2f;
         

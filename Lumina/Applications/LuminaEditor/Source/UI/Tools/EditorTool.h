@@ -6,8 +6,6 @@
 #include "Containers/Array.h"
 #include "Containers/Function.h"
 #include "Containers/String.h"
-#include "Core/UpdateContext.h"
-#include "Core/Math/Hash/Hash.h"
 #include "Events/EventProcessor.h"
 #include "Tools/UI/ImGui/ImGuiDesignIcons.h"
 #include "World/World.h"
@@ -20,9 +18,11 @@ namespace Lumina
     class FUpdateContext;
 }
 
-
-template<typename TCallable>
-concept CDrawToolCallable = eastl::is_invocable_v<TCallable, const Lumina::FUpdateContext&, bool> && sizeof(eastl::decay_t<TCallable>) <= EASTL_FUNCTION_DEFAULT_CAPTURE_SSO_SIZE;
+namespace Lumina::Concept
+{
+    template<typename TCallable>
+    concept TDrawToolCallable = eastl::is_invocable_v<TCallable, bool>;   
+}
 
 namespace Lumina
 {
@@ -44,7 +44,7 @@ namespace Lumina
 
         public:
 
-            FToolWindow(const FString& InName, const TFunction<void(const FUpdateContext&, bool)>& InDrawFunction, const ImVec2& InWindowPadding = ImVec2(-1, -1), bool bDisableScrolling = false)
+            FToolWindow(const FName& InName, const TFunction<void(bool)>& InDrawFunction, const ImVec2& InWindowPadding = ImVec2(-1, -1), bool bDisableScrolling = false)
                 : Name(InName)
                 , DrawFunction(InDrawFunction)
                 , WindowPadding(InWindowPadding)
@@ -52,11 +52,11 @@ namespace Lumina
         
         protected:
             
-            FString                                                       Name;
-            TFunction<void(const FUpdateContext& UpdateContext, bool)>    DrawFunction;
-            ImVec2                                                        WindowPadding;
-            bool                                                          bViewport = false;
-            bool                                                          bOpen = true;
+            FName                 Name;
+            TFunction<void(bool)> DrawFunction;
+            ImVec2                WindowPadding;
+            bool                  bViewport = false;
+            bool                  bOpen = true;
             
         };
 
@@ -69,9 +69,9 @@ namespace Lumina
 
         virtual void Initialize();
         virtual void Deinitialize(const FUpdateContext& UpdateContext);
-        virtual FName GetToolName() const { return ToolName; }
+        NODISCARD virtual FName GetToolName() const { return ToolName; }
         
-        ImGuiID CalculateDockspaceID() const
+        NODISCARD ImGuiID CalculateDockspaceID() const
         {
             uint32 dockspaceID = CurrLocationID;
             char const* const pEditorToolTypeName = GetUniqueTypeName();
@@ -79,30 +79,30 @@ namespace Lumina
             return dockspaceID;
         }
 
-        FFixedString GetToolWindowName(const FString& Name) const { return GetToolWindowName(Name.c_str(), CurrDockspaceID); }
+        NODISCARD FFixedString GetToolWindowName(const FString& Name) const { return GetToolWindowName(Name.c_str(), CurrDockspaceID); }
         
-        ImGuiWindowClass* GetWindowClass() { return &ToolWindowsClass; }
-        EEditorToolFlags GetToolFlags() const { return ToolFlags; }
-        bool HasFlag(EEditorToolFlags Flag) const {  return (ToolFlags & Flag) == Flag; }
+        NODISCARD ImGuiWindowClass* GetWindowClass() { return &ToolWindowsClass; }
+        NODISCARD EEditorToolFlags GetToolFlags() const { return ToolFlags; }
+        NODISCARD bool HasFlag(EEditorToolFlags Flag) const {  return (ToolFlags & Flag) == Flag; }
 
-        CWorld* GetWorld() const { return World; }
-        bool HasWorld() const { return World != nullptr; }
-        ImGuiID GetCurrentDockspaceID() const { return CurrDockspaceID; }
+        NODISCARD CWorld* GetWorld() const { return World; }
+        NODISCARD bool HasWorld() const { return World != nullptr; }
+        NODISCARD ImGuiID GetCurrentDockspaceID() const { return CurrDockspaceID; }
 
         virtual void InitializeDockingLayout(ImGuiID InDockspaceID, const ImVec2& InDockspaceSize) const;
         
         virtual void OnInitialize() = 0;
         virtual void OnDeinitialize(const FUpdateContext& UpdateContext) = 0;
 
-        virtual bool IsSingleWindowTool() const { return false; }
+        NODISCARD virtual bool IsSingleWindowTool() const { return false; }
 
         // Get the hash of the unique type ID for this tool
-        virtual uint32 GetUniqueTypeID() const = 0;
+        NODISCARD virtual uint32 GetUniqueTypeID() const = 0;
 
         // Get the unique typename for this tool to be used for docking
-        virtual char const* GetUniqueTypeName() const = 0;
+        NODISCARD virtual char const* GetUniqueTypeName() const = 0;
 
-        /** Sets and initialized a world for the editor tool */
+        /** Sets and inits a world for the editor tool */
         virtual void SetWorld(CWorld* InWorld);
 
         /** Called to set up the world for the tool */
@@ -136,13 +136,13 @@ namespace Lumina
         void EndViewportToolbarGroup();
 
         /** Is this editor tool for editing assets? */
-        virtual bool IsAssetEditorTool() const { return false; }
+        NODISCARD virtual bool IsAssetEditorTool() const { return false; }
         
         /** Can there only ever be one of this tool? */
-        virtual bool IsSingleton() const { return HasFlag(EEditorToolFlags::Tool_Singleton); }
+        NODISCARD virtual bool IsSingleton() const { return HasFlag(EEditorToolFlags::Tool_Singleton); }
         
         /** Optional title bar icon override */
-        virtual const char* GetTitlebarIcon() const { return LE_ICON_CAR_WRENCH; }
+        NODISCARD virtual const char* GetTitlebarIcon() const { return LE_ICON_CAR_WRENCH; }
 
         /** Called when the save icon is pressed. */
         virtual void OnSave() { }
@@ -154,7 +154,7 @@ namespace Lumina
         virtual void OnUndo() { }
 
         /** @TODO Cache and compare */
-        uint32 GetID() const { return Hash::GetHash32(GetToolName().c_str()); }
+        NODISCARD uint32 GetID() const { return GetToolName().GetID(); }
         
         FORCEINLINE ImGuiID GetCurrDockID() const        { return CurrDockID; }
         FORCEINLINE ImGuiID GetDesiredDockID() const     { return DesiredDockID; }
@@ -162,23 +162,6 @@ namespace Lumina
         FORCEINLINE ImGuiID GetPrevLocationID() const    { return PrevLocationID; }
         FORCEINLINE ImGuiID GetCurrDockspaceID() const   { return CurrDockspaceID; }
         FORCEINLINE ImGuiID GetPrevDockspaceID() const   { return PrevDockspaceID; }
-        
-        FORCEINLINE TFixedVector<FToolWindow*, 4>& GetToolWindows() { return ToolWindows; }
-
-        /**
-         * 
-         * @tparam TCallable Called back during a draw request of this tool, must be smaller than a sizeof(void*) * 2.
-         * @param InName Name of the tool, must be unique.
-         * @param DrawFunction Same as TCallable
-         * @param WindowPadding Padding space between the window.
-         * @param DisableScrolling Should this tool be allowed to scroll?
-         * @return 
-         */
-        template<CDrawToolCallable TCallable>
-        FToolWindow* CreateToolWindow(const FString& InName, TCallable&& DrawFunction, const ImVec2& WindowPadding = ImVec2(-1, -1), bool DisableScrolling = false)
-        {
-            return Internal_CreateToolWindow(InName, std::forward<TCallable>(DrawFunction), WindowPadding, DisableScrolling);
-        }
         
 
         static FFixedString GetToolWindowName(char const* ToolWindowName, ImGuiID InDockspaceID)
@@ -191,13 +174,13 @@ namespace Lumina
 
         void Internal_CreateViewportTool();
         
-        FToolWindow* Internal_CreateToolWindow(const FString& InName, const TFunction<void(const FUpdateContext&, bool)>& DrawFunction, const ImVec2& WindowPadding = ImVec2( -1, -1 ), bool DisableScrolling = false);
+        FToolWindow* CreateToolWindow(FName InName, const TFunction<void(bool)>& DrawFunction, const ImVec2& WindowPadding = ImVec2(-1, -1), bool DisableScrolling = false);
         
         /** Draw a help menu for this tool */
-        virtual void DrawHelpMenu(const FUpdateContext& UpdateContext) { DrawHelpTextRow("No Help Available", ""); }
+        virtual void DrawHelpMenu() { DrawHelpTextRow("No Help Available", ""); }
         
         /** Helper to add a simple entry to the help menu */
-        void DrawHelpTextRow(const char* pLabel, const char* pText) const;
+        void DrawHelpTextRow(const char* Label, const char* Text) const;
     
     protected:
         
@@ -212,7 +195,7 @@ namespace Lumina
         IEditorToolContext*             ToolContext = nullptr;
         FName                           ToolName;
         
-        TFixedVector<FToolWindow*, 4>   ToolWindows;
+        TFixedVector<TUniquePtr<FToolWindow>, 4>   ToolWindows;
         
         TObjectPtr<CWorld>              World;
         entt::entity                    EditorEntity;

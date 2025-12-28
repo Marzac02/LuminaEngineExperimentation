@@ -10,7 +10,8 @@
 
 namespace Lumina
 {
-    class CWorld;
+	struct SImpulseEvent;
+	class CWorld;
 }
 
 namespace Lumina::Physics
@@ -143,6 +144,8 @@ namespace Lumina::Physics
     	void OnRigidBodyComponentDestroyed(entt::registry& Registry, entt::entity EntityID);
     	void OnColliderComponentAdded(entt::registry& Registry, entt::entity EntityID);
     	void OnColliderComponentRemoved(entt::registry& Registry, entt::entity EntityID);
+    	
+    	void OnImpulseEvent(const SImpulseEvent& Impulse);
 
     
 

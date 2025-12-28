@@ -37,7 +37,7 @@ namespace Lumina
     }
     void FMaterialInstanceEditorTool::OnInitialize()
     {
-        CreateToolWindow(MaterialEditorName, [this](const FUpdateContext& Cxt, bool bFocused)
+        CreateToolWindow(MaterialEditorName, [&](bool bFocused)
             {
                 PropertyTable.DrawTree();
 

@@ -31,16 +31,16 @@ namespace Lumina
 
         //~ Begin Render Passes
         void ResetPass(FRenderGraph& RenderGraph);
-        void CullPass(FRenderGraph& RenderGraph, const FViewVolume& View);
-        void DepthPrePass(FRenderGraph& RenderGraph, const FViewVolume& View);
+        void CullPass(FRenderGraph& RenderGraph);
+        void DepthPrePass(FRenderGraph& RenderGraph);
         void DepthPyramidPass(FRenderGraph& RenderGraph);
-        void ClusterBuildPass(FRenderGraph& RenderGraph, const FViewVolume& View);
-        void LightCullPass(FRenderGraph& RenderGraph, const FViewVolume& View);
+        void ClusterBuildPass(FRenderGraph& RenderGraph);
+        void LightCullPass(FRenderGraph& RenderGraph);
         void PointShadowPass(FRenderGraph& RenderGraph);
         void SpotShadowPass(FRenderGraph& RenderGraph);
         void DirectionalShowPass(FRenderGraph& RenderGraph);
-        void BasePass(FRenderGraph& RenderGraph, const FViewVolume& View);
-        void TransparentPass(FRenderGraph& RenderGraph, const FViewVolume& View);
+        void BasePass(FRenderGraph& RenderGraph);
+        void TransparentPass(FRenderGraph& RenderGraph);
         void EnvironmentPass(FRenderGraph& RenderGraph);
         void BatchedLineDraw(FRenderGraph& RenderGraph);
         void ToneMappingPass(FRenderGraph& RenderGraph);

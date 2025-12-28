@@ -48,6 +48,9 @@ namespace Lumina
         bool bDrawDebug = false;
         
         PROPERTY(Script)
+        float DebugDuration = 0.0f;
+        
+        PROPERTY(Script)
         glm::vec3 DebugHitColor = glm::vec3(0.0, 1.0f, 0.0f);
         
         PROPERTY(Script)
