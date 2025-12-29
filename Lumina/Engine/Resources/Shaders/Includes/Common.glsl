@@ -11,7 +11,7 @@ const float INV_PI  = 0.31830988618;
 #define LIGHT_INDEX_MASK 0x1FFFu
 #define LIGHTS_PER_UINT 2
 #define LIGHTS_PER_CLUSTER 100
-#define SHADOW_SAMPLE_COUNT 32
+#define SHADOW_SAMPLE_COUNT 14
 
 #define INDEX_NONE -1
 
@@ -104,7 +104,7 @@ struct FLight
     uint Color;
 
     float Intensity;
-    //... 12 bytes of padding.
+    float Padding[3];
     
     vec3 Direction;
     float Radius;

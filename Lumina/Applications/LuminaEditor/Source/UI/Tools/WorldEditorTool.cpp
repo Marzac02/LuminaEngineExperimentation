@@ -177,6 +177,15 @@ namespace Lumina
 
     void FWorldEditorTool::OnDeinitialize(const FUpdateContext& UpdateContext)
     {
+        if (bSimulatingWorld)
+        {
+            SetWorldNewSimulate(false);
+        }
+        
+        if (bGamePreviewRunning)
+        {
+            OnGamePreviewStopRequested.Broadcast();
+        }
     }
 
     void FWorldEditorTool::Update(const FUpdateContext& UpdateContext)
@@ -880,8 +889,8 @@ namespace Lumina
 
     void FWorldEditorTool::PushAddComponentModal(entt::entity Entity)
     {
-        TSharedPtr<ImGuiTextFilter> Filter = MakeSharedPtr<ImGuiTextFilter>();
-        ToolContext->PushModal("Add Component", ImVec2(650.0f, 500.0f), [this, Entity, Filter](const FUpdateContext& Context) -> bool
+        TUniquePtr<ImGuiTextFilter> Filter = MakeUniquePtr<ImGuiTextFilter>();
+        ToolContext->PushModal("Add Component", ImVec2(650.0f, 500.0f), [this, Entity, Filter = Move(Filter)](const FUpdateContext& Context) -> bool
         {
             bool bComponentAdded = false;
     
@@ -1161,8 +1170,6 @@ namespace Lumina
             {
                 Patch = CameraCopy;
             });
-
-            
         }
         else if (bShouldSimulate != bSimulatingWorld && bShouldSimulate == false)
         {

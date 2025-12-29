@@ -164,7 +164,8 @@ namespace Lumina::Physics
 
     void FJoltDebugRenderer::DrawLine(JPH::RVec3Arg inFrom, JPH::RVec3Arg inTo, JPH::ColorArg inColor)
     {
-        World->DrawLine(JoltUtils::FromJPHVec3(inFrom), JoltUtils::FromJPHVec3(inTo), glm::vec4(inColor.r, inColor.g, inColor.b, inColor.a));
+        float DrawDuration = (float)std::max(World->GetWorldDeltaTime(), Duration);
+        World->DrawLine(JoltUtils::FromJPHVec3(inFrom), JoltUtils::FromJPHVec3(inTo), glm::vec4(inColor.r, inColor.g, inColor.b, inColor.a), 1.0f, DrawDuration);
     }
 
     void FJoltDebugRenderer::DrawBodies(JPH::PhysicsSystem* System, CWorld* InWorld)

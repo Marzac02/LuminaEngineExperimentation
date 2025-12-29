@@ -78,3 +78,13 @@ namespace Lumina::Scripting
         ScriptRegistry.view<TScript>().each(Forward<TFunc>(Func));
     }
 }
+
+namespace sol
+{
+    template <typename T, typename Allocator>
+    struct is_container<eastl::vector<T, Allocator>> : std::true_type {};
+
+    template <typename T>
+    struct is_container<Lumina::TVector<T>> : std::true_type {};
+    
+}

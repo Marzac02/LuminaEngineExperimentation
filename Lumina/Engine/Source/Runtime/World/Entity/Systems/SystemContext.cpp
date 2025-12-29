@@ -79,7 +79,10 @@ namespace Lumina
                 {
                     TOptional<FRayResult> Result = Self.CastRay(Start, End, bDrawDebug, 0.0f, LayerMask, IgnoreBody);
                     return Result.has_value() ? sol::make_optional(Result.value()) : sol::nullopt;
-                }));
+                }),
+
+                
+            "CastSphere",           &FSystemContext::CastSphere);
         
         Lua.new_enum("EMoveMode",
             "Teleport",       EMoveMode::Teleport,
@@ -172,6 +175,11 @@ namespace Lumina
     TOptional<FRayResult> FSystemContext::CastRay(const glm::vec3& Start, const glm::vec3& End, bool bDrawDebug, float DebugDuration, uint32 LayerMask, int64 IgnoreBody) const
     {
         return World->CastRay(Start, End, bDrawDebug, DebugDuration, LayerMask, IgnoreBody);
+    }
+
+    TVector<FRayResult> FSystemContext::CastSphere(const FSphereCastSettings& Settings) const
+    {
+        return World->CastSphere(Settings);
     }
 
     STransformComponent& FSystemContext::GetEntityTransform(entt::entity Entity) const

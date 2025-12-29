@@ -477,7 +477,7 @@ namespace Lumina
             return eastl::nullopt;
         }
         
-        TOptional<FRayResult> Result = PhysicsScene->CastRay(Settings.Start,Settings.End, Settings.LayerMask, Settings.IgnoreBodies);
+        TOptional<FRayResult> Result = PhysicsScene->CastRay(Settings);
         
         if (Settings.bDrawDebug)
         {
@@ -499,7 +499,7 @@ namespace Lumina
             }
         }
         
-        return Result;
+        return Move(Result);
     }
 
     TOptional<FRayResult> CWorld::CastRay(const glm::vec3& Start, const glm::vec3& End, bool bDrawDebug, float DebugDuration, uint32 LayerMask, int64 IgnoreBody)
@@ -514,7 +514,20 @@ namespace Lumina
         
         return CastRay(Settings);
     }
+    
+    TVector<FRayResult> CWorld::CastSphere(const FSphereCastSettings& Settings)
+    {
+        LUMINA_PROFILE_SCOPE();
 
+        if (PhysicsScene == nullptr)
+        {
+            return {};
+        }
+        
+        return PhysicsScene->CastSphere(Settings);
+        
+    }
+    
     void CWorld::SetEntityTransform(entt::entity Entity, const FTransform& NewTransform)
     {
         EntityRegistry.emplace_or_replace<STransformComponent>(Entity, NewTransform);

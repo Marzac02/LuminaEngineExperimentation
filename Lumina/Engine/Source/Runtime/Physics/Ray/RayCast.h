@@ -62,4 +62,37 @@ namespace Lumina
         PROPERTY(Script)
         TVector<int64> IgnoreBodies;
     };
+
+    REFLECT()
+    struct FSphereCastSettings
+    {
+        GENERATED_BODY()
+        
+        PROPERTY(Script)
+        glm::vec3 Start = glm::vec3(0.0f);
+        
+        PROPERTY(Script)
+        glm::vec3 End = glm::vec3(0.0f);
+
+        PROPERTY(Script)
+        float Radius = 0.0f;
+        
+        PROPERTY(Script)
+        bool bDrawDebug = false;
+        
+        PROPERTY(Script)
+        float DebugDuration = 0.0f;
+        
+        PROPERTY(Script)
+        glm::vec3 DebugHitColor = glm::vec3(0.0, 1.0f, 0.0f);
+        
+        PROPERTY(Script)
+        glm::vec3 DebugMissColor = glm::vec3(1.0f, 0.0f, 0.0f);
+        
+        PROPERTY(Script)
+        uint32 LayerMask;
+        
+        PROPERTY(Script)
+        TVector<int64> IgnoreBodies;
+    };
 }

@@ -4,7 +4,7 @@ local MyScript =
 {
     CoolSystem = System
     {
-        Stage = UpdateStage.PostPhysics,
+        Stage = UpdateStage.PrePhysics,
         Priority = 10,
         Query = { "SCameraComponent", "SInputComponent"},
         
@@ -12,30 +12,39 @@ local MyScript =
 
             for _, Entity in ipairs(Entities) do
                 
-                local Camera, InputComp, Transform = Context:Get(Entity, "SCameraComponent", "SInputComponent", "STransformComponent")
+                local InputComp, Transform = Context:Get(Entity, "SInputComponent", "STransformComponent")
 
                 if InputComp:IsKeyDown(Input.EKeyCode.R) then
                 
-                    local To = Transform:GetLocation() + (Transform:GetForward() * 25)
+                    local To = Transform:GetLocation() + (Transform:GetForward() * 50)
 
-                    Result = Context:CastRay(Transform:GetLocation(), To, true, DeltaTime)
+                    local Result = Context:CastRay(Transform:GetLocation(), To, true, DeltaTime)
                     if Result then
-                        
-                        local Direction = glm.Normalize(Result.Location - Transform:GetLocation())
 
-                        local HitTransform, Mesh = Context:Get(Result.Entity, "STransformComponent", "SStaticMeshComponent")
-                        local Event = SImpulseEvent()
-                        Event.BodyID = Result.BodyID
-                        Event.Impulse = Direction * 500
-                        Context:DispatchEvent(Event)
+                        local RaySettings           = FSphereCastSettings()
+                        RaySettings.Start           = Result.Location
+                        RaySettings.End             = Result.Location
+                        RaySettings.Radius          = 5.0
+                        RaySettings.bDrawDebug      = false
+                        RaySettings.DebugDuration   = 0.1
 
-                        --Context:DrawDebugBox(HitTransform:GetLocation(), Mesh:GetAABB():GetSize() * HitTransform:GetScale() * 0.5, quat(1, 0, 0, 0), vec4(255, 0, 0, 255), 1.0, 2.0)
+                        local SphereResult = Context:CastSphere(RaySettings)
 
+                        for i = 1, #SphereResult do
+                            local Hit = SphereResult[i]
+
+                            local Direction = glm.Normalize(Hit.Location - Hit.End)
+
+                            local Event = SImpulseEvent()
+                            Event.BodyID = Hit.BodyID
+                            Event.Impulse = Direction * 100.0
+                            Context:DispatchEvent(Event)
+                            
+                        end
                     end
                 end
             end
-
-        end,
+        end
     }
 }
 

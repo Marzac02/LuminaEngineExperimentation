@@ -127,7 +127,7 @@ namespace Lumina
         
         TOptional<FRayResult> CastRay(const FRayCastSettings& Settings);
         TOptional<FRayResult> CastRay(const glm::vec3& Start, const glm::vec3& End, bool bDrawDebug = false, float DebugDuration = 0.0f, uint32 LayerMask = 0xFFFFFFFF, int64 IgnoreBody = -1);
-        
+        TVector<FRayResult> CastSphere(const FSphereCastSettings& Settings);
 
         void SetIsPlayWorld(bool bValue) { bIsPlayWorld = bValue; }
         FORCEINLINE bool IsPlayWorld() const { return bIsPlayWorld; }

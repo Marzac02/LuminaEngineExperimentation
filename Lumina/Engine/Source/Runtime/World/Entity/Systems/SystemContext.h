@@ -133,7 +133,9 @@ namespace Lumina
         LUMINA_API void ChangeBodyMotionType(uint32 BodyID, EBodyType NewType);
         
         LUMINA_API TOptional<FRayResult> CastRay(const glm::vec3& Start, const glm::vec3& End, bool bDrawDebug = false, float DebugDuration = 0.0f, uint32 LayerMask = 0xFFFFFFFF, int64 IgnoreBody = -1) const;
+        LUMINA_API TVector<FRayResult> CastSphere(const FSphereCastSettings& Settings) const;
 
+        
         LUMINA_API STransformComponent& GetEntityTransform(entt::entity Entity) const;
         
         LUMINA_API glm::vec3 TranslateEntity(entt::entity Entity, const glm::vec3& Translation);

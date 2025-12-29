@@ -235,34 +235,43 @@ namespace Lumina
             auto Group = World->GetEntityRegistry().group<FLineBatcherComponent>();
             Group.each([&](FLineBatcherComponent& LineBatcherComponent)
             {
-                for (int32 i = static_cast<int32>(LineBatcherComponent.Lines.size()) - 1; i >= 0; --i)
+                if (LineBatcherComponent.Lines.empty())
                 {
-                    FLineBatcherComponent::FLineInstance& Line = LineBatcherComponent.Lines[i];
+                    return;
+                }
         
-                    if (Line.RemainingLifetime < 0.0f)
+                for (FLineBatcherComponent::FLineInstance& Line : LineBatcherComponent.Lines)
+                {
+                    if (Line.RemainingLifetime >= 0.0f)
                     {
-                        continue;
-                    }
-        
-                    Line.RemainingLifetime -= SceneGlobalData.DeltaTime;
-        
-                    if (Line.RemainingLifetime <= 0.0f)
-                    {
-                        uint32 VertexIndex = Line.StartVertexIndex;
-        
-                        LineBatcherComponent.Vertices.erase(
-                            LineBatcherComponent.Vertices.begin() + VertexIndex, 
-                            LineBatcherComponent.Vertices.begin() + VertexIndex + 2
-                        );
-        
-                        for (int32 j = i + 1; j < LineBatcherComponent.Lines.size(); ++j)
-                        {
-                            LineBatcherComponent.Lines[j].StartVertexIndex -= 2;
-                        }
-        
-                        LineBatcherComponent.Lines.erase(LineBatcherComponent.Lines.begin() + i);
+                        Line.RemainingLifetime -= SceneGlobalData.DeltaTime;
                     }
                 }
+        
+                TVector<FLineBatcherComponent::FLineInstance> NewLines;
+                TVector<FSimpleElementVertex> NewVertices;
+                
+                NewLines.reserve(LineBatcherComponent.Lines.size());
+                NewVertices.reserve(LineBatcherComponent.Vertices.size());
+        
+                uint32 CurrentVertexIndex = 0;
+                for (const FLineBatcherComponent::FLineInstance& Line : LineBatcherComponent.Lines)
+                {
+                    if (Line.RemainingLifetime > 0.0f)
+                    {
+                        FLineBatcherComponent::FLineInstance NewLine = Line;
+                        NewLine.StartVertexIndex = CurrentVertexIndex;
+                        NewLines.push_back(NewLine);
+        
+                        NewVertices.push_back(LineBatcherComponent.Vertices[Line.StartVertexIndex]);
+                        NewVertices.push_back(LineBatcherComponent.Vertices[Line.StartVertexIndex + 1]);
+                        
+                        CurrentVertexIndex += 2;
+                    }
+                }
+        
+                LineBatcherComponent.Lines = std::move(NewLines);
+                LineBatcherComponent.Vertices = std::move(NewVertices);
         
                 if (!LineBatcherComponent.Vertices.empty())
                 {
@@ -270,15 +279,6 @@ namespace Lumina
                     Memory::Memcpy(SimpleVertices.data(), 
                                   LineBatcherComponent.Vertices.data(), 
                                   LineBatcherComponent.Vertices.size() * sizeof(FSimpleElementVertex));
-                }
-        
-                // Optional: Shrink if too much wasted space
-                constexpr size_t MaxWastedSpace = 1024;
-                if (LineBatcherComponent.Vertices.capacity() > MaxWastedSpace && 
-                    LineBatcherComponent.Vertices.size() < LineBatcherComponent.Vertices.capacity() / 4)
-                {
-                    LineBatcherComponent.Vertices.shrink_to_fit();
-                    LineBatcherComponent.Lines.shrink_to_fit();
                 }
             });
         }

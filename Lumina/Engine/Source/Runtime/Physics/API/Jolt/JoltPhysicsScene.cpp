@@ -7,13 +7,16 @@
 
 #include <algorithm>
 #include <Jolt/Physics/Collision/CastResult.h>
+#include <Jolt/Physics/Collision/CollisionCollectorImpl.h>
 #include <Jolt/Physics/Collision/RayCast.h>
+#include <Jolt/Physics/Collision/ShapeCast.h>
 #include <Jolt/Renderer/DebugRendererSimple.h>
 
 #include "JoltPhysics.h"
 #include "JoltUtils.h"
 #include "Core/Console/ConsoleVariable.h"
 #include "Core/Profiler/Profile.h"
+#include "Core/Utils/Defer.h"
 #include "Jolt/Physics/Body/BodyCreationSettings.h"
 #include "Jolt/Physics/Collision/Shape/BoxShape.h"
 #include "Jolt/Physics/Collision/Shape/SphereShape.h"
@@ -454,10 +457,10 @@ namespace Lumina::Physics
         });
     }
 
-    TOptional<FRayResult> FJoltPhysicsScene::CastRay(const glm::vec3& Start, const glm::vec3& End, uint32 LayerMask, TSpan<const int64> IgnoreBody)
+    TOptional<FRayResult> FJoltPhysicsScene::CastRay(const FRayCastSettings& Settings)
     {
-        JPH::Vec3 JPHStart  = JoltUtils::ToJPHVec3(Start);
-        JPH::Vec3 JPHEnd    = JoltUtils::ToJPHVec3(End);
+        JPH::Vec3 JPHStart  = JoltUtils::ToJPHVec3(Settings.Start);
+        JPH::Vec3 JPHEnd    = JoltUtils::ToJPHVec3(Settings.End);
         JPH::Vec3 Direction = JPHEnd - JPHStart;
         
         if (Direction.Length() < LE_SMALL_NUMBER)
@@ -490,7 +493,7 @@ namespace Lumina::Physics
             TFixedHashSet<int64, 4> IgnoreBodies;
         };
         
-        IgnoreFilter IgnoreFilter{IgnoreBody};
+        IgnoreFilter IgnoreFilter{Settings.IgnoreBodies};
         
         
         JPH::RayCastResult Hit;
@@ -514,8 +517,8 @@ namespace Lumina::Physics
         {
             .BodyID     = Hit.mBodyID.GetIndexAndSequenceNumber(),
             .Entity     = static_cast<uint32>(Body->GetUserData()),
-            .Start      = Start,
-            .End        = End,
+            .Start      = Settings.Start,
+            .End        = Settings.End,
             .Location   = JoltUtils::FromJPHRVec3(Ray.GetPointOnRay(Hit.mFraction)),
             .Normal     = glm::normalize(JoltUtils::FromJPHVec3(SurfaceNormal)),
             .Fraction   = Hit.mFraction
@@ -524,8 +527,143 @@ namespace Lumina::Physics
         return Result;
     }
 
-    TVector<FRayResult> FJoltPhysicsScene::CastSphere(const glm::vec3& Start, const glm::vec3& End, float Radius, uint32 LayerMask, TSpan<const int64> IgnoreBody)
+    TVector<FRayResult> FJoltPhysicsScene::CastSphere(const FSphereCastSettings& Settings)
     {
+        JPH::RVec3 JPHStart  = JoltUtils::ToJPHRVec3(Settings.Start);
+        JPH::RVec3 JPHEnd    = JoltUtils::ToJPHRVec3(Settings.End);
+        JPH::Vec3 Direction = (JPHEnd - JPHStart);
+        
+        class IgnoreFilter : public JPH::BodyFilter
+        {
+        public:
+            IgnoreFilter(TSpan<const int64> InIgnoreBodies)
+            {
+                eastl::transform(
+                    InIgnoreBodies.begin(), 
+                    InIgnoreBodies.end(),
+                    eastl::insert_iterator(IgnoreBodies, IgnoreBodies.end()),
+                    [](const int64& Body) { return Body; }
+                );
+            }
+        
+            bool ShouldCollide(const JPH::BodyID& inBodyID) const override
+            {
+                return IgnoreBodies.find(inBodyID.GetIndexAndSequenceNumber()) == IgnoreBodies.end();
+            }
+    
+            TFixedHashSet<int64, 4> IgnoreBodies;
+        };
+        
+        IgnoreFilter Filter{Settings.IgnoreBodies};
+    
+        class MyCollector : public JPH::CastShapeCollector
+        {
+        public:
+            TFixedVector<JPH::ShapeCastResult, 10> Results;
+            
+            void AddHit(const JPH::ShapeCastResult& inResult) override
+            {
+                Results.push_back(inResult);
+            }
+        };
+        
+        MyCollector Collector;
+        JPH::SphereShape QuerySphere(Settings.Radius);
+        
+        JPH::RShapeCast ShapeCast = JPH::RShapeCast::sFromWorldTransform(&QuerySphere, JPH::Vec3::sReplicate(1.0f), JPH::RMat44::sTranslation(JPHStart), Direction);
+        
+        JPH::ShapeCastSettings ShapeSettings;
+        ShapeSettings.mBackFaceModeTriangles    = JPH::EBackFaceMode::CollideWithBackFaces;
+        ShapeSettings.mBackFaceModeConvex       = JPH::EBackFaceMode::CollideWithBackFaces;
+        ShapeSettings.mReturnDeepestPoint       = false;
+        
+        JoltSystem->GetNarrowPhaseQuery().CastShape(
+            ShapeCast,
+            ShapeSettings,
+            JPH::RVec3::sZero(),
+            Collector,
+            JPH::BroadPhaseLayerFilter(),
+            JPH::ObjectLayerFilter(),
+            Filter,
+            JPH::ShapeFilter()
+        );
+        
+        DEFER 
+        { 
+            FJoltPhysicsContext::GetDebugRenderer()->SetDrawDuration(0.0f); 
+        };
+        
+        FJoltPhysicsContext::GetDebugRenderer()->SetWorld(World);
+        FJoltPhysicsContext::GetDebugRenderer()->SetDrawDuration(Settings.DebugDuration);
+        
+        if (Collector.Results.empty())
+        {
+            if (Settings.bDrawDebug)
+            {
+                QuerySphere.Draw(FJoltPhysicsContext::GetDebugRenderer(),
+                    JPH::RMat44::sTranslation(JPHStart), 
+                    JPH::Vec3::sReplicate(1.0f), 
+                    JPH::Color(255, 0, 0, 255),
+                    false, 
+                    true);
+            }
+            
+            return {};
+        }
+        
+        if (Settings.bDrawDebug)
+        {
+            QuerySphere.Draw(FJoltPhysicsContext::GetDebugRenderer(),
+                JPH::RMat44::sTranslation(JPHStart), 
+                JPH::Vec3::sReplicate(1.0f), 
+                JPH::Color(0, 255, 0, 255),
+                false, 
+                true);
+        }
+            
+        
+        const JPH::BodyLockInterfaceNoLock& LockInterface = JoltSystem->GetBodyLockInterfaceNoLock();
+        
+        TVector<FRayResult> Results;
+        Results.reserve(Collector.Results.size());
+        
+        for (const JPH::ShapeCastResult& Hit : Collector.Results)
+        {
+            JPH::Body* Body = LockInterface.TryGetBody(Hit.mBodyID2);
+            if (!Body)
+            {
+                continue;
+            }
+            
+            JPH::RVec3 ContactPoint = Hit.mContactPointOn2;
+            JPH::Vec3 SurfaceNormal = Hit.mPenetrationAxis.Normalized();
+            
+            
+            FRayResult Result
+            {
+                .BodyID     = Hit.mBodyID2.GetIndexAndSequenceNumber(),
+                .Entity     = static_cast<uint32>(Body->GetUserData()),
+                .Start      = Settings.Start,
+                .End        = Settings.End,
+                .Location   = JoltUtils::FromJPHVec3(ContactPoint),
+                .Normal     = glm::normalize(JoltUtils::FromJPHVec3(SurfaceNormal)),
+                .Fraction   = Hit.mFraction
+            };
+            
+            if (Settings.bDrawDebug)
+            {
+                FJoltPhysicsContext::GetDebugRenderer()->DrawLine(Hit.mContactPointOn1, Hit.mContactPointOn2, JPH::Color(255, 0, 0, 255));
+            }
+            
+            Results.push_back(Result);
+        }
+        
+        eastl::sort(Results.begin(), Results.end(), [](const FRayResult& A, const FRayResult& B)
+        {
+            return A.Fraction < B.Fraction;
+        });
+        
+        return Results;
     }
 
     void FJoltPhysicsScene::OnCharacterComponentConstructed(entt::registry& Registry, entt::entity Entity)
@@ -602,7 +740,7 @@ namespace Lumina::Physics
         Settings.mRestitution = 0.5f;
         Settings.mFriction = 0.3f;
         Settings.mAngularDamping = RigidBodyComponent.AngularDamping;
-        Settings.mLinearDamping = RigidBodyComponent.LinearDamping;
+        Settings.mLinearDamping = RigidBodyComponent.LinearDamping; 
 
         JPH::BodyInterface& BodyInterface = JoltSystem->GetBodyInterface();
         
@@ -634,8 +772,14 @@ namespace Lumina::Physics
     {
         JPH::BodyInterface& Interface = JoltSystem->GetBodyInterface();
         JPH::BodyID BodyID = JPH::BodyID(Impulse.BodyID);
+        JPH::RVec3 VecImpulse = JoltUtils::ToJPHRVec3(Impulse.Impulse);
+        
+        if (VecImpulse.IsNaN() || VecImpulse.IsNearZero())
+        {
+            return;
+        }
 
-        Interface.AddImpulse(BodyID, JoltUtils::ToJPHRVec3(Impulse.Impulse));
+        Interface.AddImpulse(BodyID, VecImpulse);
     }
     
     void FJoltPhysicsScene::OnForceEvent(const SForceEvent& Force)

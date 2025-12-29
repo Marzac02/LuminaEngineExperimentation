@@ -17,7 +17,12 @@ namespace Lumina::Physics
 
         void DrawBodies(JPH::PhysicsSystem* System, CWorld* InWorld);
 
+        FORCEINLINE void SetWorld(CWorld* InWorld) { World = InWorld; }
+        FORCEINLINE void SetDrawDuration(float InDuration) { Duration = InDuration; }
+        
     private:
+        
+        double Duration = 0.0f;
 
         CWorld* World = nullptr;
     };

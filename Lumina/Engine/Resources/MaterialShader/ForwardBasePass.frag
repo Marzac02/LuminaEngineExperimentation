@@ -16,7 +16,7 @@ layout(location = 4) in vec2 inUV;
 layout(location = 5) flat in uint inEntityID;
 
 layout(location = 0) out vec4 outColor;
-layout(location = 1) out uint GPicker;
+layout(location = 1) out uint outPicker;
 
 layout(set = 1, binding = 0) uniform sampler2DArray uShadowCascade;
 layout(set = 1, binding = 1) uniform sampler2DArray uShadowAtlas;
@@ -33,9 +33,6 @@ layout(set = 2, binding = 0) uniform FMaterialUniforms
     vec4 Scalars[MAX_SCALARS / 4];
     vec4 Vectors[MAX_VECTORS];
 } MaterialUniforms;
-
-
-#define PCF_SAMPLES_DIV_2 2
 
 
 float GetMaterialScalar(uint Index)
@@ -91,7 +88,9 @@ float DistributionGGX(vec3 N, vec3 H, float roughness)
 
     return nom / denom;
 }
+
 // ----------------------------------------------------------------------------
+
 float GeometrySchlickGGX(float NdotV, float roughness)
 {
     float r     = (roughness + 1.0);
@@ -104,6 +103,7 @@ float GeometrySchlickGGX(float NdotV, float roughness)
 }
 
 // ----------------------------------------------------------------------------
+
 float GeometrySmith(vec3 N, vec3 V, vec3 L, float roughness)
 {
     float NdotV = max(dot(N, V), 0.0);
@@ -113,11 +113,14 @@ float GeometrySmith(vec3 N, vec3 V, vec3 L, float roughness)
 
     return ggx1 * ggx2;
 }
+
 // ----------------------------------------------------------------------------
+
 vec3 fresnelSchlick(float cosTheta, vec3 F0)
 {
     return F0 + (1.0 - F0) * pow(1.0 - cosTheta, 5.0);
 }
+
 // ----------------------------------------------------------------------------
 
 
@@ -409,6 +412,8 @@ void main()
     
     Color                   += Material.Emissive;
 
+
+
     outColor    = vec4(Color, Material.Opacity);
-    GPicker     = inEntityID;
+    outPicker   = inEntityID;
 }
