@@ -22,7 +22,6 @@ namespace Lumina::Physics
         virtual void ChangeBodyMotionType(uint32 BodyID, EBodyType NewType) = 0;
         
         virtual TOptional<FRayResult> CastRay(const glm::vec3& Start, const glm::vec3& End, uint32 LayerMask = 0xFFFFFFFF, TSpan<const int64> IgnoreBody = TSpan<const int64>()) = 0;
-
-        
+        virtual TVector<FRayResult> CastSphere(const glm::vec3& Start, const glm::vec3& End, float Radius, uint32 LayerMask = 0xFFFFFFFF, TSpan<const int64> IgnoreBody = TSpan<const int64>()) = 0;
     };
 }

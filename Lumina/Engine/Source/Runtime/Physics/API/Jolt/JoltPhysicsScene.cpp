@@ -128,8 +128,16 @@ namespace Lumina::Physics
         JPH::PhysicsSettings JoltSettings;
         JoltSystem->SetPhysicsSettings(JoltSettings);
         
-        World->GetEntityRegistry().ctx().get<entt::dispatcher&>().sink<SImpulseEvent>().connect<&FJoltPhysicsScene::OnImpulseEvent>(this);
-        
+        entt::dispatcher& Dispatcher = World->GetEntityRegistry().ctx().get<entt::dispatcher&>();
+        Dispatcher.sink<SImpulseEvent>().connect<&FJoltPhysicsScene::OnImpulseEvent>(this);
+        Dispatcher.sink<SForceEvent>().connect<&FJoltPhysicsScene::OnForceEvent>(this);
+        Dispatcher.sink<STorqueEvent>().connect<&FJoltPhysicsScene::OnTorqueEvent>(this);
+        Dispatcher.sink<SAngularImpulseEvent>().connect<&FJoltPhysicsScene::OnAngularImpulseEvent>(this);
+        Dispatcher.sink<SSetVelocityEvent>().connect<&FJoltPhysicsScene::OnSetVelocityEvent>(this);
+        Dispatcher.sink<SSetAngularVelocityEvent>().connect<&FJoltPhysicsScene::OnSetAngularVelocityEvent>(this);
+        Dispatcher.sink<SAddImpulseAtPositionEvent>().connect<&FJoltPhysicsScene::OnAddImpulseAtPositionEvent>(this);
+        Dispatcher.sink<SAddForceAtPositionEvent>().connect<&FJoltPhysicsScene::OnAddForceAtPositionEvent>(this);
+        Dispatcher.sink<SSetGravityFactorEvent>().connect<&FJoltPhysicsScene::OnSetGravityFactorEvent>(this);
     }
 
     void FJoltPhysicsScene::PreUpdate()
@@ -516,6 +524,10 @@ namespace Lumina::Physics
         return Result;
     }
 
+    TVector<FRayResult> FJoltPhysicsScene::CastSphere(const glm::vec3& Start, const glm::vec3& End, float Radius, uint32 LayerMask, TSpan<const int64> IgnoreBody)
+    {
+    }
+
     void FJoltPhysicsScene::OnCharacterComponentConstructed(entt::registry& Registry, entt::entity Entity)
     {
         SCharacterPhysicsComponent& CharacterComponent = Registry.get<SCharacterPhysicsComponent>(Entity);
@@ -624,6 +636,71 @@ namespace Lumina::Physics
         JPH::BodyID BodyID = JPH::BodyID(Impulse.BodyID);
 
         Interface.AddImpulse(BodyID, JoltUtils::ToJPHRVec3(Impulse.Impulse));
-        LOG_INFO("IMPULSE");
+    }
+    
+    void FJoltPhysicsScene::OnForceEvent(const SForceEvent& Force)
+    {
+        JPH::BodyInterface& Interface = JoltSystem->GetBodyInterface();
+        JPH::BodyID BodyID = JPH::BodyID(Force.BodyID);
+        
+        Interface.AddForce(BodyID, JoltUtils::ToJPHRVec3(Force.Force));
+    }
+    
+    void FJoltPhysicsScene::OnTorqueEvent(const STorqueEvent& Torque)
+    {
+        JPH::BodyInterface& Interface = JoltSystem->GetBodyInterface();
+        JPH::BodyID BodyID = JPH::BodyID(Torque.BodyID);
+        
+        Interface.AddTorque(BodyID, JoltUtils::ToJPHRVec3(Torque.Torque));
+    }
+    
+    void FJoltPhysicsScene::OnAngularImpulseEvent(const SAngularImpulseEvent& AngularImpulse)
+    {
+        JPH::BodyInterface& Interface = JoltSystem->GetBodyInterface();
+        JPH::BodyID BodyID = JPH::BodyID(AngularImpulse.BodyID);
+        
+        Interface.AddAngularImpulse(BodyID, JoltUtils::ToJPHRVec3(AngularImpulse.AngularImpulse));
+    }
+    
+    void FJoltPhysicsScene::OnSetVelocityEvent(const SSetVelocityEvent& Velocity)
+    {
+        JPH::BodyInterface& Interface = JoltSystem->GetBodyInterface();
+        JPH::BodyID BodyID = JPH::BodyID(Velocity.BodyID);
+        
+        Interface.SetLinearVelocity(BodyID, JoltUtils::ToJPHRVec3(Velocity.Velocity));
+    }
+    
+    void FJoltPhysicsScene::OnSetAngularVelocityEvent(const SSetAngularVelocityEvent& AngularVelocity)
+    {
+        JPH::BodyInterface& Interface = JoltSystem->GetBodyInterface();
+        JPH::BodyID BodyID = JPH::BodyID(AngularVelocity.BodyID);
+        
+        Interface.SetAngularVelocity(BodyID, JoltUtils::ToJPHRVec3(AngularVelocity.AngularVelocity));
+    }
+    
+    void FJoltPhysicsScene::OnAddImpulseAtPositionEvent(const SAddImpulseAtPositionEvent& Event)
+    {
+        JPH::BodyInterface& Interface = JoltSystem->GetBodyInterface();
+        JPH::BodyID BodyID = JPH::BodyID(Event.BodyID);
+        
+        Interface.AddImpulse(BodyID, JoltUtils::ToJPHRVec3(Event.Impulse), 
+                            JoltUtils::ToJPHRVec3(Event.Position));
+    }
+    
+    void FJoltPhysicsScene::OnAddForceAtPositionEvent(const SAddForceAtPositionEvent& Event)
+    {
+        JPH::BodyInterface& Interface = JoltSystem->GetBodyInterface();
+        JPH::BodyID BodyID = JPH::BodyID(Event.BodyID);
+        
+        Interface.AddForce(BodyID, JoltUtils::ToJPHRVec3(Event.Force), 
+                          JoltUtils::ToJPHRVec3(Event.Position));
+    }
+    
+    void FJoltPhysicsScene::OnSetGravityFactorEvent(const SSetGravityFactorEvent& Event)
+    {
+        JPH::BodyInterface& Interface = JoltSystem->GetBodyInterface();
+        JPH::BodyID BodyID = JPH::BodyID(Event.BodyID);
+        
+        Interface.SetGravityFactor(BodyID, Event.GravityFactor);
     }
 }

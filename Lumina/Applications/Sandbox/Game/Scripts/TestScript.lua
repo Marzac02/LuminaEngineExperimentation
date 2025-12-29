@@ -18,13 +18,15 @@ local MyScript =
                 
                     local To = Transform:GetLocation() + (Transform:GetForward() * 25)
 
-                    Result = Context:CastRay(Transform:GetLocation(), To, true, 0.5)
+                    Result = Context:CastRay(Transform:GetLocation(), To, true, DeltaTime)
                     if Result then
                         
+                        local Direction = glm.Normalize(Result.Location - Transform:GetLocation())
+
                         local HitTransform, Mesh = Context:Get(Result.Entity, "STransformComponent", "SStaticMeshComponent")
                         local Event = SImpulseEvent()
                         Event.BodyID = Result.BodyID
-                        Event.Impulse = vec3(0.0, 1000.0, 0.0)
+                        Event.Impulse = Direction * 500
                         Context:DispatchEvent(Event)
 
                         --Context:DrawDebugBox(HitTransform:GetLocation(), Mesh:GetAABB():GetSize() * HitTransform:GetScale() * 0.5, quat(1, 0, 0, 0), vec4(255, 0, 0, 255), 1.0, 2.0)

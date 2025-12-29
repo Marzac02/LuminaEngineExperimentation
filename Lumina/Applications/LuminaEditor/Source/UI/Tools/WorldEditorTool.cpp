@@ -461,19 +461,16 @@ namespace Lumina
         ImGuiID dockLeft = 0;
         ImGuiID dockRight = 0;
 
-        // 1. Split root dock vertically: left = viewport, right = other panels
         ImGui::DockBuilderSplitNode(InDockspaceID, ImGuiDir_Right, 0.25f, &dockRight, &dockLeft);
 
         ImGuiID dockRightTop = 0;
         ImGuiID dockRightBottom = 0;
 
-        // 2. Split right dock horizontally into Outliner (top 25%) and bottom (Details + SystemOutliner)
         ImGui::DockBuilderSplitNode(dockRight, ImGuiDir_Down, 0.25f, &dockRightTop, &dockRightBottom);
 
         ImGuiID dockRightBottomLeft = 0;
         ImGuiID dockRightBottomRight = 0;
 
-        // 3. Split bottom right dock horizontally into Details (left) and SystemOutliner (right)
         ImGui::DockBuilderSplitNode(dockRightBottom, ImGuiDir_Right, 0.5f, &dockRightBottomRight, &dockRightBottomLeft);
 
         ImGui::DockBuilderDockWindow(GetToolWindowName(ViewportWindowName).c_str(), dockLeft);
@@ -713,7 +710,7 @@ namespace Lumina
     void FWorldEditorTool::DrawViewportToolbar(const FUpdateContext& UpdateContext)
     {
         ImGui::SameLine();
-        constexpr float ButtonWidth = 118;
+        constexpr float ButtonWidth = 28;
         
         if (!IsAssetEditorTool() && !bSimulatingWorld)
         {
@@ -724,14 +721,14 @@ namespace Lumina
         {
             if (!bSimulatingWorld)
             {
-                if (ImGuiX::IconButton(LE_ICON_PLAY, "Play World", 4278255360, ImVec2(ButtonWidth - 6.0f, 0)))
+                if (ImGuiX::IconButton(LE_ICON_PLAY, "", 4278255360, ImVec2(ButtonWidth, 0)))
                 {
                     OnGamePreviewStartRequested.Broadcast();
                 }
         
                 ImGui::SameLine();
                 
-                if (ImGuiX::IconButton(LE_ICON_COG_BOX, "Simulate World", 4278255360, ImVec2(ButtonWidth + 12.0f, 0)))
+                if (ImGuiX::IconButton(LE_ICON_COG_BOX, "", 4278255360, ImVec2(ButtonWidth, 0)))
                 {
                     SetWorldNewSimulate(true);
                 }
@@ -743,7 +740,7 @@ namespace Lumina
                     SetWorldNewSimulate(false);
                 }
                 
-                if (ImGuiX::IconButton(LE_ICON_COG_BOX, "Stop Simulating World", 4278190335, ImVec2(ButtonWidth + 64.0f, 0)))
+                if (ImGuiX::IconButton(LE_ICON_COG_BOX, "", 4278190335, ImVec2(ButtonWidth, 0)))
                 {
                     SetWorldNewSimulate(false);
                 }
@@ -751,7 +748,7 @@ namespace Lumina
         }
         else
         {
-            if (ImGuiX::IconButton(LE_ICON_STOP, "Stop Playing", 4278190335, ImVec2(ButtonWidth - 2.0f, 0)))
+            if (ImGuiX::IconButton(LE_ICON_STOP, "", 4278190335, ImVec2(ButtonWidth, 0)))
             {
                 OnGamePreviewStopRequested.Broadcast();
             }

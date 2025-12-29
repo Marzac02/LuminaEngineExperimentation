@@ -6,6 +6,7 @@
 #include "Physics/PhysicsScene.h"
 #include "Jolt/Jolt.h"
 #include "Jolt/Physics/PhysicsSystem.h"
+#include "World/Entity/Events/ImpulseEvent.h"
 
 
 namespace Lumina
@@ -138,7 +139,10 @@ namespace Lumina::Physics
     	void SyncTransforms();
     	
     	TOptional<FRayResult> CastRay(const glm::vec3& Start, const glm::vec3& End, uint32 LayerMask, TSpan<const int64> IgnoreBody) override;
-
+		TVector<FRayResult> CastSphere(const glm::vec3& Start, const glm::vec3& End, float Radius, uint32 LayerMask, TSpan<const int64> IgnoreBody) override;
+    	
+    	
+    	
     	void OnCharacterComponentConstructed(entt::registry& Registry, entt::entity Entity);
     	void OnRigidBodyComponentConstructed(entt::registry& Registry, entt::entity EntityID);
     	void OnRigidBodyComponentDestroyed(entt::registry& Registry, entt::entity EntityID);
@@ -146,8 +150,14 @@ namespace Lumina::Physics
     	void OnColliderComponentRemoved(entt::registry& Registry, entt::entity EntityID);
     	
     	void OnImpulseEvent(const SImpulseEvent& Impulse);
-
-    
+        void OnForceEvent(const SForceEvent& Force);
+        void OnTorqueEvent(const STorqueEvent& Torque);
+        void OnAngularImpulseEvent(const SAngularImpulseEvent& AngularImpulse);
+        void OnSetVelocityEvent(const SSetVelocityEvent& Velocity);
+        void OnSetAngularVelocityEvent(const SSetAngularVelocityEvent& AngularVelocity);
+        void OnAddImpulseAtPositionEvent(const SAddImpulseAtPositionEvent& Event);
+        void OnAddForceAtPositionEvent(const SAddForceAtPositionEvent& Event);
+        void OnSetGravityFactorEvent(const SSetGravityFactorEvent& Event);
 
     private:
         
