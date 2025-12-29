@@ -11,7 +11,7 @@ const float INV_PI  = 0.31830988618;
 #define LIGHT_INDEX_MASK 0x1FFFu
 #define LIGHTS_PER_UINT 2
 #define LIGHTS_PER_CLUSTER 100
-#define SHADOW_SAMPLE_COUNT 14
+#define SHADOW_SAMPLE_COUNT 12
 
 #define INDEX_NONE -1
 
@@ -62,10 +62,18 @@ const uint LIGHT_FLAG_CASTSHADOW       = 1 << 3;
 vec2 VogelDiskSample(int SampleIndex, int SamplesCount, float Angle)
 {
     float GoldenAngle   = 2.0 * PI * (1.0 - 1.0 / PHI);
-    float r             = sqrt(float(SampleIndex) + 0.5) / sqrt(float(SamplesCount));
+    float r             = sqrt((float(SampleIndex) + 0.5) / float(SamplesCount));
     float theta         = float(SampleIndex) * GoldenAngle + Angle;
     
     return vec2(r * cos(theta), r * sin(theta));
+}
+
+vec3 ScreenSpaceDither(vec2 vScreenPos, float Time)
+{
+    // Iestyn's RGB dither (7 asm instructions) from Portal 2 X360, slightly modified.
+    vec3 vDither = vec3(dot(vec2(171.0, 231.0), vScreenPos.xy + Time));
+    vDither.rgb = fract(vDither.rgb / vec3(103.0, 71.0, 97.0)) - vec3(0.5, 0.5, 0.5);
+    return (vDither.rgb / 255.0) * 0.375;
 }
 
 struct FSSAOSettings

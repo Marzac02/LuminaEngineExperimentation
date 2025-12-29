@@ -7,6 +7,7 @@
 #include "EASTL/sort.h"
 #include "glm/gtx/matrix_decompose.hpp"
 #include "Paths/Paths.h"
+#include "Tools/ComponentVisualizers/ComponentVisualizer.h"
 #include "Tools/Dialogs/Dialogs.h"
 #include "Tools/UI/ImGui/ImGuiX.h"
 #include "World/WorldManager.h"
@@ -256,7 +257,28 @@ namespace Lumina
 
     void FWorldEditorTool::EndFrame()
     {
-        FEditorTool::EndFrame();
+        using namespace entt::literals;
+        
+        if (!World->GetEntityRegistry().valid(SelectedEntity))
+        {
+            return;
+        }
+        
+        CComponentVisualizerRegistry& ComponentVisualizerRegistry = ComponentVisualizerRegistry.Get();
+        
+        ECS::Utils::ForEachComponent([&](void*, const entt::meta_type& Type)
+        {
+            if (entt::meta_any ReturnValue = ECS::InvokeMetaFunc(Type, "static_struct"_hs))
+            {
+                CStruct* StructType = ReturnValue.cast<CStruct*>();
+
+                if (CComponentVisualizer* Visualizer = ComponentVisualizerRegistry.GetComponentVisualizer(StructType))
+                {
+                    Visualizer->Draw(World, World->GetEntityRegistry(), SelectedEntity);
+                }
+                
+            }
+        }, World->GetEntityRegistry(), SelectedEntity);
     }
 
     void FWorldEditorTool::DrawToolMenu(const FUpdateContext& UpdateContext)

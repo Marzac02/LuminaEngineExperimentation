@@ -35,14 +35,6 @@ vec3 Uncharted2Tonemap(vec3 x)
     return ((x * (A * x + C * B) + D * E) / (x * (A * x + B) + D * F)) - E / F;
 }
 
-vec3 ScreenSpaceDither(vec2 vScreenPos)
-{
-    // Iestyn's RGB dither (7 asm instructions) from Portal 2 X360, slightly modified.
-    vec3 vDither = vec3(dot(vec2(171.0, 231.0), vScreenPos.xy + Time));
-    vDither.rgb = fract(vDither.rgb / vec3(103.0, 71.0, 97.0)) - vec3(0.5, 0.5, 0.5);
-    return (vDither.rgb / 255.0) * 0.375;
-}
-
 void main()
 {
     vec3 hdrColor = texture(uHDRSceneColor, vTexCoord).rgb;
@@ -55,7 +47,7 @@ void main()
     // Gamma correction
     toneMappedColor = pow(toneMappedColor, vec3(1.0 / 2.2));
     
-    toneMappedColor += ScreenSpaceDither(gl_FragCoord.xy);
+    toneMappedColor += ScreenSpaceDither(gl_FragCoord.xy, Time);
     
     oFragColor = vec4(toneMappedColor, 1.0);
 }

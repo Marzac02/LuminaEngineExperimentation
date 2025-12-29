@@ -217,14 +217,33 @@ float ComputeShadowFactor(FLight Light, vec3 FragmentPos, float Bias)
     FLightShadow ShadowTile = Light.Shadow[Coord.Face];
     float Angle             = fract(sin(dot(FragmentPos.xy, vec2(12.9898, 78.233))) * 43758.5453) * 6.28318530718;
     
+    // First, sample the blocker depth at the center to determine filter radius
+    float BlockerDepth = 0.0f;
+    if(IsDirectionalLight)
+    {
+        BlockerDepth = texture(uShadowCascade, vec3(ProjectionUV, ViewProjectionIndex)).r;
+    }
+    else
+    {
+        vec2 ClampedUV  = clamp(Coord.UV, 0.001, 0.999);
+        vec2 SampleUV   = ShadowTile.AtlasUVOffset + (ClampedUV * ShadowTile.AtlasUVScale);
+        int ArrayLayer  = ShadowTile.ShadowMapLayer;
+        BlockerDepth    = texture(uShadowAtlas, vec3(SampleUV, ArrayLayer)).r;
+    }
+    
+    // Calculate the distance from the blocker to the current fragment
+    float DepthDifference = abs(CurrentDepth - BlockerDepth);
+    
+    float MinRadius     = 0.0;
+    float MaxRadius     = 0.004;
+    float Exponent      = 1.52;
+        
+        // Use depth difference instead of distance to light
+    float FilterRadius  = mix(MinRadius, MaxRadius, pow(DepthDifference, Exponent));
+
     float Shadow = 0.0f;
     for(int i = 0; i < SHADOW_SAMPLE_COUNT; i++)
     {
-        float MinRadius     = 0.00001;
-        float MaxRadius     = 0.0015;
-        float Exponent      = 1.5;
-        
-        float FilterRadius  = mix(MinRadius, MaxRadius, pow(CurrentDepth, Exponent));
         float ShadowDepth   = 0.0f;
         vec2 Offset         = VogelDiskSample(i, SHADOW_SAMPLE_COUNT, Angle) * FilterRadius;
         
@@ -236,10 +255,9 @@ float ComputeShadowFactor(FLight Light, vec3 FragmentPos, float Bias)
         }
         else
         {
-            // We apply a clamp due to a small pixel difference in the atlas.
             vec2 ClampedUV  = clamp(Coord.UV + (Offset / ShadowTile.AtlasUVScale), 0.001, 0.999);
             vec2 SampleUV   = ShadowTile.AtlasUVOffset + (ClampedUV * ShadowTile.AtlasUVScale);
-            int ArrayLayer = ShadowTile.ShadowMapLayer;
+            int ArrayLayer  = ShadowTile.ShadowMapLayer;
             
             ShadowDepth     = texture(uShadowAtlas, vec3(SampleUV, ArrayLayer)).r;
             Shadow          += step(CurrentDepth - Bias, ShadowDepth);
