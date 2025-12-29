@@ -1,8 +1,8 @@
 #pragma once
+#include "Containers/String.h"
 #include "Core/Delegates/Delegate.h"
 #include "Core/Object/Class.h"
 #include "Core/Reflection/Type/LuminaTypes.h"
-#include "Scripting/ScriptTypes.h"
 #include "sol/sol.hpp"
 #include "Tools/Actions/DeferredActions.h"
 #include "World/Entity/Components/Component.h"
@@ -14,6 +14,7 @@ namespace Lumina
 }
 
 DECLARE_MULTICAST_DELEGATE(FScriptReloadedDelegate);
+
 
 namespace Lumina::Scripting
 {

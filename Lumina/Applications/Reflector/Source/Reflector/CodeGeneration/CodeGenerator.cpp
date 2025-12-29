@@ -431,14 +431,27 @@ namespace Lumina::Reflection
 
         for (const eastl::shared_ptr<FReflectedType>& Type : ReflectedTypes)
         {
-            if (Type->Type != FReflectedType::EType::Structure)
+            bool bIsStructure = Type->Type == FReflectedType::EType::Structure;
+            bool bIsClass = Type->Type == FReflectedType::EType::Class;
+            
+            if (!(bIsClass || bIsStructure))
             {
                 continue;
             }
             
+            const eastl::shared_ptr<FReflectedStruct>& StructType = eastl::static_pointer_cast<FReflectedStruct>(Type);
+            
             Stream += "\t State.new_usertype<" + Type->Namespace + "::" + Type->DisplayName + ">(\"" + Type->DisplayName + "\",\n";
-
-            Stream += "\t\tsol::call_constructor, sol::constructors<" + Type->Namespace + "::" + Type->DisplayName + "()>(),\n"; 
+            
+            if (bIsStructure)
+            {
+                Stream += "\t\tsol::call_constructor, sol::constructors<" + Type->Namespace + "::" + Type->DisplayName + "()>(),\n"; 
+            }
+            
+            if (!StructType->Parent.empty())
+            {
+                Stream += "\t\tsol::base_classes, sol::bases<" + Type->Namespace + "::" + StructType->Parent + ">(),\n";
+            }
             Stream += "\t\t\"__type\", sol::readonly_property([]() { return \"" + Type->DisplayName + "\"; })";
 
             if (!Type->Props.empty() || !Type->Functions.empty())

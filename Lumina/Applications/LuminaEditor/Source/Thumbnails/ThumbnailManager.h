@@ -2,12 +2,12 @@
 #include "Core/Object/ObjectMacros.h"
 #include "Core/Object/Object.h"
 #include "Core/Object/ObjectHandleTyped.h"
+#include "Assets/AssetTypes/Mesh/StaticMesh/StaticMesh.h"
 #include "ThumbnailManager.generated.h"
 
 namespace Lumina
 {
     struct FPackageThumbnail;
-    class CStaticMesh;
 }
 
 namespace Lumina

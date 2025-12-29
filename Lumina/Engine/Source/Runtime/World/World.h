@@ -80,6 +80,8 @@ namespace Lumina
         void SetActiveCamera(entt::entity InEntity);
         SCameraComponent* GetActiveCamera();
         entt::entity GetActiveCameraEntity() const;
+        
+        FORCEINLINE entt::entity GetSingletonEntity() const { return SingletonEntity; }
 
         void OnChangeCameraEvent(const FSwitchActiveCameraEvent& Event);
         
@@ -114,7 +116,7 @@ namespace Lumina
 
         IRenderScene* GetRenderer() const { return RenderScene.get(); }
 
-        const TVector<TObjectPtr<CEntitySystem>>& GetSystemsForUpdateStage(EUpdateStage Stage);
+        const TVector<CEntitySystem*>& GetSystemsForUpdateStage(EUpdateStage Stage);
 
         void OnRelationshipComponentDestroyed(entt::registry& Registry, entt::entity Entity);
         void OnSineWaveMovementComponentCreated(entt::registry& Registry, entt::entity Entity);
@@ -171,7 +173,7 @@ namespace Lumina
         TUniquePtr<IRenderScene>                        RenderScene;
         TUniquePtr<Physics::IPhysicsScene>              PhysicsScene;
         
-        TVector<TObjectPtr<CEntitySystem>>              SystemUpdateList[(int32)EUpdateStage::Max];
+        TVector<CEntitySystem*>                         SystemUpdateList[(int32)EUpdateStage::Max];
         
         
         int64                                           WorldIndex = -1;

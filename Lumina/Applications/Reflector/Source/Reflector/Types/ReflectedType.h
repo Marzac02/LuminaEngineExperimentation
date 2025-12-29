@@ -192,7 +192,7 @@ namespace Lumina::Reflection
         void DeclareImplementation(eastl::string& Stream) override;
         void DeclareStaticRegistration(eastl::string& Stream) override;
         
-        eastl::string                                               Parent;
+        eastl::string Parent;
     };
 
     

@@ -1,6 +1,7 @@
 #include "pch.h"
 #include "ScriptEntitySystem.h"
 
+#include "Scripting/ScriptTypes.h"
 #include "World/Entity/Components/LuaComponent.h"
 
 

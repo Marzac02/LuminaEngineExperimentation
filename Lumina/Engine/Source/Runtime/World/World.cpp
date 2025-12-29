@@ -34,13 +34,13 @@ namespace Lumina
         : SingletonEntity(entt::null)
         , SystemContext(this)
     {
-        
     }
 
     void CWorld::Serialize(FArchive& Ar)
     {
         CObject::Serialize(Ar);
         ECS::Utils::SerializeRegistry(Ar, EntityRegistry);
+        ECS::Utils::SerializeEntity(Ar, EntityRegistry, SingletonEntity);
     }
 
     void CWorld::PreLoad()
@@ -53,14 +53,17 @@ namespace Lumina
         //...
     }
     
-
     void CWorld::InitializeWorld()
     {
         GEngine->GetEngineSubsystem<FWorldManager>()->AddWorld(this);
 
         EntityRegistry.ctx().emplace<entt::dispatcher&>(SingletonDispatcher);
         
-        SingletonEntity = EntityRegistry.create();
+        if (!EntityRegistry.valid(SingletonEntity))
+        {
+            SingletonEntity = EntityRegistry.create();
+        }
+        
         EntityRegistry.emplace<FSingletonEntityTag>(SingletonEntity);
         EntityRegistry.emplace<FHideInSceneOutliner>(SingletonEntity);
         EntityRegistry.emplace<FLuaScriptsContainerComponent>(SingletonEntity);
@@ -392,7 +395,6 @@ namespace Lumina
         
         CWorld* PIEWorld = NewObject<CWorld>(OF_Transient);
         PIEWorld->InitializeWorld();
-
         
         PIEWorld->PreLoad();
         PIEWorld->Serialize(ReaderProxy);
@@ -401,9 +403,9 @@ namespace Lumina
         return PIEWorld;
     }
 
-    const TVector<TObjectPtr<CEntitySystem>>& CWorld::GetSystemsForUpdateStage(EUpdateStage Stage)
+    const TVector<CEntitySystem*>& CWorld::GetSystemsForUpdateStage(EUpdateStage Stage)
     {
-        return SystemUpdateList[uint32(Stage)];
+        return SystemUpdateList[(uint32)Stage];
     }
 
     void CWorld::OnRelationshipComponentDestroyed(entt::registry& Registry, entt::entity Entity)

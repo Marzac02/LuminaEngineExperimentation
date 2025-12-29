@@ -1,12 +1,8 @@
 ﻿#pragma once
 #include "MaterialNodeExpression.h"
 #include "Core/Object/ObjectHandleTyped.h"
+#include "Assets/AssetTypes/Textures/Texture.h"
 #include "MaterialNode_TextureSample.generated.h"
-
-namespace Lumina
-{
-    class CTexture;
-}
 
 namespace Lumina
 {

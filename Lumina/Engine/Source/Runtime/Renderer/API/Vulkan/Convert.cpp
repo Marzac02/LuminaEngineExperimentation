@@ -7,10 +7,10 @@ namespace Lumina::Vk
 {
     struct FResourceStateMappingInternal
     {
-        EResourceStates State;
-        VkImageLayout ImageLayout;
-        VkPipelineStageFlags2 StageFlags;
-        VkAccessFlags2 AccessMask;
+        EResourceStates         State;
+        VkImageLayout           ImageLayout;
+        VkPipelineStageFlags2   StageFlags;
+        VkAccessFlags2          AccessMask;
 
         FResourceStateMapping AsResourceStateMapping() const 
         {
@@ -24,7 +24,7 @@ namespace Lumina::Vk
 
         FResourceStateMapping2 AsResourceStateMapping2() const
         {
-            return FResourceStateMapping2(State, StageFlags, AccessMask, ImageLayout);
+            return FResourceStateMapping2(State, ImageLayout, StageFlags, AccessMask);
         }
     };
 

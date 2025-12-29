@@ -151,22 +151,22 @@ namespace Lumina
         void RebuildSceneOutliner(FTreeListView* View);
         void HandleEntityEditorDragDrop(FTreeListViewItem* DropItem);
 
+        void DrawWorldSettings(bool bFocused);
         void DrawOutliner(bool bFocused);
         void DrawSystems(bool bFocused);
-        void DrawEntityProperties();
-        void DrawEntityActionButtons();
-        void DrawComponentList();
-        void DrawTagList();
-        void DrawComponentHeader(TUniquePtr<FPropertyTable>& Table);
+        void DrawEntityProperties(entt::entity Entity);
+        void DrawEntityActionButtons(entt::entity Entity);
+        void DrawComponentList(entt::entity Entity);
+        void DrawTagList(entt::entity Entity);
+        void DrawComponentHeader(const TUniquePtr<FPropertyTable>& Table, entt::entity Entity);
         void RemoveComponent(entt::entity Entity, const CStruct* ComponentType);
-        void DrawSystemProperties();
         void DrawEmptyState();
 
-        void DrawObjectEditor(bool bFocused);
+        void DrawEntityEditor(bool bFocused, entt::entity Entity);
 
         void DrawPropertyEditor(bool bFocused);
 
-        void RebuildPropertyTables();
+        void RebuildPropertyTables(entt::entity Entity);
 
         void CreateEntityWithComponent(const CStruct* Component);
         void CreateEntity();
@@ -187,15 +187,11 @@ namespace Lumina
         ImGuizmo::OPERATION                     GuizmoOp;
         ImGuizmo::MODE                          GuizmoMode;
 
-        CEntitySystem*                          SelectedSystem;
         entt::entity                            SelectedEntity;
         entt::entity                            CopiedEntity;
         
         FTreeListView                           OutlinerListView;
         FTreeListViewContext                    OutlinerContext;
-
-        FTreeListView                           SystemsListView;
-        FTreeListViewContext                    SystemsContext;
 
         TQueue<FComponentDestroyRequest>        ComponentDestroyRequests;
         TQueue<entt::entity>                    EntityDestroyRequests;

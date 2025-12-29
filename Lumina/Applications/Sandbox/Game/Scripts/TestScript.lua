@@ -28,6 +28,13 @@ local MyScript =
                         RaySettings.bDrawDebug      = false
                         RaySettings.DebugDuration   = 0.1
 
+                        local MeshComp = Context:Get(Result.Entity, "SStaticMeshComponent")
+                        if MeshComp then
+                            
+                            print(MeshComp.StaticMesh:GetAABB():GetSize())
+
+                        end
+
                         local SphereResult = Context:CastSphere(RaySettings)
 
                         for i = 1, #SphereResult do

@@ -156,6 +156,18 @@ namespace Lumina::Scripting
 
     void FScriptingContext::RegisterCoreTypes()
     {
+        State.new_usertype<FString>("FString",
+	        sol::constructors<sol::types<>, sol::types<const char*>>(),
+		    "size", [](const FString& Self) { return Self.size(); },
+		    "trim", [](FString& Self) { return Self.trim(); },
+	        sol::meta_function::to_string, [](const FString &s) { return s.data(); },
+	        sol::meta_function::length, &FString::size,
+	        sol::meta_function::index, [](const FString &s, size_t i) { return s.at(i - 1); },
+	        "append", sol::overload(
+			    [](FString &self, const FString &other) { self.append(other); },
+	            [](FString &self, const char *suffix) { self.append(suffix); }
+		    )
+	    );
 
         State.set_function("System", [](const sol::table& Descriptor)
         {

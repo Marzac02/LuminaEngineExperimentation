@@ -2,6 +2,7 @@
 #include "Core/Object/ObjectMacros.h"
 #include "sol/sol.hpp"
 #include "Component.h"
+#include "Scripting/ScriptTypes.h"
 #include "LuaComponent.generated.h"
 
 namespace Lumina

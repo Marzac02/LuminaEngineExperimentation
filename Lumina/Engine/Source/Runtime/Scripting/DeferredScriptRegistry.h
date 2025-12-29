@@ -1,5 +1,7 @@
 ﻿#pragma once
 #include "Containers/Array.h"
+#include <sol/sol.hpp>
+#include "Scripting/ScriptTypes.h"
 #include "Module/API.h"
 
 namespace Lumina::Scripting

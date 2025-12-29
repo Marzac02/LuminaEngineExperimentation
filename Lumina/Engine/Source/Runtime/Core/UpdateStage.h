@@ -15,6 +15,16 @@ namespace Lumina
         Paused,
         Max,
     };
+    
+    constexpr const char* GUpdateStageNames[] = 
+    {
+        "FrameStart",
+        "PrePhysics",
+        "DuringPhysics",
+        "PostPhysics",
+        "FrameEnd",
+        "Paused"
+    };
 
     #define US_FrameStart       EUpdateStage::FrameStart
     #define US_PrePhysics       EUpdateStage::PrePhysics

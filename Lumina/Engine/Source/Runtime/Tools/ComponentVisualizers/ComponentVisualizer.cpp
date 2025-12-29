@@ -56,6 +56,6 @@ namespace Lumina
         const STransformComponent& Transform = Registry.get<STransformComponent>(Entity);
         
         PDI->DrawSphere(Transform.GetLocation(), PointLight.Attenuation, 
-            glm::vec4(PointLight.LightColor, 1.0f), 8, 1.0f, 0.1f);
+            glm::vec4(PointLight.LightColor, 1.0f), 32, 1.0f, 0.025f);
     }
 }

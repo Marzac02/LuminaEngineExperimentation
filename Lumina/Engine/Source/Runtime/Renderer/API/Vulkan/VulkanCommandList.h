@@ -15,10 +15,11 @@ namespace Lumina
 
     struct FResourceStateMapping
     {
-        EResourceStates State;
-        VkPipelineStageFlags StageFlags;
-        VkAccessFlags AccessMask;
-        VkImageLayout ImageLayout;
+        EResourceStates         State;
+        VkPipelineStageFlags    StageFlags;
+        VkAccessFlags           AccessMask;
+        VkImageLayout           ImageLayout;
+        
         FResourceStateMapping(EResourceStates InState, VkPipelineStageFlags InStageFlags, VkAccessFlags InAccessMask, VkImageLayout InImageLayout)
             : State(InState), StageFlags(InStageFlags), AccessMask(InAccessMask), ImageLayout(InImageLayout)
         {}
@@ -28,12 +29,12 @@ namespace Lumina
     struct FResourceStateMapping2 // for use with KHR_synchronization2
     {
          EResourceStates State;
+         VkImageLayout ImageLayout;
          VkPipelineStageFlags2 StageFlags;
          VkAccessFlags2 AccessMask;
-         VkImageLayout ImageLayout;
         
-         FResourceStateMapping2(EResourceStates InState, VkPipelineStageFlags2 InStageFlags, VkAccessFlags2 InAccessMask, VkImageLayout ImageLayout)
-            : State(InState), StageFlags(InStageFlags), AccessMask(InAccessMask), ImageLayout(ImageLayout)
+         FResourceStateMapping2(EResourceStates InState, VkImageLayout ImageLayout, VkPipelineStageFlags2 InStageFlags, VkAccessFlags2 InAccessMask)
+            : State(InState), ImageLayout(ImageLayout), StageFlags(InStageFlags), AccessMask(InAccessMask)
         {}
     };
     
@@ -133,19 +134,20 @@ namespace Lumina
                 
 
     private:
-
-        FVulkanRenderContext*                                   RenderContext = nullptr;
-        FCommandListStatTracker                                 CommandListStats;
-        FCommandListStatTracker                                 CommandListStatLastFrame;
-        TRefCountPtr<FTrackedCommandBuffer>                     CurrentCommandBuffer;
         
-        TUniquePtr<FUploadManager>                              UploadManager;
-        TUniquePtr<FUploadManager>                              ScratchManager;
-
         TFixedHashMap<FRHIBufferRef, FDynamicBufferWrite, 2>    DynamicBufferWrites;
 
         FGraphicsState                                          CurrentGraphicsState;
         FComputeState                                           CurrentComputeState;
+
+        FVulkanRenderContext*                                   RenderContext = nullptr;
+        TUniquePtr<FUploadManager>                              UploadManager;
+        TUniquePtr<FUploadManager>                              ScratchManager;
+        
+        
+        FCommandListStatTracker                                 CommandListStats;
+        FCommandListStatTracker                                 CommandListStatLastFrame;
+        TRefCountPtr<FTrackedCommandBuffer>                     CurrentCommandBuffer;
                                                                 
         FCommandListResourceStateTracker                        StateTracker;
         FPendingCommandState                                    PendingState;
