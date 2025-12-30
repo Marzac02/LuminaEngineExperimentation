@@ -960,7 +960,7 @@ namespace Lumina
                 {
                     FVulkanImage* Image = static_cast<FVulkanImage*>(Binding.ResourceHandle);
 
-                    const FTextureSubresourceSet Subresource = Binding.TextureResource.Subresources.Resolve(Image->GetDescription(), true);
+                    const FTextureSubresourceSet Subresource = Binding.GetTextureResource()->Subresources.Resolve(Image->GetDescription(), true);
                     FVulkanImage::ESubresourceViewType ViewType = GetTextureViewType(Binding.Format, Image->GetDescription().Format);
                     VkImageView View = Image->GetSubresourceView(Subresource, Binding.Dimension, Binding.Format, VK_IMAGE_USAGE_SAMPLED_BIT, ViewType).View;
                     
@@ -978,7 +978,7 @@ namespace Lumina
                 {
                     FVulkanImage* Image = static_cast<FVulkanImage*>(Binding.ResourceHandle);
 
-                    const FTextureSubresourceSet Subresource = Binding.TextureResource.Subresources.Resolve(Image->GetDescription(), true);
+                    const FTextureSubresourceSet Subresource = Binding.GetTextureResource()->Subresources.Resolve(Image->GetDescription(), true);
                     FVulkanImage::ESubresourceViewType ViewType = GetTextureViewType(Binding.Format, Image->GetDescription().Format);
                     VkImageView View = Image->GetSubresourceView(Subresource, Binding.Dimension, Binding.Format, VK_IMAGE_USAGE_STORAGE_BIT, ViewType).View;
                     
@@ -996,7 +996,7 @@ namespace Lumina
                     VkDescriptorBufferInfo& BufferInfo = BufferWriteInfos.emplace_back();
                     BufferInfo.buffer = Buffer->GetBuffer();
                     BufferInfo.offset = 0;
-                    BufferInfo.range = Binding.Range.Resolve(Buffer->GetDescription()).ByteSize;
+                    BufferInfo.range = Binding.GetBufferRange()->Resolve(Buffer->GetDescription()).ByteSize;
                         
                     Write.pBufferInfo = &BufferInfo;
                     Write.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
@@ -1008,7 +1008,7 @@ namespace Lumina
                     VkDescriptorBufferInfo& BufferInfo = BufferWriteInfos.emplace_back();
                     BufferInfo.buffer = Buffer->GetBuffer();
                     BufferInfo.offset = 0;
-                    BufferInfo.range = Binding.Range.Resolve(Buffer->GetDescription()).ByteSize;
+                    BufferInfo.range = Binding.GetBufferRange()->Resolve(Buffer->GetDescription()).ByteSize;
                         
                     Write.pBufferInfo = &BufferInfo;
                     Write.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
@@ -1020,7 +1020,7 @@ namespace Lumina
                     VkDescriptorBufferInfo& BufferInfo = BufferWriteInfos.emplace_back();
                     BufferInfo.buffer = Buffer->GetBuffer();
                     BufferInfo.offset = 0;
-                    BufferInfo.range = Binding.Range.Resolve(Buffer->GetDescription()).ByteSize;
+                    BufferInfo.range = Binding.GetBufferRange()->Resolve(Buffer->GetDescription()).ByteSize;
                         
                     Write.pBufferInfo = &BufferInfo;
                     Write.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
@@ -1086,7 +1086,7 @@ namespace Lumina
             Item.Size = 1;
             if (Item.Type == ERHIBindingResourceType::PushConstants)
             {
-                Item.Size = (uint16)BindingItem.Range.ByteSize;
+                Item.Size = (uint16)BindingItem.GetBufferRange()->ByteSize;
             }
             LayoutDesc.Bindings.push_back(Item);
         }

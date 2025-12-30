@@ -1408,6 +1408,11 @@ namespace Lumina
 	{
 		FTextureSubresourceSet	Subresources;
 		FRHISampler*			Sampler;
+		
+		bool operator==(const FBindingTextureResource& Other) const
+		{
+			return Subresources == Other.Subresources && Sampler == Other.Sampler;
+		}
 	};
 	
 	struct LUMINA_API FBindingSetItem
