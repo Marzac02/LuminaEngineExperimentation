@@ -1347,15 +1347,15 @@ namespace Lumina
                 {
                     FVulkanImage* Image = static_cast<FVulkanImage*>(Item.ResourceHandle);
                     
-                    const FTextureSubresourceSet Subresource = Item.GetTextureResource()->Subresources.Resolve(Image->GetDescription(), false);
+                    const FTextureSubresourceSet Subresource = Item.GetTextureResource().Subresources.Resolve(Image->GetDescription(), false);
                     FVulkanImage::ESubresourceViewType ViewType = GetTextureViewType(Item.Format, Image->GetDescription().Format);
                     VkImageView View = Image->GetSubresourceView(Subresource, Item.Dimension, Item.Format, VK_IMAGE_USAGE_SAMPLED_BIT, ViewType).View;
                     
                     VkDescriptorImageInfo& ImageInfo = ImageInfos.emplace_back();
                     ImageInfo.imageView = View;
                     ImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-                    ImageInfo.sampler = Item.GetTextureResource()->Sampler ?
-                    Item.GetTextureResource()->Sampler->GetAPI<VkSampler>() : TStaticRHISampler<>::GetRHI()->GetAPI<VkSampler>();
+                    ImageInfo.sampler = Item.GetTextureResource().Sampler ?
+                    Item.GetTextureResource().Sampler->GetAPI<VkSampler>() : TStaticRHISampler<>::GetRHI()->GetAPI<VkSampler>();
 
                     
                     Write.pImageInfo = &ImageInfo;
@@ -1375,7 +1375,7 @@ namespace Lumina
                 {
 
                     FVulkanImage* Image = static_cast<FVulkanImage*>(Item.ResourceHandle);
-                    const FTextureSubresourceSet Subresource = Item.GetTextureResource()->Subresources.Resolve(Image->GetDescription(), true);
+                    const FTextureSubresourceSet Subresource = Item.GetTextureResource().Subresources.Resolve(Image->GetDescription(), true);
                     FVulkanImage::ESubresourceViewType ViewType = GetTextureViewType(Item.Format, Image->GetDescription().Format);
                     VkImageView View = Image->GetSubresourceView(Subresource, Item.Dimension, Item.Format, VK_IMAGE_USAGE_STORAGE_BIT, ViewType).View;
                     

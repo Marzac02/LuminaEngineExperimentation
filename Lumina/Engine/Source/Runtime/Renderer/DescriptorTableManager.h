@@ -50,13 +50,13 @@ namespace Lumina
                 Hash::HashCombine(hash, Item.Type);
                 Hash::HashCombine(hash, Item.Dimension);
 			
-                if (const FBufferRange* Range = Item.GetBufferRange())
+                if (const FBufferRange* Range = Item.TryGetBufferRange())
                 {
                     Hash::HashCombine(hash, Range->ByteSize);
                     Hash::HashCombine(hash, Range->ByteOffset);
                 }
 			
-                if (const FBindingTextureResource* Texture = Item.GetTextureResource())
+                if (const FBindingTextureResource* Texture = Item.TryGetTextureResource())
                 {
                     Hash::HashCombine(hash, Texture->Sampler);
                     Hash::HashCombine(hash, Texture->Subresources);

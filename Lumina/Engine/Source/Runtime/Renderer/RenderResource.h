@@ -1432,12 +1432,22 @@ namespace Lumina
 		static_assert(sizeof(FTextureSubresourceSet) == 16, "sizeof(TextureSubresourceSet) is supposed to be 16 bytes");
 		static_assert(sizeof(FBufferRange) == 16, "sizeof(BufferRange) is supposed to be 16 bytes");
 		
-		const FBufferRange* GetBufferRange() const
+		const FBufferRange& GetBufferRange() const
+		{
+			return eastl::get<FBufferRange>(Variant);
+		}
+		
+		const FBufferRange* TryGetBufferRange() const
 		{
 			return eastl::get_if<FBufferRange>(&Variant);
 		}
+		
+		const FBindingTextureResource& GetTextureResource() const
+		{
+			return eastl::get<FBindingTextureResource>(Variant);
+		}
     
-		const FBindingTextureResource* GetTextureResource() const
+		const FBindingTextureResource* TryGetTextureResource() const
 		{
 			return eastl::get_if<FBindingTextureResource>(&Variant);
 		}
@@ -1852,13 +1862,13 @@ namespace eastl
 			Hash::HashCombine(hash, Item.Type);
 			Hash::HashCombine(hash, Item.Dimension);
 			
-			if (const FBufferRange* Range = Item.GetBufferRange())
+			if (const FBufferRange* Range = Item.TryGetBufferRange())
 			{
 				Hash::HashCombine(hash, Range->ByteSize);
 				Hash::HashCombine(hash, Range->ByteOffset);
 			}
 			
-			if (const FBindingTextureResource* Texture = Item.GetTextureResource())
+			if (const FBindingTextureResource* Texture = Item.TryGetTextureResource())
 			{
 				Hash::HashCombine(hash, Texture->Sampler);
 				Hash::HashCombine(hash, Texture->Subresources);
