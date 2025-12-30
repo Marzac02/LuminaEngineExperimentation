@@ -9,6 +9,7 @@
 #include "Core/Math/Hash/CoreHashTypes.h"
 #include "Core/Serialization/Archiver.h"
 #include "Core/Threading/Thread.h"
+#include "Core/Variant/Variant.h"
 #include "Memory/RefCounted.h"
 #include "Types/BitFlags.h"
 
@@ -91,6 +92,8 @@ enum ERHIResourceType : uint8
 
 enum class ERHIBindingResourceType : uint8
 {
+	Unknown,
+	
 	// SRV (Shader Resource View) Types.
 	Texture_SRV,
 	Buffer_SRV,
@@ -1409,43 +1412,44 @@ namespace Lumina
 	
 	struct LUMINA_API FBindingSetItem
 	{
-		FBindingSetItem() noexcept { } // NOLINT(cppcoreguidelines-pro-type-member-init, modernize-use-equals-default)
+		using FBindingVariant = TVariant<eastl::monostate, FBindingTextureResource, FBufferRange>;
 		
-		IRHIResource* ResourceHandle;
-		uint32 Slot;
-		uint32 ArrayElement;
-		ERHIBindingResourceType Type	: 8;
-		EImageDimension Dimension		: 8;
-		EFormat Format					: 8;
-
+		FBindingVariant				Variant;
 		
-		union 
-		{
-			FBindingTextureResource TextureResource;	// Valid for Texture_SRV, Texture_UAV
-			FBufferRange Range;							// Valid for Buffer_SRV, Buffer_UAV, Buffer_CBV
-			uint64 RawData[2];
-		};
-
+		IRHIResource*				ResourceHandle = nullptr;
+		uint32						Slot = 0;
+		uint32						ArrayElement = 0;
+		ERHIBindingResourceType		Type = ERHIBindingResourceType::Unknown;
+		EImageDimension				Dimension = EImageDimension::Unknown;
+		EFormat						Format = EFormat::UNKNOWN;
+		
 		// verify that the `subresources` and `range` have the same size and are covered by `rawData`
 		static_assert(sizeof(FTextureSubresourceSet) == 16, "sizeof(TextureSubresourceSet) is supposed to be 16 bytes");
 		static_assert(sizeof(FBufferRange) == 16, "sizeof(BufferRange) is supposed to be 16 bytes");
+		
+		const FBufferRange* GetBufferRange() const
+		{
+			return eastl::get_if<FBufferRange>(&Variant);
+		}
+    
+		const FBindingTextureResource* GetTextureResource() const
+		{
+			return eastl::get_if<FBindingTextureResource>(&Variant);
+		}
 		
 		// Creates a Shader Resource View (SRV) binding for a buffer.
 		// Typically used for read-only access to structured or byte-address buffers.
 		static FBindingSetItem BufferSRV(uint32 Slot, FRHIBuffer* Buffer, EFormat Format = EFormat::UNKNOWN, FBufferRange Range = EntireBuffer)
 		{
 			bool bIsDynamic = Buffer->GetDescription().Usage.IsFlagSet(BUF_Dynamic);
-			FBindingSetItem Result;
-			Result.Type = bIsDynamic ? ERHIBindingResourceType::Buffer_Storage_Dynamic : ERHIBindingResourceType::Buffer_SRV;
-			Result.ResourceHandle = Buffer;
-			Result.Range = Range;
-			Result.Dimension = EImageDimension::Unknown;
-			Result.Format = Format;
-			Result.ArrayElement = 0;
-			Result.Slot = Slot;
-			Result.RawData[0] = 0;
-			Result.RawData[1] = 0;
 			
+			FBindingSetItem Result;
+			Result.Type				= bIsDynamic ? ERHIBindingResourceType::Buffer_Storage_Dynamic : ERHIBindingResourceType::Buffer_SRV;
+			Result.ResourceHandle	= Buffer;
+			Result.Variant			= Range;
+			Result.Format			= Format;
+			Result.Slot				= Slot;
+        
 			return Result;
 		}
 
@@ -1454,53 +1458,46 @@ namespace Lumina
 		static FBindingSetItem BufferUAV(uint32 Slot, FRHIBuffer* Buffer, EFormat Format = EFormat::UNKNOWN, FBufferRange Range = EntireBuffer)
 		{
 			bool bIsDynamic = Buffer->GetDescription().Usage.IsFlagSet(BUF_Dynamic);
-			FBindingSetItem Result;
-			Result.Type = bIsDynamic ? ERHIBindingResourceType::Buffer_Storage_Dynamic : ERHIBindingResourceType::Buffer_UAV;
-			Result.ResourceHandle = Buffer;
-			Result.Range = Range;
-			Result.Dimension = EImageDimension::Unknown;
-			Result.Format = Format;
-			Result.ArrayElement = 0;
-			Result.Slot = Slot;
-			Result.RawData[0] = 0;
-			Result.RawData[1] = 0;
 			
+			FBindingSetItem Result;
+			Result.Type				= bIsDynamic ? ERHIBindingResourceType::Buffer_Storage_Dynamic : ERHIBindingResourceType::Buffer_UAV;
+			Result.ResourceHandle	= Buffer;
+			Result.Variant			= Range;
+			Result.Format			= Format;
+			Result.Slot				= Slot;
+        
 			return Result;
 		}
 
 		// Creates a Constant Buffer View (CBV) binding for a buffer.
 		// Used to bind uniform buffers (read-only, small constant data).
-		static FBindingSetItem BufferCBV(uint32 Slot, FRHIBuffer* Buffer, FBufferRange Range = EntireBuffer)
+		static FBindingSetItem BufferCBV(uint32 Slot, FRHIBuffer* Buffer, EFormat Format = EFormat::UNKNOWN, FBufferRange Range = EntireBuffer)
 		{
 			bool bIsDynamic = Buffer->GetDescription().Usage.IsFlagSet(BUF_Dynamic);
-			FBindingSetItem Result;
-			Result.Type = bIsDynamic ? ERHIBindingResourceType::Buffer_Uniform_Dynamic : ERHIBindingResourceType::Buffer_CBV;
-			Result.ResourceHandle = Buffer;
-			Result.Range = Range;
-			Result.Dimension = EImageDimension::Unknown;
-			Result.Format = EFormat::UNKNOWN;
-			Result.ArrayElement = 0;
-			Result.Slot = Slot;
-			Result.RawData[0] = 0;
-			Result.RawData[1] = 0;
 			
+			FBindingSetItem Result;
+			Result.Type				= bIsDynamic ? ERHIBindingResourceType::Buffer_Storage_Dynamic : ERHIBindingResourceType::Buffer_CBV;
+			Result.ResourceHandle	= Buffer;
+			Result.Variant			= Range;
+			Result.Format			= Format;
+			Result.Slot				= Slot;
+        
 			return Result;
 		}
 
 		// Creates a Shader Resource View (SRV) binding for a texture/image.
 		// Used to read from a texture in shaders (e.g. sampling or texel fetch).
-		static FBindingSetItem TextureSRV(uint32 Slot, FRHIImage* Image, FRHISampler* Sampler = nullptr, EFormat Format = EFormat::UNKNOWN, FTextureSubresourceSet Subresources = AllSubresources, EImageDimension Dimension = EImageDimension::Unknown)
+		static FBindingSetItem TextureSRV(uint32 Slot, FRHIImage* Image, FRHISampler* Sampler = nullptr, EFormat Format = EFormat::UNKNOWN, 
+			FTextureSubresourceSet Subresources = AllSubresources, EImageDimension Dimension = EImageDimension::Unknown)
 		{
 			FBindingSetItem Result;
-			Result.Slot							= Slot;
-			Result.ArrayElement					= 0;
-			Result.Type							= ERHIBindingResourceType::Texture_SRV;
-			Result.ResourceHandle				= Image;
-			Result.Format						= Format;
-			Result.Dimension					= Dimension;
-			Result.TextureResource.Subresources = Subresources;
-			Result.TextureResource.Sampler		= Sampler;
-			
+			Result.Slot = Slot;
+			Result.Type = ERHIBindingResourceType::Texture_SRV;
+			Result.ResourceHandle = Image;
+			Result.Format = Format;
+			Result.Dimension = Dimension;
+			Result.Variant = FBindingTextureResource{Subresources, Sampler};
+
 			return Result;
 		}
 
@@ -1508,18 +1505,15 @@ namespace Lumina
 		// Creates an Unordered Access View (UAV) binding for a texture/image.
 		// Used for read-write access to a texture (e.g. compute shader writes).
 		static FBindingSetItem TextureUAV(uint32 Slot, FRHIImage* Image, EFormat Format = EFormat::UNKNOWN, FTextureSubresourceSet Subresources =
-			FTextureSubresourceSet(0, 1, 0, FTextureSubresourceSet::AllArraySlices),
-			EImageDimension Dimension = EImageDimension::Unknown)
+			FTextureSubresourceSet(0, 1, 0, FTextureSubresourceSet::AllArraySlices), EImageDimension Dimension = EImageDimension::Unknown)
 		{
 			FBindingSetItem Result;
-			Result.Slot							= Slot;
-			Result.ArrayElement					= 0;
-			Result.Type							= ERHIBindingResourceType::Texture_UAV;
-			Result.ResourceHandle				= Image;
-			Result.Format						= Format;
-			Result.Dimension					= Dimension;
-			Result.TextureResource.Subresources = Subresources;
-			Result.TextureResource.Sampler		= nullptr;
+			Result.Slot = Slot;
+			Result.Type = ERHIBindingResourceType::Texture_UAV;
+			Result.ResourceHandle = Image;
+			Result.Format = Format;
+			Result.Dimension = Dimension;
+			Result.Variant = FBindingTextureResource{Subresources, nullptr};
 			
 			return Result;
 		}
@@ -1533,8 +1527,7 @@ namespace Lumina
 			Result.ResourceHandle		= nullptr;
 			Result.Format				= EFormat::UNKNOWN;
 			Result.Dimension			= EImageDimension::Unknown;
-			Result.Range.ByteOffset		= 0;
-			Result.Range.ByteSize		= ByteSize;
+			Result.Variant				= FBufferRange{0, ByteSize};
 			
 			return Result;
 		}
@@ -1546,13 +1539,10 @@ namespace Lumina
 				&& Type == b.Type
 				&& Dimension == b.Dimension
 				&& Format == b.Format
-				&& RawData[0] == b.RawData[0]
-				&& RawData[1] == b.RawData[1];
+				&& Variant == b.Variant;
 		}
 
 	};
-
-	static_assert(sizeof(FBindingSetItem) == 48, "sizeof(FBindingSetItem) is supposed to be 48 bytes");
 	
 	struct LUMINA_API FBindingSetDesc
 	{
@@ -1856,9 +1846,19 @@ namespace eastl
 			Hash::HashCombine(hash, Item.Slot);
 			Hash::HashCombine(hash, Item.Type);
 			Hash::HashCombine(hash, Item.Dimension);
-			Hash::HashCombine(hash, Item.RawData[0]);
-			Hash::HashCombine(hash, Item.RawData[1]);
-
+			
+			if (const FBufferRange* Range = Item.GetBufferRange())
+			{
+				Hash::HashCombine(hash, Range->ByteSize);
+				Hash::HashCombine(hash, Range->ByteOffset);
+			}
+			
+			if (const FBindingTextureResource* Texture = Item.GetTextureResource())
+			{
+				Hash::HashCombine(hash, Texture->Sampler);
+				Hash::HashCombine(hash, Texture->Subresources);
+			}
+			
 			return hash;
 		}
 	};

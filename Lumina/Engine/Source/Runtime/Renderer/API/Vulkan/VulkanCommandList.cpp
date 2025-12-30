@@ -995,13 +995,13 @@ namespace Lumina
                 case ERHIBindingResourceType::Texture_SRV:
                     {
                         FVulkanImage* VulkanImage = static_cast<FVulkanImage*>(Item.ResourceHandle);
-                        RequireTextureState(VulkanImage, Item.TextureResource.Subresources, EResourceStates::ShaderResource);
+                        RequireTextureState(VulkanImage, Item.GetTextureResource()->Subresources, EResourceStates::ShaderResource);
                     }
                     break;
                 case ERHIBindingResourceType::Texture_UAV:
                     {
                         FVulkanImage* VulkanImage = static_cast<FVulkanImage*>(Item.ResourceHandle);
-                        RequireTextureState(VulkanImage, Item.TextureResource.Subresources, EResourceStates::UnorderedAccess);
+                        RequireTextureState(VulkanImage, Item.GetTextureResource()->Subresources, EResourceStates::UnorderedAccess);
                     }
                     break;
                 case ERHIBindingResourceType::Buffer_SRV:
