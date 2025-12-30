@@ -87,6 +87,8 @@ namespace Lumina
         DECLARE_CLASS(Lumina, CStruct, CField, "script://lumina", LUMINA_API)
         DEFINE_CLASS_FACTORY(CStruct)
 
+    public:
+        
         CStruct() = default;
 
         // Begin Internal Use Only Constructors 

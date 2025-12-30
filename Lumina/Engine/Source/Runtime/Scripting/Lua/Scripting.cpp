@@ -2,7 +2,7 @@
 #include "Scripting.h"
 
 #include <glm/gtx/string_cast.hpp>
-
+#include "Containers/Name.h"
 #include "Core/Math/Color.h"
 #include "Events/KeyCodes.h"
 #include "Input/InputProcessor.h"
@@ -156,6 +156,12 @@ namespace Lumina::Scripting
 
     void FScriptingContext::RegisterCoreTypes()
     {
+        State.set_function("LoadObject", [](const sol::object& Name)
+        {
+            CObject* Object = LoadObject<CObject>(Name.as<const char*>());
+            return Object ? Object->AsLua(Name.lua_state()) : sol::nil;
+        });
+        
         State.new_usertype<FString>("FString",
 	        sol::constructors<sol::types<>, sol::types<const char*>>(),
 		    "size", [](const FString& Self) { return Self.size(); },
@@ -204,6 +210,17 @@ namespace Lumina::Scripting
         {
             return std::to_string(static_cast<uint32>(e));
         });
+        
+        State.new_usertype<FGuid>("FGuid",
+            sol::call_constructor,
+            sol::constructors<FGuid()>(),
+            "IsValid", &FGuid::IsValid,
+            "Hash", &FGuid::Hash,
+            "New", &FGuid::New,
+            "Empty", &FGuid::Empty,
+            sol::meta_function::equal_to, &FGuid::operator==,
+            sol::meta_function::to_string, [](const FGuid& Guid) { return Guid.ToString(); }
+            );
 
         // vec2
         State.new_usertype<glm::vec2>("vec2",

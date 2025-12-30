@@ -17,6 +17,7 @@
 #include "Core/Reflection/Type/Properties/StringProperty.h"
 #include "Core/Reflection/Type/Properties/StructProperty.h"
 #include "Package/Package.h"
+#include "Paths/Paths.h"
 
 namespace Lumina
 {
@@ -55,13 +56,23 @@ namespace Lumina
         return static_cast<CObject*>(FObjectHashTables::Get().FindObject(Name, Class));
     }
 
-    CObject* StaticLoadObject(CClass* Class, const FGuid& GUID)
+    CObject* StaticLoadObject(const FGuid& GUID)
     {
         LUMINA_PROFILE_SCOPE();
         
         if (const FAssetData* Data = FAssetQuery().WithGuid(GUID).ExecuteFirst())
         {
             return FAssetManager::Get().LoadAssetSynchronous(Data->FilePath, GUID);
+        }
+        
+        return nullptr;
+    }
+
+    CObject* StaticLoadObject(const FString& PathName)
+    {
+        if (const FAssetData* Data = FAssetQuery().WithPath(Paths::ResolveVirtualPath(PathName)).ExecuteFirst())
+        {
+            return FAssetManager::Get().LoadAssetSynchronous(PathName, Data->AssetGUID);
         }
         
         return nullptr;

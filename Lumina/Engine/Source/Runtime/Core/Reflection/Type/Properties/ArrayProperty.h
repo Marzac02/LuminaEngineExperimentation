@@ -1,6 +1,7 @@
 ﻿#pragma once
 #include "Core/Reflection/Type/LuminaTypes.h"
 #include "Lumina.h"
+#include "Memory/SmartPtr.h"
 
 namespace Lumina
 {
@@ -9,8 +10,6 @@ namespace Lumina
     class FArrayProperty : public FProperty
     {
     public:
-
-        
         FArrayProperty(const FFieldOwner& InOwner, const FArrayPropertyParams* Params)
             :FProperty(InOwner, Params)
         {
@@ -21,14 +20,12 @@ namespace Lumina
             GetAtFn = Params->GetAtFn;
         }
         
-        ~FArrayProperty() override = default;
-
-        void AddProperty(FProperty* Property) override { Inner = Property; }
+        void AddProperty(FProperty* Property) override { Inner.reset(Property); }
 
         void Serialize(FArchive& Ar, void* Value) override;
         void SerializeItem(IStructuredArchive::FSlot Slot, void* Value, void const* Defaults) override;
 
-        FProperty* GetInternalProperty() const { return Inner; }
+        FProperty* GetInternalProperty() const { return Inner.get(); }
         
         SIZE_T GetNum(const void* InContainer) const
         {
@@ -76,12 +73,12 @@ namespace Lumina
         
     private:
 
-        ArrayPushBackPtr    PushBackFn;
-        ArrayGetNumPtr      GetNumFn;
-        ArrayRemoveAtPtr    RemoveAtFn;
-        ArrayClearPtr       ClearFn;
-        ArrayGetAtPtr       GetAtFn;
-        FProperty* Inner = nullptr;
+        ArrayPushBackPtr        PushBackFn;
+        ArrayGetNumPtr          GetNumFn;
+        ArrayRemoveAtPtr        RemoveAtFn;
+        ArrayClearPtr           ClearFn;
+        ArrayGetAtPtr           GetAtFn;
+        TUniquePtr<FProperty>   Inner;
         
     };
 }

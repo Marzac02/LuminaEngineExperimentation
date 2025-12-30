@@ -1,6 +1,8 @@
 #include "pch.h"
 #include "ObjectArray.h"
 
+#include "Memory/Memory.h"
+
 
 namespace Lumina
 {

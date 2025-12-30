@@ -47,7 +47,7 @@ namespace Lumina
         LUMINA_API CObject(CClass* InClass, EObjectFlags InFlags, CPackage* Package, const FName& InName, const FGuid& GUID)
             :CObjectBase(InClass, InFlags, Package, InName, GUID)
         {}
-
+        
         /** Serializes object data. Can be overridden by derived classes. */
         LUMINA_API virtual void Serialize(FArchive& Ar);
 

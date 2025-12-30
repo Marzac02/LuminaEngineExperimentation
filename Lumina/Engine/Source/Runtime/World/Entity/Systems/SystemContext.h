@@ -175,7 +175,9 @@ namespace Lumina
         
         void Lua_View(const sol::variadic_args& Args, const sol::function& Callback);
         void Lua_SetActiveCamera(uint32 Entity);
-        sol::object Lua_Emplace(entt::entity Entity, const sol::object& Component);
+        
+        void Lua_Remove(entt::entity Entity, const sol::object& Component);
+        sol::object Lua_Emplace(entt::entity Entity, const sol::table& Component);
         sol::variadic_results Lua_Get(entt::entity Entity, const sol::variadic_args& Args);
         
     private:

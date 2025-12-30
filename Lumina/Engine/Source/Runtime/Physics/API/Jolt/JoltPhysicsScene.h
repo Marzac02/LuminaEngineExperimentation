@@ -33,11 +33,12 @@ namespace Lumina::Physics
     };
 
 
-	class JoltContactListener : public JPH::ContactListener
+	class FJoltContactListener : public JPH::ContactListener
 	{
 	public:
-		JoltContactListener(const JPH::BodyLockInterfaceNoLock* InBodyLockInterface)
+		FJoltContactListener(entt::dispatcher& InDispatcher, const JPH::BodyLockInterfaceNoLock* InBodyLockInterface)
 			: BodyLockInterface(InBodyLockInterface)
+			, EventDispatcher(InDispatcher)
 		{ }
 
 		/// Called after detecting a collision between a body pair, but before calling OnContactAdded and before adding the contact constraint.
@@ -76,6 +77,8 @@ namespace Lumina::Physics
 		void GetFrictionAndRestitution(const JPH::Body& inBody, const JPH::SubShapeID& inSubShapeID, float& outFriction, float& outRestitution) const;
 
 	private:
+		
+		entt::dispatcher& EventDispatcher;
 		const JPH::BodyLockInterfaceNoLock* BodyLockInterface = nullptr;
 	};
     
@@ -161,6 +164,7 @@ namespace Lumina::Physics
 
     private:
         
+    	TUniquePtr<FJoltContactListener> ContactListener;
         TUniquePtr<JPH::PhysicsSystem> JoltSystem;
         TUniquePtr<FLayerInterfaceImpl> JoltInterfaceLayer;
         CWorld* World;

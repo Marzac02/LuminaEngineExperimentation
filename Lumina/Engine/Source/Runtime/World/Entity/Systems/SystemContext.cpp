@@ -44,6 +44,7 @@ namespace Lumina
             "DispatchEvent",        &FSystemContext::Lua_DispatchEvent,
             "Emplace",              &FSystemContext::Lua_Emplace,
             "Get",                  &FSystemContext::Lua_Get,
+            "Remove",               &FSystemContext::Lua_Remove,
             "SetActiveCamera",      &FSystemContext::Lua_SetActiveCamera,
             "TranslateEntity",      &FSystemContext::TranslateEntity,
             "SetEntityLocation",    &FSystemContext::SetEntityLocation,
@@ -332,7 +333,17 @@ namespace Lumina
         Dispatcher.trigger<FSwitchActiveCameraEvent>(FSwitchActiveCameraEvent{(entt::entity)Entity});
     }
 
-    sol::object FSystemContext::Lua_Emplace(entt::entity Entity, const sol::object& Component)
+    void FSystemContext::Lua_Remove(entt::entity Entity, const sol::object& Component)
+    {
+        LUMINA_PROFILE_SCOPE();
+
+        using namespace entt::literals;
+
+        entt::id_type TypeID = ECS::DeduceType(Component);
+        ECS::InvokeMetaFunc(TypeID, "remove"_hs, entt::forward_as_meta(Registry), Entity);
+    }
+
+    sol::object FSystemContext::Lua_Emplace(entt::entity Entity, const sol::table& Component)
     {
         LUMINA_PROFILE_SCOPE();
 

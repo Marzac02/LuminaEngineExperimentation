@@ -12,7 +12,7 @@ local MyScript =
 
             for _, Entity in ipairs(Entities) do
                 
-                local InputComp, Transform = Context:Get(Entity, "SInputComponent", "STransformComponent")
+                local InputComp, Transform = Context:Get(Entity, SInputComponent, STransformComponent)
 
                 if InputComp:IsKeyDown(Input.EKeyCode.R) then
                 
@@ -28,11 +28,18 @@ local MyScript =
                         RaySettings.bDrawDebug      = false
                         RaySettings.DebugDuration   = 0.1
 
-                        local MeshComp = Context:Get(Result.Entity, "SStaticMeshComponent")
+                        local MeshComp = Context:Get(Result.Entity, SStaticMeshComponent)
                         if MeshComp then
                             
-                            print(MeshComp.StaticMesh:GetAABB():GetSize())
+                            local Test = LoadObject("project://Content/Assets/Meshes/SM_Cube")
+                            MeshComp.StaticMesh = Test
+                            Context:Remove(Result.Entity, SRigidBodyComponent)
+                            Context:Remove(Result.Entity, SSphereColliderComponent)
 
+                            local BoxComponent = SBoxColliderComponent()
+                            BoxComponent.HalfExtent = vec3(1.0, 1.0, 1.0)
+                            Context:Emplace(Result.Entity, BoxComponent)
+                            Context:Emplace(Result.Entity, SRigidBodyComponent())
                         end
 
                         local SphereResult = Context:CastSphere(RaySettings)

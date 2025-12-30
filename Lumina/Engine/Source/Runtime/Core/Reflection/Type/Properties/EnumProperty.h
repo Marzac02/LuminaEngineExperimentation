@@ -1,6 +1,7 @@
 ﻿#pragma once
 #include "Core/Object/Class.h"
 #include "Core/Reflection/Type/LuminaTypes.h"
+#include "Memory/SmartPtr.h"
 
 namespace Lumina
 {
@@ -8,19 +9,17 @@ namespace Lumina
     {
     public:
 
-        FEnumProperty(FFieldOwner InOwner, const FPropertyParams* Params)
+        FEnumProperty(const FFieldOwner& InOwner, const FPropertyParams* Params)
             :FProperty(InOwner, Params)
         {
-            auto* EnumParams = (const FEnumPropertyParams*) Params;
+            auto* EnumParams = static_cast<const FEnumPropertyParams*>(Params);
             CEnum* InternalEnum = EnumParams->EnumFunc();
             Assert(InternalEnum)
             SetEnum(InternalEnum);
         }
-
-        ~FEnumProperty() override;
-
-        void AddProperty(FProperty* Property) override { InnerProperty = static_cast<FNumericProperty*>(Property); }
-        LUMINA_API FNumericProperty* GetInnerProperty() const { return InnerProperty; }
+        
+        void AddProperty(FProperty* Property) override { InnerProperty.reset(static_cast<FNumericProperty*>(Property)); }
+        LUMINA_API FNumericProperty* GetInnerProperty() const { return InnerProperty.get(); }
         
         void SetEnum(CEnum* InEnum);
 
@@ -34,7 +33,7 @@ namespace Lumina
     private:
 
         /** Numeric property which represents the current value of this enum */
-        FNumericProperty* InnerProperty = nullptr;
+        TUniquePtr<FNumericProperty> InnerProperty;
 
         /** The actual enum class object this property represents */
         CEnum* Enum = nullptr;

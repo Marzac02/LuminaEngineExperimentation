@@ -96,26 +96,26 @@ namespace Lumina::Physics
     static FObjectVsBroadPhaseLayerFilterImpl GObjectVsBroadPhaseLayerFilter;
 
 
-    void JoltContactListener::OnContactAdded(const JPH::Body& inBody1, const JPH::Body& inBody2, const JPH::ContactManifold& inManifold, JPH::ContactSettings& ioSettings)
+    void FJoltContactListener::OnContactAdded(const JPH::Body& inBody1, const JPH::Body& inBody2, const JPH::ContactManifold& inManifold, JPH::ContactSettings& ioSettings)
     {
         
     }
 
-    void JoltContactListener::OnContactPersisted(const JPH::Body& inBody1, const JPH::Body& inBody2, const JPH::ContactManifold& inManifold, JPH::ContactSettings& ioSettings)
+    void FJoltContactListener::OnContactPersisted(const JPH::Body& inBody1, const JPH::Body& inBody2, const JPH::ContactManifold& inManifold, JPH::ContactSettings& ioSettings)
     {
         ContactListener::OnContactPersisted(inBody1, inBody2, inManifold, ioSettings);
     }
 
-    void JoltContactListener::OnContactRemoved(const JPH::SubShapeIDPair& inSubShapePair)
+    void FJoltContactListener::OnContactRemoved(const JPH::SubShapeIDPair& inSubShapePair)
     {
         ContactListener::OnContactRemoved(inSubShapePair);
     }
 
-    void JoltContactListener::OverrideFrictionAndRestitution(const JPH::Body& inBody1, const JPH::Body& inBody2, const JPH::ContactManifold& inManifold, JPH::ContactSettings& ioSettings)
+    void FJoltContactListener::OverrideFrictionAndRestitution(const JPH::Body& inBody1, const JPH::Body& inBody2, const JPH::ContactManifold& inManifold, JPH::ContactSettings& ioSettings)
     {
     }
 
-    void JoltContactListener::GetFrictionAndRestitution(const JPH::Body& inBody, const JPH::SubShapeID& inSubShapeID, float& outFriction, float& outRestitution) const
+    void FJoltContactListener::GetFrictionAndRestitution(const JPH::Body& inBody, const JPH::SubShapeID& inSubShapeID, float& outFriction, float& outRestitution) const
     {
     }
 
@@ -132,6 +132,10 @@ namespace Lumina::Physics
         JoltSystem->SetPhysicsSettings(JoltSettings);
         
         entt::dispatcher& Dispatcher = World->GetEntityRegistry().ctx().get<entt::dispatcher&>();
+        
+        ContactListener = MakeUniquePtr<FJoltContactListener>(Dispatcher, &JoltSystem->GetBodyLockInterfaceNoLock());
+        JoltSystem->SetContactListener(ContactListener.get());
+        
         Dispatcher.sink<SImpulseEvent>().connect<&FJoltPhysicsScene::OnImpulseEvent>(this);
         Dispatcher.sink<SForceEvent>().connect<&FJoltPhysicsScene::OnForceEvent>(this);
         Dispatcher.sink<STorqueEvent>().connect<&FJoltPhysicsScene::OnTorqueEvent>(this);

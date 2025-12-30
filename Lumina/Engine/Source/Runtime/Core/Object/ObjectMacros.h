@@ -1,6 +1,7 @@
 ﻿#pragma once
 
 #include "ObjectCore.h"
+#include <sol/sol.hpp>
 #include "Lumina.h"
 
 enum EInternal { EC_InternalUseOnlyConstructor };
@@ -116,6 +117,14 @@ public: \
     inline static const TCHAR* StaticPackage() \
     { \
         return TEXT(TPackage); \
+    } \
+    inline static sol::reference StaticLua(sol::state_view S, CObject* Object) \
+    { \
+        return sol::make_reference(S, static_cast<TClass*>(Object)); \
+    } \
+    virtual sol::reference AsLua(sol::state_view S) override \
+    { \
+        return sol::make_reference(S, this); \
     } \
     
 

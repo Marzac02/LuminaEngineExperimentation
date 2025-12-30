@@ -1,15 +1,8 @@
 #include "pch.h"
 #include "EnumProperty.h"
 
-#include "imgui.h"
-
 namespace Lumina
 {
-    FEnumProperty::~FEnumProperty()
-    {
-        Memory::Delete(InnerProperty);
-    }
-
     void FEnumProperty::SetEnum(CEnum* InEnum)
     {
         Enum = InEnum;

@@ -33,7 +33,8 @@ namespace Lumina
 
     LUMINA_API CObject* FindObjectImpl(const FGuid& ObjectGUID);
     LUMINA_API CObject* FindObjectImpl(const FName& Name, CClass* Class);
-    LUMINA_API CObject* StaticLoadObject(CClass* Class, const FGuid& GUID);
+    LUMINA_API CObject* StaticLoadObject(const FGuid& GUID);
+    LUMINA_API CObject* StaticLoadObject(const FString& PathName);
 
     LUMINA_API bool IsValid(const CObjectBase* Obj);
     LUMINA_API bool IsValid(CObjectBase* Obj);
@@ -59,7 +60,13 @@ namespace Lumina
     template<Concept::IsACObject T>
     T* LoadObject(const FGuid& GUID)
     {
-        return static_cast<T*>(StaticLoadObject(T::StaticClass(), GUID));
+        return static_cast<T*>(StaticLoadObject(GUID));
+    }
+    
+    template<Concept::IsACObject T>
+    T* LoadObject(const FString& Name)
+    {
+        return static_cast<T*>(StaticLoadObject(Name));
     }
     
     LUMINA_API CObject* NewObject(CClass* InClass, CPackage* Package = nullptr, const FName& Name = NAME_None, const FGuid& GUID = FGuid::New(), EObjectFlags Flags = OF_None);

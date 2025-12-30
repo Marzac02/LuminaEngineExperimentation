@@ -24,7 +24,7 @@ namespace Lumina
     class FProperty : public FField
     {
     public:
-
+        
         FProperty(const FFieldOwner& InOwner, const FPropertyParams* Params)
             :FField(InOwner)
         {
@@ -36,6 +36,8 @@ namespace Lumina
             TypeName = PropertyTypeToString(TypeFlags);
             Init();
         }
+        
+        LE_NO_COPYMOVE(FProperty);
         
         // Adds self to owner.
         void Init();
@@ -63,7 +65,7 @@ namespace Lumina
         requires !eastl::is_pointer_v<ValueType>
         ValueType* GetValuePtr(void* ContainerPtr, int64 ArrayIndex = 0) const
         {
-            return (ValueType*)GetValuePtrInternal(ContainerPtr, ArrayIndex);
+            return static_cast<ValueType*>(GetValuePtrInternal(ContainerPtr, ArrayIndex));
         }
 
         /** Gets the cast internal value type by an offset, UB if type is not correct */
@@ -71,7 +73,7 @@ namespace Lumina
         requires !eastl::is_pointer_v<ValueType>
         const ValueType* GetValuePtr(const void* ContainerPtr, int64 ArrayIndex = 0) const
         {
-            return (ValueType*)GetValuePtrInternal(const_cast<void*>(ContainerPtr), ArrayIndex);
+            return static_cast<ValueType*>(GetValuePtrInternal(const_cast<void*>(ContainerPtr), ArrayIndex));
         }
 
         template<typename ValueType>

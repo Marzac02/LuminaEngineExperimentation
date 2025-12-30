@@ -2,8 +2,8 @@
 
 #include "ObjectFlags.h"
 #include "GUID/GUID.h"
+#include <sol/sol.hpp>
 #include "Initializer/ObjectInitializer.h"
-#include "Memory/RefCounted.h"
 #include "Module/API.h"
 
 namespace Lumina
@@ -33,6 +33,7 @@ namespace Lumina
         LUMINA_API CObjectBase(EObjectFlags InFlags);
         LUMINA_API CObjectBase(CClass* InClass, EObjectFlags InFlags, CPackage* Package, FName InName, const FGuid& GUID);
 
+        LUMINA_API virtual sol::reference AsLua(sol::state_view S) { return sol::nil; }
         
         LUMINA_API void BeginRegister();
         LUMINA_API void FinishRegister(CClass* InClass, const TCHAR* InName);
