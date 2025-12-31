@@ -119,7 +119,7 @@ namespace Lumina
 
         float                                           SmoothedFPS = 60.0f;
         float                                           SmoothedFrameTime = 16.67f;
-        static constexpr float                          FPSSmoothingFactor = 0.001f;
+        static constexpr float                          FPSSmoothingFactor = 0.01f;
         static constexpr float                          ObjectSmoothingFactor = 0.05f;
     };
 

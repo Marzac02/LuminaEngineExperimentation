@@ -9,7 +9,7 @@ namespace Lumina
 
     struct LUMINA_API FNeedsTransformUpdate
     {
-        EMoveMode MoveMode = EMoveMode::MoveKinematic;
+        EMoveMode MoveMode = EMoveMode::Teleport;
         bool bActivate = true;
     };
     

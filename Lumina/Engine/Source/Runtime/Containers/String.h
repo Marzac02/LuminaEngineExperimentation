@@ -20,7 +20,7 @@ namespace Lumina
     using FString                                   = eastl::basic_string<char>;
     using FStringView                               = eastl::string_view;
     using FFixedString                              = eastl::fixed_string<char, 255>;
-    template<eastl_size_t S> using TInlineString    = eastl::fixed_string<char, S>;
+    template<eastl_size_t S> using TFixedString     = eastl::fixed_string<char, S>;
     
     using FWString                                  = eastl::basic_string<wchar_t>;
     using FFixedWString                             = eastl::fixed_string<wchar_t, 255>;

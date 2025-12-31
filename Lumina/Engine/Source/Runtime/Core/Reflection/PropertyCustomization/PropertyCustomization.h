@@ -29,7 +29,7 @@ namespace Lumina
 
         virtual EPropertyChangeOp DrawProperty(TSharedPtr<FPropertyHandle> Property) = 0;
         
-        EPropertyChangeOp UpdateAndDraw(const TSharedPtr<FPropertyHandle>& Property);
+        EPropertyChangeOp UpdateAndDraw(const TSharedPtr<FPropertyHandle>& Property, bool bReadOnly);
 
         virtual void UpdatePropertyValue(TSharedPtr<FPropertyHandle> Property) = 0;
 

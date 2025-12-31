@@ -35,11 +35,12 @@ namespace Lumina
             {
                 SNameComponent* NameComponent = Registry.try_get<SNameComponent>(Entity);
                 Name = NameComponent ? NameComponent->Name.c_str() : eastl::to_string(static_cast<uint32>(Entity));
+                EntityTooltip.append("EntityID: ").append(eastl::to_string(static_cast<int>(Entity)).c_str());
             }
             
             constexpr static const char* DragDropID = "EntityItem";
             
-            NODISCARD const char* GetTooltipText() const override { return Name.c_str(); }
+            NODISCARD const char* GetTooltipText() const override { return EntityTooltip.c_str(); }
             
             bool HasContextMenu() override { return true; }
             
@@ -64,7 +65,8 @@ namespace Lumina
             entt::entity GetEntity() const { return Entity; }
             
         private:
-
+        
+            TFixedString<56> EntityTooltip;
             FString Name;
             entt::entity Entity;
             FEntityRegistry& Registry;

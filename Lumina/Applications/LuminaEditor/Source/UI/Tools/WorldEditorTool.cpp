@@ -17,7 +17,6 @@
 #include "World/Entity/Components/EditorComponent.h"
 #include "World/Entity/Components/NameComponent.h"
 #include "World/Entity/Components/RelationshipComponent.h"
-#include "World/Entity/Components/SingletonEntityComponent.h"
 #include "World/Entity/Components/TagComponent.h"
 #include "World/Entity/Components/VelocityComponent.h"
 #include "World/Entity/Systems/EditorEntityMovementSystem.h"
@@ -53,32 +52,12 @@ namespace Lumina
 
         CreateToolWindow(SystemOutlinerName, [&] (bool bFocused)
         {
-            if (World->IsSimulating())
-            {
-                ImGui::BeginDisabled();
-            }
-            
             DrawSystems(bFocused);
-
-            if (World->IsSimulating())
-            {
-                ImGui::EndDisabled();
-            }
         });
         
         CreateToolWindow("Details", [&] (bool bFocused)
         {
-            if (World->IsSimulating())
-            {
-                ImGui::BeginDisabled();
-            }
-            
             DrawEntityEditor(bFocused, SelectedEntity);
-
-            if (World->IsSimulating())
-            {
-                ImGui::EndDisabled();
-            }
         });
 
 
@@ -579,7 +558,6 @@ namespace Lumina
         {
             bool bTagAdded = false;
     
-            // Modal header styling
             ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.9f, 0.9f, 0.9f, 1.0f));
             ImGui::TextUnformatted("Enter a tag name for this entity");
             ImGui::PopStyleColor();
@@ -588,7 +566,6 @@ namespace Lumina
             ImGui::Separator();
             ImGui::Spacing();
     
-            // Tag input field
             ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(10, 8));
             ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 4.0f);
             ImGui::PushStyleColor(ImGuiCol_FrameBg, ImVec4(0.15f, 0.15f, 0.16f, 1.0f));
@@ -665,7 +642,6 @@ namespace Lumina
 
             ImGui::SameLine();
             
-            // Cancel button
             ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.2f, 0.2f, 0.22f, 1.0f));
             ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.25f, 0.25f, 0.27f, 1.0f));
             ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.3f, 0.3f, 0.32f, 1.0f));
@@ -1111,12 +1087,13 @@ namespace Lumina
         
         ImGui::SameLine();
     
+        bool bSnapWasEnabled = bGuizmoSnapEnabled;
         if (ImGuiX::IconButton(LE_ICON_MAGNET, "##SnapToggle", 0xFFFFFFFF, BtnSize))
         {
             bGuizmoSnapEnabled = !bGuizmoSnapEnabled;
         }
     
-        if (bGuizmoSnapEnabled)
+        if (bSnapWasEnabled)
         {
             ImGui::PopStyleColor();
         }
@@ -1277,7 +1254,6 @@ namespace Lumina
             
             ImGui::BeginDisabled(!bGuizmoSnapEnabled);
             
-            // Common presets
             ImGui::Text("Presets:");
             ImGui::SameLine();
             
@@ -1600,7 +1576,7 @@ namespace Lumina
             ImGui::PopStyleColor(2);
             ImGui::PopStyleVar();
             
-            if (EntityFilterState.FilterName.InputBuf[0] == '\0')
+            if (!EntityFilterState.FilterName.IsActive())
             {
                 ImDrawList* DrawList = ImGui::GetWindowDrawList();
                 ImVec2 TextPos = ImGui::GetItemRectMin();
@@ -1825,6 +1801,11 @@ namespace Lumina
 
     void FWorldEditorTool::DrawEntityProperties(entt::entity Entity)
     {
+        if (World->IsSimulating())
+        {
+            ImGui::BeginDisabled();
+        }
+        
         SNameComponent* NameComponent = World->GetEntityRegistry().try_get<SNameComponent>(Entity);
         FName EntityName = NameComponent ? NameComponent->Name : eastl::to_string((uint32)Entity);
         
@@ -1846,7 +1827,7 @@ namespace Lumina
         
             ImGuiX::Font::PushFont(ImGuiX::Font::EFont::LargeBold);
             ImGui::AlignTextToFramePadding();
-            ImGui::TextUnformatted(EntityName.c_str());
+            ImGuiX::Text("Entity: {}", EntityName);
             ImGui::PopFont();
 
             ImGui::TableSetBgColor(ImGuiTableBgTarget_RowBg0, IM_COL32(35, 35, 35, 255));
@@ -1907,6 +1888,11 @@ namespace Lumina
             ImGui::PopStyleVar(3);
             
             ImGui::EndTable();
+        }
+        
+        if (World->IsSimulating())
+        {
+            ImGui::EndDisabled();
         }
         
         ImGui::SeparatorText("Details");
@@ -2000,6 +1986,7 @@ namespace Lumina
 
     void FWorldEditorTool::DrawTagList(entt::entity Entity)
     {
+
         TFixedVector<FName, 4> Tags;
         for (auto [Name, Storage] : World->GetEntityRegistry().storage())
         {
@@ -2016,6 +2003,11 @@ namespace Lumina
         if (Tags.empty())
         {
             return;
+        }
+        
+        if (World->IsSimulating())
+        {
+            ImGui::BeginDisabled();
         }
         
         ImGui::PushID("TagList");
@@ -2127,6 +2119,11 @@ namespace Lumina
         
         ImGui::Spacing();
         ImGui::PopID();
+        
+        if (World->IsSimulating())
+        {
+            ImGui::EndDisabled();
+        }
     }
 
     void FWorldEditorTool::DrawComponentHeader(const TUniquePtr<FPropertyTable>& Table, entt::entity Entity)
@@ -2161,7 +2158,7 @@ namespace Lumina
             ImGui::PushStyleColor(ImGuiCol_HeaderActive, 0);
             ImGui::PushStyleColor(ImGuiCol_HeaderHovered, 0);
             bIsOpen = ImGui::CollapsingHeader(ComponentName);
-            ImGui::TableSetBgColor(ImGuiTableBgTarget_RowBg0, IM_COL32(35, 35, 35, 255));
+            ImGui::TableSetBgColor(ImGuiTableBgTarget_RowBg0, 0xFF1C1C1C);
 
             ImGui::PopStyleColor(3);
                         
@@ -2207,7 +2204,7 @@ namespace Lumina
             
             ImGui::Indent(4.0f);
             
-            Table->DrawTree();
+            Table->DrawTree(World->IsSimulating());
             
             ImGui::Unindent(4.0f);
             

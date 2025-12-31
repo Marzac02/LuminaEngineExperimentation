@@ -1,5 +1,6 @@
 #include "CoreTypeCustomization.h"
 #include "imgui.h"
+#include "LuminaEditor.h"
 #include "Assets/AssetTypes/Textures/Texture.h"
 #include "Core/Engine/Engine.h"
 #include "Core/Object/Class.h"
@@ -57,7 +58,10 @@ namespace Lumina
 
             if (ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))
             {
-                
+                if (HardObject)
+                {
+                    static_cast<FEditorUI*>(GEditorEngine->GetDevelopmentToolsUI())->OpenAssetEditor(HardObject->GetGUID());
+                }
             }
 
             ImGui::SameLine();
@@ -72,39 +76,42 @@ namespace Lumina
             
             const bool bHasObject = Object != nullptr;
 
-            FString PathString = bHasObject ? Object.Get()->GetName().ToString() : FString("<None>");
-            char PathBuffer[512];
-            strncpy(PathBuffer, PathString.c_str(), sizeof(PathBuffer) - 1);
-            PathBuffer[sizeof(PathBuffer) - 1] = '\0';
+            FFixedString PathString = bHasObject ? Object.Get()->GetName().c_str() : "<None>";
         
             ImGui::PushStyleColor(ImGuiCol_Text, bHasObject ? ImVec4(0.6f, 0.6f, 0.6f, 1.0f) : ImVec4(1.0f, 0.19f, 0.19f, 1.0f));
         
-            ImGui::InputText("##ObjectPathText", PathBuffer, sizeof(PathBuffer), ImGuiInputTextFlags_AutoSelectAll | ImGuiInputTextFlags_ReadOnly);
+            ImGui::InputText("##ObjectPathText", PathString.data(), PathString.size(), ImGuiInputTextFlags_AutoSelectAll | ImGuiInputTextFlags_ReadOnly);
         
             ImGuiX::ItemTooltip(PathString.c_str());
         
             ImGui::PopStyleColor();
 
-            const ImVec2 ComboDropDownSize(Math::Max(TotalPathWidgetWidth, 500.0f), ImGui::GetFrameHeight() * 20);
-            ImGui::SetNextWindowSizeConstraints(ImVec2(ComboDropDownSize.x, 0), ComboDropDownSize);
+            const ImVec2 ComboDropDownSize = ImMax(ImVec2(200, 200), ImVec2(TextWidgetWidth, 300.0f));
 
             ImGui::SameLine(0, 0);
         
-            bool bComboOpen = ImGui::BeginCombo("##DataPath", "", ImGuiComboFlags_HeightLarge | ImGuiComboFlags_PopupAlignLeft | ImGuiComboFlags_NoPreview);
+            bool bComboOpen = ImGui::BeginCombo("##ObjectPath", "", ImGuiComboFlags_HeightLarge | ImGuiComboFlags_PopupAlignLeft | ImGuiComboFlags_NoPreview);
 
             if (bComboOpen)
             {
                 const float CursorPosYPostFilter = ImGui::GetCursorPosY();
                 const float FilterHeight = CursorPosYPostFilter;
 
-                const ImVec2 PreviousCursorPos = ImGui::GetCursorPos();
-                const ImVec2 ChildSize(ImGui::GetContentRegionAvail().x, ComboDropDownSize.y - FilterHeight - Style.ItemSpacing.y - Style.WindowPadding.y);
-                ImGui::Dummy(ChildSize);
-                ImGui::SetCursorPos(PreviousCursorPos);
-
-                SearchFilter.Draw("##Search", ImGui::GetContentRegionAvail().x);
+                SearchFilter.Draw("##Search", ComboDropDownSize.x - 30.0f);
+                if (!SearchFilter.IsActive())
+                {
+                    ImDrawList* DrawList = ImGui::GetWindowDrawList();
+                    ImVec2 TextPos = ImGui::GetItemRectMin();
+                    TextPos.x += Style.FramePadding.x + 2.0f;
+                    TextPos.y += Style.FramePadding.y;
+                    DrawList->AddText(TextPos, IM_COL32(100, 100, 110, 255), LE_ICON_FILE_SEARCH " Search Assets...");
+                }
                 
-                if (ImGui::BeginChild("##OptList", ChildSize, false, ImGuiChildFlags_NavFlattened))
+                ImGui::SameLine();
+                ImGui::Button(LE_ICON_FILTER, ImVec2(30.0f, 0.0f));
+                ImGui::SetNextWindowSizeConstraints(ImVec2(200, 200), ComboDropDownSize);
+
+                if (ImGui::BeginChild("##OptList", ComboDropDownSize, false, ImGuiChildFlags_NavFlattened))
                 {
                     TVector<FAssetData> Assets = FAssetQuery().OfClass(ObjectProperty->GetPropertyClass()->GetName()).Execute();
                     
@@ -115,7 +122,9 @@ namespace Lumina
                             continue;
                         }
                         
-                        if (ImGui::Selectable(Asset.AssetName.c_str()))
+                        FFixedString SelectableLabel;
+                        SelectableLabel.append(LE_ICON_FILE).append(" ").append(Asset.AssetName.c_str());
+                        if (ImGui::Selectable(SelectableLabel.c_str()))
                         {
                             Object = LoadObject<CObject>(Asset.AssetGUID);
                             ImGui::CloseCurrentPopup();
@@ -144,7 +153,6 @@ namespace Lumina
 
             ImGui::SameLine();
         
-
             ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.6f, 0.2f, 0.2f, 1.0f));
             ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.7f, 0.25f, 0.25f, 1.0f));
             ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.5f, 0.15f, 0.15f, 1.0f));

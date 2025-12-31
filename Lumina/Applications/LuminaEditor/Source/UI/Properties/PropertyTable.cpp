@@ -76,7 +76,7 @@ namespace Lumina
         Update();
     }
 
-    void FPropertyRow::DrawRow(float Offset)
+    void FPropertyRow::DrawRow(float Offset, bool bReadOnly)
     {
         ImGui::PushID(this);
         
@@ -104,7 +104,7 @@ namespace Lumina
                 ImGui::TableNextColumn();
                 ImGui::AlignTextToFramePadding();
                 
-                DrawEditor();
+                DrawEditor(bReadOnly);
 
                 if (HasExtraControls())
                 {
@@ -122,17 +122,21 @@ namespace Lumina
 
         if (bExpanded)
         {
-            bool bIsReadOnly = PropertyHandle == nullptr ? false : PropertyHandle->Property->Metadata.HasMetadata("ReadOnly");
-            ImGui::BeginDisabled(bIsReadOnly);
+            ImGui::BeginDisabled(IsReadOnly());
             const float ChildHeaderOffset = Offset + 8;
             for (FPropertyRow* Row : Children)
             {
-                Row->DrawRow(ChildHeaderOffset);
+                Row->DrawRow(ChildHeaderOffset, bReadOnly);
             }
             ImGui::EndDisabled();
         }
     }
 
+    bool FPropertyRow::IsReadOnly() const
+    {
+        return PropertyHandle == nullptr ? false : PropertyHandle->Property->Metadata.HasMetadata("ReadOnly");
+    }
+    
     FPropertyPropertyRow::FPropertyPropertyRow(const TSharedPtr<FPropertyHandle>& InPropHandle, FPropertyRow* InParentRow, const FPropertyChangedEventCallbacks& InCallbacks)
         : FPropertyRow(InPropHandle, InParentRow, InCallbacks)
     {
@@ -264,14 +268,13 @@ namespace Lumina
         ImGui::TextUnformatted(DisplayName.c_str());
     }
 
-    void FPropertyPropertyRow::DrawEditor()
+    void FPropertyPropertyRow::DrawEditor(bool bReadOnly)
     {
-        bool bIsReadOnly = PropertyHandle->Property->Metadata.HasMetadata("ReadOnly");
-        ImGui::BeginDisabled(bIsReadOnly);
+        ImGui::BeginDisabled(IsReadOnly());
 
         if (Customization)
         {
-            ChangeOp = Customization->UpdateAndDraw(PropertyHandle);
+            ChangeOp = Customization->UpdateAndDraw(PropertyHandle, bReadOnly);
         }
         else
         {
@@ -357,7 +360,7 @@ namespace Lumina
         ImGui::PopStyleColor(3);
     }
 
-    void FArrayPropertyRow::DrawEditor()
+    void FArrayPropertyRow::DrawEditor(bool bReadOnly)
     {
         SIZE_T ElementCount = ArrayProperty->GetNum(GetPropertyHandle()->ContainerPtr);
         
@@ -475,20 +478,19 @@ namespace Lumina
         ImGui::PopStyleColor(3);
     }
 
-    void FStructPropertyRow::DrawEditor()
+    void FStructPropertyRow::DrawEditor(bool bReadOnly)
     {
-        bool bIsReadOnly = PropertyHandle->Property->Metadata.HasMetadata("ReadOnly");
-        ImGui::BeginDisabled(bIsReadOnly);
+        ImGui::BeginDisabled(IsReadOnly());
         
         if (bExpanded)
         {
             if (Customization)
             {
-                ChangeOp = Customization->UpdateAndDraw(PropertyHandle);    
+                ChangeOp = Customization->UpdateAndDraw(PropertyHandle, bReadOnly);    
             }
             else if (PropertyTable)
             {
-                PropertyTable->DrawTree();
+                PropertyTable->DrawTree(bReadOnly);
             }
         }
         
@@ -591,7 +593,7 @@ namespace Lumina
         }
     }
 
-    void FPropertyTable::DrawTree()
+    void FPropertyTable::DrawTree(bool bReadOnly)
     {
         constexpr ImGuiTableFlags Flags = 
             ImGuiTableFlags_BordersOuter | 
@@ -611,7 +613,7 @@ namespace Lumina
             for (FCategoryPropertyRow* Category : Categories)
             {
                 Category->UpdateRow();
-                Category->DrawRow(0);
+                Category->DrawRow(0.0f, bReadOnly);
             }
 
             ImGui::EndTable();

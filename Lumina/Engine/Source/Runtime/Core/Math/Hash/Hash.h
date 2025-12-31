@@ -97,7 +97,7 @@ namespace Lumina::Hash
     }
 
     template<SIZE_T S>
-    FORCEINLINE uint32 GetHash32(const TInlineString<S>& string )
+    FORCEINLINE uint32 GetHash32(const TFixedString<S>& string )
     {
         return XXHash::GetHash32(string.c_str(), string.length());
     }
@@ -123,7 +123,7 @@ namespace Lumina::Hash
     }
 
     template<SIZE_T S>
-    FORCEINLINE uint64 GetHash64(const TInlineString<S>& string)
+    FORCEINLINE uint64 GetHash64(const TFixedString<S>& string)
     {
         return XXHash::GetHash64(string.c_str(), string.length());
     }

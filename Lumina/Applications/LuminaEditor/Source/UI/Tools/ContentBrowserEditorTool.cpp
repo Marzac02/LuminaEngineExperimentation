@@ -41,7 +41,7 @@ namespace Lumina
         
     private:
         
-        TInlineString<BufferSize> Buffer;
+        TFixedString<BufferSize> Buffer;
     };
 
     bool FContentBrowserEditorTool::OnEvent(FEvent& Event)

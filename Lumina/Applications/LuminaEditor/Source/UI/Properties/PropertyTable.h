@@ -42,7 +42,7 @@ namespace Lumina
 
         virtual uint32 GetHeaderWidth() const { return 120; }
         virtual void DrawHeader(float Offset) { }
-        virtual void DrawEditor() { }
+        virtual void DrawEditor(bool bReadOnly) { }
 
         virtual bool HasExtraControls() const { return false; }
         virtual void DrawExtraControlsSection() { }
@@ -53,8 +53,9 @@ namespace Lumina
 
         virtual void Update() { }
         void UpdateRow();
-        void DrawRow(float Offset);
-
+        void DrawRow(float Offset, bool bReadOnly);
+        bool IsReadOnly() const;
+         
         void SetIsArrayElement(bool bTrue) { bArrayElement = bTrue; }
         bool IsArrayElementProperty() const { return bArrayElement; }
         
@@ -78,7 +79,7 @@ namespace Lumina
         FPropertyPropertyRow(const TSharedPtr<FPropertyHandle>& InPropHandle, FPropertyRow* InParentRow, const FPropertyChangedEventCallbacks& Callbacks);
         void Update() override;
         void DrawHeader(float Offset) override;
-        void DrawEditor() override;
+        void DrawEditor(bool bReadOnly) override;
         bool HasExtraControls() const override;
         void DrawExtraControlsSection() override;
 
@@ -93,7 +94,7 @@ namespace Lumina
         FArrayPropertyRow(const TSharedPtr<FPropertyHandle>& InPropHandle, FPropertyRow* InParentRow, const FPropertyChangedEventCallbacks& Callbacks);
         void Update() override;
         void DrawHeader(float Offset) override;
-        void DrawEditor() override;
+        void DrawEditor(bool bReadOnly) override;
         void RebuildChildren();
         bool HasExtraControls() const override { return true; }
         float GetExtraControlsSectionWidth() override;
@@ -113,7 +114,7 @@ namespace Lumina
         ~FStructPropertyRow() override;
         void Update() override;
         void DrawHeader(float Offset) override;
-        void DrawEditor() override;
+        void DrawEditor(bool bReadOnly) override;
 
         void RebuildChildren();
 
@@ -154,7 +155,7 @@ namespace Lumina
         bool operator = (FPropertyTable&&) = delete;
 
         void RebuildTree();
-        void DrawTree();
+        void DrawTree(bool bReadOnly = false);
 
         CStruct* GetType() const { return Struct; }
 

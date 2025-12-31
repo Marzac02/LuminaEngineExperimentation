@@ -12,11 +12,13 @@ namespace Lumina
     {
     }
 
-    EPropertyChangeOp IPropertyTypeCustomization::UpdateAndDraw(const TSharedPtr<FPropertyHandle>& Property)
+    EPropertyChangeOp IPropertyTypeCustomization::UpdateAndDraw(const TSharedPtr<FPropertyHandle>& Property, bool bReadOnly)
     {
         ImGui::PushID(Property.get());
         HandleExternalUpdate(Property);
+        ImGui::BeginDisabled(bReadOnly);
         EPropertyChangeOp Result = DrawProperty(Property);
+        ImGui::EndDisabled();
         ImGui::PopID();
 
         return Result;

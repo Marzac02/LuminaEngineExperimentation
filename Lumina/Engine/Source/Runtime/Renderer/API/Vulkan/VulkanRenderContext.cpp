@@ -65,9 +65,9 @@ namespace Lumina
         void* pUserData)
     {
         // Helper to decode messageTypes
-        auto GetMessageTypeString = [](VkDebugUtilsMessageTypeFlagsEXT types) -> TInlineString<256>
+        auto GetMessageTypeString = [](VkDebugUtilsMessageTypeFlagsEXT types) -> FFixedString
         {
-            TInlineString<256> Result;
+            FFixedString Result;
             if (types & VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT)
             {
                 Result += "[General] ";

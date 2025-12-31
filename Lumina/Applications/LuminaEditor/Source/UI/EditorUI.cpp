@@ -176,7 +176,6 @@ namespace Lumina
         
         ImGui::PopStyleVar(3);
         {
-            // Create initial layout
             if (!ImGui::DockBuilderGetNode(DockspaceID))
             {
                 ImGui::DockBuilderAddNode(DockspaceID, ImGuiDockNodeFlags_DockSpace);
@@ -1968,19 +1967,18 @@ namespace Lumina
     {
         ImGui::SameLine();
 
-        // Exponential moving average: smoothed = lerp(smoothed, current, factor)
         float CurrentFPS = UpdateContext.GetFPS();
         float CurrentFrameTime = UpdateContext.GetDeltaTime() * 1000.0f;
         
         SmoothedFPS = SmoothedFPS + (CurrentFPS - SmoothedFPS) * FPSSmoothingFactor;
         SmoothedFrameTime = SmoothedFrameTime + (CurrentFrameTime - SmoothedFrameTime) * FPSSmoothingFactor;
 
-        const TInlineString<100> PerfStats(TInlineString<100>::CtorSprintf(), "FPS: %3.0f / %.2f ms", SmoothedFPS, SmoothedFrameTime);
+        const TFixedString<100> PerfStats(TFixedString<100>::CtorSprintf(), "FPS: %3.0f / %.2f ms", SmoothedFPS, SmoothedFrameTime);
         ImGui::TextUnformatted(PerfStats.c_str());
 
         ImGui::SameLine();
 
-        const TInlineString<100> ObjectStats(TInlineString<100>::CtorSprintf(), "CObjects: %i", GObjectArray.GetNumAliveObjects());
+        const TFixedString<100> ObjectStats(TFixedString<100>::CtorSprintf(), "CObjects: %i", GObjectArray.GetNumAliveObjects());
         ImGui::TextUnformatted(ObjectStats.c_str());
     }
 
