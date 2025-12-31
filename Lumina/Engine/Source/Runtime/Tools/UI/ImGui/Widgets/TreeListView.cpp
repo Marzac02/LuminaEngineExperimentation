@@ -63,6 +63,17 @@ namespace Lumina
             {
                 for (int i = Clipper.DisplayStart; i < Clipper.DisplayEnd; ++i)
                 {
+                    FTreeListViewItem* Item = ListItems[i];
+                    
+                    if (Context.FilterFunction)
+                    {
+                        if (!Context.FilterFunction(*Item))
+                        {
+                            continue;
+                        }
+                    }
+
+                    
                     ImGui::TableNextRow();
                     ImGui::TableSetColumnIndex(0);
 

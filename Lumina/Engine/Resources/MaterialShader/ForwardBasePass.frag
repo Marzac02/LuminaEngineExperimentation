@@ -231,14 +231,12 @@ float ComputeShadowFactor(FLight Light, vec3 FragmentPos, float Bias)
         BlockerDepth    = texture(uShadowAtlas, vec3(SampleUV, ArrayLayer)).r;
     }
     
-    // Calculate the distance from the blocker to the current fragment
     float DepthDifference = abs(CurrentDepth - BlockerDepth);
     
     float MinRadius     = 0.0;
-    float MaxRadius     = 0.004;
-    float Exponent      = 1.52;
+    float MaxRadius     = 0.0009;
+    float Exponent      = 0.025;
         
-        // Use depth difference instead of distance to light
     float FilterRadius  = mix(MinRadius, MaxRadius, pow(DepthDifference, Exponent));
 
     float Shadow = 0.0f;

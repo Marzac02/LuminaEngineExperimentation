@@ -116,11 +116,31 @@ namespace Lumina
         {
             HandleEntityEditorDragDrop(Item);  
         };
-
-        OutlinerContext.FilterFunc = [this](const FTreeListViewItem* Item) -> bool
+        
+        OutlinerContext.FilterFunction = [&](const FTreeListViewItem& Item)
         {
-            return EntityFilterState.FilterName.PassFilter(Item->GetName().c_str());
+            using namespace entt::literals;
+            bool bPasses = EntityFilterState.FilterName.PassFilter(Item.GetDisplayName().c_str());
+
+            for (const FName& ComponentFilter : EntityFilterState.ComponentFilters)
+            {
+                const FEntityListViewItem* EntityListItem = static_cast<const FEntityListViewItem*>(&Item);
+
+                entt::entity Entity = EntityListItem->GetEntity();
+                
+                if (entt::meta_type Meta = entt::resolve(entt::hashed_string(ComponentFilter.c_str())))
+                {
+                    entt::meta_any Return = ECS::InvokeMetaFunc(Meta, "has"_hs, entt::forward_as_meta(World->GetEntityRegistry()), Entity);
+                    if (!Return.cast<bool>())
+                    {
+                        bPasses = false;
+                    }
+                }
+            }
+            
+            return bPasses;
         };
+
         
         //------------------------------------------------------------------------------------------------------
         
@@ -1357,21 +1377,17 @@ namespace Lumina
     
         if (ImGui::BeginPopup("CreateEntityMenu", ImGuiWindowFlags_NoMove))
         {
-            ImGui::PushFont(ImGui::GetIO().Fonts->Fonts[0]);
             ImGui::TextColored(ImVec4(0.8f, 0.9f, 1.0f, 1.0f), LE_ICON_PLUS " Create New Entity");
-            ImGui::PopFont();
             
             ImGui::Spacing();
             ImGui::Separator();
             ImGui::Spacing();
             
             ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 4.0f);
-            ImGui::PushStyleColor(ImGuiCol_FrameBg, ImVec4(0.15f, 0.15f, 0.18f, 1.0f));
             ImGui::SetNextItemWidth(-1);
             
             AddEntityComponentFilter.Draw(LE_ICON_FOLDER_SEARCH " Search templates...");
             
-            ImGui::PopStyleColor();
             ImGui::PopStyleVar();
             
             ImGui::Spacing();
@@ -1390,6 +1406,11 @@ namespace Lumina
                     LUM_ASSERT(Struct)
                     
                     if (Struct == STransformComponent::StaticStruct() || Struct == SNameComponent::StaticStruct() || Struct == STagComponent::StaticStruct())
+                    {
+                        continue;
+                    }
+                    
+                    if (!AddEntityComponentFilter.PassFilter(Struct->GetName().c_str()))
                     {
                         continue;
                     }
@@ -1434,7 +1455,6 @@ namespace Lumina
                 
                 ImGui::SameLine();
                 
-                // Quick empty entity button
                 ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.25f, 0.25f, 0.28f, 1.0f));
                 if (ImGui::Button(LE_ICON_CUBE " Empty Entity", ImVec2(-1, 0.0f)))
                 {
@@ -1457,9 +1477,58 @@ namespace Lumina
 
     void FWorldEditorTool::DrawFilterOptions()
     {
-        ImGui::Text(LE_ICON_CUBE " Filter by Component");
-        ImGui::Separator();
+        using namespace entt::literals;
         
+        if (ImGui::Button("Reset Filters", ImVec2(ImGui::GetContentRegionAvail().x, 0.0f)))
+        {
+            EntityFilterState.ComponentFilters.clear();    
+        }
+        
+        if (ImGui::BeginTable("ComponentFilters", 1, 
+            ImGuiTableFlags_Borders | 
+            ImGuiTableFlags_RowBg | 
+            ImGuiTableFlags_SizingStretchSame |
+            ImGuiTableFlags_ScrollY, ImVec2(0.0f, 400.0f)))
+        {
+            ImGui::TableSetupColumn("Component Type");
+            ImGui::TableHeadersRow();
+        
+            int ColumnIndex = 0;
+        
+            for (auto&& [ID, Storage] : World->GetEntityRegistry().storage())
+            {
+                if (entt::meta_type MetaType = entt::resolve(Storage.info()))
+                {
+                    if (entt::meta_any ReturnValue = ECS::InvokeMetaFunc(MetaType, "static_struct"_hs))
+                    {
+                        CStruct* StructType = ReturnValue.cast<CStruct*>();
+                        
+                        ImGui::TableNextRow();
+                        ImGui::TableNextColumn();
+                    
+                        auto It = eastl::find(EntityFilterState.ComponentFilters.begin(), 
+                            EntityFilterState.ComponentFilters.end(), StructType->GetName());
+                        
+                        bool bIsFiltered = (It != EntityFilterState.ComponentFilters.end());
+                        if (ImGui::Checkbox(StructType->GetName().c_str(), &bIsFiltered))
+                        {
+                            if (bIsFiltered)
+                            {
+                                EntityFilterState.ComponentFilters.emplace_back(StructType->GetName()); 
+                            }
+                            else
+                            {
+                                EntityFilterState.ComponentFilters.erase(It);
+                            }
+                        }
+                    
+                        ColumnIndex++;
+                    }
+                }
+            }
+        
+            ImGui::EndTable();
+        }
     }
 
     void FWorldEditorTool::SetSelectedEntity(entt::entity Entity)
@@ -1553,8 +1622,8 @@ namespace Lumina
         
         {
             ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 4.0f);
-            ImGui::PushStyleColor(ImGuiCol_FrameBg, ImVec4(0.15f, 0.15f, 0.18f, 1.0f));
-            ImGui::PushStyleColor(ImGuiCol_FrameBgHovered, ImVec4(0.18f, 0.18f, 0.22f, 1.0f));
+            //ImGui::PushStyleColor(ImGuiCol_FrameBg, ImVec4(0.15f, 0.15f, 0.18f, 1.0f));
+            //ImGui::PushStyleColor(ImGuiCol_FrameBgHovered, ImVec4(0.18f, 0.18f, 0.22f, 1.0f));
             
             constexpr float ButtonWidth = 30.0f;
             if (ImGui::Button(LE_ICON_PLUS, ImVec2(ButtonWidth, 0.0f)))
@@ -1573,7 +1642,6 @@ namespace Lumina
             ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x - (ButtonWidth));
             EntityFilterState.FilterName.Draw("##Search");
             
-            ImGui::PopStyleColor(2);
             ImGui::PopStyleVar();
             
             if (!EntityFilterState.FilterName.IsActive())
@@ -1587,7 +1655,7 @@ namespace Lumina
             
             ImGui::SameLine();
             
-            const bool bFilterActive = EntityFilterState.FilterName.IsActive();
+            const bool bFilterActive = EntityFilterState.FilterName.IsActive() || !EntityFilterState.ComponentFilters.empty();
             ImGui::PushStyleColor(ImGuiCol_Button, 
                 bFilterActive ? ImVec4(0.4f, 0.45f, 0.65f, 1.0f) : ImVec4(0.2f, 0.2f, 0.22f, 1.0f));
             ImGui::PushStyleColor(ImGuiCol_ButtonHovered,
@@ -1607,7 +1675,7 @@ namespace Lumina
                 ImGui::SetTooltip(bFilterActive ? "Filters active - Click to configure" : "Configure filters");
             }
             
-            if (ImGui::BeginPopup("FilterPopup"))
+            if (ImGui::BeginPopup("FilterPopup", ImGuiWindowFlags_NoMove))
             {
                 ImGui::SeparatorText("Component Filters");
                 DrawFilterOptions();
@@ -2157,40 +2225,41 @@ namespace Lumina
             ImGui::PushStyleColor(ImGuiCol_Header, 0);
             ImGui::PushStyleColor(ImGuiCol_HeaderActive, 0);
             ImGui::PushStyleColor(ImGuiCol_HeaderHovered, 0);
+            ImGui::SetNextItemAllowOverlap();
             bIsOpen = ImGui::CollapsingHeader(ComponentName);
             ImGui::TableSetBgColor(ImGuiTableBgTarget_RowBg0, 0xFF1C1C1C);
 
             ImGui::PopStyleColor(3);
+            
+            if (!bIsRequired)
+            {
+                ImGui::SameLine(ImGui::GetContentRegionAvail().x - 28.0f);
+            
+                ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(1.0f, 0.0f, 0.0f, 0.0f));
+                ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.7f, 0.25f, 0.25f, 0.8f));
+                ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.6f, 0.2f, 0.2f, 0.9f));
+                ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.8f, 0.4f, 0.4f, 1.0f));
+                ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 3.0f);
+            
+                if (ImGui::SmallButton(LE_ICON_TRASH_CAN "##RemoveComponent"))
+                {
+                    ComponentDestroyRequests.push(FComponentDestroyRequest{Table->GetType(), Entity});
+                }
+            
+                if (ImGui::IsItemHovered())
+                {
+                    ImGui::SetTooltip("Remove Component");
+                }
+            
+                ImGui::PopStyleVar();
+                ImGui::PopStyleColor(4);
+            }
                         
             ImGui::EndTable();
         }
         
         ImGui::PopStyleVar();
-            
-        if (!bIsRequired)
-        {
-            ImGui::SameLine();
-            
-            ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.0f, 0.0f, 0.0f, 0.0f));
-            ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.7f, 0.25f, 0.25f, 0.8f));
-            ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.6f, 0.2f, 0.2f, 0.9f));
-            ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.8f, 0.4f, 0.4f, 1.0f));
-            ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 3.0f);
-            
-            //@TODO FIXME
-            if (ImGui::SmallButton(LE_ICON_TRASH_CAN "##RemoveComponent"))
-            {
-                ComponentDestroyRequests.push(FComponentDestroyRequest{Table->GetType(), Entity});
-            }
-            
-            if (ImGui::IsItemHovered())
-            {
-                ImGui::SetTooltip("Remove Component");
-            }
-            
-            ImGui::PopStyleVar();
-            ImGui::PopStyleColor(4);
-        }
+        
         
         if (bIsOpen)
         {

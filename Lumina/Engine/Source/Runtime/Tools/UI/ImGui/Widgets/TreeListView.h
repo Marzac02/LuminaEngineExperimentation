@@ -77,7 +77,8 @@ namespace Lumina
 
     struct LUMINA_API FTreeListViewContext
     {
-        TFunction<bool(const FTreeListViewItem*)>                   FilterFunc;
+        /** Check if the item to draw passes a filter */
+        TFunction<bool(const FTreeListViewItem&)>                   FilterFunction;
         
         /** Callback to draw any context menus this item may want */
         TFunction<void(const TVector<FTreeListViewItem*>&)>         DrawItemContextMenuFunction;
@@ -102,9 +103,11 @@ namespace Lumina
 
         FTreeListView()
             : Allocator(1024)
+            , bMaintainVisibleRowIndex(false)
             , bDirty(false)
             , bCurrentlyDrawing(false)
-        {}
+        {
+        }
 
         ~FTreeListView()
         {
@@ -114,14 +117,13 @@ namespace Lumina
         FTreeListView(const FTreeListView&) = delete;
         FTreeListView& operator=(const FTreeListView&) = delete;
         
-
         void Draw(const FTreeListViewContext& Context);
 
         void ClearTree();
 
         void MarkTreeDirty() { bDirty = true; }
-        bool IsCurrentlyDrawing() const { return bCurrentlyDrawing; }
-        bool IsDirty() const { return bDirty; }
+        NODISCARD bool IsCurrentlyDrawing() const { return bCurrentlyDrawing; }
+        NODISCARD bool IsDirty() const { return bDirty; }
         
         template<typename T, typename... Args>
         requires (std::is_base_of_v<FTreeListViewItem, T> && std::is_constructible_v<T, Args...>)
@@ -152,16 +154,16 @@ namespace Lumina
         void ForEachItem(const TFunction<void(FTreeListViewItem* Item)>& Functor);
 
     private:
-
+        
         FBlockLinearAllocator                   Allocator;
-
+        
         TVector<FTreeListViewItem*>             Selections;
         TVector<FTreeListViewItem*>             ListItems;
 
         float                                   EstimatedRowHeight = -1.0f;
         int32                                   FirstVisibleRowItemIndex = 0;
-        bool                                    bMaintainVisibleRowIndex = false;
         
+        uint8                                   bMaintainVisibleRowIndex:1;
         uint8                                   bDirty:1;
         uint8                                   bCurrentlyDrawing:1;
     };
