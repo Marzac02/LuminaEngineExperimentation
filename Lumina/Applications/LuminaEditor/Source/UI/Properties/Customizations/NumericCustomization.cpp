@@ -145,76 +145,63 @@ namespace Lumina
 
     EPropertyChangeOp FTransformPropertyCustomization::DrawProperty(TSharedPtr<FPropertyHandle> Property)
     {
-        constexpr float HeaderWidth = 24;
 
         bool bWasChanged = false;
-        
         ImGui::PushItemWidth(ImGui::GetContentRegionAvail().x);
         
-        ImGui::PushStyleVar(ImGuiStyleVar_CellPadding, ImVec2(0, 2));
-        if (ImGui::BeginTable("Transform", 2, ImGuiTableFlags_None))
+        ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.4f, 0.7f, 1.0f, 1.0f));
+        ImGui::TextUnformatted(LE_ICON_AXIS_ARROW);
+        ImGui::PopStyleColor();
+        
+        ImGui::SameLine();
+        
+        if (ImGui::IsItemHovered(ImGuiHoveredFlags_DelayShort))
         {
-            ImGui::TableSetupColumn("Header", ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_NoResize, HeaderWidth);
-            ImGui::TableSetupColumn("Values", ImGuiTableColumnFlags_NoHide);
-
-                    
-            ImGui::TableNextRow();
-            {
-                ImGui::TableNextColumn();
-                ImGui::AlignTextToFramePadding();
-                {
-                    ImGui::Text(LE_ICON_AXIS_ARROW);
-                    ImGuiX::TextTooltip("Translation");
-                }
-        
-                ImGui::TableNextColumn();
-                if (ImGui::DragFloat3("T", glm::value_ptr(DisplayValue.Location), 0.01f))
-                {
-                    bWasChanged = true;
-                }
-            }
-            
-            ImGui::TableNextRow();
-            {
-                ImGui::TableNextColumn();
-                ImGui::AlignTextToFramePadding();
-                {
-                    ImGui::Text(LE_ICON_ROTATE_360);
-                    ImGuiX::TextTooltip("Rotation");
-                }
-        
-                ImGui::TableNextColumn();
-                glm::vec3 EulerRotation = glm::degrees(glm::eulerAngles(DisplayValue.Rotation));
-                if (ImGui::DragFloat3("R", glm::value_ptr(EulerRotation), 0.01f))
-                {
-                    DisplayValue.SetRotationFromEuler(EulerRotation);
-                    bWasChanged = true;
-                }
-            }
-        
-            ImGui::TableNextRow();
-            {
-                ImGui::TableNextColumn();
-                ImGui::AlignTextToFramePadding();
-                {
-                    ImGui::Text(LE_ICON_ARROW_TOP_RIGHT_BOTTOM_LEFT);
-                    ImGuiX::TextTooltip("Scale");
-                }
-                
-                ImGui::TableNextColumn();
-                if (ImGui::DragFloat3("S", glm::value_ptr(DisplayValue.Scale), 0.01f))
-                {
-                    bWasChanged = true;
-                }
-            }
-        
-            ImGui::EndTable();
+            ImGui::SetTooltip("Translation (Location)");
         }
-        ImGui::PopStyleVar();
+                
+        if (ImGui::DragFloat3("T", glm::value_ptr(DisplayValue.Location), 0.01f))
+        {
+            bWasChanged = true;
+        }
+        
+        ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.4f, 1.0f, 0.7f, 1.0f));
+        ImGui::TextUnformatted(LE_ICON_ROTATE_360);
+        ImGui::PopStyleColor();
+        
+        if (ImGui::IsItemHovered(ImGuiHoveredFlags_DelayShort))
+        {
+            ImGui::SetTooltip("Rotation (Euler Angles)");
+        }
+        
+        ImGui::SameLine();
+        
+        glm::vec3 EulerRotation = glm::degrees(glm::eulerAngles(DisplayValue.Rotation));
+        if (ImGui::DragFloat3("R", glm::value_ptr(EulerRotation), 0.01f))
+        {
+            DisplayValue.SetRotationFromEuler(EulerRotation);
+            bWasChanged = true;
+        }
+        
+        ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 0.7f, 0.4f, 1.0f));
+        ImGui::TextUnformatted(LE_ICON_ARROW_TOP_RIGHT_BOTTOM_LEFT);
+        ImGui::PopStyleColor();
+        
+        if (ImGui::IsItemHovered(ImGuiHoveredFlags_DelayShort))
+        {
+            ImGui::SetTooltip("Scale");
+        }
+                
+        ImGui::SameLine();
+        
+        if (ImGui::DragFloat3("S", glm::value_ptr(DisplayValue.Scale), 0.01f))
+        {
+            bWasChanged = true;
+        }
+        
         ImGui::PopItemWidth();
 
         return bWasChanged ? EPropertyChangeOp::Updated : EPropertyChangeOp::None;
-        
     }
 
     void FTransformPropertyCustomization::UpdatePropertyValue(TSharedPtr<FPropertyHandle> Property)

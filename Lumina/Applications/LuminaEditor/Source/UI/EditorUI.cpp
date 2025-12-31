@@ -411,6 +411,11 @@ namespace Lumina
         {
             ImGui::ShowDemoWindow(&bShowDearImGuiDemoWindow);
         }
+        
+        if (bShowImGuiStyleEditor)
+        {
+            ImGui::ShowStyleEditor();
+        }
 
         if (bShowImPlotDemoWindow)
         {
@@ -2159,6 +2164,7 @@ namespace Lumina
         ImGui::TextColored(ImVec4(0.6f, 0.6f, 0.62f, 1.0f), "ImGui Tools");
         ImGui::Separator();
         
+        ImGui::MenuItem(LE_ICON_WINDOW_OPEN " ImGui Style Editor", nullptr, &bShowImGuiStyleEditor);
         ImGui::MenuItem(LE_ICON_WINDOW_OPEN " ImGui Demo", nullptr, &bShowDearImGuiDemoWindow);
         ImGui::MenuItem(LE_ICON_CHART_BAR " ImPlot Demo", nullptr, &bShowImPlotDemoWindow);
         

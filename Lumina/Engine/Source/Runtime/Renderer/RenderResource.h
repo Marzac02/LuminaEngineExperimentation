@@ -1408,10 +1408,11 @@ namespace Lumina
 	{
 		FTextureSubresourceSet	Subresources;
 		FRHISampler*			Sampler;
+		EImageDimension			Dimension;
 		
 		bool operator==(const FBindingTextureResource& Other) const
 		{
-			return Subresources == Other.Subresources && Sampler == Other.Sampler;
+			return Subresources == Other.Subresources && Sampler == Other.Sampler && Dimension == Other.Dimension;
 		}
 	};
 	
@@ -1421,12 +1422,11 @@ namespace Lumina
 		
 		FBindingVariant				Variant;
 		
-		IRHIResource*				ResourceHandle = nullptr;
-		uint32						Slot = 0;
-		uint32						ArrayElement = 0;
-		ERHIBindingResourceType		Type = ERHIBindingResourceType::Unknown;
-		EImageDimension				Dimension = EImageDimension::Unknown;
-		EFormat						Format = EFormat::UNKNOWN;
+		IRHIResource*				ResourceHandle	= nullptr;
+		uint32						Slot			= 0;
+		uint32						ArrayElement	= 0;
+		ERHIBindingResourceType		Type			= ERHIBindingResourceType::Unknown;
+		EFormat						Format			= EFormat::UNKNOWN;
 		
 		// verify that the `subresources` and `range` have the same size and are covered by `rawData`
 		static_assert(sizeof(FTextureSubresourceSet) == 16, "sizeof(TextureSubresourceSet) is supposed to be 16 bytes");
@@ -1510,8 +1510,7 @@ namespace Lumina
 			Result.Type = ERHIBindingResourceType::Texture_SRV;
 			Result.ResourceHandle = Image;
 			Result.Format = Format;
-			Result.Dimension = Dimension;
-			Result.Variant = FBindingTextureResource{Subresources, Sampler};
+			Result.Variant = FBindingTextureResource{Subresources, Sampler, Dimension};
 
 			return Result;
 		}
@@ -1527,8 +1526,7 @@ namespace Lumina
 			Result.Type = ERHIBindingResourceType::Texture_UAV;
 			Result.ResourceHandle = Image;
 			Result.Format = Format;
-			Result.Dimension = Dimension;
-			Result.Variant = FBindingTextureResource{Subresources, nullptr};
+			Result.Variant = FBindingTextureResource{Subresources, nullptr, Dimension};
 			
 			return Result;
 		}
@@ -1541,7 +1539,6 @@ namespace Lumina
 			Result.Type					= ERHIBindingResourceType::PushConstants;
 			Result.ResourceHandle		= nullptr;
 			Result.Format				= EFormat::UNKNOWN;
-			Result.Dimension			= EImageDimension::Unknown;
 			Result.Variant				= FBufferRange{0, ByteSize};
 			
 			return Result;
@@ -1552,7 +1549,6 @@ namespace Lumina
 			return ResourceHandle == b.ResourceHandle
 				&& Slot == b.Slot
 				&& Type == b.Type
-				&& Dimension == b.Dimension
 				&& Format == b.Format
 				&& Variant == b.Variant;
 		}
@@ -1860,18 +1856,17 @@ namespace eastl
 			Hash::HashCombine(hash, Item.ResourceHandle);
 			Hash::HashCombine(hash, Item.Slot);
 			Hash::HashCombine(hash, Item.Type);
-			Hash::HashCombine(hash, Item.Dimension);
 			
 			if (const FBufferRange* Range = Item.TryGetBufferRange())
 			{
 				Hash::HashCombine(hash, Range->ByteSize);
 				Hash::HashCombine(hash, Range->ByteOffset);
 			}
-			
-			if (const FBindingTextureResource* Texture = Item.TryGetTextureResource())
+			else if (const FBindingTextureResource* Texture = Item.TryGetTextureResource())
 			{
 				Hash::HashCombine(hash, Texture->Sampler);
 				Hash::HashCombine(hash, Texture->Subresources);
+				Hash::HashCombine(hash, Texture->Dimension);
 			}
 			
 			return hash;

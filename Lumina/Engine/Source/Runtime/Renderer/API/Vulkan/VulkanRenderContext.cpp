@@ -962,7 +962,7 @@ namespace Lumina
 
                     const FTextureSubresourceSet Subresource = Binding.GetTextureResource().Subresources.Resolve(Image->GetDescription(), true);
                     FVulkanImage::ESubresourceViewType ViewType = GetTextureViewType(Binding.Format, Image->GetDescription().Format);
-                    VkImageView View = Image->GetSubresourceView(Subresource, Binding.Dimension, Binding.Format, VK_IMAGE_USAGE_SAMPLED_BIT, ViewType).View;
+                    VkImageView View = Image->GetSubresourceView(Subresource, Binding.GetTextureResource().Dimension, Binding.Format, VK_IMAGE_USAGE_SAMPLED_BIT, ViewType).View;
                     
                     VkDescriptorImageInfo& ImageInfo = ImageWriteInfos.emplace_back();
                     ImageInfo.imageView = View;
@@ -980,7 +980,7 @@ namespace Lumina
 
                     const FTextureSubresourceSet Subresource = Binding.GetTextureResource().Subresources.Resolve(Image->GetDescription(), true);
                     FVulkanImage::ESubresourceViewType ViewType = GetTextureViewType(Binding.Format, Image->GetDescription().Format);
-                    VkImageView View = Image->GetSubresourceView(Subresource, Binding.Dimension, Binding.Format, VK_IMAGE_USAGE_STORAGE_BIT, ViewType).View;
+                    VkImageView View = Image->GetSubresourceView(Subresource, Binding.GetTextureResource().Dimension, Binding.Format, VK_IMAGE_USAGE_STORAGE_BIT, ViewType).View;
                     
                     VkDescriptorImageInfo& ImageInfo = ImageWriteInfos.emplace_back();
                     ImageInfo.imageView = View;

@@ -112,6 +112,7 @@ namespace Lumina
         
         bool                                            bShowLuminaInfo = false;
         bool                                            bShowDearImGuiDemoWindow = false;
+        bool                                            bShowImGuiStyleEditor = false;
         bool                                            bShowImPlotDemoWindow = false;
         bool                                            bShowObjectDebug = false;
         bool                                            bShowRenderDebug = false;

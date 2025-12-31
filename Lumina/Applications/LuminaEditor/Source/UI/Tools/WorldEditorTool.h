@@ -1,4 +1,4 @@
-﻿#pragma once
+﻿    #pragma once
 
 #define USE_IMGUI_API
 #include "EditorTool.h"
@@ -28,36 +28,44 @@ namespace Lumina
         class FEntityListViewItem : public FTreeListViewItem
         {
         public:
-
             FEntityListViewItem(FTreeListViewItem* InParent, FEntityRegistry& InRegistry, entt::entity InEntity)
                 : FTreeListViewItem(InParent)
                 , Entity(InEntity)
                 , Registry(InRegistry)
-            {}
+            {
+                SNameComponent* NameComponent = Registry.try_get<SNameComponent>(Entity);
+                Name = NameComponent ? NameComponent->Name.c_str() : eastl::to_string(static_cast<uint32>(Entity));
+            }
             
-            ~FEntityListViewItem() override { }
-
             constexpr static const char* DragDropID = "EntityItem";
             
-            const char* GetTooltipText() const override { return GetName().c_str(); }
+            NODISCARD const char* GetTooltipText() const override { return Name.c_str(); }
+            
             bool HasContextMenu() override { return true; }
-            uint64 GetHash() const override { return (uint64)Entity; }
+            
+            NODISCARD uint64 GetHash() const override { return static_cast<uint64>(Entity); }
+            
             void SetDragDropPayloadData() const override
             {
                 uintptr_t IntPtr = (uintptr_t)this;
                 ImGui::SetDragDropPayload(DragDropID, &IntPtr, sizeof(uintptr_t));
             }
             
-            FName GetName() const override
+            FFixedString GetDisplayName() const override
             {
-                SNameComponent* NameComponent = Registry.try_get<SNameComponent>(Entity);
-                return NameComponent ? NameComponent->Name : eastl::to_string((uint32)Entity);
+                return FFixedString().append(LE_ICON_CUBE).append(" ").append(Name.c_str());
+            }
+            
+            FString GetName() const override
+            {
+                return Name;
             }
 
             entt::entity GetEntity() const { return Entity; }
             
         private:
 
+            FString Name;
             entt::entity Entity;
             FEntityRegistry& Registry;
         };
@@ -72,16 +80,14 @@ namespace Lumina
                 : FTreeListViewItem(InParent)
                 , System(InSystem)
             {
-                Hash = System.Lock()->GetName();
-                Name = System.Lock()->GetName();
+                Hash = InSystem->GetName().GetID();
+                Name = InSystem->GetName().ToString();
             }
-
-            ~FSystemListViewItem() override { }
-
-            const char* GetTooltipText() const override { return GetName().c_str(); }
+            
+            const char* GetTooltipText() const override { return Name.c_str(); }
             bool HasContextMenu() override { return true; }
             uint64 GetHash() const override { return Hash; }
-            FName GetName() const override
+            FString GetName() const override
             {
                 return Name;
             }
@@ -91,7 +97,7 @@ namespace Lumina
         private:
 
             uint64 Hash;
-            FName Name;
+            FString Name;
             TWeakObjectPtr<CEntitySystem> System;
         };
 
@@ -141,6 +147,11 @@ namespace Lumina
         
         void OnEntityDestroyed(entt::registry& Registry, entt::entity Entity);
         
+        void DrawSimulationControls(float ButtonSize);
+        void DrawCameraControls(float ButtonSize);
+        void DrawViewportOptions(float ButtonSize);
+        void DrawSnapSettingsPopup();
+
     protected:
 
         void SetWorldNewSimulate(bool bShouldSimulate);

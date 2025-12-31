@@ -27,7 +27,7 @@ namespace Lumina
         
         ImGui::PushID(this);
         ImGui::PushStyleVar(ImGuiStyleVar_CellPadding, ImVec2(2, 2));
-        if (ImGui::BeginTable("TreeViewTable", 1, TableFlags, ImVec2(ImGui::GetContentRegionAvail().x - ImGui::GetStyle().ItemSpacing.x / 2, -1)))
+        if (ImGui::BeginTable("TreeViewTable", 1, TableFlags))
         {
             ImGui::TableSetupColumn("Label", ImGuiTableColumnFlags_WidthStretch);
 
@@ -164,7 +164,7 @@ namespace Lumina
         {
             for (int Key = ImGuiKey_NamedKey_BEGIN; Key < ImGuiKey_NamedKey_END; Key++)
             {
-                if (ImGui::IsKeyPressed((ImGuiKey)Key))
+                if (ImGui::IsKeyPressed(static_cast<ImGuiKey>(Key)))
                 {
                     if (HandleKeyPressed(Context, *ItemToDraw, (ImGuiKey)Key))
                     {

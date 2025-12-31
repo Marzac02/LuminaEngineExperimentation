@@ -408,7 +408,7 @@ namespace Lumina
 
         TFixedVector<VkImageResolve, 4> Regions;
 
-        for (uint16 Mip = 0; Mip < DestSR.NumMipLevels; ++Mip)
+        for (uint16 Mip = 0; Mip < static_cast<uint16>(DestSR.NumMipLevels); ++Mip)
         {
             VkImageSubresourceLayers DestLayers = {};
             DestLayers.aspectMask       = VK_IMAGE_ASPECT_COLOR_BIT;

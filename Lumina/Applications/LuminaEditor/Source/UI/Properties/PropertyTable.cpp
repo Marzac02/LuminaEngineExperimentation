@@ -2,7 +2,6 @@
 
 #include "Core/Engine/Engine.h"
 #include "Core/Object/Class.h"
-#include "Core/Object/Object.h"
 #include "Core/Reflection/PropertyCustomization/PropertyCustomization.h"
 #include "Core/Reflection/Type/LuminaTypes.h"
 #include "Core/Reflection/Type/Properties/ArrayProperty.h"
@@ -125,7 +124,7 @@ namespace Lumina
         {
             bool bIsReadOnly = PropertyHandle == nullptr ? false : PropertyHandle->Property->Metadata.HasMetadata("ReadOnly");
             ImGui::BeginDisabled(bIsReadOnly);
-            const float ChildHeaderOffset = Offset + 20;
+            const float ChildHeaderOffset = Offset + 8;
             for (FPropertyRow* Row : Children)
             {
                 Row->DrawRow(ChildHeaderOffset);

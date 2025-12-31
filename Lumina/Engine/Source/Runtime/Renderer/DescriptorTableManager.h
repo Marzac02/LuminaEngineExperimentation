@@ -48,18 +48,17 @@ namespace Lumina
                 size_t hash = 0;
                 Hash::HashCombine(hash, Item.ResourceHandle);
                 Hash::HashCombine(hash, Item.Type);
-                Hash::HashCombine(hash, Item.Dimension);
 			
                 if (const FBufferRange* Range = Item.TryGetBufferRange())
                 {
                     Hash::HashCombine(hash, Range->ByteSize);
                     Hash::HashCombine(hash, Range->ByteOffset);
                 }
-			
-                if (const FBindingTextureResource* Texture = Item.TryGetTextureResource())
+                else if (const FBindingTextureResource* Texture = Item.TryGetTextureResource())
                 {
                     Hash::HashCombine(hash, Texture->Sampler);
                     Hash::HashCombine(hash, Texture->Subresources);
+                    Hash::HashCombine(hash, Texture->Dimension);
                 }
 			
                 return hash;

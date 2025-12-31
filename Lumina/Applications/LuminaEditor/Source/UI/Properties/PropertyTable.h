@@ -84,8 +84,6 @@ namespace Lumina
 
         TSharedPtr<FPropertyHandle> GetPropertyHandle() const { return PropertyHandle; }
         
-    private:
-
     };
 
     class FArrayPropertyRow : public FPropertyRow

@@ -46,15 +46,12 @@ namespace Lumina
         class FContentBrowserListViewItem : public FTreeListViewItem
         {
         public:
-
             FContentBrowserListViewItem(FTreeListViewItem* InParent, const FString& InPath, const FString& InDisplayName)
                 : FTreeListViewItem(InParent)
-                , DisplayName(InDisplayName)
+                , Name(InDisplayName)
                 , Path(InPath)
             {}
             
-            virtual ~FContentBrowserListViewItem() override { }
-
             const char* GetTooltipText() const override { return Path.c_str(); }
             bool HasContextMenu() override { return true; }
             
@@ -64,12 +61,12 @@ namespace Lumina
                 return FFixedString()
                 .append(LE_ICON_FOLDER)
                 .append(" ")
-                .append(GetName().c_str());
+                .append(Name.c_str());
             }
 
-            FName GetName() const override
+            FString GetName() const override
             {
-                return DisplayName.c_str();
+                return Name;
             }
 
             uint64 GetHash() const override { return Hash::GetHash64(Path); }
@@ -78,7 +75,7 @@ namespace Lumina
             
         private:
 
-            FString DisplayName;
+            FString Name;
             FString Path;
         };
 

@@ -2,6 +2,7 @@
 
 #include <format>
 #include "imgui.h"
+#include "Tools/UI/ImGui/ImGuizmo.h"
 #include "imgui_internal.h"
 #include "Assets/AssetRegistry/AssetRegistry.h"
 #include "Containers/Array.h"
@@ -68,6 +69,8 @@ namespace Lumina::ImGuiX
             ImGui::PopTextWrapPos();
         }
     }
+    
+    LUMINA_API FStringView ImGuizmoOpToString(ImGuizmo::OPERATION Op);
 
     LUMINA_API bool ButtonEx(char const* pIcon, char const* pLabel, ImVec2 const& size = ImVec2( 0, 0 ), const ImColor& backgroundColor = ImGui::ColorConvertFloat4ToU32( ImGui::GetStyle().Colors[ImGuiCol_Button] ), const ImColor& iconColor = ImGui::ColorConvertFloat4ToU32( ImGui::GetStyle().Colors[ImGuiCol_Text] ), const ImColor& foregroundColor = ImGui::ColorConvertFloat4ToU32( ImGui::GetStyle().Colors[ImGuiCol_Text] ), bool shouldCenterContents = false );
 

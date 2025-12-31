@@ -256,252 +256,7 @@ namespace Lumina
 
     void FWorldEditorTool::DrawToolMenu(const FUpdateContext& UpdateContext)
     {
-        if (ImGui::BeginMenu(LE_ICON_CAMERA_CONTROL" Camera"))
-        {
-            ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(8, 4));
-            
-            if (ImGui::Button("Reset Transform", ImVec2(ImGui::GetContentRegionAvail().x, 24)))
-            {
-                World->GetEntityRegistry().get<STransformComponent>(EditorEntity).SetTransform(FTransform{});
-                World->GetEntityRegistry().emplace_or_replace<FNeedsTransformUpdate>(EditorEntity);
-            }
-            
-            ImGui::TextColored(ImVec4(0.7f, 0.9f, 1.0f, 1.0f), "Movement Settings");
-            ImGui::Separator();
-            ImGui::Spacing();
-            
-            SVelocityComponent& VelocityComponent = World->GetEntityRegistry().get<SVelocityComponent>(EditorEntity);
-            ImGui::SetNextItemWidth(200);
-            ImGui::SliderFloat("##CameraSpeed", &VelocityComponent.Speed, 1.0f, 200.0f, "%.1f units/s");
-            if (ImGui::IsItemHovered())
-            {
-                ImGui::SetTooltip("Camera movement speed");
-            }
-    
-            ImGui::PopStyleVar();
-            ImGui::EndMenu();
-        }
         
-        if (ImGui::BeginMenu(LE_ICON_MOVE_RESIZE" Gizmo"))
-        {
-            ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(8, 4));
-            ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(8, 8));
-            
-            static int CurrentOpIndex = 0;
-            static int CurrentModeIndex = 0;
-            static bool bSnapEnabled = false;
-            static float TranslateSnap = 1.0f;
-            static float RotateSnap = 15.0f;
-            static float ScaleSnap = 0.1f;
-    
-            ImGui::TextColored(ImVec4(1.0f, 0.78f, 0.4f, 1.0f), "Transform Operation");
-            ImGui::Separator();
-            ImGui::Spacing();
-    
-            const char* operations[] = { "Translate", "Rotate", "Scale" };
-            constexpr int operationsCount = IM_ARRAYSIZE(operations);
-    
-            switch (GuizmoOp)
-            {
-                case ImGuizmo::TRANSLATE: CurrentOpIndex = 0; break;
-                case ImGuizmo::ROTATE:    CurrentOpIndex = 1; break;
-                case ImGuizmo::SCALE:     CurrentOpIndex = 2; break;
-                default:                  CurrentOpIndex = 0; break;
-            }
-    
-            ImGui::SetNextItemWidth(180);
-            if (ImGui::Combo("##Operation", &CurrentOpIndex, operations, operationsCount))
-            {
-                switch (CurrentOpIndex)
-                {
-                    case 0: GuizmoOp = ImGuizmo::TRANSLATE; break;
-                    case 1: GuizmoOp = ImGuizmo::ROTATE;    break;
-                    case 2: GuizmoOp = ImGuizmo::SCALE;     break;
-                    default: LUMINA_NO_ENTRY()
-                }
-            }
-            
-            ImGui::Spacing();
-            ImGui::Spacing();
-    
-            ImGui::TextColored(ImVec4(1.0f, 0.78f, 0.4f, 1.0f), "Transform Space");
-            ImGui::Separator();
-            ImGui::Spacing();
-    
-            const char* modes[] = { "World Space", "Local Space" };
-            constexpr int modesCount = IM_ARRAYSIZE(modes);
-    
-            switch (GuizmoMode)
-            {
-                case ImGuizmo::WORLD: CurrentModeIndex = 0; break;
-                case ImGuizmo::LOCAL: CurrentModeIndex = 1; break;
-            }
-    
-            ImGui::SetNextItemWidth(180);
-            if (ImGui::Combo("##Mode", &CurrentModeIndex, modes, modesCount))
-            {
-                switch (CurrentModeIndex)
-                {
-                    case 0: GuizmoMode = ImGuizmo::WORLD; break;
-                    case 1: GuizmoMode = ImGuizmo::LOCAL; break;
-                    default: LUMINA_NO_ENTRY()
-                }
-            }
-    
-            ImGui::Spacing();
-            ImGui::Spacing();
-    
-            ImGui::TextColored(ImVec4(0.6f, 1.0f, 0.6f, 1.0f), "Snap Settings");
-            ImGui::Separator();
-            ImGui::Spacing();
-    
-            ImGui::PushStyleColor(ImGuiCol_CheckMark, ImVec4(0.4f, 1.0f, 0.4f, 1.0f));
-            ImGui::Checkbox("Enable Snapping", &bSnapEnabled);
-            ImGui::PopStyleColor();
-            
-            if (ImGui::IsItemHovered())
-            {
-                ImGui::SetTooltip("Toggle grid snapping (Hold Ctrl while transforming)");
-            }
-    
-            ImGui::Spacing();
-    
-            ImGui::BeginDisabled(!bSnapEnabled);
-            
-            ImGui::PushStyleColor(ImGuiCol_FrameBg, ImVec4(0.2f, 0.22f, 0.25f, 1.0f));
-            ImGui::PushStyleColor(ImGuiCol_FrameBgHovered, ImVec4(0.25f, 0.27f, 0.3f, 1.0f));
-            ImGui::PushStyleColor(ImGuiCol_FrameBgActive, ImVec4(0.3f, 0.32f, 0.35f, 1.0f));
-    
-            switch (GuizmoOp)
-            {
-            case ImGuizmo::TRANSLATE:
-                ImGui::TextColored(ImVec4(0.8f, 0.8f, 0.8f, 1.0f), "Translation Snap");
-                ImGui::SetNextItemWidth(180);
-                ImGui::DragFloat("##TranslateSnap", &TranslateSnap, 0.1f, 0.01f, 100.0f, "%.2f units");
-                if (ImGui::IsItemHovered())
-                {
-                    ImGui::SetTooltip("Snap to grid increments when moving objects");
-                }
-                
-                ImGui::Spacing();
-                ImGui::Text("Quick Presets:");
-                ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(6, 3));
-                ImGui::BeginHorizontal("SnapAngle");
-                if (ImGui::Button("0.1"))
-                {
-                    TranslateSnap = 0.1f;
-                }
-                if (ImGui::Button("0.5"))
-                {
-                    TranslateSnap = 0.5f;
-                }
-                if (ImGui::Button("1.0"))
-                {
-                    TranslateSnap = 1.0f;
-                }
-                if (ImGui::Button("5.0"))
-                {
-                    TranslateSnap = 5.0f;
-                }
-                if (ImGui::Button("10"))
-                {
-                    TranslateSnap = 10.0f;
-                }
-                ImGui::PopStyleVar();
-                ImGui::EndHorizontal();
-                break;
-    
-            case ImGuizmo::ROTATE:
-                ImGui::TextColored(ImVec4(0.8f, 0.8f, 0.8f, 1.0f), "Rotation Snap");
-                ImGui::SetNextItemWidth(180);
-                ImGui::DragFloat("##RotateSnap", &RotateSnap, 1.0f, 1.0f, 180.0f, "%.1f degrees");
-                if (ImGui::IsItemHovered())
-                {
-                    ImGui::SetTooltip("Snap to angle increments when rotating objects");
-                }
-                
-                ImGui::Spacing();
-                ImGui::Text("Quick Presets:");
-                ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(6, 3));
-                ImGui::BeginHorizontal("SnapAngle");
-                if (ImGui::Button(LE_ICON_ANGLE_ACUTE " 1"))
-                {
-                    RotateSnap = 1.0f;
-                }
-                
-                if (ImGui::Button(LE_ICON_ANGLE_ACUTE " 5"))
-                {
-                    RotateSnap = 5.0f;
-                }
-                
-                if (ImGui::Button(LE_ICON_ANGLE_ACUTE " 15"))
-                {
-                    RotateSnap = 15.0f;
-                }
-                
-                if (ImGui::Button(LE_ICON_ANGLE_ACUTE " 45"))
-                {
-                    RotateSnap = 45.0f;
-                }
-                
-                if (ImGui::Button(LE_ICON_ANGLE_ACUTE " 90"))
-                {
-                    RotateSnap = 90.0f;
-                }
-                
-                ImGui::PopStyleVar();
-                break;
-    
-            case ImGuizmo::SCALE:
-                ImGui::TextColored(ImVec4(0.8f, 0.8f, 0.8f, 1.0f), "Scale Snap");
-                ImGui::SetNextItemWidth(180);
-                ImGui::DragFloat("##ScaleSnap", &ScaleSnap, 0.01f, 0.01f, 10.0f, "%.2f");
-                if (ImGui::IsItemHovered())
-                {
-                    ImGui::SetTooltip("Snap to scale increments when scaling objects");
-                }
-                
-                ImGui::Spacing();
-                ImGui::Text("Quick Presets:");
-                ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(6, 3));
-                ImGui::BeginHorizontal("SnapAngle");
-
-                if (ImGui::Button("0.01"))
-                {
-                    ScaleSnap = 0.01f;
-                }
-                if (ImGui::Button("0.1"))
-                {
-                    ScaleSnap = 0.1f;
-                }
-                if (ImGui::Button("0.25"))
-                {
-                    ScaleSnap = 0.25f;
-                }
-                if (ImGui::Button("0.5"))
-                {
-                    ScaleSnap = 0.5f;
-                }
-                if (ImGui::Button("1.0"))
-                {
-                    ScaleSnap = 1.0f;
-                }
-                ImGui::PopStyleVar();
-                ImGui::EndHorizontal();
-                break;
-            }
-    
-            ImGui::PopStyleColor(3);
-            ImGui::EndDisabled();
-   
-            GuizmoSnapTranslate = TranslateSnap;
-            GuizmoSnapRotate = RotateSnap;
-            GuizmoSnapScale = ScaleSnap;
-            bGuizmoSnapEnabled = bSnapEnabled;
-    
-            ImGui::PopStyleVar(2);
-            ImGui::EndMenu();
-        }
     }
 
     void FWorldEditorTool::InitializeDockingLayout(ImGuiID InDockspaceID, const ImVec2& InDockspaceSize) const
@@ -758,50 +513,56 @@ namespace Lumina
 
     void FWorldEditorTool::DrawViewportToolbar(const FUpdateContext& UpdateContext)
     {
-        ImGui::SameLine();
-        constexpr float ButtonWidth = 28;
-        
         if (!IsAssetEditorTool() && !bSimulatingWorld)
         {
             return;
         }
         
-        if (!bGamePreviewRunning)
-        {
-            if (!bSimulatingWorld)
-            {
-                if (ImGuiX::IconButton(LE_ICON_PLAY, "", 4278255360, ImVec2(ButtonWidth, 0)))
-                {
-                    OnGamePreviewStartRequested.Broadcast();
-                }
+        constexpr float Padding = 8.0f;
+        constexpr float ItemSpacing = 6.0f;
+        constexpr float ButtonSize = 32.0f;
+        constexpr float CornerRounding = 8.0f;
         
-                ImGui::SameLine();
-                
-                if (ImGuiX::IconButton(LE_ICON_COG_BOX, "", 4278255360, ImVec2(ButtonWidth, 0)))
-                {
-                    SetWorldNewSimulate(true);
-                }
-            }
-            else
-            {
-                if (ImGui::IsKeyPressed(ImGuiKey_Escape))
-                {
-                    SetWorldNewSimulate(false);
-                }
-                
-                if (ImGuiX::IconButton(LE_ICON_COG_BOX, "", 4278190335, ImVec2(ButtonWidth, 0)))
-                {
-                    SetWorldNewSimulate(false);
-                }
-            }
-        }
-        else
+        ImVec2 Pos = ImGui::GetWindowPos();
+        ImGui::SetNextWindowPos(Pos + ImVec2(Padding, Padding));
+        ImGui::SetNextWindowBgAlpha(0.85f);
+    
+        ImGuiWindowFlags WindowFlags = 
+            ImGuiWindowFlags_NoDecoration |
+            ImGuiWindowFlags_NoMove |
+            ImGuiWindowFlags_NoSavedSettings |
+            ImGuiWindowFlags_NoFocusOnAppearing |
+            ImGuiWindowFlags_NoNav |
+            ImGuiWindowFlags_AlwaysAutoResize;
+    
+        ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(Padding, Padding));
+        ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, CornerRounding);
+        ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(ItemSpacing, ItemSpacing));
+        ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 6.0f);
+    
+        if (ImGui::Begin("##ViewportToolbar", nullptr, WindowFlags))
         {
-            if (ImGuiX::IconButton(LE_ICON_STOP, "", 4278190335, ImVec2(ButtonWidth, 0)))
-            {
-                OnGamePreviewStopRequested.Broadcast();
-            }
+            ImGui::BeginGroup();
+        
+            DrawSimulationControls(ButtonSize);
+        
+            ImGui::SameLine();
+            ImGui::SeparatorEx(ImGuiSeparatorFlags_Vertical);
+            ImGui::SameLine();
+        
+            DrawCameraControls(ButtonSize);
+        
+            ImGui::SameLine();
+            ImGui::SeparatorEx(ImGuiSeparatorFlags_Vertical);
+            ImGui::SameLine();
+        
+            DrawViewportOptions(ButtonSize);
+        
+            ImGui::EndGroup();
         }
+        ImGui::End();
+    
+        ImGui::PopStyleVar(4);
     }
 
     void FWorldEditorTool::PushAddTagModal(entt::entity Entity)
@@ -938,7 +699,6 @@ namespace Lumina
             ImGui::Separator();
             ImGui::Spacing();
     
-            // Search bar with icon and modern styling
             ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(10, 8));
             ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 4.0f);
             ImGui::PushStyleColor(ImGuiCol_FrameBg, ImVec4(0.15f, 0.15f, 0.16f, 1.0f));
@@ -1165,6 +925,390 @@ namespace Lumina
         {
             SetSelectedEntity(entt::null);
         }
+    }
+
+    void FWorldEditorTool::DrawSimulationControls(float ButtonSize)
+    {
+        const ImVec4 ActiveColor = ImVec4(0.2f, 0.6f, 1.0f, 1.0f);
+        const ImVec4 InactiveColor = ImVec4(0.5f, 0.5f, 0.5f, 1.0f);
+        const ImVec2 BtnSize = ImVec2(ButtonSize, ButtonSize);
+        
+        if (!bGamePreviewRunning)
+        {
+            if (!bSimulatingWorld)
+            {
+                ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.2f, 0.7f, 0.3f, 0.8f));
+                ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.3f, 0.8f, 0.4f, 1.0f));
+                if (ImGuiX::IconButton(LE_ICON_PLAY, "##PlayBtn", 0xFFFFFFFF, BtnSize))
+                {
+                    OnGamePreviewStartRequested.Broadcast();
+                }
+                ImGui::PopStyleColor(2);
+                
+                if (ImGui::IsItemHovered(ImGuiHoveredFlags_DelayShort))
+                {
+                    ImGui::SetTooltip("Play (Start game preview)");
+                }
+                
+                ImGui::SameLine();
+                
+                if (ImGuiX::IconButton(LE_ICON_COG_BOX, "##SimulateBtn", 0xFFFFFFFF, BtnSize))
+                {
+                    SetWorldNewSimulate(true);
+                }
+                
+                if (ImGui::IsItemHovered(ImGuiHoveredFlags_DelayShort))
+                {
+                    ImGui::SetTooltip("Simulate (Run physics without gameplay)");
+                }
+            }
+            else
+            {
+                if (ImGui::IsKeyPressed(ImGuiKey_Escape))
+                {
+                    SetWorldNewSimulate(false);
+                }
+                
+                ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.9f, 0.5f, 0.1f, 0.9f));
+                ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(1.0f, 0.6f, 0.2f, 1.0f));
+                if (ImGuiX::IconButton(LE_ICON_COG_BOX, "##SimulateActiveBtn", 0xFFFFFFFF, BtnSize))
+                {
+                    SetWorldNewSimulate(false);
+                }
+                ImGui::PopStyleColor(2);
+                
+                if (ImGui::IsItemHovered(ImGuiHoveredFlags_DelayShort))
+                {
+                    ImGui::SetTooltip("Stop Simulation (ESC)");
+                }
+            }
+        }
+        else
+        {
+            ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.8f, 0.2f, 0.2f, 0.8f));
+            ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.9f, 0.3f, 0.3f, 1.0f));
+            if (ImGuiX::IconButton(LE_ICON_STOP, "##StopBtn", 0xFFFFFFFF, BtnSize))
+            {
+                OnGamePreviewStopRequested.Broadcast();
+            }
+            ImGui::PopStyleColor(2);
+            
+            if (ImGui::IsItemHovered(ImGuiHoveredFlags_DelayShort))
+            {
+                ImGui::SetTooltip("Stop Game Preview");
+            }
+        }
+    }
+
+    void FWorldEditorTool::DrawCameraControls(float ButtonSize)
+    {
+        const ImVec2 BtnSize = ImVec2(ButtonSize, ButtonSize);
+        float Speed = World->GetEntityRegistry().get<SVelocityComponent>(EditorEntity).Speed;
+
+        if (ImGuiX::IconButton(LE_ICON_SPADE, "##CameraSpeed", 0xFFFFFFFF, BtnSize))
+        {
+            ImGui::OpenPopup("CameraSpeedPopup");
+        }
+    
+        if (ImGui::IsItemHovered(ImGuiHoveredFlags_DelayShort))
+        {
+            ImGui::SetTooltip("Camera Speed: %.1fx", Speed);
+        }
+    
+        
+        if (ImGui::BeginPopup("CameraSpeedPopup", ImGuiWindowFlags_NoMove))
+        {
+            ImGui::Text("Camera Speed");
+            ImGui::Separator();
+            
+            if (ImGui::SliderFloat("##Speed", &Speed, 0.1f, 100.0f, "%.1fx"))
+            {
+                World->GetEntityRegistry().get<SVelocityComponent>(EditorEntity).Speed = Speed;
+            }
+        
+            if (ImGui::Button("Reset to 1.0x", ImVec2(-1, 0)))
+            {
+                World->GetEntityRegistry().get<SVelocityComponent>(EditorEntity).Speed = 1.0f;
+                ImGui::CloseCurrentPopup();
+            }
+        
+            ImGui::EndPopup();
+        }
+    
+        ImGui::SameLine();
+    
+        if (ImGuiX::IconButton(LE_ICON_CROSSHAIRS, "##FocusSelection", 0xFFFFFFFF, BtnSize))
+        {
+            //FocusOnSelection();
+        }
+    
+        if (ImGui::IsItemHovered(ImGuiHoveredFlags_DelayShort))
+        {
+            ImGui::SetTooltip("Focus on Selection (F)");
+        }
+    }
+
+    void FWorldEditorTool::DrawViewportOptions(float ButtonSize)
+    {
+        const ImVec2 BtnSize = ImVec2(ButtonSize, ButtonSize);
+    
+        bool GridActive = false;
+        if (GridActive)
+        {
+            ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.2f, 0.6f, 1.0f, 0.6f));
+        }
+        
+        if (ImGuiX::IconButton(LE_ICON_GRID, "##GridToggle", 0xFFFFFFFF, BtnSize))
+        {
+        }
+        
+        if (GridActive)
+        {
+            ImGui::PopStyleColor();
+        }
+        
+        if (ImGui::IsItemHovered(ImGuiHoveredFlags_DelayShort))
+        {
+            ImGui::SetTooltip("Toggle Grid (G)");
+        }
+        
+        ImGui::SameLine();
+        
+        const char* Icon = nullptr;
+        switch (GuizmoOp)
+        {
+        case ImGuizmo::OPERATION::TRANSLATE:
+            {
+                Icon = LE_ICON_AXIS_ARROW;
+            }
+            break;
+        case ImGuizmo::OPERATION::ROTATE:
+            {
+                Icon = LE_ICON_ROTATE_360;
+            }
+            break;
+        case ImGuizmo::OPERATION::SCALE:
+            {
+                Icon = LE_ICON_ARROW_TOP_RIGHT_BOTTOM_LEFT;
+            }
+            break;
+        }
+        
+        if (ImGuiX::IconButton(Icon, "##GizmoMode", 0xFFFFFFFF, BtnSize))
+        {
+            CycleGuizmoOp();
+        }
+        
+        if (ImGui::IsItemHovered(ImGuiHoveredFlags_DelayShort))
+        {
+            ImGui::SetTooltip("Gizmo: %s (R)", ImGuiX::ImGuizmoOpToString(GuizmoOp).data());
+        }
+        
+        if (bGuizmoSnapEnabled)
+        {
+            ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.2f, 0.6f, 1.0f, 0.6f));
+        }
+        
+        ImGui::SameLine();
+    
+        if (ImGuiX::IconButton(LE_ICON_MAGNET, "##SnapToggle", 0xFFFFFFFF, BtnSize))
+        {
+            bGuizmoSnapEnabled = !bGuizmoSnapEnabled;
+        }
+    
+        if (bGuizmoSnapEnabled)
+        {
+            ImGui::PopStyleColor();
+        }
+    
+        if (ImGui::IsItemHovered(ImGuiHoveredFlags_DelayShort))
+        {
+            ImGui::SetTooltip("Snap Settings (Click to toggle) (Right click for config)");
+        }
+    
+        if (ImGui::IsItemClicked(ImGuiMouseButton_Right) || (ImGui::IsItemHovered() && ImGui::IsMouseClicked(ImGuiMouseButton_Middle)))
+        {
+            ImGui::OpenPopup("SnapSettingsPopup");
+        }
+    
+        if (ImGui::BeginPopup("SnapSettingsPopup", ImGuiWindowFlags_NoMove))
+        {
+            DrawSnapSettingsPopup();
+            ImGui::EndPopup();
+        }
+    
+        ImGui::SameLine();
+        
+        if (ImGuiX::IconButton(LE_ICON_EYE, "##ViewMode", 0xFFFFFFFF, BtnSize))
+        {
+            ImGui::OpenPopup("ViewModePopup");
+        }
+        
+        if (ImGui::IsItemHovered(ImGuiHoveredFlags_DelayShort))
+        {
+            ImGui::SetTooltip("View Mode Options");
+        }
+        
+        if (ImGui::BeginPopup("ViewModePopup", ImGuiWindowFlags_NoMove))
+        {
+            ImGui::Text("Rendering Mode");
+            ImGui::Separator();
+            
+            if (ImGui::Selectable("Lit"))
+            {
+            }
+            if (ImGui::Selectable("Unlit"))
+            {
+            }
+            if (ImGui::Selectable("Wireframe"))
+            {
+            }
+            
+            ImGui::Separator();
+            //ImGui::Checkbox("Show Physics", &bShowPhysics);
+            //ImGui::Checkbox("Show Collision", &bShowCollision);
+            //ImGui::Checkbox("Show Bounds", &bShowBounds);
+            
+            ImGui::EndPopup();
+        }
+    }
+    
+    void FWorldEditorTool::DrawSnapSettingsPopup()
+    {
+        ImGui::Text("Snap Settings");
+        ImGui::Separator();
+        
+        if (ImGui::Checkbox("Enable Snap", &bGuizmoSnapEnabled))
+        {
+            
+        }
+        
+        ImGui::Spacing();
+        
+        ImGui::PushStyleColor(ImGuiCol_Header, ImVec4(0.2f, 0.4f, 0.6f, 0.3f));
+        if (ImGui::CollapsingHeader("Translation", ImGuiTreeNodeFlags_DefaultOpen))
+        {
+            ImGui::PushID("Translate");
+            ImGui::Indent();
+            
+            ImGui::BeginDisabled(!bGuizmoSnapEnabled);
+            
+            ImGui::Text("Presets:");
+            ImGui::SameLine();
+            
+            if (ImGui::Button("0.1"))
+            {
+                GuizmoSnapTranslate = 0.1f;
+            }
+            ImGui::SameLine();
+            if (ImGui::Button("1.0"))
+            {
+                GuizmoSnapTranslate = 1.0f;
+            }
+            ImGui::SameLine();
+            if (ImGui::Button("5.0"))
+            {
+                GuizmoSnapTranslate = 5.0f;
+            }
+            ImGui::SameLine();
+            if (ImGui::Button("10"))
+            {
+                GuizmoSnapTranslate = 10.0f;
+            }
+            ImGui::SameLine();
+            if (ImGui::Button("50"))
+            {
+                GuizmoSnapTranslate = 50.0f;
+            }
+            
+            ImGui::DragFloat("Value##Translation", &GuizmoSnapTranslate, 0.1f, 0.01f, 1000.0f, "%.2f units");
+            
+            ImGui::EndDisabled();
+            ImGui::Unindent();
+            ImGui::PopID();
+        }
+        
+        if (ImGui::CollapsingHeader("Rotation", ImGuiTreeNodeFlags_DefaultOpen))
+        {
+            ImGui::PushID("Rotate");
+            ImGui::Indent();
+            
+            ImGui::BeginDisabled(!bGuizmoSnapEnabled);
+            
+            ImGui::Text("Presets:");
+            ImGui::SameLine();
+            
+            if (ImGui::Button("1 " LE_ICON_ANGLE_ACUTE))
+            {
+                GuizmoSnapRotate = 1.0f;
+            }
+            ImGui::SameLine();
+            if (ImGui::Button("5 " LE_ICON_ANGLE_ACUTE))
+            {
+                GuizmoSnapRotate = 5.0f;
+            }
+            ImGui::SameLine();
+            if (ImGui::Button("15 " LE_ICON_ANGLE_ACUTE))
+            {
+                GuizmoSnapRotate = 15.0f;
+            }
+            ImGui::SameLine();
+            if (ImGui::Button("45 " LE_ICON_ANGLE_ACUTE))
+            {
+                GuizmoSnapRotate = 45.0f;
+            }
+            ImGui::SameLine();
+            if (ImGui::Button("90 " LE_ICON_ANGLE_ACUTE))
+            {
+                GuizmoSnapRotate = 90.0f;
+            }
+            
+            ImGui::DragFloat("Value##Rotation", &GuizmoSnapRotate, 0.5f, 0.1f, 180.0f, "%.1f " LE_ICON_ANGLE_ACUTE);
+            
+            ImGui::EndDisabled();
+            ImGui::Unindent();
+            ImGui::PopID();
+        }
+        
+        if (ImGui::CollapsingHeader("Scale", ImGuiTreeNodeFlags_DefaultOpen))
+        {
+            ImGui::PushID("Scale");
+            ImGui::Indent();
+            
+            ImGui::BeginDisabled(!bGuizmoSnapEnabled);
+            
+            // Common presets
+            ImGui::Text("Presets:");
+            ImGui::SameLine();
+            
+            if (ImGui::Button("0.1"))
+            {
+                GuizmoSnapScale = 0.1f;
+            }
+            ImGui::SameLine();
+            if (ImGui::Button("0.25"))
+            {
+                GuizmoSnapScale = 0.25f;
+            }
+            ImGui::SameLine();
+            if (ImGui::Button("0.5"))
+            {
+                GuizmoSnapScale = 0.5f;
+            }
+            ImGui::SameLine();
+            if (ImGui::Button("1.0"))
+            {
+                GuizmoSnapScale = 1.0f;
+            }
+            
+            ImGui::DragFloat("Value##Scale", &GuizmoSnapScale, 0.01f, 0.01f, 10.0f, "%.2f");
+            
+            ImGui::EndDisabled();
+            ImGui::Unindent();
+            ImGui::PopID();
+        }
+        
+        ImGui::PopStyleColor();
     }
 
     void FWorldEditorTool::SetWorldNewSimulate(bool bShouldSimulate)
@@ -1407,9 +1551,9 @@ namespace Lumina
         const ImGuiPayload* Payload = ImGui::AcceptDragDropPayload(FEntityListViewItem::DragDropID, ImGuiDragDropFlags_AcceptBeforeDelivery);
         if (Payload && Payload->IsDelivery())
         {
-            uintptr_t* RawPtr = (uintptr_t*)Payload->Data;
-            auto* SourceItem = (FEntityListViewItem*)*RawPtr;
-            auto* DestinationItem = (FEntityListViewItem*)DropItem;
+            uintptr_t* RawPtr = static_cast<uintptr_t*>(Payload->Data);
+            auto* SourceItem = reinterpret_cast<FEntityListViewItem*>(*RawPtr);  // NOLINT(performance-no-int-to-ptr)
+            auto* DestinationItem = static_cast<FEntityListViewItem*>(DropItem);
 
             if (SourceItem == DestinationItem)
             {
@@ -1430,47 +1574,17 @@ namespace Lumina
     void FWorldEditorTool::DrawOutliner(bool bFocused)
     {
         const ImGuiStyle& Style = ImGui::GetStyle();
-        const float AvailWidth = ImGui::GetContentRegionAvail().x;
         
         {
-            const SIZE_T EntityCount = World->GetEntityRegistry().view<entt::entity>().size();
-            ImGui::BeginGroup();
-            {
-                ImGui::AlignTextToFramePadding();
-
-                ImGui::BeginHorizontal("##EntityCount");
-                {
-                    ImGui::TextColored(ImVec4(0.7f, 0.7f, 0.7f, 1.0f), LE_ICON_CUBE " Entities");
-                
-                    ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.2f, 0.2f, 0.25f, 1.0f));
-                    ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.25f, 0.25f, 0.3f, 1.0f));
-                    ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.2f, 0.2f, 0.25f, 1.0f));
-                    ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(8.0f, Style.FramePadding.y));
-                    ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 3.0f);
-                    
-                    ImGui::Button(FFixedString().sprintf("%llu", EntityCount).c_str());
-                }
-                ImGui::EndHorizontal();
-                
-                ImGui::PopStyleVar(2);
-                ImGui::PopStyleColor(3);
-            }
-            ImGui::EndGroup();
-            
-            ImGui::SameLine(AvailWidth - 80.0f);
-            
-            ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.2f, 0.5f, 0.25f, 1.0f));
-            ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.25f, 0.6f, 0.3f, 1.0f));
-            ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.15f, 0.45f, 0.2f, 1.0f));
             ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 4.0f);
+            ImGui::PushStyleColor(ImGuiCol_FrameBg, ImVec4(0.15f, 0.15f, 0.18f, 1.0f));
+            ImGui::PushStyleColor(ImGuiCol_FrameBgHovered, ImVec4(0.18f, 0.18f, 0.22f, 1.0f));
             
-            if (ImGui::Button(LE_ICON_PLUS " Add", ImVec2(80.0f, 0.0f)))
+            constexpr float ButtonWidth = 30.0f;
+            if (ImGui::Button(LE_ICON_PLUS, ImVec2(ButtonWidth, 0.0f)))
             {
                 ImGui::OpenPopup("CreateEntityMenu");
             }
-            
-            ImGui::PopStyleVar();
-            ImGui::PopStyleColor(3);
             
             if (ImGui::IsItemHovered())
             {
@@ -1478,21 +1592,9 @@ namespace Lumina
             }
 
             DrawCreateEntityMenu();
-
-        }
-        
-        ImGui::Spacing();
-        
-        {
-            constexpr float FilterButtonWidth = 30.0f;
-            const float SearchWidth = AvailWidth - FilterButtonWidth - Style.ItemSpacing.x;
             
-            // Search bar with icon
-            ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 4.0f);
-            ImGui::PushStyleColor(ImGuiCol_FrameBg, ImVec4(0.15f, 0.15f, 0.18f, 1.0f));
-            ImGui::PushStyleColor(ImGuiCol_FrameBgHovered, ImVec4(0.18f, 0.18f, 0.22f, 1.0f));
-            
-            ImGui::SetNextItemWidth(SearchWidth);
+            ImGui::SameLine();
+            ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x - (ButtonWidth));
             EntityFilterState.FilterName.Draw("##Search");
             
             ImGui::PopStyleColor(2);
@@ -1516,7 +1618,7 @@ namespace Lumina
                 bFilterActive ? ImVec4(0.5f, 0.55f, 0.75f, 1.0f) : ImVec4(0.25f, 0.25f, 0.27f, 1.0f));
             ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 4.0f);
             
-            if (ImGui::Button(LE_ICON_FILTER_SETTINGS "##ComponentFilter", ImVec2(FilterButtonWidth, 0.0f)))
+            if (ImGui::Button(LE_ICON_FILTER_SETTINGS "##ComponentFilter", ImVec2(ButtonWidth, 0.0f)))
             {
                 ImGui::OpenPopup("FilterPopup");
             }
@@ -1544,7 +1646,6 @@ namespace Lumina
         {
             ImGui::PushStyleColor(ImGuiCol_ChildBg, ImVec4(0.08f, 0.08f, 0.1f, 1.0f));
             ImGui::PushStyleVar(ImGuiStyleVar_ChildRounding, 4.0f);
-            ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(4.0f, 4.0f));
             
             if (ImGui::BeginChild("EntityList", ImVec2(0, 0), true, ImGuiWindowFlags_NoScrollbar))
             {
@@ -1552,7 +1653,7 @@ namespace Lumina
             }
             ImGui::EndChild();
             
-            ImGui::PopStyleVar(2);
+            ImGui::PopStyleVar();
             ImGui::PopStyleColor();
         }
         
@@ -1727,57 +1828,110 @@ namespace Lumina
         SNameComponent* NameComponent = World->GetEntityRegistry().try_get<SNameComponent>(Entity);
         FName EntityName = NameComponent ? NameComponent->Name : eastl::to_string((uint32)Entity);
         
+        ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(8.0f, 4.0f));
+        ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(8.0f, 6.0f));
+        ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 4.0f);
+        
+        constexpr ImGuiTableFlags Flags = 
+        ImGuiTableFlags_BordersOuter | 
+        ImGuiTableFlags_NoBordersInBodyUntilResize | 
+        ImGuiTableFlags_SizingFixedFit;
+        
+        if (ImGui::BeginTable("##EntityName", 1, Flags))
         {
-            ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 6.0f);
-            ImGui::PushStyleColor(ImGuiCol_Header, ImVec4(0.15f, 0.15f, 0.18f, 1.0f));
-            ImGui::PushStyleColor(ImGuiCol_HeaderHovered, ImVec4(0.18f, 0.18f, 0.22f, 1.0f));
-            ImGui::PushStyleColor(ImGuiCol_HeaderActive, ImVec4(0.2f, 0.2f, 0.24f, 1.0f));
-            
-            if (ImGui::CollapsingHeader(EntityName.c_str(), ImGuiTreeNodeFlags_DefaultOpen | ImGuiTreeNodeFlags_Framed))
-            {
-                if (Entity != World->GetSingletonEntity())
-                {
-                    ImGui::Spacing();
-                    ImGui::Indent(8.0f);
+            ImGui::TableSetupColumn("##Editor", ImGuiTableColumnFlags_WidthStretch);
 
-                    DrawEntityActionButtons(Entity);
-                
-                    ImGui::Spacing();
-                    ImGui::Unindent(8.0f);
+            ImGui::TableNextColumn();
+            ImGui::BeginHorizontal(EntityName.c_str());
+        
+            ImGuiX::Font::PushFont(ImGuiX::Font::EFont::LargeBold);
+            ImGui::AlignTextToFramePadding();
+            ImGui::TextUnformatted(EntityName.c_str());
+            ImGui::PopFont();
+
+            ImGui::TableSetBgColor(ImGuiTableBgTarget_RowBg0, IM_COL32(35, 35, 35, 255));
+            ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.25f, 0.55f, 0.3f, 1.0f));
+            ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.3f, 0.65f, 0.35f, 1.0f));
+            ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.2f, 0.5f, 0.25f, 1.0f));
+        
+            if (ImGui::Button(LE_ICON_PLUS))
+            {
+                PushAddComponentModal(Entity);
+            }
+        
+            if (ImGui::IsItemHovered(ImGuiHoveredFlags_DelayShort))
+            {
+                ImGui::SetTooltip("Add Component");
+            }
+        
+            ImGui::PopStyleColor(3);
+        
+            ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.25f, 0.55f, 0.3f, 1.0f));
+            ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.3f, 0.65f, 0.35f, 1.0f));
+            ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.2f, 0.5f, 0.25f, 1.0f));
+        
+            if (ImGui::Button(LE_ICON_TAG))
+            {
+                PushAddTagModal(Entity);
+            }
+        
+            if (ImGui::IsItemHovered(ImGuiHoveredFlags_DelayShort))
+            {
+                ImGui::SetTooltip("Add Tag");
+            }
+        
+            ImGui::PopStyleColor(3);
+        
+            ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.6f, 0.2f, 0.2f, 1.0f));
+            ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.7f, 0.25f, 0.25f, 1.0f));
+            ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.55f, 0.18f, 0.18f, 1.0f));
+        
+            if (ImGui::Button(LE_ICON_TRASH_CAN))
+            {
+                if (Dialogs::Confirmation("Confirm Deletion", 
+                    "Are you sure you want to delete entity \"{0}\"?\n\nThis action cannot be undone.", 
+                    (uint32)Entity))
+                {
+                    EntityDestroyRequests.push(Entity);
                 }
             }
-            
+        
+            if (ImGui::IsItemHovered(ImGuiHoveredFlags_DelayShort))
+            {
+                ImGui::SetTooltip("Delete Entity");
+            }
+        
             ImGui::PopStyleColor(3);
-            ImGui::PopStyleVar();
+        
+            ImGui::EndHorizontal();
+            ImGui::PopStyleVar(3);
+            
+            ImGui::EndTable();
         }
+        
+        ImGui::SeparatorText("Details");
+
+        ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.7f, 0.7f, 0.7f, 1.0f));
+        ImGui::AlignTextToFramePadding();
+        ImGui::TextUnformatted(LE_ICON_PUZZLE " Tags");
+        ImGui::PopStyleColor();
         
         ImGui::Spacing();
-
-        {
-            ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.7f, 0.7f, 0.7f, 1.0f));
-            ImGui::AlignTextToFramePadding();
-            ImGui::TextUnformatted(LE_ICON_PUZZLE " Tags");
-            ImGui::PopStyleColor();
-            
-            ImGui::Spacing();
-            ImGui::Separator();
-            ImGui::Spacing();
-            
-            DrawTagList(Entity);
-        }
+        ImGui::Separator();
+        ImGui::Spacing();
         
-        {
-            ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.7f, 0.7f, 0.7f, 1.0f));
-            ImGui::AlignTextToFramePadding();
-            ImGui::TextUnformatted(LE_ICON_PUZZLE " Components");
-            ImGui::PopStyleColor();
-            
-            ImGui::Spacing();
-            ImGui::Separator();
-            ImGui::Spacing();
-            
-            DrawComponentList(Entity);
-        }
+        DrawTagList(Entity);
+        
+        ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.7f, 0.7f, 0.7f, 1.0f));
+        ImGui::AlignTextToFramePadding();
+        ImGui::TextUnformatted(LE_ICON_CUBE " Components");
+        ImGui::PopStyleColor();
+        
+        ImGui::Spacing();
+        ImGui::Separator();
+        ImGui::Spacing();
+        
+        DrawComponentList(Entity);
     }
 
     void FWorldEditorTool::DrawEntityActionButtons(entt::entity Entity)
@@ -1978,116 +2132,91 @@ namespace Lumina
     void FWorldEditorTool::DrawComponentHeader(const TUniquePtr<FPropertyTable>& Table, entt::entity Entity)
     {
         const char* ComponentName = Table->GetType()->GetName().c_str();
-        const bool bIsRequired = (Table->GetType() == STransformComponent::StaticStruct() || Table->GetType() == SNameComponent::StaticStruct());
-
+        const bool bIsRequired = (Table->GetType() == STransformComponent::StaticStruct() || 
+                                 Table->GetType() == SNameComponent::StaticStruct());
+    
         if (Table->GetType() == STagComponent::StaticStruct())
         {
             return;
         }
         
         ImGui::PushID(Table.get());
-        
-        ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 6.0f);
-        ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(12.0f, 10.0f));
-        
-        ImVec2 CursorPos = ImGui::GetCursorScreenPos();
-        ImVec2 HeaderSize = ImVec2(ImGui::GetContentRegionAvail().x, 44.0f);
-        
-        ImDrawList* DrawList = ImGui::GetWindowDrawList();
-        constexpr ImU32 HeaderBgColor = IM_COL32(25, 25, 30, 255);
-        constexpr ImU32 HeaderBorderColor = IM_COL32(45, 45, 52, 255);
-        
-        DrawList->AddRectFilled(CursorPos, 
-            ImVec2(CursorPos.x + HeaderSize.x, CursorPos.y + HeaderSize.y), 
-            HeaderBgColor, 6.0f);
-        
-        DrawList->AddRect(CursorPos, 
-            ImVec2(CursorPos.x + HeaderSize.x, CursorPos.y + HeaderSize.y), 
-            HeaderBorderColor, 6.0f, 0, 1.0f);
-        
-        ImGui::PushStyleColor(ImGuiCol_Header, ImVec4(0, 0, 0, 0));
-        ImGui::PushStyleColor(ImGuiCol_HeaderHovered, ImVec4(0.2f, 0.2f, 0.24f, 0.5f));
-        ImGui::PushStyleColor(ImGuiCol_HeaderActive, ImVec4(0.25f, 0.25f, 0.3f, 0.7f));
-        
-        bool bIsOpen = ImGui::CollapsingHeader(("##" + FString(ComponentName)).c_str());
-        
-        ImGui::PopStyleColor(3);
-        
-        ImVec2 IconPos = CursorPos;
-        IconPos.x += 12.0f;
-        IconPos.y += (HeaderSize.y - ImGui::GetTextLineHeight()) * 0.5f;
-        
-        const char* Icon = LE_ICON_PUZZLE;
-        if (Table->GetType() == STransformComponent::StaticStruct())
+            
+        constexpr ImGuiTableFlags Flags = 
+        ImGuiTableFlags_BordersOuter | 
+        ImGuiTableFlags_BordersInnerH | 
+        ImGuiTableFlags_NoBordersInBodyUntilResize | 
+        ImGuiTableFlags_SizingFixedFit;
+            
+        ImGui::PushStyleVar(ImGuiStyleVar_CellPadding, ImVec2(4, 8));
+        bool bIsOpen = false;
+        if (ImGui::BeginTable("GridTable", 1, Flags))
         {
-            Icon = LE_ICON_MOVE_RESIZE;
-        }
+            ImGui::TableSetupColumn("##Header", ImGuiTableColumnFlags_WidthStretch);
+            ImGui::TableNextColumn();
+            ImGui::AlignTextToFramePadding();
+            
+            
+            ImGui::PushStyleColor(ImGuiCol_Header, 0);
+            ImGui::PushStyleColor(ImGuiCol_HeaderActive, 0);
+            ImGui::PushStyleColor(ImGuiCol_HeaderHovered, 0);
+            bIsOpen = ImGui::CollapsingHeader(ComponentName);
+            ImGui::TableSetBgColor(ImGuiTableBgTarget_RowBg0, IM_COL32(35, 35, 35, 255));
 
-        DrawList->AddText(IconPos, IM_COL32(150, 170, 200, 255), Icon);
-        
-        ImVec2 NamePos = IconPos;
-        NamePos.x += 30.0f;
-        DrawList->AddText(NamePos, IM_COL32(220, 220, 230, 255), ComponentName);
-        
-        if (bIsRequired)
-        {
-            ImVec2 BadgePos = NamePos;
-            BadgePos.x += ImGui::CalcTextSize(ComponentName).x + 8.0f;
-            BadgePos.y -= 2.0f;
-            
-            const char* BadgeText = "Required";
-            ImVec2 BadgeSize = ImGui::CalcTextSize(BadgeText);
-            BadgeSize.x += 12.0f;
-            BadgeSize.y += 4.0f;
-            
-            DrawList->AddRectFilled(BadgePos, 
-                ImVec2(BadgePos.x + BadgeSize.x, BadgePos.y + BadgeSize.y),
-                IM_COL32(60, 80, 120, 180), 3.0f);
-            
-            ImVec2 BadgeTextPos = BadgePos;
-            BadgeTextPos.x += 6.0f;
-            BadgeTextPos.y += 2.0f;
-            DrawList->AddText(BadgeTextPos, IM_COL32(180, 200, 240, 255), BadgeText);
+            ImGui::PopStyleColor(3);
+                        
+            ImGui::EndTable();
         }
         
-        ImGui::SetCursorScreenPos(ImVec2(CursorPos.x, CursorPos.y + HeaderSize.y));
+        ImGui::PopStyleVar();
+            
+        if (!bIsRequired)
+        {
+            ImGui::SameLine();
+            
+            ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.0f, 0.0f, 0.0f, 0.0f));
+            ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.7f, 0.25f, 0.25f, 0.8f));
+            ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.6f, 0.2f, 0.2f, 0.9f));
+            ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.8f, 0.4f, 0.4f, 1.0f));
+            ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 3.0f);
+            
+            //@TODO FIXME
+            if (ImGui::SmallButton(LE_ICON_TRASH_CAN "##RemoveComponent"))
+            {
+                ComponentDestroyRequests.push(FComponentDestroyRequest{Table->GetType(), Entity});
+            }
+            
+            if (ImGui::IsItemHovered())
+            {
+                ImGui::SetTooltip("Remove Component");
+            }
+            
+            ImGui::PopStyleVar();
+            ImGui::PopStyleColor(4);
+        }
         
         if (bIsOpen)
         {
             ImGui::Spacing();
             
-            ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 4.0f);
-            ImGui::PushStyleColor(ImGuiCol_ChildBg, ImVec4(0.1f, 0.1f, 0.12f, 1.0f));
+            ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(8.0f, 6.0f));
+            ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(8.0f, 8.0f));
+            ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 3.0f);
+            ImGui::PushStyleColor(ImGuiCol_FrameBg, ImVec4(0.015f, 0.015f, 0.015f, 1.0f));
+            ImGui::PushStyleColor(ImGuiCol_FrameBgHovered, ImVec4(0.12f, 0.12f, 0.14f, 1.0f));
             
-            if (!bIsRequired)
-            {
-                ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.6f, 0.2f, 0.2f, 0.8f));
-                ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.7f, 0.25f, 0.25f, 1.0f));
-                ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.55f, 0.18f, 0.18f, 1.0f));
-                ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 4.0f);
-            
-                if (ImGui::Button(LE_ICON_TRASH_CAN, ImVec2(ImGui::GetContentRegionAvail().x, 30.0f)))
-                {
-                    ComponentDestroyRequests.push(FComponentDestroyRequest{ .Type = Table->GetType(), .EntityID = Entity });
-                }
-            
-                ImGui::PopStyleVar();
-                ImGui::PopStyleColor(3);
-            
-                if (ImGui::IsItemHovered())
-                {
-                    ImGui::SetTooltip("Remove this component");
-                }
-            }
+            ImGui::Indent(4.0f);
             
             Table->DrawTree();
             
+            ImGui::Unindent(4.0f);
             
-            ImGui::PopStyleColor();
-            ImGui::PopStyleVar();
+            ImGui::PopStyleColor(2);
+            ImGui::PopStyleVar(3);
+            
+            ImGui::Spacing();
         }
-        
-        ImGui::PopStyleVar(2);
+            
         ImGui::PopID();
     }
 
@@ -2144,13 +2273,12 @@ namespace Lumina
             ImVec2 IconSize = ImGui::CalcTextSize(EmptyIcon);
             ImGui::SetCursorPosX(ImGui::GetCursorPosX() + (200.0f - IconSize.x) * 0.5f);
         
-            ImGui::PushFont(ImGui::GetIO().Fonts->Fonts[0]); // Large font if available
+            ImGui::PushFont(ImGui::GetIO().Fonts->Fonts[0]);
             ImGui::TextUnformatted(EmptyIcon);
             ImGui::PopFont();
         
             ImGui::Spacing();
         
-            // Empty state text
             const char* EmptyText = "Nothing selected";
             ImVec2 TextSize = ImGui::CalcTextSize(EmptyText);
             ImGui::SetCursorPosX(ImGui::GetCursorPosX() + (200.0f - TextSize.x) * 0.5f);
@@ -2158,7 +2286,6 @@ namespace Lumina
         
             ImGui::Spacing();
         
-            // Hint text
             ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.3f, 0.3f, 0.35f, 1.0f));
             const char* HintText = "Select an entity to view properties";
             ImVec2 HintSize = ImGui::CalcTextSize(HintText);
@@ -2173,10 +2300,10 @@ namespace Lumina
 
     void FWorldEditorTool::DrawEntityEditor(bool bFocused, entt::entity Entity)
     {
-        ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(12.0f, 12.0f));
         ImGui::PushStyleColor(ImGuiCol_ChildBg, ImVec4(0.08f, 0.08f, 0.1f, 1.0f));
-    
-        ImGui::BeginChild("Property Editor", ImGui::GetContentRegionAvail(), true);
+        ImGui::PushStyleVar(ImGuiStyleVar_ChildRounding, 4.0f);
+        
+        ImGui::BeginChild("Property Editor", ImVec2(0, 0), true);
     
         if (World->GetEntityRegistry().valid(Entity))
         {

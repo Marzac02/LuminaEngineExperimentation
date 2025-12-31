@@ -50,6 +50,18 @@ namespace Lumina::ImGuiX
     	ImGui::PopStyleColor();
     }
 
+    FStringView ImGuizmoOpToString(ImGuizmo::OPERATION Op)
+    {
+    	switch (Op)
+    	{
+    		case ImGuizmo::OPERATION::TRANSLATE:	return "Translate";
+    		case ImGuizmo::OPERATION::ROTATE:		return "Rotate";
+    		case ImGuizmo::OPERATION::SCALE:		return "Scale";
+    	}
+    	
+    	return "";
+    }
+
     bool ButtonEx(char const* pIcon, char const* pLabel, ImVec2 const& size, const ImColor& backgroundColor, const ImColor& iconColor, const ImColor& foregroundColor, bool shouldCenterContents)
     {
          bool wasPressed = false;

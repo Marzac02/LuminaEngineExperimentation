@@ -24,7 +24,7 @@ namespace Lumina
             , bSelected(false)
         {}
         
-        virtual FName GetName() const = 0;
+        virtual FString GetName() const = 0;
         
         virtual const char* GetTooltipText() const { return nullptr; }
 

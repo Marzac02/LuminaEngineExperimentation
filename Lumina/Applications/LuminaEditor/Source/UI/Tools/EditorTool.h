@@ -124,7 +124,7 @@ namespace Lumina
         virtual void DrawToolMenu(const FUpdateContext& UpdateContext) { }
 
         /** Viewport overlay to draw any elements to the window's viewport */
-        virtual void DrawViewportOverlayElements(const FUpdateContext& UpdateContext, ImTextureRef ViewportTexture, ImVec2 ViewportSize) { }
+        virtual void DrawViewportOverlayElements(const FUpdateContext& UpdateContext, ImTextureRef ViewportTexture, ImVec2 ViewportSize);
         
         /** Draw the optional viewport for this tool window, returns true if focused. */
         virtual bool DrawViewport(const FUpdateContext& UpdateContext, ImTextureRef ViewportTexture);

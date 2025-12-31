@@ -2,7 +2,6 @@
 #include "EditorTool.h"
 #include "imgui_internal.h"
 #include "ToolFlags.h"
-#include "Core/Functional/FunctionRef.h"
 #include "EASTL/sort.h"
 #include "Tools/UI/ImGui/ImGuiX.h"
 #include "World/WorldManager.h"
@@ -144,6 +143,11 @@ namespace Lumina
         DrawToolMenu(UpdateContext);
     }
 
+    void FEditorTool::DrawViewportOverlayElements(const FUpdateContext& UpdateContext, ImTextureRef ViewportTexture, ImVec2 ViewportSize)
+    {
+        ImGui::Dummy(ImVec2(0, 0));
+    }
+
     bool FEditorTool::DrawViewport(const FUpdateContext& UpdateContext, ImTextureRef ViewportTexture)
     {
         const ImVec2 ViewportSize(eastl::max(ImGui::GetContentRegionAvail().x, 64.0f), eastl::max(ImGui::GetContentRegionAvail().y, 64.0f));
@@ -187,12 +191,12 @@ namespace Lumina
 
         ImGui::Dummy(ImStyle.ItemSpacing);
         ImGui::SetCursorPos(ImStyle.ItemSpacing);
-        ImGui::Dummy(ImVec2(0, 0));
+        
         DrawViewportOverlayElements(UpdateContext, ViewportTexture, ViewportSize);
 
         ImGui::Dummy(ImStyle.ItemSpacing);
         ImGui::SetCursorPos(ImStyle.ItemSpacing);
-        ImGui::Dummy(ImVec2(0, 0));
+        
         DrawViewportToolbar(UpdateContext);
         
         if (ImGuiDockNode* pDockNode = ImGui::GetWindowDockNode())
@@ -207,7 +211,7 @@ namespace Lumina
 
     void FEditorTool::DrawViewportToolbar(const FUpdateContext& UpdateContext)
     {
-        
+        ImGui::Dummy(ImVec2(0, 0));
     }
 
     bool FEditorTool::BeginViewportToolbarGroup(char const* GroupID, ImVec2 GroupSize, const ImVec2& Padding)
