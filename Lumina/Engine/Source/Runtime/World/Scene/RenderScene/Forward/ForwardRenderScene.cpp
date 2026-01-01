@@ -135,7 +135,7 @@ namespace Lumina
             
             //========================================================================================================================
             {
-                View.each([&](entt::entity entity, const SStaticMeshComponent& MeshComponent, const STransformComponent& TransformComponent)
+                View.each([&](entt::entity Entity, const SStaticMeshComponent& MeshComponent, const STransformComponent& TransformComponent)
                 {
                     CStaticMesh* Mesh = MeshComponent.StaticMesh;
                     if (!IsValid(Mesh))
@@ -170,7 +170,7 @@ namespace Lumina
                         
                         if (RenderSettings.bUseInstancing == false)
                         {
-                            SortKey = (uint64)entity;
+                            SortKey = entt::to_integral(Entity);
                         }
                         
                         if (BatchedDraws.find(SortKey) == BatchedDraws.end())
@@ -203,9 +203,9 @@ namespace Lumina
                         {
                             .Transform      = TransformMatrix,
                             .SphereBounds   = SphereBounds,
-                            .EntityID       = (uint32)entity,
+                            .EntityID       = entt::to_integral(Entity),
                             .BatchedDrawID  = (uint32)BatchedDraws[SortKey],
-                            .bSelected      = entity == World->GetSelectedEntity(),
+                            .bSelected      = Entity == World->GetSelectedEntity(),
                             .Reserved       = 0,
                         });   
                     }
@@ -232,8 +232,8 @@ namespace Lumina
         //========================================================================================================================
         
         {
-            auto Group = World->GetEntityRegistry().group<FLineBatcherComponent>();
-            Group.each([&](FLineBatcherComponent& LineBatcherComponent)
+            auto View = World->GetEntityRegistry().view<FLineBatcherComponent>();
+            View.each([&](FLineBatcherComponent& LineBatcherComponent)
             {
                 if (LineBatcherComponent.Lines.empty())
                 {
