@@ -9,6 +9,7 @@
 #include "glm/glm.hpp"
 #include <glm/gtc/quaternion.hpp>
 
+#include "EASTL/bit.h"
 #include "Log/Log.h"
 #include "Memory/Memcpy.h"
 #include "Types/BitFlags.h"
@@ -136,20 +137,18 @@ namespace Lumina
         virtual FArchive& operator<<(float& Value)
         {
             static_assert(sizeof(float) == sizeof(uint32), "Unexpected float size");
-            uint32 Temp;
-            Memory::Memcpy(&Temp, &Value, sizeof(Temp));
+            uint32 Temp = eastl::bit_cast<uint32>(Value);
             ByteOrderSerialize(Temp);
-            Memory::Memcpy(&Value, &Temp, sizeof(Value));
+            Value = eastl::bit_cast<float>(Temp);
             return *this;
         }
 
         virtual FArchive& operator<<(double& Value)
         {
             static_assert(sizeof(double) == sizeof(uint64), "Unexpected double size");
-            uint64 Temp;
-            Memory::Memcpy(&Temp, &Value, sizeof(Temp));
+            uint64 Temp = eastl::bit_cast<uint64>(Value);
             ByteOrderSerialize(Temp);
-            Memory::Memcpy(&Value, &Temp, sizeof(Value));
+            Value = eastl::bit_cast<double>(Temp);
             return *this;
         }
 
@@ -200,7 +199,7 @@ namespace Lumina
 
                 if (SaveNum)
                 {
-                    Serialize(str.data(), (int64)SaveNum);
+                    Serialize(str.data(), static_cast<int64>(SaveNum));
                 }
             }
         
@@ -288,9 +287,9 @@ namespace Lumina
         
         template<typename EnumType>
         FORCEINLINE FArchive& operator<<(EnumType& Value)
-        requires (std::is_enum_v<EnumType>)
+        requires (eastl::is_enum_v<EnumType>)
         {
-            return *this << reinterpret_cast<std::underlying_type_t<EnumType>&>(Value);
+            return *this << reinterpret_cast<eastl::underlying_type_t<EnumType>&>(Value);
         }
 
     private:

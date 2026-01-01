@@ -131,6 +131,9 @@ namespace Lumina
 
         /** Draws overlay elements on the viewport for tool actions. */
         virtual void DrawViewportToolbar(const FUpdateContext& UpdateContext);
+        
+        /** Moves the viewport to focus on the desired entity */
+        virtual void FocusViewportToEntity(entt::entity Entity);
 
         bool BeginViewportToolbarGroup(char const* GroupID, ImVec2 GroupSize, const ImVec2& Padding);
         void EndViewportToolbarGroup();

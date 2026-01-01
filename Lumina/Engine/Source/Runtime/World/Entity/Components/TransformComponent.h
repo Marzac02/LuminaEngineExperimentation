@@ -92,66 +92,40 @@ namespace Lumina
         FUNCTION(Script)
         FORCEINLINE void AddYaw(float Degrees)
         {
-            glm::quat yawQuat = glm::angleAxis(glm::radians(Degrees), glm::vec3(0.0f, 1.0f, 0.0f));
-            Transform.Rotation = glm::normalize(yawQuat * Transform.Rotation);
+            glm::quat YawQuat = glm::angleAxis(glm::radians(Degrees), glm::vec3(0.0f, 1.0f, 0.0f));
+            Transform.Rotation = glm::normalize(YawQuat * Transform.Rotation);
         }
 
         FUNCTION(Script)
         FORCEINLINE void AddPitch(float Degrees)
         {
-            glm::vec3 Right = Transform.Rotation * glm::vec3(1.0f, 0.0f, 0.0f);
-            glm::quat PitchQuat = glm::angleAxis(glm::radians(Degrees), Right);
+            glm::quat PitchQuat = glm::angleAxis(glm::radians(Degrees), Transform.GetRight());
             Transform.Rotation = glm::normalize(PitchQuat * Transform.Rotation);
         }
 
         FUNCTION(Script)
         FORCEINLINE void AddRoll(float Degrees)
         {
-            glm::vec3 Forward = Transform.Rotation * glm::vec3(0.0f, 0.0f, -1.0f);
-            glm::quat rollQuat = glm::angleAxis(glm::radians(Degrees), Forward);
-            Transform.Rotation = glm::normalize(rollQuat * Transform.Rotation);
+            glm::quat RollQuat = glm::angleAxis(glm::radians(Degrees), Transform.GetForward());
+            Transform.Rotation = glm::normalize(RollQuat * Transform.Rotation);
         }
-
-        FUNCTION(Script)
-        FORCEINLINE void AddRotation(float YawDelta, float PitchDelta, float RollDelta = 0.0f)
-        {
-            if (YawDelta != 0.0f)
-            {
-                AddYaw(YawDelta);
-            }
-            if (PitchDelta != 0.0f)
-            {
-                AddPitch(PitchDelta);
-            }
-            if (RollDelta != 0.0f)
-            {
-                AddRoll(RollDelta);
-            }
-        }
-
-        FUNCTION(Script)
-        FORCEINLINE void AddRotationFromMouse(float MouseDeltaX, float MouseDeltaY, float Sensitivity = 0.1f)
-        {
-            AddYaw(-MouseDeltaX * Sensitivity);
-            AddPitch(-MouseDeltaY * Sensitivity);
-        }
-
+        
         FUNCTION(Script)
         FORCEINLINE glm::vec3 GetForward() const
         {
-            return Transform.Rotation * glm::vec3(0.0f, 0.0f, -1.0f);
+            return Transform.GetForward();
         }
 
         FUNCTION(Script)
         FORCEINLINE glm::vec3 GetRight() const
         {
-            return Transform.Rotation * glm::vec3(1.0f, 0.0f, 0.0f);
+            return Transform.GetRight();
         }
 
         FUNCTION(Script)
         FORCEINLINE glm::vec3 GetUp() const
         {
-            return Transform.Rotation * glm::vec3(0.0f, 1.0f, 0.0f);
+            return Transform.GetUp();
         }
         
     public:

@@ -214,6 +214,33 @@ namespace Lumina
         ImGui::Dummy(ImVec2(0, 0));
     }
 
+    void FEditorTool::FocusViewportToEntity(entt::entity Entity)
+    {
+        if (!HasWorld())
+        {
+            return;
+        }
+    
+        if (!World->GetEntityRegistry().valid(Entity))
+        {
+            return;
+        }
+    
+        const STransformComponent& EntityTransform = World->GetEntityRegistry().get<STransformComponent>(Entity);
+        STransformComponent& EditorTransform = World->GetEntityRegistry().get<STransformComponent>(EditorEntity);
+        
+        float FocusDistance = 3.0f;
+    
+        glm::vec3 CurrentForward = EditorTransform.GetForward();
+        glm::vec3 NewPosition = EntityTransform.GetLocation() - CurrentForward * FocusDistance;
+        EditorTransform.SetLocation(NewPosition);
+        
+        glm::quat Rotation = Math::FindLookAtRotation(NewPosition, EntityTransform.GetLocation());
+        EditorTransform.SetRotation(Rotation);
+    
+        World->MarkTransformDirty(EditorEntity);
+    }
+
     bool FEditorTool::BeginViewportToolbarGroup(char const* GroupID, ImVec2 GroupSize, const ImVec2& Padding)
     {
         ImGui::PushStyleColor(ImGuiCol_ChildBg, 0xFF2C2C2C);

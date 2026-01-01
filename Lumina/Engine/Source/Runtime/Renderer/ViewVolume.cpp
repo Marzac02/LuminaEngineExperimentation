@@ -20,7 +20,7 @@ namespace Lumina
         , AspectRatio(aspect)
     {
         SetPerspective(fov, aspect);
-        SetView(glm::vec3(0.0), BackwardAxis, UpAxis);
+        SetView(glm::vec3(0.0), ForwardAxis, UpAxis);
     }
 
     FViewVolume& FViewVolume::SetNear(float InNear)

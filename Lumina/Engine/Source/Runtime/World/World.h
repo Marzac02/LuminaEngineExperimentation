@@ -134,6 +134,7 @@ namespace Lumina
         void SetIsPlayWorld(bool bValue) { bIsPlayWorld = bValue; }
         FORCEINLINE bool IsPlayWorld() const { return bIsPlayWorld; }
 
+        void MarkTransformDirty(entt::entity Entity);
         void SetEntityTransform(entt::entity Entity, const FTransform& NewTransform);
 
         void SetSelectedEntity(entt::entity EntityID);

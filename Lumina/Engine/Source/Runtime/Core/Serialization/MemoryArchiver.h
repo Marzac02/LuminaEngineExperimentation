@@ -67,7 +67,7 @@ namespace Lumina
                 // Only serialize if we have the requested amount of data
                 if (Offset + Length <= TotalSize())
                 {
-                    Memory::Memcpy(V, &Bytes[(int32)Offset], Length);
+                    Memory::Memcpy(V, &Bytes[static_cast<int32>(Offset)], Length);
                     Offset += Length;
                 }
                 else
@@ -130,7 +130,7 @@ namespace Lumina
         {
             Assert(ReaderPos >= 0)
             Assert(ReaderPos + Length <= ReaderSize)
-            Memory::Memcpy(Data, (uint8*)ReaderData + ReaderPos, Length);
+            Memory::Memcpy(Data, static_cast<uint8*>(ReaderData) + ReaderPos, Length);
             ReaderPos += Length;
         }
 

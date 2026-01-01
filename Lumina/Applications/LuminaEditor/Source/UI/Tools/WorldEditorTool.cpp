@@ -300,7 +300,7 @@ namespace Lumina
         ProjectionMatrix[1][1] *= -1.0f;
         
         ImGuizmo::SetDrawlist(ImGui::GetCurrentWindow()->DrawList);
-        ImGuizmo::SetRect(ImGui::GetWindowPos().x, ImGui::GetWindowPos().y, ViewportSize.x, ViewportSize.y);
+        ImGuizmo::SetRect(ImGui::GetCursorScreenPos().x, ImGui::GetCursorScreenPos().y, ViewportSize.x, ViewportSize.y);
 
         if (World->GetEntityRegistry().valid(SelectedEntity))
         {
@@ -339,8 +339,9 @@ namespace Lumina
                     }
                 }
 
-                ImGuizmo::Manipulate(glm::value_ptr(ViewMatrix), glm::value_ptr(ProjectionMatrix), GuizmoOp, GuizmoMode, glm::value_ptr(EntityMatrix), nullptr, SnapValues);
-            
+                ImGuizmo::Manipulate(glm::value_ptr(ViewMatrix), glm::value_ptr(ProjectionMatrix),
+                    GuizmoOp, GuizmoMode, glm::value_ptr(EntityMatrix), nullptr, SnapValues);
+                
                 if (ImGuizmo::IsUsing())
                 {
                     bImGuizmoUsedOnce = true;
@@ -1001,9 +1002,9 @@ namespace Lumina
         const ImVec2 BtnSize = ImVec2(ButtonSize, ButtonSize);
         float Speed = World->GetEntityRegistry().get<SVelocityComponent>(EditorEntity).Speed;
 
-        if (ImGuiX::IconButton(LE_ICON_SPADE, "##CameraSpeed", 0xFFFFFFFF, BtnSize))
+        if (ImGuiX::IconButton(LE_ICON_CAMERA, "##Camera", 0xFFFFFFFF, BtnSize))
         {
-            ImGui::OpenPopup("CameraSpeedPopup");
+            ImGui::OpenPopup("CameraSettings");
         }
     
         if (ImGui::IsItemHovered(ImGuiHoveredFlags_DelayShort))
@@ -1012,19 +1013,77 @@ namespace Lumina
         }
     
         
-        if (ImGui::BeginPopup("CameraSpeedPopup", ImGuiWindowFlags_NoMove))
+        if (ImGui::BeginPopup("CameraSettings", ImGuiWindowFlags_NoMove))
         {
-            ImGui::Text("Camera Speed");
-            ImGui::Separator();
+            STransformComponent& CameraTransform = World->GetEntityRegistry().get<STransformComponent>(EditorEntity);
+            SVelocityComponent& Velocity = World->GetEntityRegistry().get<SVelocityComponent>(EditorEntity);
             
+            ImGui::SeparatorText(LE_ICON_VIDEO " Camera Settings");
+            
+            ImGui::Text("Movement Speed");
             if (ImGui::SliderFloat("##Speed", &Speed, 0.1f, 100.0f, "%.1fx"))
             {
-                World->GetEntityRegistry().get<SVelocityComponent>(EditorEntity).Speed = Speed;
+                Velocity.Speed = Speed;
+            }
+            
+            ImGui::SameLine();
+            
+            if (ImGui::SmallButton("Reset##Speed"))
+            {
+                Speed = 1.0f;
+                Velocity.Speed = 1.0f;
+            }
+            
+            ImGui::Separator();
+            
+            ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.4f, 0.7f, 1.0f, 1.0f));
+            ImGui::TextUnformatted(LE_ICON_AXIS_ARROW);
+            ImGui::PopStyleColor();
+        
+            ImGui::SameLine();
+        
+            if (ImGui::IsItemHovered(ImGuiHoveredFlags_DelayShort))
+            {
+                ImGui::SetTooltip("Translation (Location)");
+            }
+                
+            ImGui::DragFloat3("T", glm::value_ptr(CameraTransform.WorldTransform.Location), 0.01f);
+        
+            ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.4f, 1.0f, 0.7f, 1.0f));
+            ImGui::TextUnformatted(LE_ICON_ROTATE_360);
+            ImGui::PopStyleColor();
+        
+            if (ImGui::IsItemHovered(ImGuiHoveredFlags_DelayShort))
+            {
+                ImGui::SetTooltip("Rotation (Euler Angles)");
             }
         
-            if (ImGui::Button("Reset to 1.0x", ImVec2(-1, 0)))
+            ImGui::SameLine();
+        
+            glm::vec3 EulerRotation = CameraTransform.GetRotationAsEuler();
+            if (ImGui::DragFloat3("R", glm::value_ptr(EulerRotation), 0.01f))
             {
-                World->GetEntityRegistry().get<SVelocityComponent>(EditorEntity).Speed = 1.0f;
+                CameraTransform.SetRotationFromEuler(EulerRotation);
+            }
+            
+            ImGui::Separator();
+            
+            if (ImGui::Button("Reset Position", ImVec2(-1, 0)))
+            {
+                World->GetEntityRegistry().get<STransformComponent>(EditorEntity).SetLocation(glm::vec3(0.0f));
+                World->MarkTransformDirty(EditorEntity);
+            }
+            
+            if (ImGui::Button("Reset Rotation", ImVec2(-1, 0)))
+            {
+                World->GetEntityRegistry().get<STransformComponent>(EditorEntity).SetRotation(glm::quat(1.0f, 0.0f, 0.0f, 0.0f));
+                World->MarkTransformDirty(EditorEntity);
+            }
+            
+            ImGui::Spacing();
+            
+            if (ImGui::Button("Close", ImVec2(-1, 0)))
+            {
                 ImGui::CloseCurrentPopup();
             }
         
@@ -1035,7 +1094,7 @@ namespace Lumina
     
         if (ImGuiX::IconButton(LE_ICON_CROSSHAIRS, "##FocusSelection", 0xFFFFFFFF, BtnSize))
         {
-            //FocusOnSelection();
+            FocusViewportToEntity(SelectedEntity);
         }
     
         if (ImGui::IsItemHovered(ImGuiHoveredFlags_DelayShort))

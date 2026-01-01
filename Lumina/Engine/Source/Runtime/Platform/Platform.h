@@ -78,7 +78,7 @@
 
 // Forced inline functions will be inlined in debug, and thus will be stepped over by the debugger.
 #ifndef FORCEINLINE
-    #ifdef _MSC_VER
+    #if _MSC_VER
         #define FORCEINLINE __forceinline
     #else
         #define FORCEINLINE __attribute__((always_inline))

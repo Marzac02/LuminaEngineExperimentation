@@ -27,21 +27,7 @@ local MyScript =
                         RaySettings.Radius          = 5.0
                         RaySettings.bDrawDebug      = false
                         RaySettings.DebugDuration   = 0.1
-
-                        local MeshComp = Context:Get(Result.Entity, SStaticMeshComponent)
-                        if MeshComp then
-                            
-                            local Test = LoadObject("project://Content/Assets/Meshes/SM_Cube")
-                            MeshComp.StaticMesh = Test
-                            Context:Remove(Result.Entity, SRigidBodyComponent)
-                            Context:Remove(Result.Entity, SSphereColliderComponent)
-
-                            local BoxComponent = SBoxColliderComponent()
-                            BoxComponent.HalfExtent = vec3(1.0, 1.0, 1.0)
-                            Context:Emplace(Result.Entity, BoxComponent)
-                            Context:Emplace(Result.Entity, SRigidBodyComponent())
-                        end
-
+                        
                         local SphereResult = Context:CastSphere(RaySettings)
 
                         for i = 1, #SphereResult do

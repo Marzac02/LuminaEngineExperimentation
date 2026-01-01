@@ -23,6 +23,7 @@
 #include "Assets/AssetTypes/Material/Material.h"
 #include "Assets/AssetTypes/Material/MaterialInstance.h"
 #include "Assets/AssetTypes/Mesh/StaticMesh/StaticMesh.h"
+#include "Assets/AssetTypes/Prefabs/Prefab.h"
 #include "Assets/AssetTypes/Textures/Texture.h"
 #include "Core/Object/Cast.h"
 #include "Core/Object/ObjectIterator.h"
@@ -41,6 +42,7 @@
 #include "Tools/GamePreviewTool.h"
 #include "Tools/AssetEditors/MaterialEditor/MaterialInstanceEditorTool.h"
 #include "Tools/AssetEditors/MeshEditor/MeshEditorTool.h"
+#include "Tools/AssetEditors/PrefabEditor/PrefabEditorTool.h"
 #include "Tools/AssetEditors/TextureEditor/TextureEditorTool.h"
 #include "Tools/Import/ImportHelpers.h"
 #include "Tools/UI/ImGui/ImGuiRenderer.h"
@@ -613,6 +615,10 @@ namespace Lumina
         {
             NewTool = CreateTool<FMaterialInstanceEditorTool>(this, Asset);
         }
+        else if (Asset->IsA<CPrefab>())
+        {
+            NewTool = CreateTool<FPrefabEditorTool>(this, Asset);
+        }
         else if (Asset->IsA<CWorld>())
         {
             WorldEditorTool->SetWorld(Cast<CWorld>(Asset));
@@ -938,7 +944,7 @@ namespace Lumina
                         Tool->DrawViewport(UpdateContext, ViewportTexture);
                     }
 
-                    if (Tool->EditorEntity != entt::null)
+                    if (Tool->GetWorld()->GetEntityRegistry().valid(Tool->EditorEntity))
                     {
 						if (FEditorComponent* EditorComp = Tool->GetWorld()->GetEntityRegistry().try_get<FEditorComponent>(Tool->EditorEntity))
                         {

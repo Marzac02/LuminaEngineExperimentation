@@ -1,5 +1,6 @@
 #pragma once
-#include <spdlog/fmt/fmt.h>
+#include <format>
+#include "Platform/Platform.h"
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/quaternion.hpp>
@@ -49,31 +50,46 @@ namespace Lumina
 
             return T * R * S;
         }
-
-        void SetRotationFromEuler(const glm::vec3& eulerAngles)
+        
+        FORCEINLINE glm::vec3 GetForward() const
         {
-            Rotation = glm::quat(glm::radians(eulerAngles));
+            return Rotation * glm::vec3(0.0f, 0.0f, 1.0f);
         }
 
-        void Translate(const glm::vec3& Translation)
+        FORCEINLINE glm::vec3 GetRight() const
+        {
+            return Rotation * glm::vec3(1.0f, 0.0f, 0.0f);
+        }
+
+        FORCEINLINE glm::vec3 GetUp() const
+        {
+            return Rotation * glm::vec3(0.0f, 1.0f, 0.0f);
+        }
+
+        FORCEINLINE void SetRotationFromEuler(const glm::vec3& EulerAngles)
+        {
+            Rotation = glm::quat(glm::radians(EulerAngles));
+        }
+
+        FORCEINLINE void Translate(const glm::vec3& Translation)
         {
             Location += Translation;
         }
 
-        void SetLocation(const glm::vec3& NewLocation)
+        FORCEINLINE void SetLocation(const glm::vec3& NewLocation)
         {
             Location = NewLocation;
         }
 
-        void Rotate(const glm::vec3& eulerAngles)
+        FORCEINLINE void Rotate(const glm::vec3& EulerAngles)
         {
-            glm::quat additionalRotation = glm::quat(glm::radians(eulerAngles));
-            Rotation = additionalRotation * Rotation;
+            glm::quat AdditionalRotation = glm::quat(glm::radians(EulerAngles));
+            Rotation = AdditionalRotation * Rotation;
         }
 
-        void SetScale(const glm::vec3& scaleFactors)
+        FORCEINLINE void SetScale(const glm::vec3& ScaleFactors)
         {
-            Scale *= scaleFactors;
+            Scale *= ScaleFactors;
         }
 
         bool operator==(const FTransform& Other) const

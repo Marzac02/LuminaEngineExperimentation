@@ -241,16 +241,16 @@ namespace Lumina
             {
                 if (Callbacks.PreChangeCallback)
                 {
-                    FPropertyChangedEvent Event(Callbacks.OwnerStruct, PropertyHandle->Property, PropertyHandle->Property->Name);
-                    Callbacks.PreChangeCallback(Event);
+                    //FPropertyChangedEvent Event(Callbacks.OwnerStruct, PropertyHandle->Property, PropertyHandle->Property->Name);
+                    //Callbacks.PreChangeCallback(Event);
                 }
                 
                 Customization->UpdatePropertyValue(PropertyHandle);
 
                 if (Callbacks.PostChangeCallback)
                 {
-                    FPropertyChangedEvent Event(Callbacks.OwnerStruct, PropertyHandle->Property, PropertyHandle->Property->Name);
-                    Callbacks.PostChangeCallback(Event);
+                    //FPropertyChangedEvent Event(Callbacks.OwnerStruct, PropertyHandle->Property, PropertyHandle->Property->Name);
+                    //Callbacks.PostChangeCallback(Event);
                 }
             }
             break;
@@ -316,7 +316,7 @@ namespace Lumina
             }
             
             
-            if (PropertyHandle->Index < (ArrayProperty->GetNum(ContainerPtr) - 1))
+            if (std::cmp_less(PropertyHandle->Index, (ArrayProperty->GetNum(ContainerPtr) - 1)))
             {
                 if (ImGui::MenuItem(LE_ICON_ARROW_DOWN" Move Element Down"))
                 {
@@ -447,16 +447,16 @@ namespace Lumina
             {
                 if (Callbacks.PreChangeCallback)
                 {
-                    FPropertyChangedEvent Event(Callbacks.OwnerStruct, PropertyHandle->Property, PropertyHandle->Property->Name);
-                    Callbacks.PreChangeCallback(Event);
+                    //FPropertyChangedEvent Event(Callbacks.OwnerStruct, PropertyHandle->Property, PropertyHandle->Property->Name);
+                    //Callbacks.PreChangeCallback(Event);
                 }
                 
                 Customization->UpdatePropertyValue(PropertyHandle);
 
                 if (Callbacks.PostChangeCallback)
                 {
-                    FPropertyChangedEvent Event(Callbacks.OwnerStruct, PropertyHandle->Property, PropertyHandle->Property->Name);
-                    Callbacks.PostChangeCallback(Event);
+                    //FPropertyChangedEvent Event(Callbacks.OwnerStruct, PropertyHandle->Property, PropertyHandle->Property->Name);
+                    //Callbacks.PostChangeCallback(Event);
                 }
             }
             break;

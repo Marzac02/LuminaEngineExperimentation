@@ -1,5 +1,8 @@
 ﻿#include "pch.h"
 #include "EditorEntityMovementSystem.h"
+
+#include <glm/gtx/string_cast.hpp>
+
 #include "Input/InputProcessor.h"
 #include "World/Entity/Components/CameraComponent.h"
 #include "World/Entity/Components/EditorComponent.h"
@@ -29,9 +32,9 @@ namespace Lumina
 
             SystemContext.EmplaceOrReplace<FNeedsTransformUpdate>(EditorEntity);
             
-            glm::vec3 Forward   = Transform.Transform.Rotation * FViewVolume::ForwardAxis * -1.0f;
-            glm::vec3 Right     = Transform.Transform.Rotation * FViewVolume::RightAxis;
-            glm::vec3 Up        = Transform.Transform.Rotation * FViewVolume::UpAxis;
+            glm::vec3 Forward   = Transform.GetForward();
+            glm::vec3 Right     = Transform.GetRight();
+            glm::vec3 Up        = Transform.GetUp();
             
             float Speed = Velocity.Speed;
             if (FInputProcessor::Get().IsKeyDown(EKeyCode::LeftShift))
@@ -49,13 +52,13 @@ namespace Lumina
             {
                 Acceleration -= Forward; // S = backward (-Z)
             }
-            if (FInputProcessor::Get().IsKeyDown(EKeyCode::D))
+            if (FInputProcessor::Get().IsKeyDown(EKeyCode::D)) // @TODO Figure out why invert.
             {
-                Acceleration += Right; // D = right (+X)
+                Acceleration -= Right; // D = right (+X)
             }
             if (FInputProcessor::Get().IsKeyDown(EKeyCode::A))
             {
-                Acceleration -= Right; // A = left (-X)
+                Acceleration += Right; // A = left (-X)
             }
             if (FInputProcessor::Get().IsKeyDown(EKeyCode::E))
             {
@@ -71,12 +74,12 @@ namespace Lumina
                 Acceleration = glm::normalize(Acceleration) * Speed;
             }
             
-            Velocity.Velocity += Acceleration * (float)DeltaTime;
+            Velocity.Velocity += Acceleration * static_cast<float>(DeltaTime);
             
             constexpr float Drag = 10.0f;
-            Velocity.Velocity -= Velocity.Velocity * Drag * (float)DeltaTime;
+            Velocity.Velocity -= Velocity.Velocity * Drag * static_cast<float>(DeltaTime);
             
-            Transform.Transform.Location += Velocity.Velocity * (float)DeltaTime;
+            Transform.Transform.Location += Velocity.Velocity * static_cast<float>(DeltaTime);
             
             if (FInputProcessor::Get().IsMouseButtonDown(EMouseCode::ButtonRight))
             {
@@ -84,7 +87,9 @@ namespace Lumina
             
                 double MouseDeltaX = FInputProcessor::Get().GetMouseDeltaX();
 				double MouseDeltaY = FInputProcessor::Get().GetMouseDeltaY();
-                Transform.AddRotationFromMouse(MouseDeltaX, MouseDeltaY, 0.1f);
+                
+                Transform.AddYaw(-MouseDeltaX * 0.1f);
+                Transform.AddPitch(MouseDeltaY * 0.1f);
             }
             
             if (FInputProcessor::Get().IsMouseButtonUp(EMouseCode::ButtonRight))

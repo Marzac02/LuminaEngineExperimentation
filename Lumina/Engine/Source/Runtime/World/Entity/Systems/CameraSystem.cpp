@@ -77,10 +77,7 @@ namespace Lumina
             auto View = SystemContext.CreateView<SCameraComponent, STransformComponent>(entt::exclude<SCameraControllerComponent>);
             View.each([](SCameraComponent& CameraComponent, const STransformComponent& TransformComponent)
             {
-                glm::vec3 UpdatedForward = TransformComponent.WorldTransform.Rotation * glm::vec3(0.0f, 0.0f, -1.0f);
-                glm::vec3 UpdatedUp      = TransformComponent.WorldTransform.Rotation * glm::vec3(0.0f, 1.0f,  0.0f);
-            
-                CameraComponent.SetView(TransformComponent.WorldTransform.Location, UpdatedForward, UpdatedUp);
+                CameraComponent.SetView(TransformComponent.WorldTransform.Location, TransformComponent.GetForward(), TransformComponent.GetUp());
             });
         }
     }
