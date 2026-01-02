@@ -30,8 +30,10 @@ enum class EName : uint32
 
 
 // Tiny float threshold used for comparisons
-#define LE_SMALL_NUMBER        1e-8f
-#define LE_KINDA_SMALL_NUMBER  1e-4f
+#define LE_EPSILON                      1.192092896e-07F
+#define LE_SMALL_NUMBER                 1e-8f
+#define LE_KINDA_SMALL_NUMBER           1e-4f
+#define LE_KINDA_SORTA_SMALL_NUMBER     1e-2f
 
 // Numeric limits that come up constantly
 #define LE_BIG_NUMBER          3.4e+38f      // safe-ish max float range

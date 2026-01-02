@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Module/API.h"
+#include "Core/Serialization/Archiver.h"
 #include "Containers/Array.h"
 #include "Platform/GenericPlatform.h"
 
@@ -9,13 +10,22 @@ namespace Lumina
 {
     struct LUMINA_API FRelationshipComponent
     {
-        constexpr static uint32 MaxChildren = 32;
-
+        size_t          Children{};
+        entt::entity    First{entt::null};
+        entt::entity    Prev{entt::null};
+        entt::entity    Next{entt::null};
+        entt::entity    Parent{entt::null};
         
-        entt::entity                        Parent = entt::null;
-        uint32                              NumChildren = 0;
-        
-        TArray<entt::entity, MaxChildren>   Children {};
+        friend FArchive& operator << (FArchive& Ar, FRelationshipComponent& Data)
+        {
+            Ar << Data.Children;
+            Ar << Data.First;
+            Ar << Data.Prev;
+            Ar << Data.Next;
+            Ar << Data.Parent;
+            
+            return Ar;
+        }
     };
 
     struct FParentEntityTag { };

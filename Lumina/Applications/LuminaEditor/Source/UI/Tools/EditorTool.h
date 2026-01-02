@@ -155,9 +155,11 @@ namespace Lumina
 
         /** Called when the undo button is pressed */
         virtual void OnUndo() { }
+        
+        NODISCARD virtual bool IsUnsavedDocument() { return false; }
 
         /** @TODO Cache and compare */
-        NODISCARD uint32 GetID() const { return GetToolName().GetID(); }
+        NODISCARD uint64 GetID() const { return GetToolName().GetID(); }
         
         FORCEINLINE ImGuiID GetCurrDockID() const        { return CurrDockID; }
         FORCEINLINE ImGuiID GetDesiredDockID() const     { return DesiredDockID; }

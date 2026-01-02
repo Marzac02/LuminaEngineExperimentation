@@ -25,81 +25,13 @@ namespace Lumina
         LUMINA_SINGLETON_EDITOR_TOOL(FWorldEditorTool)
 
 
-        class FEntityListViewItem : public FTreeListViewItem
+        struct FEntityListViewItemData
         {
-        public:
-            FEntityListViewItem(FTreeListViewItem* InParent, FEntityRegistry& InRegistry, entt::entity InEntity)
-                : FTreeListViewItem(InParent)
-                , Entity(InEntity)
-                , Registry(InRegistry)
-            {
-                SNameComponent* NameComponent = Registry.try_get<SNameComponent>(Entity);
-                Name = NameComponent ? NameComponent->Name.c_str() : eastl::to_string(static_cast<uint32>(Entity));
-                EntityTooltip.append("EntityID: ").append(eastl::to_string(static_cast<int>(Entity)).c_str());
-            }
-            
-            constexpr static const char* DragDropID = "EntityItem";
-            
-            NODISCARD const char* GetTooltipText() const override { return EntityTooltip.c_str(); }
-            
-            bool HasContextMenu() override { return true; }
-            
-            NODISCARD uint64 GetHash() const override { return static_cast<uint64>(Entity); }
-            
-            void SetDragDropPayloadData() const override
-            {
-                uintptr_t IntPtr = (uintptr_t)this;
-                ImGui::SetDragDropPayload(DragDropID, &IntPtr, sizeof(uintptr_t));
-            }
-            
-            FFixedString GetDisplayName() const override
-            {
-                return FFixedString().append(LE_ICON_CUBE).append(" ").append(Name.c_str());
-            }
-            
-            FString GetName() const override
-            {
-                return Name;
-            }
-
-            entt::entity GetEntity() const { return Entity; }
-            
-        private:
-        
-            TFixedString<56> EntityTooltip;
-            FString Name;
             entt::entity Entity;
-            FEntityRegistry& Registry;
         };
-
         
-
-        class FSystemListViewItem : public FTreeListViewItem
+        class FSystemListViewItemData
         {
-        public:
-
-            FSystemListViewItem(FTreeListViewItem* InParent, CEntitySystem* InSystem)
-                : FTreeListViewItem(InParent)
-                , System(InSystem)
-            {
-                Hash = InSystem->GetName().GetID();
-                Name = InSystem->GetName().ToString();
-            }
-            
-            const char* GetTooltipText() const override { return Name.c_str(); }
-            bool HasContextMenu() override { return true; }
-            uint64 GetHash() const override { return Hash; }
-            FString GetName() const override
-            {
-                return Name;
-            }
-
-            CEntitySystem* GetSystem() const { return System.Lock(); }
-            
-        private:
-
-            uint64 Hash;
-            FString Name;
             TWeakObjectPtr<CEntitySystem> System;
         };
 
@@ -156,13 +88,14 @@ namespace Lumina
 
     protected:
 
+        void SetWorldPlayInEditor(bool bShouldPlay);
         void SetWorldNewSimulate(bool bShouldSimulate);
 
         void DrawCreateEntityMenu();
         void DrawFilterOptions();
         void SetSelectedEntity(entt::entity Entity);
-        void RebuildSceneOutliner(FTreeListView* View);
-        void HandleEntityEditorDragDrop(FTreeListViewItem* DropItem);
+        void RebuildSceneOutliner(FTreeListView& Tree);
+        void HandleEntityEditorDragDrop(FTreeListView& Tree, entt::entity DropItem);
 
         void DrawWorldSettings(bool bFocused);
         void DrawOutliner(bool bFocused);
@@ -174,6 +107,12 @@ namespace Lumina
         void DrawComponentHeader(const TUniquePtr<FPropertyTable>& Table, entt::entity Entity);
         void RemoveComponent(entt::entity Entity, const CStruct* ComponentType);
         void DrawEmptyState();
+        
+        void OnPrePropertyChangeEvent(const FPropertyChangedEvent& Event);
+        void OnPostPropertyChangeEvent(const FPropertyChangedEvent& Event);
+        
+        bool IsUnsavedDocument() override;
+
 
         void DrawEntityEditor(bool bFocused, entt::entity Entity);
 
@@ -190,7 +129,7 @@ namespace Lumina
 
     private:
 
-        TObjectPtr<CWorld>                      WorldState;
+        TObjectPtr<CWorld>                      ProxyWorld;
         
         ImGuiTextFilter                         AddEntityComponentFilter;
         FEntityListFilterState                  EntityFilterState;

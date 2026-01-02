@@ -50,6 +50,15 @@ namespace Lumina
         {
             return Registry.emplace_or_replace<TComponent>(Entity, Any ? Any.cast<const TComponent&>() : TComponent{});
         }
+        
+        template<typename TComponent>
+        TComponent& PatchComponent(entt::registry& Registry, entt::entity Entity, const entt::meta_any& Any)
+        {
+            return Registry.patch<TComponent>(Entity, [&](TComponent& Type)
+            {
+                Type = Any.cast<const TComponent&>();
+            });
+        }
 
         template<typename TComponent>
         TComponent& GetComponent(entt::registry& Registry, entt::entity Entity)
@@ -86,12 +95,59 @@ namespace Lumina
             auto& Component = Registry.emplace<TComponent>(Entity, Instance.valid() ? Move(Instance.as<TComponent&&>()) : TComponent{});
             return sol::make_reference(S, std::ref(Component));
         }
+        
+        template<typename TComponent>
+        sol::reference PatchComponentLua(entt::registry& Registry, entt::entity Entity, const sol::table& Instance, sol::state_view S)
+        {
+            TComponent& Component = Registry.emplace<TComponent>(Entity, Move(Instance.as<TComponent&&>()));
+            Registry.patch<TComponent>(Entity, [&](TComponent& Type)
+            {
+                Type = Component;
+            });
+            
+            return sol::make_reference(S, std::ref(Component));
+        }
     
         template<typename TComponent>
         sol::reference GetComponentLua(entt::registry& Registry, entt::entity Entity, sol::state_view S)
         {
             auto& Component = Registry.get_or_emplace<TComponent>(Entity);
             return sol::make_reference(S, std::ref(Component));
+        }
+        
+        template<typename TComponent>
+        auto OnConstruct_Lua(entt::registry& Registry, const sol::function& Function)
+        {
+            struct FScriptListener
+            {
+                FScriptListener(entt::registry& Registry, const sol::function& Function)
+                    : Callback(Function)
+                {
+                    Connection = Registry.on_construct<TComponent>().template connect<&FScriptListener::Receive>(*this);
+                }
+                
+                ~FScriptListener()
+                {
+                    Connection.release();
+                    Callback.abandon();
+                }
+                
+                LE_NO_COPYMOVE(FScriptListener);
+                
+                void Receive(entt::registry& Registry, entt::entity Entity)
+                {
+                    if (Connection && Callback.valid())
+                    {
+                        TComponent& NewComponent = Registry.get<TComponent>(Entity);
+                        Callback(Entity, NewComponent);
+                    }
+                }
+                
+                sol::function Callback;
+                entt::connection Connection;
+            };
+            
+            return Function.lua_state(), std::make_unique<FScriptListener>(Registry, Function);
         }
         
         template<typename TEvent>
@@ -125,7 +181,7 @@ namespace Lumina
                 entt::connection Connection;
             };
             
-            return std::make_unique<FScriptListener>(Dispatcher, Function);
+            return Function.lua_state(), std::make_unique<FScriptListener>(Dispatcher, Function);
         }
 
         template <typename TEvent>
@@ -141,7 +197,6 @@ namespace Lumina
         }
         
         // End lua variants
-
         template<typename TComponent>
         void RegisterComponentMeta()
         {
@@ -156,10 +211,13 @@ namespace Lumina
                 .template func<&RemoveComponent<TComponent>>("remove"_hs)
                 .template func<&ClearComponent<TComponent>>("clear"_hs)
                 .template func<&EmplaceComponent<TComponent>>("emplace"_hs)
+                .template func<&PatchComponent<TComponent>>("patch"_hs)
                 .template func<&Serialize<TComponent>>("serialize"_hs)
             
+                .template func<&PatchComponentLua<TComponent>>("patch_lua"_hs)
                 .template func<&EmplaceComponentLua<TComponent>>("emplace_lua"_hs)
                 .template func<&GetComponentLua<TComponent>>("get_lua"_hs)
+                .template func<&OnConstruct_Lua<TComponent>>("on_construct_lua"_hs)
             
                 .template func<&ConnectListener_Lua<TComponent>>("connect_listener_lua"_hs)
                 .template func<&TriggerEvent_Lua<TComponent>>("trigger_event_lua"_hs);

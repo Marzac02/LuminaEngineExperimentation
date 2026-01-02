@@ -24,7 +24,7 @@ namespace Lumina
 
     struct FPropertyChangedEventCallbacks
     {
-        CStruct* OwnerStruct;
+        CStruct*                Type;
         FPropertyChangedEventFn PreChangeCallback;
         FPropertyChangedEventFn PostChangeCallback;
     };
@@ -37,8 +37,8 @@ namespace Lumina
             :Callbacks(InCallbacks)
         {}
         
+        virtual ~FPropertyRow() = default;
         FPropertyRow(const TSharedPtr<FPropertyHandle>& InPropHandle, FPropertyRow* InParentRow, const FPropertyChangedEventCallbacks& Callbacks);
-        virtual ~FPropertyRow();
 
         virtual uint32 GetHeaderWidth() const { return 120; }
         virtual void DrawHeader(float Offset) { }
@@ -48,7 +48,6 @@ namespace Lumina
         virtual void DrawExtraControlsSection() { }
         virtual float GetExtraControlsSectionWidth() { return 0; }
         
-        void AddChild(FPropertyRow* InChild);
         void DestroyChildren();
 
         virtual void Update() { }
@@ -62,12 +61,14 @@ namespace Lumina
     protected:
         
         FPropertyChangedEventCallbacks          Callbacks;
-        EPropertyChangeOp                       ChangeOp = EPropertyChangeOp::None;
+        
         TSharedPtr<IPropertyTypeCustomization>  Customization;
         TSharedPtr<FPropertyHandle>             PropertyHandle;
         FPropertyRow*                           ParentRow = nullptr;
-        TVector<FPropertyRow*>                  Children;
-
+        
+        TVector<TUniquePtr<FPropertyRow>>       Children;
+        
+        EPropertyChangeOp                       ChangeOp = EPropertyChangeOp::None;
         bool                                    bArrayElement = false;
         bool                                    bExpanded = true;
     };
@@ -111,7 +112,8 @@ namespace Lumina
     public:
         
         FStructPropertyRow(const TSharedPtr<FPropertyHandle>& InPropHandle, FPropertyRow* InParentRow, const FPropertyChangedEventCallbacks& InCallbacks);
-        ~FStructPropertyRow() override;
+        ~FStructPropertyRow() override = default;
+        
         void Update() override;
         void DrawHeader(float Offset) override;
         void DrawEditor(bool bReadOnly) override;
@@ -121,7 +123,7 @@ namespace Lumina
     private:
         
         FStructProperty*            StructProperty = nullptr;
-        FPropertyTable*             PropertyTable = nullptr;
+        TUniquePtr<FPropertyTable>  PropertyTable;
     };
     
     class FCategoryPropertyRow : public FPropertyRow
@@ -146,10 +148,10 @@ namespace Lumina
     public:
 
         FPropertyTable() = default;
+        ~FPropertyTable() = default;
         FPropertyTable(void* InObject, CStruct* InType);
         FPropertyTable(const FPropertyTable&) = delete;
         FPropertyTable(FPropertyTable&&) = delete;
-        ~FPropertyTable();
         
         bool operator = (const FPropertyTable&) const = delete;
         bool operator = (FPropertyTable&&) = delete;
@@ -168,14 +170,10 @@ namespace Lumina
         FPropertyChangedEventCallbacks ChangeEventCallbacks;
         
     private:
-
-        bool                                    bFillRemainingSpace = false;
-        float                                   MinimumHeight = 400.0f;
-
-        CStruct*                                Struct = nullptr;
-        void*                                   Object = nullptr;
-        TVector<FCategoryPropertyRow*>          Categories;
-        THashMap<FName, FCategoryPropertyRow*>  CategoryMap;
+        
+        CStruct*                                            Struct = nullptr;
+        void*                                               Object = nullptr;
+        THashMap<FName, TUniquePtr<FCategoryPropertyRow>>   CategoryMap;
         
     };
 }

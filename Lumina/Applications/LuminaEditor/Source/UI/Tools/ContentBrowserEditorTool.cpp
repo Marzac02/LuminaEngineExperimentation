@@ -284,37 +284,31 @@ namespace Lumina
             return false;
         };
         
-        DirectoryContext.DrawItemContextMenuFunction = [this](const TVector<FTreeListViewItem*>& Items)
+        DirectoryContext.ItemContextMenuFunction = [this](FTreeListView& Tree, entt::entity Item)
         {
-            for (FTreeListViewItem* Item : Items)
-            {
-                //FContentBrowserListViewItem* ContentItem = static_cast<FContentBrowserListViewItem*>(Item);
-                
-            }
+            
         };
 
-        DirectoryContext.DragDropFunction = [this](FTreeListViewItem* DroppedOntoItem)
+        DirectoryContext.DragDropFunction = [this](FTreeListView& Tree, entt::entity Item)
         {
-            FContentBrowserListViewItem* TypedDroppedItem = static_cast<FContentBrowserListViewItem*>(DroppedOntoItem);
+            FContentBrowserListViewItemData& Data = Tree.Get<FContentBrowserListViewItemData>(Item);
             const ImGuiPayload* Payload = ImGui::AcceptDragDropPayload(FContentBrowserTileViewItem::DragDropID, ImGuiDragDropFlags_AcceptBeforeDelivery);
             if (Payload && Payload->IsDelivery())
             {
                 uintptr_t ValuePtr = *static_cast<uintptr_t*>(Payload->Data);
                 auto* SourceItem = reinterpret_cast<FContentBrowserTileViewItem*>(ValuePtr);
                 
-                HandleContentBrowserDragDrop(TypedDroppedItem->GetPath(), SourceItem->GetPath());
+                HandleContentBrowserDragDrop(Data.Path, SourceItem->GetPath());
             }
         };
         
-        DirectoryContext.RebuildTreeFunction = [this](FTreeListView* Tree)
+        DirectoryContext.RebuildTreeFunction = [this](FTreeListView& Tree)
         {
             for (const auto& [VirtualPrefix, PhysicalRootStr] : Paths::GetMountedPaths())
             {
-                auto* RootItem = DirectoryListView.AddItemToTree<FContentBrowserListViewItem>(nullptr, PhysicalRootStr, VirtualPrefix.ToString());
+                TFunction<void(entt::entity, const FFixedString&)> AddChildrenRecursive;
 
-                TFunction<void(FContentBrowserListViewItem*, const FString&)> AddChildrenRecursive;
-
-                AddChildrenRecursive = [&](FContentBrowserListViewItem* ParentItem, const FString& CurrentPath)
+                AddChildrenRecursive = [&](entt::entity ParentItem, const FFixedString& CurrentPath)
                 {
                     std::error_code ec;
                     for (auto& Entry : std::filesystem::directory_iterator(CurrentPath.c_str(), ec))
@@ -324,38 +318,49 @@ namespace Lumina
                             continue;
                         }
 
-                        FString Path = Entry.path().generic_string().c_str();
-                        FString DisplayName = Entry.path().filename().string().c_str();
-                        auto* ChildItem = ParentItem->AddChild<FContentBrowserListViewItem>(ParentItem, Path, DisplayName);
+                        FFixedString Path = Entry.path().generic_string().c_str();
+                        FFixedString FileName = Entry.path().filename().string().c_str();
+                        
+                        FFixedString DisplayName;
+                        DisplayName.append(LE_ICON_FOLDER).append(" ").append(FileName);
+
+                        entt::entity ItemEntity = Tree.CreateNode(ParentItem, DisplayName, Hash::GetHash64(Path));
+                        Tree.EmplaceUserData<FContentBrowserListViewItemData>(ItemEntity).Path = Path;
 
                         if (Entry.path() == SelectedPath.c_str())
                         {
-                            DirectoryListView.SetSelection(ChildItem, DirectoryContext);
+                            FTreeNodeState& State = Tree.Get<FTreeNodeState>(ItemEntity);
+                            State.bSelected = true;
                         }
 
-                        AddChildrenRecursive(ChildItem, Path);
+                        AddChildrenRecursive(ItemEntity, Path);
                     }
                 };
 
-                AddChildrenRecursive(RootItem, PhysicalRootStr);
+                FFixedString Name;
+                Name.append(LE_ICON_FOLDER).append(" ").append(VirtualPrefix.c_str());
+                entt::entity RootItem = Tree.CreateNode(entt::null, Name);
+                Tree.EmplaceUserData<FContentBrowserListViewItemData>(RootItem).Path = PhysicalRootStr.c_str();
+
+                AddChildrenRecursive(RootItem, PhysicalRootStr.c_str());
             }
         };
 
-        DirectoryContext.ItemSelectedFunction = [this] (FTreeListViewItem* Item)
+        DirectoryContext.ItemSelectedFunction = [this] (FTreeListView& Tree, entt::entity Item)
         {
-            if (Item == nullptr)
+            if (Item == entt::null)
             {
                 return;
             }
             
-            FContentBrowserListViewItem* ContentItem = static_cast<FContentBrowserListViewItem*>(Item);
+            FContentBrowserListViewItemData& Data = Tree.Get<FContentBrowserListViewItemData>(Item);
             
-            SelectedPath = ContentItem->GetPath();
+            SelectedPath = Data.Path;
 
             RefreshContentBrowser();
         };
 
-        DirectoryContext.KeyPressedFunction = [this] (FTreeListViewItem& Item, ImGuiKey Key) -> bool
+        DirectoryContext.KeyPressedFunction = [this] (FTreeListView& Tree, entt::entity Item, ImGuiKey Key) -> bool
         {
             return false;
         };

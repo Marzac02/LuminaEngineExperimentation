@@ -715,7 +715,11 @@ namespace Lumina
         }
         
         ImGuiWindowFlags WindowFlags = ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_MenuBar;
-
+        if (EditorTool->IsUnsavedDocument())
+        {
+            WindowFlags |= ImGuiWindowFlags_UnsavedDocument;
+        }
+        
         ImGuiWindow* CurrentWindow = ImGui::FindWindowByName(EditorTool->GetToolName().c_str());
         const bool bVisible = CurrentWindow != nullptr && !CurrentWindow->Hidden;
         

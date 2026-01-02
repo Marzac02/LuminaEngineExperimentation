@@ -25,10 +25,12 @@ namespace Lumina
         entt::entity ScriptEntity = ScriptRegistry.create();
 
         FLuaSystemScriptEntry Entry;
-        Entry.Name         = Name;
-        Entry.Priority     = ScriptTable["Priority"].get_or(0);
-        Entry.Stage        = ScriptTable["Stage"].get_or(0);
-        Entry.ExecuteFunc  = ScriptTable["Execute"].get_or<sol::function>(sol::nil);
+        Entry.Name          = Name;
+        Entry.Priority      = ScriptTable["Priority"].get_or(0);
+        Entry.Stage         = ScriptTable["Stage"].get_or(0);
+        Entry.InitFunc      = ScriptTable["Init"].get_or<sol::function>(sol::nil);
+        Entry.ExecuteFunc   = ScriptTable["Execute"].get_or<sol::function>(sol::nil);
+        Entry.ShutdownFunc  = ScriptTable["Shutdown"].get_or<sol::function>(sol::nil);
 
         if (sol::optional<sol::table> QueryTable = ScriptTable["Query"])
         {

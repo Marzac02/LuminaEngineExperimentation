@@ -52,7 +52,7 @@ namespace Lumina
             {
                 Acceleration -= Forward; // S = backward (-Z)
             }
-            if (FInputProcessor::Get().IsKeyDown(EKeyCode::D)) // @TODO Figure out why invert.
+            if (FInputProcessor::Get().IsKeyDown(EKeyCode::D))
             {
                 Acceleration -= Right; // D = right (+X)
             }

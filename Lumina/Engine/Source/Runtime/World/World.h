@@ -57,6 +57,8 @@ namespace Lumina
         void Paused(const FUpdateContext& Context);
         void Render(FRenderGraph& RenderGraph);
 
+        void UpdateScripts();
+        
         /**
          * Called to shut down the world, destroys system, components, and entities.
          */
@@ -67,7 +69,6 @@ namespace Lumina
         entt::entity ConstructEntity(const FName& Name, const FTransform& Transform = FTransform());
         
         void CopyEntity(entt::entity& To, entt::entity From);
-        void ReparentEntity(entt::entity Child, entt::entity Parent);
         void DestroyEntity(entt::entity Entity);
 
         //LUM_DEPRECATED("0.0.1", "Access to the registry has been deprecated")

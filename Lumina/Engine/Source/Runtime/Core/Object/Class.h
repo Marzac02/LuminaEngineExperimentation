@@ -67,10 +67,10 @@ namespace Lumina
         void AddEnum(FName Name, uint64 Value);
 
         void ForEachEnum(TFunction<void(const TPair<FName, uint64>&)> Functor);
+        FFixedString MakeDisplayName() const override;
 
         TVector<TPair<FName, uint64>> Names;
 
-        
 
     };
     
@@ -143,6 +143,8 @@ namespace Lumina
 
         /** Links a derived to it's parent (if one exists) and will link properties. */
         LUMINA_API virtual void Link();
+        
+        FFixedString MakeDisplayName() const override;
         
     private:
 

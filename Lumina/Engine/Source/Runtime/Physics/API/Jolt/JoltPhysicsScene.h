@@ -1,5 +1,4 @@
 ﻿#pragma once
-#include <Jolt/Renderer/DebugRendererSimple.h>
 
 #include "entt/entt.hpp"
 #include "Memory/SmartPtr.h"
@@ -144,13 +143,13 @@ namespace Lumina::Physics
     	TOptional<FRayResult> CastRay(const FRayCastSettings& Settings) override;
 		TVector<FRayResult> CastSphere(const FSphereCastSettings& Settings) override;
     	
-    	
-    	
     	void OnCharacterComponentConstructed(entt::registry& Registry, entt::entity Entity);
-    	void OnRigidBodyComponentConstructed(entt::registry& Registry, entt::entity EntityID);
-    	void OnRigidBodyComponentDestroyed(entt::registry& Registry, entt::entity EntityID);
-    	void OnColliderComponentAdded(entt::registry& Registry, entt::entity EntityID);
-    	void OnColliderComponentRemoved(entt::registry& Registry, entt::entity EntityID);
+    	
+    	void OnRigidBodyComponentUpdated(entt::registry& Registry, entt::entity Entity);
+    	void OnRigidBodyComponentConstructed(entt::registry& Registry, entt::entity Entity);
+    	void OnRigidBodyComponentDestroyed(entt::registry& Registry, entt::entity Entity);
+    	void OnColliderComponentAdded(entt::registry& Registry, entt::entity Entity);
+    	void OnColliderComponentRemoved(entt::registry& Registry, entt::entity Entity);
     	
     	void OnImpulseEvent(const SImpulseEvent& Impulse);
         void OnForceEvent(const SForceEvent& Force);
@@ -163,7 +162,7 @@ namespace Lumina::Physics
         void OnSetGravityFactorEvent(const SSetGravityFactorEvent& Event);
 
     private:
-        
+    	
     	TUniquePtr<FJoltContactListener> ContactListener;
         TUniquePtr<JPH::PhysicsSystem> JoltSystem;
         TUniquePtr<FLayerInterfaceImpl> JoltInterfaceLayer;

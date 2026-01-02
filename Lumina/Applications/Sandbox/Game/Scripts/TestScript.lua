@@ -6,8 +6,19 @@ local MyScript =
     {
         Stage = UpdateStage.PrePhysics,
         Priority = 10,
-        Query = { "SCameraComponent", "SInputComponent"},
-        
+        Query = { "SCameraComponent", "SInputComponent" },
+
+        Init = function(Context)
+
+            Context:OnConstruct(STransformComponent, function(Entity, Transform)
+
+                local Uniform = math.random(1, 3)
+                Transform:SetScale(vec3(Uniform, Uniform, Uniform))
+
+            end)
+
+        end,
+
         Execute = function(Context, Entities, DeltaTime)
 
             for _, Entity in ipairs(Entities) do
@@ -45,7 +56,8 @@ local MyScript =
                 end
             end
         end
-    }
+    },
+
 }
 
 return MyScript

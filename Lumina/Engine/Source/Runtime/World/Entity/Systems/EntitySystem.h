@@ -43,10 +43,13 @@ namespace Lumina
         virtual const FUpdatePriorityList* GetRequiredUpdatePriorities() { return nullptr; }
 
         /** Gives the system a chance to register itself to listeners via a dispatcher */
-        virtual void RegisterEventListeners(FSystemContext& SystemContext) { }
+        virtual void Init(FSystemContext& SystemContext) { }
         
         /** Called per-update, for each required system */
         virtual void Update(FSystemContext& SystemContext) { }
+        
+        /** Called during world shutdown */
+        virtual void Shutdown(FSystemContext& SystemContext) { }
 
         
     };

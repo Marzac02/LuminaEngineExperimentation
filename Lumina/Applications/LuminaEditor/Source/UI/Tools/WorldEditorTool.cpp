@@ -1,6 +1,7 @@
 ﻿#include "WorldEditorTool.h"
 #include "EditorToolContext.h"
 #include "Assets/AssetRegistry/AssetRegistry.h"
+#include "Core/Console/ConsoleVariable.h"
 #include "Core/Object/ObjectIterator.h"
 #include "Core/Object/Package/Package.h"
 #include "EASTL/sort.h"
@@ -28,6 +29,8 @@ namespace Lumina
 {
     static constexpr const char* SystemOutlinerName = "Systems";
     static constexpr const char* WorldSettingsName = "WorldSettings";
+    static constexpr const char* DragDropID = "EntityDropID";
+
 
     FWorldEditorTool::FWorldEditorTool(IEditorToolContext* Context, CWorld* InWorld)
         : FEditorTool(Context, InWorld->GetName().ToString(), InWorld)
@@ -62,71 +65,100 @@ namespace Lumina
 
 
         //------------------------------------------------------------------------------------------------------
-
-        OutlinerContext.DrawItemContextMenuFunction = [this](const TVector<FTreeListViewItem*>& Items)
+        
+        OutlinerContext.SetDragDropFunction = [this] (FTreeListView& Tree, entt::entity Item)
         {
-            for (FTreeListViewItem* Item : Items)
+            FEntityListViewItemData& Data = Tree.Get<FEntityListViewItemData>(Item);
+
+            uint32 Integral = entt::to_integral(Data.Entity);
+            ImGui::SetDragDropPayload(DragDropID, &Integral, sizeof(uintptr_t));  
+        };
+
+        OutlinerContext.ItemContextMenuFunction = [this](FTreeListView& Tree, entt::entity Item)
+        {
+            FEntityListViewItemData& Data = Tree.Get<FEntityListViewItemData>(Item);
+            FEntityRegistry& Registry = World->GetEntityRegistry();
+            
+            if (ImGui::MenuItem("Add Component"))
             {
-                FEntityListViewItem* EntityListItem = static_cast<FEntityListViewItem*>(Item);
-
-                if (ImGui::MenuItem("Add Component"))
+                PushAddComponentModal(Data.Entity);
+            }
+            
+            if (ECS::Utils::IsChild(Registry, Data.Entity))
+            {
+                if (ImGui::MenuItem("Unparent"))
                 {
-                    PushAddComponentModal(EntityListItem->GetEntity());
+                    ECS::Utils::RemoveFromParent(Registry, Data.Entity);
+                    OutlinerListView.MarkTreeDirty();
                 }
-                
-                if (ImGui::MenuItem("Rename"))
+            }
+            
+            if (ECS::Utils::IsParent(Registry, Data.Entity))
+            {
+                if (ImGui::MenuItem("Detach Children"))
                 {
-                    PushRenameEntityModal(EntityListItem->GetEntity());
+                    ECS::Utils::DetachImmediateChildren(Registry, Data.Entity);
+                    OutlinerListView.MarkTreeDirty();
                 }
-
-                if (ImGui::MenuItem("Duplicate"))
-                {
-                    entt::entity New = entt::null;
-                    CopyEntity(New, SelectedEntity);
-                }
-                
-                if (ImGui::MenuItem("Delete"))
-                {
-                    EntityDestroyRequests.push(EntityListItem->GetEntity());
-                }
+            }
+            
+            if (ImGui::MenuItem("Rename"))
+            {
+                PushRenameEntityModal(Data.Entity);
+            }
+            
+            if (ImGui::MenuItem("Duplicate"))
+            {
+                entt::entity New = entt::null;
+                CopyEntity(New, SelectedEntity);
+            }
+            
+            if (ImGui::MenuItem("Delete"))
+            {
+                EntityDestroyRequests.push(Data.Entity);
             }
         };
 
-        OutlinerContext.RebuildTreeFunction = [this](FTreeListView* Tree)
+        OutlinerContext.RebuildTreeFunction = [this](FTreeListView& Tree)
         {
             RebuildSceneOutliner(Tree);
         };
         
-        OutlinerContext.ItemSelectedFunction = [this](FTreeListViewItem* Item)
+        OutlinerContext.ItemSelectedFunction = [this](FTreeListView& Tree, entt::entity Item)
         {
-            if (Item == nullptr)
+            if (Item == entt::null)
             {
                 SelectedEntity = entt::null;
                 return;
             }
             
-            FEntityListViewItem* EntityListItem = static_cast<FEntityListViewItem*>(Item);
+            FEntityListViewItemData& Data = Tree.Get<FEntityListViewItemData>(Item);
             
-            SelectedEntity = EntityListItem->GetEntity();
+            SelectedEntity = Data.Entity;
             
             RebuildPropertyTables(SelectedEntity);
         };
 
-        OutlinerContext.DragDropFunction = [this](FTreeListViewItem* Item)
+        OutlinerContext.DragDropFunction = [this](FTreeListView& Tree, entt::entity Item)
         {
-            HandleEntityEditorDragDrop(Item);  
+            FEntityListViewItemData& Data = Tree.Get<FEntityListViewItemData>(Item);
+
+            HandleEntityEditorDragDrop(Tree, Data.Entity);  
         };
         
-        OutlinerContext.FilterFunction = [&](const FTreeListViewItem& Item)
+        OutlinerContext.FilterFunction = [&](FTreeListView& Tree, entt::entity Item)
         {
             using namespace entt::literals;
-            bool bPasses = EntityFilterState.FilterName.PassFilter(Item.GetDisplayName().c_str());
+            
+            const FTreeNodeDisplay& Display = Tree.Get<FTreeNodeDisplay>(Item);
+            
+            bool bPasses = EntityFilterState.FilterName.PassFilter(Display.DisplayName.c_str());
 
             for (const FName& ComponentFilter : EntityFilterState.ComponentFilters)
             {
-                const FEntityListViewItem* EntityListItem = static_cast<const FEntityListViewItem*>(&Item);
+                FEntityListViewItemData& Data = Tree.Get<FEntityListViewItemData>(Item);
 
-                entt::entity Entity = EntityListItem->GetEntity();
+                entt::entity Entity = Data.Entity;
                 
                 if (entt::meta_type Meta = entt::resolve(entt::hashed_string(ComponentFilter.c_str())))
                 {
@@ -293,6 +325,11 @@ namespace Lumina
             }
         }
         
+        if (bGamePreviewRunning)
+        {
+            return;
+        }
+        
         SCameraComponent& CameraComponent = World->GetEntityRegistry().get<SCameraComponent>(EditorEntity);
     
         glm::mat4 ViewMatrix = CameraComponent.GetViewMatrix();
@@ -444,10 +481,13 @@ namespace Lumina
                 ImGui::Spacing();
                 
                 ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 0.4f, 0.4f, 1.0f));
-                if (ImGui::MenuItem("Delete Entity", "Del"))
+                if (ImGui::MenuItem(LE_ICON_TRASH_CAN" Delete Entity", "Del"))
                 {
-                    Registry.destroy(SelectedEntity);
-                    SetSelectedEntity(entt::null);
+                    if (Dialogs::Confirmation("Confirm Deletion", "Are you sure you want to delete entity \"{0}\"?\n\nThis action cannot be undone.", entt::to_integral(SelectedEntity)))
+                    {
+                        EntityDestroyRequests.push(SelectedEntity);
+                    }
+                    
                     ImGui::CloseCurrentPopup();
                 }
                 ImGui::PopStyleColor();
@@ -456,8 +496,9 @@ namespace Lumina
                 ImGui::Separator();
                 ImGui::Spacing();
                 
-                if (ImGui::BeginMenu("Add Component"))
+                if (ImGui::MenuItem("Add Component"))
                 {
+                    PushAddComponentModal(SelectedEntity);
                     ImGui::EndMenu();
                 }
                 
@@ -466,14 +507,25 @@ namespace Lumina
                     ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(8, 6));
                     ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 0.6f, 0.4f, 1.0f));
                     
-                    bool bHasAnyComponents = false;
-                    
-                    if (!bHasAnyComponents)
+                    ECS::Utils::ForEachComponent([&](void*, const entt::basic_sparse_set<>& Set, entt::meta_type Type)
                     {
-                        ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.5f, 0.5f, 0.5f, 1.0f));
-                        ImGui::TextUnformatted("No removable components");
-                        ImGui::PopStyleColor();
-                    }
+                        using namespace entt::literals;
+                        
+                        entt::meta_type MetaType = entt::resolve(Set.info());
+                        if (entt::meta_any ReturnValue = ECS::InvokeMetaFunc(MetaType, "static_struct"_hs))
+                        {
+                            CStruct* StructType = ReturnValue.cast<CStruct*>();
+                            if (StructType == SNameComponent::StaticStruct() || StructType == STransformComponent::StaticStruct())
+                            {
+                                return;
+                            }
+                            
+                            if (ImGui::MenuItem(ReturnValue.cast<CStruct*>()->MakeDisplayName().c_str()))
+                            {
+                                ComponentDestroyRequests.push(FComponentDestroyRequest{StructType, SelectedEntity});
+                            }
+                        }
+                    }, Registry, SelectedEntity);
                     
                     ImGui::PopStyleColor();
                     ImGui::PopStyleVar();
@@ -496,11 +548,33 @@ namespace Lumina
                 ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.8f, 0.8f, 0.6f, 1.0f));
                 if (ImGui::MenuItem("Copy", "Ctrl+C"))
                 {
-                    entt::entity To;
-                    CopyEntity(To, SelectedEntity);
+                    CopiedEntity = SelectedEntity;
                     ImGui::CloseCurrentPopup();
                 }
                 ImGui::PopStyleColor();
+                
+                
+                if (ECS::Utils::IsChild(Registry, SelectedEntity))
+                {
+                    ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.2f, 0.3f, 0.6f, 1.0f));
+                    if (ImGui::MenuItem("Unparent"))
+                    {
+                        ECS::Utils::RemoveFromParent(Registry, SelectedEntity);
+                        OutlinerListView.MarkTreeDirty();
+                    }
+                    ImGui::PopStyleColor();
+                }
+            
+                if (ECS::Utils::IsParent(Registry, SelectedEntity))
+                {
+                    ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.6f, 0.9f, 0.2f, 1.0f));
+                    if (ImGui::MenuItem("Detach Children"))
+                    {
+                        ECS::Utils::DetachImmediateChildren(Registry, SelectedEntity);
+                        OutlinerListView.MarkTreeDirty();
+                    }
+                    ImGui::PopStyleColor();
+                }
                 
                 ImGui::Spacing();
                 
@@ -513,7 +587,7 @@ namespace Lumina
 
     void FWorldEditorTool::DrawViewportToolbar(const FUpdateContext& UpdateContext)
     {
-        if (!IsAssetEditorTool() && !bSimulatingWorld)
+        if (!IsAssetEditorTool() && !bSimulatingWorld && !bGamePreviewRunning)
         {
             return;
         }
@@ -549,7 +623,7 @@ namespace Lumina
             ImGui::SameLine();
             ImGui::SeparatorEx(ImGuiSeparatorFlags_Vertical);
             ImGui::SameLine();
-        
+            
             DrawCameraControls(ButtonSize);
         
             ImGui::SameLine();
@@ -734,8 +808,8 @@ namespace Lumina
     
                 struct ComponentInfo
                 {
-                    const char* Name;
-                    const char* Category;
+                    FFixedString Name;
+                    FFixedString Category;
                     entt::meta_type MetaType;
                 };
                 
@@ -748,35 +822,32 @@ namespace Lumina
                     CStruct* Type = Any.cast<CStruct*>();
                     LUM_ASSERT(Type)
                     
-                    const char* ComponentName = Type->GetName().c_str();
+                    FFixedString ComponentName = Type->MakeDisplayName();
                     
-                    if (!Filter->PassFilter(ComponentName))
+                    if (!Filter->PassFilter(ComponentName.c_str()))
                     {
                         continue;
                     }
                     
-                    // Categorize component (you can enhance this logic)
                     const char* Category = "General";
                     Components.push_back({ComponentName, Category, MetaType});
                 }
                 
                 eastl::sort(Components.begin(), Components.end(), [](const ComponentInfo& a, const ComponentInfo& b)
-                {
-                    int categoryCompare = strcmp(a.Category, b.Category);
-                    if (categoryCompare != 0)
                     {
-                        return categoryCompare < 0;
-                    }
-                    return strcmp(a.Name, b.Name) < 0;
-                });
+                        if (a.Category != b.Category)
+                        {
+                            return a.Category < b.Category;
+                        }
+
+                        return a.Name < b.Name;
+                    });
                 
-                // Draw components with category colors
                 for (const ComponentInfo& CompInfo : Components)
                 {
                     ImGui::TableNextRow();
                     ImGui::TableSetColumnIndex(0);
                     
-                    // Color code by category
                     ImVec4 IconColor = ImVec4(0.6f, 0.6f, 0.6f, 1.0f);
                     const char* Icon = LE_ICON_CUBE;
                     
@@ -786,12 +857,11 @@ namespace Lumina
                     
                     ImGui::SameLine();
                     
-                    // Component name as selectable
                     ImGui::PushStyleColor(ImGuiCol_Header, ImVec4(0.25f, 0.5f, 0.8f, 0.4f));
                     ImGui::PushStyleColor(ImGuiCol_HeaderHovered, ImVec4(0.3f, 0.6f, 0.9f, 0.5f));
                     ImGui::PushStyleColor(ImGuiCol_HeaderActive, ImVec4(0.35f, 0.65f, 0.95f, 0.6f));
                     
-                    if (ImGui::Selectable(CompInfo.Name, false, ImGuiSelectableFlags_SpanAllColumns | ImGuiSelectableFlags_AllowDoubleClick))
+                    if (ImGui::Selectable(CompInfo.Name.c_str(), false, ImGuiSelectableFlags_SpanAllColumns | ImGuiSelectableFlags_AllowDoubleClick))
                     {
                         using namespace entt::literals;
 
@@ -801,10 +871,9 @@ namespace Lumina
                     
                     ImGui::PopStyleColor(3);
                     
-                    // Category column
                     ImGui::TableSetColumnIndex(1);
                     ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.6f, 0.6f, 0.6f, 1.0f));
-                    ImGui::TextUnformatted(CompInfo.Category);
+                    ImGui::TextUnformatted(CompInfo.Category.c_str());
                     ImGui::PopStyleColor();
                 }
                 
@@ -938,7 +1007,8 @@ namespace Lumina
                 ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.3f, 0.8f, 0.4f, 1.0f));
                 if (ImGuiX::IconButton(LE_ICON_PLAY, "##PlayBtn", 0xFFFFFFFF, BtnSize))
                 {
-                    OnGamePreviewStartRequested.Broadcast();
+                    SetWorldPlayInEditor(true);
+                    //OnGamePreviewStartRequested.Broadcast();
                 }
                 ImGui::PopStyleColor(2);
                 
@@ -986,7 +1056,8 @@ namespace Lumina
             ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.9f, 0.3f, 0.3f, 1.0f));
             if (ImGuiX::IconButton(LE_ICON_STOP, "##StopBtn", 0xFFFFFFFF, BtnSize))
             {
-                OnGamePreviewStopRequested.Broadcast();
+                SetWorldPlayInEditor(false);
+                //OnGamePreviewStopRequested.Broadcast();
             }
             ImGui::PopStyleColor(2);
             
@@ -999,6 +1070,11 @@ namespace Lumina
 
     void FWorldEditorTool::DrawCameraControls(float ButtonSize)
     {
+        if (bGamePreviewRunning)
+        {
+            return;
+        }
+        
         const ImVec2 BtnSize = ImVec2(ButtonSize, ButtonSize);
         float Speed = World->GetEntityRegistry().get<SVelocityComponent>(EditorEntity).Speed;
 
@@ -1210,6 +1286,17 @@ namespace Lumina
             ImGui::Text("Rendering Mode");
             ImGui::Separator();
             
+            if (ImGui::BeginMenu("Physics"))
+            {
+                bool bValue = FConsoleRegistry::Get().GetAs<bool>("Jolt.Debug.Draw");
+                if (ImGui::MenuItem("Toggle Collision", nullptr, &bValue))
+                {
+                    FConsoleRegistry::Get().SetAs("Jolt.Debug.Draw", bValue);
+                }
+                
+                ImGui::EndMenu();
+            }
+            
             if (ImGui::Selectable("Lit"))
             {
             }
@@ -1366,6 +1453,35 @@ namespace Lumina
         ImGui::PopStyleColor();
     }
 
+    void FWorldEditorTool::SetWorldPlayInEditor(bool bShouldPlay)
+    {
+        if (bShouldPlay != bGamePreviewRunning && bShouldPlay == true)
+        {
+            bGamePreviewRunning = true;
+            
+            World->SetActive(false);
+            ProxyWorld = World;
+            World = CWorld::DuplicateWorld(ProxyWorld);
+            World->SetIsPlayWorld(true);
+            World->SetPaused(false);
+            World->BeginPlay();
+            
+            OutlinerListView.MarkTreeDirty();
+        }
+        else if (bShouldPlay != bGamePreviewRunning && bShouldPlay == false)
+        {
+            World->SetPaused(true);
+            bGamePreviewRunning = false;
+            
+            SetWorld(ProxyWorld);
+            ProxyWorld->SetActive(true);
+            
+            ProxyWorld = nullptr;
+            
+            OutlinerListView.MarkTreeDirty();
+        }
+    }
+
     void FWorldEditorTool::SetWorldNewSimulate(bool bShouldSimulate)
     {
         if (bShouldSimulate != bSimulatingWorld && bShouldSimulate == true)
@@ -1376,8 +1492,8 @@ namespace Lumina
             SCameraComponent CameraCopy =  World->GetEntityRegistry().get<SCameraComponent>(EditorEntity);
 
             World->SetActive(false);
-            WorldState = World;
-            World = CWorld::DuplicateWorld(WorldState);
+            ProxyWorld = World;
+            World = CWorld::DuplicateWorld(ProxyWorld);
             World->SetSimulating(true);
 
             entt::entity PreviousSelectedEntity = SelectedEntity;
@@ -1388,7 +1504,6 @@ namespace Lumina
             SetupWorldForTool();
 
             SetSelectedEntity(PreviousSelectedEntity);
-
             
             World->GetEntityRegistry().patch<STransformComponent>(EditorEntity, [TransformCopy](STransformComponent& Patch)
             {
@@ -1410,11 +1525,12 @@ namespace Lumina
 
             entt::entity PreviousSelectedEntity = SelectedEntity;
 
-            SetWorld(WorldState);
-            WorldState->SetActive(true);
+            SetWorld(ProxyWorld);
+            ProxyWorld->SetActive(true);
             
             SetSelectedEntity(PreviousSelectedEntity);
 
+            OutlinerListView.MarkTreeDirty();
             
             World->GetEntityRegistry().patch<STransformComponent>(EditorEntity, [TransformCopy](STransformComponent& Patch)
             {
@@ -1426,7 +1542,7 @@ namespace Lumina
                 Patch = CameraCopy;
             });
             
-            WorldState = nullptr;
+            ProxyWorld = nullptr;
         }
     }
 
@@ -1469,7 +1585,7 @@ namespace Lumina
                         continue;
                     }
                     
-                    if (!AddEntityComponentFilter.PassFilter(Struct->GetName().c_str()))
+                    if (!AddEntityComponentFilter.PassFilter(Struct->MakeDisplayName().c_str()))
                     {
                         continue;
                     }
@@ -1485,7 +1601,7 @@ namespace Lumina
                     
                     const float ButtonWidth = ImGui::GetContentRegionAvail().x;
                     
-                    if (ImGui::Button(Struct->GetName().c_str(), ImVec2(ButtonWidth, 0.0f)))
+                    if (ImGui::Button(Struct->MakeDisplayName().c_str(), ImVec2(ButtonWidth, 0.0f)))
                     {
                         CreateEntityWithComponent(Struct);
                         ImGui::CloseCurrentPopup();
@@ -1604,38 +1720,34 @@ namespace Lumina
         World->SetSelectedEntity(SelectedEntity);
     }
 
-    void FWorldEditorTool::RebuildSceneOutliner(FTreeListView* View)
+    void FWorldEditorTool::RebuildSceneOutliner(FTreeListView& Tree)
     {
-        TFunction<void(entt::entity, FEntityListViewItem*)> AddEntityRecursive;
+        TFunction<void(entt::entity, entt::entity)> AddEntityRecursive;
         
-        AddEntityRecursive = [&](entt::entity Entity, FEntityListViewItem* ParentItem)
+        AddEntityRecursive = [&](entt::entity WorldEntity, entt::entity ParentItem)
         {
-            FEntityListViewItem* Item = nullptr;
-            if (ParentItem)
-            {
-                Item = ParentItem->AddChild<FEntityListViewItem>(ParentItem, World->GetEntityRegistry(), Entity);
-            }
-            else
-            {
-                Item = OutlinerListView.AddItemToTree<FEntityListViewItem>(ParentItem, World->GetEntityRegistry(), Entity);
-            }
+            SNameComponent& NameComponent = World->GetEntityRegistry().get<SNameComponent>(WorldEntity);
+            FFixedString Name;
+            Name.append(LE_ICON_CUBE).append(" ").append(NameComponent.Name.c_str());
+            
+            entt::entity ItemEntity = Tree.CreateNode(ParentItem, Name);
+            Tree.EmplaceUserData<FEntityListViewItemData>(ItemEntity).Entity = WorldEntity;
 
-            if (Item->GetEntity() == SelectedEntity)
+            if (WorldEntity == SelectedEntity)
             {
-                OutlinerListView.SetSelection(Item, OutlinerContext);
+                FTreeNodeState& State = Tree.Get<FTreeNodeState>(ItemEntity);
+                State.bSelected = true;
             }
-
-            if (FRelationshipComponent* Rel = World->GetEntityRegistry().try_get<FRelationshipComponent>(Item->GetEntity()))
+            
+            ECS::Utils::ForEachChild(World->GetEntityRegistry(), WorldEntity, [&](entt::entity Child)
             {
-                for (SIZE_T i = 0; i < Rel->NumChildren; ++i)
-                {
-                    AddEntityRecursive(Rel->Children[i], Item);
-                }
-            }
+                AddEntityRecursive(Child, ItemEntity);
+            });
         };
         
-
-        for (entt::entity Entity : World->GetEntityRegistry().view<entt::entity>(entt::exclude<FHideInSceneOutliner>))
+        TFixedVector<entt::entity, 1000> Roots;
+        auto View = World->GetEntityRegistry().view<SNameComponent>(entt::exclude<FHideInSceneOutliner>);
+        for (entt::entity Entity : View)
         {
             if (FRelationshipComponent* Rel = World->GetEntityRegistry().try_get<FRelationshipComponent>(Entity))
             {
@@ -1645,26 +1757,31 @@ namespace Lumina
                 }
             }
 
-            AddEntityRecursive(Entity, nullptr);
+            Roots.push_back(Entity);
+        }
+        
+        eastl::sort(Roots.begin(), Roots.end(), [&](entt::entity LHS, entt::entity RHS)
+        {
+            const FFixedString A = View.get<SNameComponent>(LHS).Name.c_str();
+            const FFixedString B = View.get<SNameComponent>(RHS).Name.c_str();
+            
+            return std::tie(A, LHS) < std::tie(B, RHS);
+        });
+        
+        for (entt::entity Root : Roots)
+        {
+            AddEntityRecursive(Root, entt::null);
         }
     }
 
 
-    void FWorldEditorTool::HandleEntityEditorDragDrop(FTreeListViewItem* DropItem)
+    void FWorldEditorTool::HandleEntityEditorDragDrop(FTreeListView& Tree, entt::entity DropItem)
     {
-        const ImGuiPayload* Payload = ImGui::AcceptDragDropPayload(FEntityListViewItem::DragDropID, ImGuiDragDropFlags_AcceptBeforeDelivery);
+        const ImGuiPayload* Payload = ImGui::AcceptDragDropPayload(DragDropID, ImGuiDragDropFlags_AcceptBeforeDelivery);
         if (Payload && Payload->IsDelivery())
         {
-            uintptr_t* RawPtr = static_cast<uintptr_t*>(Payload->Data);
-            auto* SourceItem = reinterpret_cast<FEntityListViewItem*>(*RawPtr);  // NOLINT(performance-no-int-to-ptr)
-            auto* DestinationItem = static_cast<FEntityListViewItem*>(DropItem);
-
-            if (SourceItem == DestinationItem)
-            {
-                return;
-            }
-
-            World->ReparentEntity(SourceItem->GetEntity(), DestinationItem->GetEntity());
+            entt::entity SourceEntity = *static_cast<entt::entity*>(Payload->Data);
+            ECS::Utils::ReparentEntity(World->GetEntityRegistry(), SourceEntity, DropItem);
             
             OutlinerListView.MarkTreeDirty();
         }
@@ -2255,9 +2372,7 @@ namespace Lumina
 
     void FWorldEditorTool::DrawComponentHeader(const TUniquePtr<FPropertyTable>& Table, entt::entity Entity)
     {
-        const char* ComponentName = Table->GetType()->GetName().c_str();
-        const bool bIsRequired = (Table->GetType() == STransformComponent::StaticStruct() || 
-                                 Table->GetType() == SNameComponent::StaticStruct());
+        const bool bIsRequired = (Table->GetType() == STransformComponent::StaticStruct() || Table->GetType() == SNameComponent::StaticStruct());
     
         if (Table->GetType() == STagComponent::StaticStruct())
         {
@@ -2285,7 +2400,7 @@ namespace Lumina
             ImGui::PushStyleColor(ImGuiCol_HeaderActive, 0);
             ImGui::PushStyleColor(ImGuiCol_HeaderHovered, 0);
             ImGui::SetNextItemAllowOverlap();
-            bIsOpen = ImGui::CollapsingHeader(ComponentName);
+            bIsOpen = ImGui::CollapsingHeader(Table->GetType()->MakeDisplayName().c_str(), ImGuiTreeNodeFlags_DefaultOpen);
             ImGui::TableSetBgColor(ImGuiTableBgTarget_RowBg0, 0xFF1C1C1C);
 
             ImGui::PopStyleColor(3);
@@ -2390,10 +2505,8 @@ namespace Lumina
     
         ImGui::BeginGroup();
         {
-            // Empty state icon
             ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.4f, 0.4f, 0.45f, 1.0f));
         
-            // Center the icon
             const char* EmptyIcon = LE_ICON_INBOX;
             ImVec2 IconSize = ImGui::CalcTextSize(EmptyIcon);
             ImGui::SetCursorPosX(ImGui::GetCursorPosX() + (200.0f - IconSize.x) * 0.5f);
@@ -2421,6 +2534,30 @@ namespace Lumina
             ImGui::PopStyleColor();
         }
         ImGui::EndGroup();
+    }
+
+    void FWorldEditorTool::OnPrePropertyChangeEvent(const FPropertyChangedEvent& Event)
+    {
+    }
+
+    void FWorldEditorTool::OnPostPropertyChangeEvent(const FPropertyChangedEvent& Event)
+    {
+        using namespace entt::literals;
+        
+        entt::id_type TypeID = ECS::GetTypeID(Event.OuterType->GetName().c_str());
+        
+        entt::meta_any Component = ECS::InvokeMetaFunc(TypeID, "get"_hs, entt::forward_as_meta(World->GetEntityRegistry()), SelectedEntity);
+        ECS::InvokeMetaFunc(TypeID, "patch"_hs, entt::forward_as_meta(World->GetEntityRegistry()), SelectedEntity, entt::forward_as_meta(Component));
+        
+        if (World->GetPackage())
+        {
+            World->GetPackage()->MarkDirty();
+        }
+    }
+
+    bool FWorldEditorTool::IsUnsavedDocument()
+    {
+        return World && World->GetPackage() && World->GetPackage()->IsDirty();
     }
 
     void FWorldEditorTool::DrawEntityEditor(bool bFocused, entt::entity Entity)
@@ -2469,6 +2606,17 @@ namespace Lumina
                 CStruct* Struct = Any.cast<CStruct*>();
                     
                 TUniquePtr<FPropertyTable> NewTable = MakeUniquePtr<FPropertyTable>(Component, Struct);
+                
+                NewTable->SetPreEditCallback([&](const FPropertyChangedEvent& Event)
+                {
+                    OnPrePropertyChangeEvent(Event);
+                });
+                
+                NewTable->SetPostEditCallback([&] (const FPropertyChangedEvent& Event)
+                {
+                    OnPostPropertyChangeEvent(Event);
+                });
+                
                 PropertyTables.emplace_back(Move(NewTable))->RebuildTree();
                 
                 
@@ -2486,7 +2634,7 @@ namespace Lumina
         entt::meta_type MetaType = entt::resolve(Hash);
         
         CreatedEntity = World->ConstructEntity("Entity");
-        World->GetEntityRegistry().get<SNameComponent>(CreatedEntity).Name = Component->GetName().ToString() + "_" + eastl::to_string((uint32)CreatedEntity);
+        World->GetEntityRegistry().get<SNameComponent>(CreatedEntity).Name = Component->MakeDisplayName() + "_" + eastl::to_string((uint32)CreatedEntity).c_str();
         ECS::InvokeMetaFunc(MetaType, "emplace"_hs, entt::forward_as_meta(World->GetEntityRegistry()), CreatedEntity, entt::forward_as_meta(entt::meta_any{}));
 
         if (CreatedEntity != entt::null)

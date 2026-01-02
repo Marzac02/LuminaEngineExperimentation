@@ -6,6 +6,7 @@
 #include "Components/RelationshipComponent.h"
 #include "Components/SingletonEntityComponent.h"
 #include "components/tagcomponent.h"
+#include "Components/TransformComponent.h"
 #include "Core/Object/Class.h"
 
 namespace Lumina::ECS::Utils
@@ -32,13 +33,7 @@ namespace Lumina::ECS::Utils
                 Ar << bHasRelationship;
                 Ar.Seek(SizeBefore);
                 
-                Ar << RelationshipComponent->Parent;
-                Ar << RelationshipComponent->NumChildren;
-                
-                for (SIZE_T i = 0; i < RelationshipComponent->NumChildren; ++i)
-                {
-                    Ar << RelationshipComponent->Children[i];
-                }
+                Ar << *RelationshipComponent;
             }
 
             int64 NumComponentsPos = Ar.Tell();
@@ -101,13 +96,7 @@ namespace Lumina::ECS::Utils
             if (bHasRelationship)
             {
                 FRelationshipComponent& RelationshipComponent = Registry.emplace<FRelationshipComponent>(Entity);
-                Ar << RelationshipComponent.Parent;
-                Ar << RelationshipComponent.NumChildren;
-                
-                for (SIZE_T i = 0; i < RelationshipComponent.NumChildren; ++i)
-                {
-                    Ar << RelationshipComponent.Children[i];
-                }
+                Ar << RelationshipComponent;
             }
 
             SIZE_T NumComponents = 0;
@@ -248,9 +237,287 @@ namespace Lumina::ECS::Utils
         return !Ar.HasError();
     }
     
-    bool EntityHasTag(FName Tag, FEntityRegistry& Registry, entt::entity Entity)
+    bool EntityHasTag(const FName& Tag, FEntityRegistry& Registry, entt::entity Entity)
     {
         return Registry.storage<STagComponent>(entt::hashed_string(Tag.c_str())).contains(Entity);
+    }
+    
+    void AddToParent(FEntityRegistry& Registry, entt::entity Child, entt::entity Parent)
+    {
+        FRelationshipComponent& ChildRelationship = Registry.get_or_emplace<FRelationshipComponent>(Child);
+        FRelationshipComponent& ParentRelationship = Registry.get_or_emplace<FRelationshipComponent>(Parent);
+
+        ChildRelationship.Parent = Parent;
+
+        ChildRelationship.Prev = entt::null;
+        ChildRelationship.Next = ParentRelationship.First;
+
+        if (ParentRelationship.First != entt::null)
+        {
+            FRelationshipComponent& OldFirstRelationship = Registry.get<FRelationshipComponent>(ParentRelationship.First);
+            OldFirstRelationship.Prev = Child;
+        }
+
+        ParentRelationship.First = Child;
+        ParentRelationship.Children++;
+        
+        Registry.sort<FRelationshipComponent>([&Registry](const entt::entity lhs, const entt::entity rhs)
+        {
+            const auto &clhs = Registry.get<FRelationshipComponent>(lhs);
+            const auto &crhs = Registry.get<FRelationshipComponent>(rhs);
+            return crhs.Parent == lhs || clhs.Next == rhs || (!(clhs.Parent == rhs || crhs.Next == lhs) && (clhs.Parent < crhs.Parent || (clhs.Parent == crhs.Parent && &clhs < &crhs)));
+        });
+    }
+    
+    void ReparentEntity(FEntityRegistry& Registry, entt::entity Child, entt::entity Parent)
+    {
+        if (Child == Parent)
+        {
+            LOG_ERROR("Cannot parent an entity to itself!");
+            return;
+        }
+
+        if (Child == entt::null)
+        {
+            LOG_ERROR("Cannot parent a null entity!");
+            return;
+        }
+
+        if (Parent != entt::null && IsDescendantOf(Registry, Parent, Child))
+        {
+            LOG_ERROR("Cannot create circular hierarchy - parent is a descendant of child!");
+            return;
+        }
+
+        FRelationshipComponent& ChildRelationship = Registry.get_or_emplace<FRelationshipComponent>(Child);
+        
+        if (ChildRelationship.Parent == Parent)
+        {
+            return;
+        }
+
+        glm::mat4 ChildWorldMatrix = Registry.get<STransformComponent>(Child).WorldTransform.GetMatrix();
+        glm::mat4 ParentWorldMatrix = glm::mat4(1.0f);
+        
+        if (Parent != entt::null)
+        {
+            ParentWorldMatrix = Registry.get<STransformComponent>(Parent).WorldTransform.GetMatrix();
+        }
+
+        glm::mat4 NewLocalMatrix = glm::inverse(ParentWorldMatrix) * ChildWorldMatrix;
+
+        glm::vec3 Translation, Scale, Skew;
+        glm::quat Rotation;
+        glm::vec4 Perspective;
+        glm::decompose(NewLocalMatrix, Scale, Rotation, Translation, Skew, Perspective);
+
+        RemoveFromParent(Registry, Child);
+
+        if (Parent != entt::null)
+        {
+            AddToParent(Registry, Child, Parent);
+        }
+        else
+        {
+            ChildRelationship.Parent = entt::null;
+        }
+
+        FTransform NewTransform;
+        NewTransform.Location = Translation;
+        NewTransform.Rotation = Rotation;
+        NewTransform.Scale = Scale;
+        
+        Registry.emplace_or_replace<STransformComponent>(Child, NewTransform);
+        Registry.emplace_or_replace<FNeedsTransformUpdate>(Child);
+        
+    }
+
+    void DestroyEntityHierarchy(FEntityRegistry& Registry, entt::entity Entity)
+    {
+        if (Entity == entt::null || !Registry.valid(Entity))
+        {
+            return;
+        }
+
+        TVector<entt::entity> ToDestroy;
+        CollectDescendants(Registry, Entity, ToDestroy);
+
+        for (auto It = ToDestroy.rbegin(); It != ToDestroy.rend(); ++It)
+        {
+            if (Registry.valid(*It))
+            {
+                RemoveFromParent(Registry, *It);
+            }
+        }
+    }
+
+    void DetachImmediateChildren(FEntityRegistry& Registry, entt::entity Entity)
+    {
+        TVector<entt::entity> ToDestroy;
+        CollectChildren(Registry, Entity, ToDestroy);
+        
+        for (auto It = ToDestroy.rbegin(); It != ToDestroy.rend(); ++It)
+        {
+            if (Registry.valid(*It))
+            {
+                RemoveFromParent(Registry, *It);
+            }
+        }
+    }
+
+    void RemoveFromParent(FEntityRegistry& Registry, entt::entity Child)
+    {
+        FRelationshipComponent* ChildRelationship = Registry.try_get<FRelationshipComponent>(Child);
+        if (!ChildRelationship || ChildRelationship->Parent == entt::null)
+        {
+            return;
+        }
+
+        entt::entity OldParent = ChildRelationship->Parent;
+        FRelationshipComponent* ParentRelationship = Registry.try_get<FRelationshipComponent>(OldParent);
+            
+        if (!ParentRelationship)
+        {
+            return;
+        }
+
+        ParentRelationship->Children--;
+
+        if (ChildRelationship->Prev != entt::null)
+        {
+            FRelationshipComponent& PrevRelationship = Registry.get<FRelationshipComponent>(ChildRelationship->Prev);
+            PrevRelationship.Next = ChildRelationship->Next;
+        }
+        else
+        {
+            ParentRelationship->First = ChildRelationship->Next;
+        }
+
+        if (ChildRelationship->Next != entt::null)
+        {
+            FRelationshipComponent& NextRelationship = Registry.get<FRelationshipComponent>(ChildRelationship->Next);
+            NextRelationship.Prev = ChildRelationship->Prev;
+        }
+
+        ChildRelationship->Parent = entt::null;
+        ChildRelationship->Prev = entt::null;
+        ChildRelationship->Next = entt::null;
+        
+        STransformComponent& TransformComponent = Registry.get<STransformComponent>(Child);
+        TransformComponent.Transform = TransformComponent.WorldTransform;
+        
+        Registry.emplace_or_replace<STransformComponent>(Child, TransformComponent);
+        Registry.emplace_or_replace<FNeedsTransformUpdate>(Child);
+        
+        Registry.sort<FRelationshipComponent>([&Registry](const entt::entity lhs, const entt::entity rhs)
+        {
+            const auto &clhs = Registry.get<FRelationshipComponent>(lhs);
+            const auto &crhs = Registry.get<FRelationshipComponent>(rhs);
+            return crhs.Parent == lhs || clhs.Next == rhs || (!(clhs.Parent == rhs || crhs.Next == lhs) && (clhs.Parent < crhs.Parent || (clhs.Parent == crhs.Parent && &clhs < &crhs)));
+        });
+    }
+
+    bool IsDescendantOf(FEntityRegistry& Registry, entt::entity Potential, entt::entity Ancestor)
+    {
+        if (Potential == entt::null || Ancestor == entt::null)
+        {
+            return false;
+        }
+
+        entt::entity Current = Potential;
+        while (Current != entt::null)
+        {
+            FRelationshipComponent* Relationship = Registry.try_get<FRelationshipComponent>(Current);
+            if (!Relationship)
+            {
+                break;
+            }
+
+            if (Relationship->Parent == Ancestor)
+            {
+                return true;
+            }
+
+            Current = Relationship->Parent;
+        }
+
+        return false;
+    }
+
+    bool IsChild(FEntityRegistry& Registry, entt::entity Entity)
+    {
+        FRelationshipComponent* Relationship = Registry.try_get<FRelationshipComponent>(Entity);
+        return Relationship ? Relationship->Parent != entt::null : false;
+    }
+
+    bool IsParent(FEntityRegistry& Registry, entt::entity Entity)
+    {
+        return GetChildCount(Registry, Entity) != 0;
+    }
+
+    size_t GetChildCount(FEntityRegistry& Registry, entt::entity Parent)
+    {
+        FRelationshipComponent* Relationship = Registry.try_get<FRelationshipComponent>(Parent);
+        return Relationship ? Relationship->Children : 0;
+    }
+
+    size_t GetSiblingIndex(FEntityRegistry& Registry, entt::entity Entity)
+    {
+        FRelationshipComponent* Relationship = Registry.try_get<FRelationshipComponent>(Entity);
+        if (!Relationship || Relationship->Parent == entt::null)
+        {
+            return 0;
+        }
+
+        size_t Index = 0;
+        entt::entity Current = Registry.get<FRelationshipComponent>(Relationship->Parent).First;
+
+        while (Current != entt::null && Current != Entity)
+        {
+            Index++;
+            FRelationshipComponent* CurrentRelationship = Registry.try_get<FRelationshipComponent>(Current);
+            Current = CurrentRelationship ? CurrentRelationship->Next : entt::null;
+        }
+
+        return Index;
+    }
+
+    void CollectDescendants(FEntityRegistry& Registry, entt::entity Entity, TVector<entt::entity>& OutDescendants)
+    {
+        OutDescendants.push_back(Entity);
+
+        FRelationshipComponent* Relationship = Registry.try_get<FRelationshipComponent>(Entity);
+        if (!Relationship || Relationship->First == entt::null)
+        {
+            return;
+        }
+
+        entt::entity Current = Relationship->First;
+        while (Current != entt::null)
+        {
+            CollectDescendants(Registry, Current, OutDescendants);
+
+            FRelationshipComponent* CurrentRelationship = Registry.try_get<FRelationshipComponent>(Current);
+            Current = CurrentRelationship ? CurrentRelationship->Next : entt::null;
+        }
+    }
+
+    void CollectChildren(FEntityRegistry& Registry, entt::entity Entity, TVector<entt::entity>& OutChildren)
+    {
+        FRelationshipComponent* Relationship = Registry.try_get<FRelationshipComponent>(Entity);
+        if (!Relationship || Relationship->First == entt::null)
+        {
+            return;
+        }
+
+        entt::entity Current = Relationship->First;
+        while (Current != entt::null)
+        {
+            OutChildren.push_back(Current);
+
+            FRelationshipComponent* CurrentRelationship = Registry.try_get<FRelationshipComponent>(Current);
+            Current = CurrentRelationship ? CurrentRelationship->Next : entt::null;
+        }
     }
 
     void SetEntityBodyType(FEntityRegistry& Registry, entt::entity Entity)

@@ -43,40 +43,9 @@ namespace Lumina
             FString PendingDestroy;
         };
 
-        class FContentBrowserListViewItem : public FTreeListViewItem
+        struct FContentBrowserListViewItemData
         {
-        public:
-            FContentBrowserListViewItem(FTreeListViewItem* InParent, const FString& InPath, const FString& InDisplayName)
-                : FTreeListViewItem(InParent)
-                , Name(InDisplayName)
-                , Path(InPath)
-            {}
-            
-            const char* GetTooltipText() const override { return Path.c_str(); }
-            bool HasContextMenu() override { return true; }
-            
-            
-            FFixedString GetDisplayName() const override
-            {
-                return FFixedString()
-                .append(LE_ICON_FOLDER)
-                .append(" ")
-                .append(Name.c_str());
-            }
-
-            FString GetName() const override
-            {
-                return Name;
-            }
-
-            uint64 GetHash() const override { return Hash::GetHash64(Path); }
-
-            const FString& GetPath() const { return Path; }
-            
-        private:
-
-            FString Name;
-            FString Path;
+            FFixedString Path;
         };
 
         class FContentBrowserTileViewItem : public FTileViewItem

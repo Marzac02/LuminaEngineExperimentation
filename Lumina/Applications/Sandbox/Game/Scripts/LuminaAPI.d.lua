@@ -167,104 +167,31 @@ ScriptContext = {}
 ---@class SystemDescriptor
 ---@field Stage? UpdateStage Stage when the system should execute (default: UpdateStage.FrameStart)
 ---@field Priority? number Execution priority within the stage (default: 0)
----@field Execute fun(world: any, deltaTime: number) Function called every frame
+---@field Init? fun(Context: SystemContext) Optional function called once when the system is initialized
+---@field Execute fun(Context: SystemContext, entities: any, deltaTime: number) Function called every frame
+---@field Shutdown? fun(Context: SystemContext) Optional function called once when the system is shutdown
 
 ---@class SystemResult
 ---@field Type string The type identifier (ScriptType.System)
 ---@field Stage UpdateStage Stage when the system should execute
 ---@field Priority number Execution priority within the stage
+---@field Init? fun(world: any) Optional function called once when the system is initialized
 ---@field Execute fun(world: any, deltaTime: number) Function called every frame
+---@field Shutdown? fun(world: any) Optional function called once when the system is shutdown
 
 ---Helper to create a system descriptor
 ---@param descriptor SystemDescriptor
 ---@return SystemResult
 function System(descriptor)
     return {
-        Type = "System",
-        Stage = descriptor.Stage or UpdateStage.FrameStart, ---@type UpdateStage
-        Priority = descriptor.Priority or 0,
-        Execute = descriptor.Execute,
+        Type        = "System",
+        Stage       = descriptor.Stage or UpdateStage.FrameStart, ---@type UpdateStage
+        Priority    = descriptor.Priority or 0,
+        Init        = descriptor.Init,
+        Execute     = descriptor.Execute,
+        Shutdown    = descriptor.Shutdown,
     }
 end
-
----@class EventBindDescriptor
----@field Event? Event to bind to
----@field Handler fun(EventData: any) Function called when events are triggered
-
----@class EventBindResult
----@field Type string The type identifier (ScriptType.EventBind)
----@field Event? Event to bind to
----@field Handler fun(EventData: any) Function called when events are triggered
-
----Helper to create an event binding descriptor
----@param descriptor EventBindDescriptor
----@return EventBindResult
-function EventBind(descriptor)
-    return 
-    {
-        Type = "EventBind",
-        Event = descriptor.Event or {},
-        Handler = descriptor.Handler,
-    }
-end
-
----@class ComponentDescriptor
----@field Name string Name of the component
----@field Fields? table<string, any> Default field values for the component
----@field OnCreate? fun(component: any, entity: any) Called when component is created
----@field OnDestroy? fun(component: any, entity: any) Called when component is destroyed
-
----@class ComponentResult
----@field Type string The type identifier (ScriptType.Component)
----@field Name string Name of the component
----@field Fields table<string, any> Default field values for the component
----@field OnCreate? fun(component: any, entity: any) Called when component is created
----@field OnDestroy? fun(component: any, entity: any) Called when component is destroyed
-
----Helper to create a component descriptor
----@param descriptor ComponentDescriptor
----@return ComponentResult
-function Component(descriptor)
-    return {
-        Type = "Component",
-        Name = descriptor.Name,
-        Fields = descriptor.Fields or {},
-        OnCreate = descriptor.OnCreate,
-        OnDestroy = descriptor.OnDestroy
-    }
-end
-
----@class CommandParameter
----@field name string Parameter name
----@field type string Parameter type ("string", "number", "boolean", etc.)
----@field description string Parameter description
-
----@class CommandDescriptor
----@field Name string Name of the command
----@field Description? string Description of what the command does
----@field Parameters? CommandParameter[] List of command parameters
----@field Execute fun(params: table<string, any>) Function called when command is executed
-
----@class CommandResult
----@field Type string The type identifier (ScriptType.Command)
----@field Name string Name of the command
----@field Description string Description of what the command does
----@field Parameters CommandParameter[] List of command parameters
----@field Execute fun(params: table<string, any>) Function called when command is executed
-
----Helper to create a command descriptor
----@param descriptor CommandDescriptor
----@return CommandResult
-function Command(descriptor)
-    return {
-        Type = "Command",
-        Name = descriptor.Name,
-        Description = descriptor.Description or "",
-        Parameters = descriptor.Parameters or {},
-        Execute = descriptor.Execute
-    }
-end
-
 
 
 ---@class Metadata

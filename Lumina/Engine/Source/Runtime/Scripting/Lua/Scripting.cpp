@@ -179,18 +179,17 @@ namespace Lumina::Scripting
         {
             sol::state_view lua(Descriptor.lua_state());
             
-            sol::table result = lua.create_table_with(
-                "Type", "System",
-                "Name", Descriptor.get_or("Name", std::string("UnnamedSystem")),
-                "Stage", Descriptor.get_or("Stage", 0),
-                "Priority", Descriptor.get_or("Priority", 0)
-            );
-            
-            result["Execute"] = Descriptor["Execute"];
-            result["Query"] = Descriptor.get_or("Query", lua.create_table());
-            
-            return result;
+            return lua.create_table_with(
+                "Type",     "System",
+                "Name",     Descriptor.get_or("Name", std::string("UnnamedSystem")),
+                "Stage",    Descriptor.get_or("Stage", 0),
+                "Priority", Descriptor.get_or("Priority", 0),
+                "Init",     Descriptor["Init"],
+                "Execute",  Descriptor["Execute"],
+                "Shutdown", Descriptor["Shutdown"],
+                "Query",    Descriptor.get_or("Query", lua.create_table()));
         });
+        
 
         State.set_function("Metadata", [](const sol::table& Descriptor)
         {

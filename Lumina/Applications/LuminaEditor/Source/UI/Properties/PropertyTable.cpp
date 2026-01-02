@@ -14,20 +14,20 @@
 namespace Lumina
 {
     
-    static FPropertyRow* CreatePropertyRow(const TSharedPtr<FPropertyHandle>& InPropHandle, FPropertyRow* InParentRow, const FPropertyChangedEventCallbacks& InCallbacks)
+    static TUniquePtr<FPropertyRow> CreatePropertyRow(const TSharedPtr<FPropertyHandle>& InPropHandle, FPropertyRow* InParentRow, const FPropertyChangedEventCallbacks& InCallbacks)
     {
-        FPropertyRow* NewRow = nullptr;
+        TUniquePtr<FPropertyRow> NewRow;
         if (InPropHandle->Property->GetType() == EPropertyTypeFlags::Vector)
         {
-            NewRow = Memory::New<FArrayPropertyRow>(InPropHandle, InParentRow, InCallbacks);
+            NewRow = MakeUniquePtr<FArrayPropertyRow>(InPropHandle, InParentRow, InCallbacks);
         }
         else if (InPropHandle->Property->GetType() == EPropertyTypeFlags::Struct)
         {
-            NewRow = Memory::New<FStructPropertyRow>(InPropHandle, InParentRow, InCallbacks);
+            NewRow = MakeUniquePtr<FStructPropertyRow>(InPropHandle, InParentRow, InCallbacks);
         }
         else
         {
-            NewRow = Memory::New<FPropertyPropertyRow>(InPropHandle, InParentRow, InCallbacks);
+            NewRow = MakeUniquePtr<FPropertyPropertyRow>(InPropHandle, InParentRow, InCallbacks);
         }
 
         return NewRow;
@@ -39,36 +39,15 @@ namespace Lumina
         , ParentRow(InParentRow)
     {
     }
-
-    FPropertyRow::~FPropertyRow()
-    {
-        for (FPropertyRow* Row : Children)
-        {
-            Memory::Delete(Row);
-        }
-
-        Children.clear();
-    }
-
-    void FPropertyRow::AddChild(FPropertyRow* InChild)
-    {
-        Children.push_back(InChild);
-    }
-
+    
     void FPropertyRow::DestroyChildren()
     {
-        for (FPropertyRow* Row : Children)
-        {
-            Row->DestroyChildren();
-            Memory::Delete(Row);    
-        }
-        
         Children.clear();
     }
 
     void FPropertyRow::UpdateRow()
     {
-        for (FPropertyRow* Child : Children)
+        for (const TUniquePtr<FPropertyRow>& Child : Children)
         {
             Child->UpdateRow();
         }
@@ -124,7 +103,7 @@ namespace Lumina
         {
             ImGui::BeginDisabled(IsReadOnly());
             const float ChildHeaderOffset = Offset + 8;
-            for (FPropertyRow* Row : Children)
+            for (TUniquePtr<FPropertyRow>& Row : Children)
             {
                 Row->DrawRow(ChildHeaderOffset, bReadOnly);
             }
@@ -241,16 +220,16 @@ namespace Lumina
             {
                 if (Callbacks.PreChangeCallback)
                 {
-                    //FPropertyChangedEvent Event(Callbacks.OwnerStruct, PropertyHandle->Property, PropertyHandle->Property->Name);
-                    //Callbacks.PreChangeCallback(Event);
+                    FPropertyChangedEvent Event{Callbacks.Type, PropertyHandle->Property, PropertyHandle->Property->Name};
+                    Callbacks.PreChangeCallback(Move(Event));
                 }
                 
                 Customization->UpdatePropertyValue(PropertyHandle);
 
                 if (Callbacks.PostChangeCallback)
                 {
-                    //FPropertyChangedEvent Event(Callbacks.OwnerStruct, PropertyHandle->Property, PropertyHandle->Property->Name);
-                    //Callbacks.PostChangeCallback(Event);
+                    FPropertyChangedEvent Event{Callbacks.Type, PropertyHandle->Property, PropertyHandle->Property->Name};
+                    Callbacks.PostChangeCallback(Move(Event));
                 }
             }
             break;
@@ -377,9 +356,10 @@ namespace Lumina
         for (SIZE_T i = 0; i < ElementCount; ++i)
         {
             TSharedPtr<FPropertyHandle> ElementPropHandle = MakeSharedPtr<FPropertyHandle>(ArrayProperty->GetAt(ContainerPtr, i), ArrayProperty->GetInternalProperty(), 0);
-            FPropertyRow* NewRow = CreatePropertyRow(ElementPropHandle, this, Callbacks);
+            TUniquePtr<FPropertyRow> NewRow = CreatePropertyRow(ElementPropHandle, this, Callbacks);
             NewRow->SetIsArrayElement(true);
-            Children.push_back(NewRow);
+            
+            Children.push_back(Move(NewRow));
         }
     }
 
@@ -428,15 +408,6 @@ namespace Lumina
         }
     }
 
-    FStructPropertyRow::~FStructPropertyRow()
-    {
-        if (PropertyTable)
-        {
-            Memory::Delete(PropertyTable);
-            PropertyTable = nullptr;
-        }
-    }
-
     void FStructPropertyRow::Update()
     {
         switch (ChangeOp)
@@ -447,16 +418,16 @@ namespace Lumina
             {
                 if (Callbacks.PreChangeCallback)
                 {
-                    //FPropertyChangedEvent Event(Callbacks.OwnerStruct, PropertyHandle->Property, PropertyHandle->Property->Name);
-                    //Callbacks.PreChangeCallback(Event);
+                    FPropertyChangedEvent Event{Callbacks.Type, PropertyHandle->Property, PropertyHandle->Property->Name};
+                    Callbacks.PreChangeCallback(Move(Event));
                 }
                 
                 Customization->UpdatePropertyValue(PropertyHandle);
 
                 if (Callbacks.PostChangeCallback)
                 {
-                    //FPropertyChangedEvent Event(Callbacks.OwnerStruct, PropertyHandle->Property, PropertyHandle->Property->Name);
-                    //Callbacks.PostChangeCallback(Event);
+                    FPropertyChangedEvent Event{Callbacks.Type, PropertyHandle->Property, PropertyHandle->Property->Name};
+                    Callbacks.PostChangeCallback(Move(Event));
                 }
             }
             break;
@@ -499,13 +470,7 @@ namespace Lumina
 
     void FStructPropertyRow::RebuildChildren()
     {
-        if (PropertyTable)
-        {
-            Memory::Delete(PropertyTable);
-            PropertyTable = nullptr;
-        }
-        
-        PropertyTable = Memory::New<FPropertyTable>(PropertyHandle->Property->GetValuePtr<void>(PropertyHandle->ContainerPtr), StructProperty->GetStruct());
+        PropertyTable = MakeUniquePtr<FPropertyTable>(PropertyHandle->Property->GetValuePtr<void>(PropertyHandle->ContainerPtr), StructProperty->GetStruct());
         PropertyTable->RebuildTree();
     }
 
@@ -518,8 +483,8 @@ namespace Lumina
 
     void FCategoryPropertyRow::AddProperty(const TSharedPtr<FPropertyHandle>& InPropHandle)
     {
-        FPropertyRow* NewRow = CreatePropertyRow(InPropHandle, this, Callbacks);
-        Children.push_back(NewRow);
+        TUniquePtr<FPropertyRow> NewRow = CreatePropertyRow(InPropHandle, this, Callbacks);
+        Children.push_back(Move(NewRow));
     }
 
     void FCategoryPropertyRow::DrawHeader(float Offset)
@@ -542,29 +507,11 @@ namespace Lumina
         , Struct(InType)
         , Object(InObject)
     {
-        ChangeEventCallbacks.OwnerStruct = Struct;
-    }
-
-    FPropertyTable::~FPropertyTable()
-    {
-        for (FCategoryPropertyRow* Row : Categories)
-        {
-            Memory::Delete(Row);
-        }
-
-        Categories.clear();
-        CategoryMap.clear();
+        ChangeEventCallbacks.Type = InType;
     }
 
     void FPropertyTable::RebuildTree()
     {
-        for (FCategoryPropertyRow* Category : Categories)
-        {
-            Category->DestroyChildren();
-            Memory::Delete(Category);
-        }
-        
-        Categories.clear();
         CategoryMap.clear();
 
         if (Struct == nullptr || Object == nullptr)
@@ -610,10 +557,10 @@ namespace Lumina
             ImGui::TableSetupColumn("##Header", ImGuiTableColumnFlags_WidthFixed, 145);
             ImGui::TableSetupColumn("##Editor", ImGuiTableColumnFlags_WidthStretch);
             
-            for (FCategoryPropertyRow* Category : Categories)
+            for (auto& [Name, Row] : CategoryMap)
             {
-                Category->UpdateRow();
-                Category->DrawRow(0.0f, bReadOnly);
+                Row->UpdateRow();
+                Row->DrawRow(0.0f, bReadOnly);
             }
 
             ImGui::EndTable();
@@ -627,7 +574,6 @@ namespace Lumina
     {
         Object = InObject;
         Struct = StructType;
-        ChangeEventCallbacks.OwnerStruct = StructType;
 
         RebuildTree();
     }
@@ -646,11 +592,10 @@ namespace Lumina
     {
         if (CategoryMap.find(CategoryName) == CategoryMap.end())
         {
-            FCategoryPropertyRow* NewRow = Memory::New<FCategoryPropertyRow>(Object, CategoryName, ChangeEventCallbacks);
-            CategoryMap.emplace(CategoryName, NewRow);
-            Categories.push_back(NewRow);
+            auto NewRow = MakeUniquePtr<FCategoryPropertyRow>(Object, CategoryName, ChangeEventCallbacks);
+            CategoryMap.emplace(CategoryName, Move(NewRow));
         }
         
-        return CategoryMap[CategoryName];
+        return CategoryMap[CategoryName].get();
     }
 }

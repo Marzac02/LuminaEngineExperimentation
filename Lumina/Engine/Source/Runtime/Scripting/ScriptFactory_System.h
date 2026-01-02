@@ -11,8 +11,6 @@ namespace Lumina
         GENERATED_BODY()
         
     public:
-
         entt::entity ProcessScript(FName Name, const sol::table& ScriptTable, entt::registry& ScriptRegistry) const override;
-        
     };
 }

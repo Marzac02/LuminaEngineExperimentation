@@ -78,7 +78,13 @@ namespace Lumina
         }
     }
 
-
+    FFixedString CStruct::MakeDisplayName() const
+    {
+        FFixedString DisplayName = GetName().c_str();
+        DisplayName.erase(0, 1);
+        return DisplayName;
+    }
+    
     FProperty* CStruct::GetProperty(const FName& Name)
     {
         FProperty* Current = LinkedProperty;

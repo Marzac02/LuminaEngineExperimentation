@@ -169,6 +169,8 @@ namespace Lumina
         
         void Lua_DispatchEvent(const sol::object& Event);
         entt::meta_any Lua_ConnectEvent(const sol::object& Event, const sol::function& Listener);
+        entt::meta_any Lua_OnConstruct(const sol::object& Event, const sol::function& Listener);
+
         bool Lua_HasAllOf(entt::entity Entity, const sol::variadic_args& Args);
         bool Lua_HasAnyOf(entt::entity Entity, const sol::variadic_args& Args);
         bool Lua_Has(entt::entity Entity, const sol::object& Type);

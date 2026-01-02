@@ -41,5 +41,5 @@ namespace Lumina::Math
         return dist(rng);
     }
 
-    LUMINA_API glm::quat FindLookAtRotation(const glm::vec3& From, const glm::vec3& To);
+    LUMINA_API glm::quat FindLookAtRotation(const glm::vec3& Target, const glm::vec3& From);
 }

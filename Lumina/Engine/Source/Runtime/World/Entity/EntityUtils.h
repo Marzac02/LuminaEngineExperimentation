@@ -1,4 +1,5 @@
 ﻿#pragma once
+#include "Components/RelationshipComponent.h"
 #include "Core/Serialization/Archiver.h"
 #include "Registry/EntityRegistry.h"
 
@@ -6,8 +7,20 @@ namespace Lumina::ECS::Utils
 {
     LUMINA_API bool SerializeEntity(FArchive& Ar, FEntityRegistry& Registry, entt::entity& Entity);
     LUMINA_API bool SerializeRegistry(FArchive& Ar, FEntityRegistry& Registry);
-    LUMINA_API bool EntityHasTag(FName Tag, FEntityRegistry& Registry, entt::entity Entity);
-    
+    LUMINA_API bool EntityHasTag(const FName& Tag, FEntityRegistry& Registry, entt::entity Entity);
+    LUMINA_API void ReparentEntity(FEntityRegistry& Registry, entt::entity Child, entt::entity Parent);
+    LUMINA_API void DestroyEntityHierarchy(FEntityRegistry& Registry, entt::entity Entity);
+    LUMINA_API void DetachImmediateChildren(FEntityRegistry& Registry, entt::entity Entity);
+    LUMINA_API void RemoveFromParent(FEntityRegistry& Registry, entt::entity Child);
+    LUMINA_API void AddToParent(FEntityRegistry& Registry, entt::entity Child, entt::entity Parent);
+    LUMINA_API bool IsDescendantOf(FEntityRegistry& Registry, entt::entity Potential, entt::entity Ancestor);
+    LUMINA_API bool IsChild(FEntityRegistry& Registry, entt::entity Entity);
+    LUMINA_API bool IsParent(FEntityRegistry& Registry, entt::entity Entity);
+    LUMINA_API size_t GetChildCount(FEntityRegistry& Registry, entt::entity Parent);
+    LUMINA_API size_t GetSiblingIndex(FEntityRegistry& Registry, entt::entity Entity);
+    LUMINA_API void CollectDescendants(FEntityRegistry& Registry, entt::entity Entity, TVector<entt::entity>& OutDescendants);
+    LUMINA_API void CollectChildren(FEntityRegistry& Registry, entt::entity Entity, TVector<entt::entity>& OutChildren);
+
     template<typename TFunc>
     requires(eastl::is_invocable_v<TFunc, void*, entt::basic_sparse_set<>&, entt::meta_type>)
     void ForEachComponent(TFunc&& Func, FEntityRegistry& Registry, entt::entity Entity)
@@ -21,6 +34,53 @@ namespace Lumina::ECS::Utils
             }
         }
     }
+    
+    template<typename TFunc>
+    void ForEachChild(entt::registry& Registry, entt::entity Parent, TFunc&& Func)
+    {
+        FRelationshipComponent* ParentRelationship = Registry.try_get<FRelationshipComponent>(Parent);
+        if (!ParentRelationship || ParentRelationship->First == entt::null)
+        {
+            return;
+        }
+
+        entt::entity Current = ParentRelationship->First;
+        while (Current != entt::null)
+        {
+            entt::entity Next = entt::null;
+            if (FRelationshipComponent* CurrentRelationship = Registry.try_get<FRelationshipComponent>(Current))
+            {
+                Next = CurrentRelationship->Next;
+            }
+
+            eastl::invoke(Func, Current);
+
+            Current = Next;
+        }
+    }
+    
+    template<typename TFunc>
+    void ForEachDescendant(entt::registry& Registry, entt::entity Parent, TFunc&& Func)
+    {
+        ForEachChild(Registry, Parent, [&](entt::entity Child)
+        {
+            eastl::invoke(Func, Child);
+            ForEachDescendant(Registry, Child, Func);
+        });
+    }
+    
+    template<typename TFunc>
+    void ForEachAncestor(entt::registry& Registry, entt::entity Entity, TFunc&& Func)
+    {
+        FRelationshipComponent* Relationship = Registry.try_get<FRelationshipComponent>(Entity);
+        while (Relationship && Relationship->Parent != entt::null)
+        {
+            eastl::invoke(Func, Relationship->Parent);
+            Relationship = Registry.try_get<FRelationshipComponent>(Relationship->Parent);
+        }
+    }
+    
+    
     
     inline FArchive& operator << (FArchive& Ar, entt::entity& Entity)
     {

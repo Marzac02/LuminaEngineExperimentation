@@ -180,6 +180,11 @@ namespace Lumina
         ClearFlags(OF_Rooted);
     }
 
+    FFixedString CObjectBase::MakeDisplayName() const
+    {
+        return NamePrivate.c_str();
+    }
+
     void CObjectBase::AddObject()
     {
         InternalIndex = GObjectArray.AllocateObject(this).Index;

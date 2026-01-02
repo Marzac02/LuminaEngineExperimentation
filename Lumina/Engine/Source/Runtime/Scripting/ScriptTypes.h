@@ -54,6 +54,9 @@ namespace Lumina::Scripting
         int                     Stage;
         int                     Priority;
         TVector<entt::id_type>  Queries;
+        
+        sol::protected_function InitFunc;
         sol::protected_function ExecuteFunc;
+        sol::protected_function ShutdownFunc;
     };
 }

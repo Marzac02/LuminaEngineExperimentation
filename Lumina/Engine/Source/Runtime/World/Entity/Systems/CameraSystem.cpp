@@ -8,7 +8,7 @@
 namespace Lumina
 {
     
-    void CCameraSystem::RegisterEventListeners(FSystemContext& SystemContext)
+    void CCameraSystem::Init(FSystemContext& SystemContext)
     {
         SystemContext.GetRegistry().on_construct<SCameraComponent>().connect<&ThisClass::NewCameraConstructed>(this);
     }

@@ -10,6 +10,7 @@
 #include <Jolt/Physics/Collision/CollisionCollectorImpl.h>
 #include <Jolt/Physics/Collision/RayCast.h>
 #include <Jolt/Physics/Collision/ShapeCast.h>
+#include <Jolt/Physics/Collision/Shape/ScaledShape.h>
 #include <Jolt/Renderer/DebugRendererSimple.h>
 
 #include "JoltPhysics.h"
@@ -118,7 +119,7 @@ namespace Lumina::Physics
     void FJoltContactListener::GetFrictionAndRestitution(const JPH::Body& inBody, const JPH::SubShapeID& inSubShapeID, float& outFriction, float& outRestitution) const
     {
     }
-
+    
     FJoltPhysicsScene::FJoltPhysicsScene(CWorld* InWorld)
         : World(InWorld)
     {
@@ -132,25 +133,22 @@ namespace Lumina::Physics
         JoltSystem->SetPhysicsSettings(JoltSettings);
         
         entt::dispatcher& Dispatcher = World->GetEntityRegistry().ctx().get<entt::dispatcher&>();
-        
         ContactListener = MakeUniquePtr<FJoltContactListener>(Dispatcher, &JoltSystem->GetBodyLockInterfaceNoLock());
         JoltSystem->SetContactListener(ContactListener.get());
         
-        Dispatcher.sink<SImpulseEvent>().connect<&FJoltPhysicsScene::OnImpulseEvent>(this);
-        Dispatcher.sink<SForceEvent>().connect<&FJoltPhysicsScene::OnForceEvent>(this);
-        Dispatcher.sink<STorqueEvent>().connect<&FJoltPhysicsScene::OnTorqueEvent>(this);
-        Dispatcher.sink<SAngularImpulseEvent>().connect<&FJoltPhysicsScene::OnAngularImpulseEvent>(this);
-        Dispatcher.sink<SSetVelocityEvent>().connect<&FJoltPhysicsScene::OnSetVelocityEvent>(this);
-        Dispatcher.sink<SSetAngularVelocityEvent>().connect<&FJoltPhysicsScene::OnSetAngularVelocityEvent>(this);
-        Dispatcher.sink<SAddImpulseAtPositionEvent>().connect<&FJoltPhysicsScene::OnAddImpulseAtPositionEvent>(this);
-        Dispatcher.sink<SAddForceAtPositionEvent>().connect<&FJoltPhysicsScene::OnAddForceAtPositionEvent>(this);
-        Dispatcher.sink<SSetGravityFactorEvent>().connect<&FJoltPhysicsScene::OnSetGravityFactorEvent>(this);
+        FEntityRegistry& Registry = World->GetEntityRegistry();
+        
+        entt::sigh_helper(Registry)
+            .with<SSphereColliderComponent>()
+                .on_construct<&entt::registry::get_or_emplace<SRigidBodyComponent>>()
+            .with<SBoxColliderComponent>()
+                .on_construct<&entt::registry::get_or_emplace<SRigidBodyComponent>>();
     }
 
     void FJoltPhysicsScene::PreUpdate()
     {
         entt::registry& Registry = World->GetEntityRegistry();
-
+        
         double DeltaTime = GEngine->GetUpdateContext().GetDeltaTime();
 
         const JPH::BodyLockInterfaceNoLock& LockInterface = JoltSystem->GetBodyLockInterfaceNoLock();
@@ -361,7 +359,7 @@ namespace Lumina::Physics
         
         FJoltPhysicsContext::GetDebugRenderer()->NextFrame();
     }
-
+    
     void FJoltPhysicsScene::OnWorldSimulate()
     {
         entt::registry& Registry = World->GetEntityRegistry();
@@ -384,8 +382,20 @@ namespace Lumina::Physics
         
         Registry.on_construct<SCharacterPhysicsComponent>().connect<&FJoltPhysicsScene::OnCharacterComponentConstructed>(this);
         
+        Registry.on_update<SRigidBodyComponent>().connect<&FJoltPhysicsScene::OnRigidBodyComponentUpdated>(this);
         Registry.on_construct<SRigidBodyComponent>().connect<&FJoltPhysicsScene::OnRigidBodyComponentConstructed>(this);
         Registry.on_destroy<SRigidBodyComponent>().connect<&FJoltPhysicsScene::OnRigidBodyComponentDestroyed>(this);
+        
+        entt::dispatcher& Dispatcher = World->GetEntityRegistry().ctx().get<entt::dispatcher&>();
+        Dispatcher.sink<SImpulseEvent>().connect<&FJoltPhysicsScene::OnImpulseEvent>(this);
+        Dispatcher.sink<SForceEvent>().connect<&FJoltPhysicsScene::OnForceEvent>(this);
+        Dispatcher.sink<STorqueEvent>().connect<&FJoltPhysicsScene::OnTorqueEvent>(this);
+        Dispatcher.sink<SAngularImpulseEvent>().connect<&FJoltPhysicsScene::OnAngularImpulseEvent>(this);
+        Dispatcher.sink<SSetVelocityEvent>().connect<&FJoltPhysicsScene::OnSetVelocityEvent>(this);
+        Dispatcher.sink<SSetAngularVelocityEvent>().connect<&FJoltPhysicsScene::OnSetAngularVelocityEvent>(this);
+        Dispatcher.sink<SAddImpulseAtPositionEvent>().connect<&FJoltPhysicsScene::OnAddImpulseAtPositionEvent>(this);
+        Dispatcher.sink<SAddForceAtPositionEvent>().connect<&FJoltPhysicsScene::OnAddForceAtPositionEvent>(this);
+        Dispatcher.sink<SSetGravityFactorEvent>().connect<&FJoltPhysicsScene::OnSetGravityFactorEvent>(this);
     }
 
     void FJoltPhysicsScene::OnWorldStopSimulate()
@@ -433,7 +443,6 @@ namespace Lumina::Physics
         View.each([&](entt::entity EntityID, const SRigidBodyComponent& BodyComponent, STransformComponent& TransformComponent)
         {
             const JPH::Body* Body = LockInterface.TryGetBody(JPH::BodyID(BodyComponent.BodyID));
-            
             if (Body == nullptr || !Body->IsActive())
             {
                 return;
@@ -700,29 +709,34 @@ namespace Lumina::Physics
         CharacterComponent.Character = Character;
     }
 
-    void FJoltPhysicsScene::OnRigidBodyComponentConstructed(entt::registry& Registry, entt::entity EntityID)
+    void FJoltPhysicsScene::OnRigidBodyComponentUpdated(entt::registry& Registry, entt::entity Entity)
     {
-        if (!Registry.any_of<SSphereColliderComponent, SBoxColliderComponent>(EntityID))
+        
+    }
+
+    void FJoltPhysicsScene::OnRigidBodyComponentConstructed(entt::registry& Registry, entt::entity Entity)
+    {
+        if (!Registry.any_of<SSphereColliderComponent, SBoxColliderComponent>(Entity))
         {
             LOG_ERROR("Entity {} attempted to construct a rigid body without a collider!");
             return;
         }
 
-        SRigidBodyComponent& RigidBodyComponent = Registry.get<SRigidBodyComponent>(EntityID);
-        STransformComponent& TransformComponent = Registry.get<STransformComponent>(EntityID);
+        SRigidBodyComponent& RigidBodyComponent = Registry.get<SRigidBodyComponent>(Entity);
+        STransformComponent& TransformComponent = Registry.get<STransformComponent>(Entity);
         
         JPH::ShapeRefC Shape;
 
-        if (Registry.all_of<SBoxColliderComponent>(EntityID))
+        if (Registry.all_of<SBoxColliderComponent>(Entity))
         {
-            SBoxColliderComponent& BC = Registry.get<SBoxColliderComponent>(EntityID);
+            const SBoxColliderComponent& BC = Registry.get<SBoxColliderComponent>(Entity);
             JPH::BoxShapeSettings Settings(JoltUtils::ToJPHVec3(BC.HalfExtent * TransformComponent.GetScale()));
             Settings.SetEmbedded();
             Shape = Settings.Create().Get();
         }
-        else if (Registry.all_of<SSphereColliderComponent>(EntityID))
+        else if (Registry.all_of<SSphereColliderComponent>(Entity))
         {
-            SSphereColliderComponent& SC = Registry.get<SSphereColliderComponent>(EntityID);
+            const SSphereColliderComponent& SC = Registry.get<SSphereColliderComponent>(Entity);
             JPH::SphereShapeSettings Settings(SC.Radius * TransformComponent.MaxScale());
             Settings.SetEmbedded();
             Shape = Settings.Create().Get();
@@ -749,14 +763,14 @@ namespace Lumina::Physics
         JPH::BodyInterface& BodyInterface = JoltSystem->GetBodyInterface();
         
         JPH::Body* Body = BodyInterface.CreateBody(Settings);
-        Body->SetUserData(static_cast<uint64>(EntityID));
+        Body->SetUserData(static_cast<uint64>(Entity));
         BodyInterface.AddBody(Body->GetID(), JPH::EActivation::Activate);
         RigidBodyComponent.BodyID = Body->GetID().GetIndexAndSequenceNumber();
     }
 
-    void FJoltPhysicsScene::OnRigidBodyComponentDestroyed(entt::registry& Registry, entt::entity EntityID)
+    void FJoltPhysicsScene::OnRigidBodyComponentDestroyed(entt::registry& Registry, entt::entity Entity)
     {
-        SRigidBodyComponent& RigidBodyComponent = Registry.get<SRigidBodyComponent>(EntityID);
+        SRigidBodyComponent& RigidBodyComponent = Registry.get<SRigidBodyComponent>(Entity);
         JPH::BodyInterface& BodyInterface = JoltSystem->GetBodyInterface();
         JPH::BodyID BodyID(RigidBodyComponent.BodyID);
         
@@ -764,11 +778,11 @@ namespace Lumina::Physics
         BodyInterface.DestroyBody(BodyID);
     }
 
-    void FJoltPhysicsScene::OnColliderComponentAdded(entt::registry& Registry, entt::entity EntityID)
+    void FJoltPhysicsScene::OnColliderComponentAdded(entt::registry& Registry, entt::entity Entity)
     {
     }
 
-    void FJoltPhysicsScene::OnColliderComponentRemoved(entt::registry& Registry, entt::entity EntityID)
+    void FJoltPhysicsScene::OnColliderComponentRemoved(entt::registry& Registry, entt::entity Entity)
     {
     }
 

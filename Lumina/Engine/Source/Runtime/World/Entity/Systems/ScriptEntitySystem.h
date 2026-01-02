@@ -25,8 +25,9 @@ namespace Lumina
         
     public:
 
-        void RegisterEventListeners(FSystemContext& SystemContext) override;
+        void Init(FSystemContext& SystemContext) override;
         void Update(FSystemContext& SystemContext) override;
+        void Shutdown(FSystemContext& SystemContext) override;
         
     };
 }

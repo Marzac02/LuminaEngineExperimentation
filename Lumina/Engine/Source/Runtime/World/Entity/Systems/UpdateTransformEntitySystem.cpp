@@ -4,6 +4,7 @@
 #include <execution>
 #include "glm/gtx/string_cast.hpp"
 #include "TaskSystem/TaskSystem.h"
+#include "World/Entity/EntityUtils.h"
 #include "World/Entity/Components/DirtyComponent.h"
 #include "World/Entity/Components/RelationshipComponent.h"
 #include "World/Entity/Components/Transformcomponent.h"
@@ -29,15 +30,14 @@ namespace Lumina
             {
                 entt::entity DirtyEntity = DirtyEntities[Index];
                 
-                // First, update the dirty entity itself
                 auto& DirtyTransform = RelationshipGroup.get<STransformComponent>(DirtyEntity);
                 auto& DirtyRelationship = RelationshipGroup.get<FRelationshipComponent>(DirtyEntity);
                 
-                if (DirtyRelationship.Parent != entt::null)
+                if (DirtyRelationship.Parent != entt::null && SystemContext.IsValidEntity(DirtyRelationship.Parent))
                 {
                     glm::mat4 ParentWorldTransform         = SystemContext.Get<STransformComponent>(DirtyRelationship.Parent).WorldTransform.GetMatrix();
                     glm::mat4 LocalTransform               = DirtyTransform.Transform.GetMatrix();
-                    DirtyTransform.WorldTransform           = FTransform(ParentWorldTransform * LocalTransform);
+                    DirtyTransform.WorldTransform          = FTransform(ParentWorldTransform * LocalTransform);
                 }
                 else
                 {
@@ -46,18 +46,13 @@ namespace Lumina
                 
                 DirtyTransform.CachedMatrix = DirtyTransform.WorldTransform.GetMatrix();
                 
-                // Recursively update only the children
                 TFunction<void(entt::entity)> UpdateChildrenRecursive;
                 UpdateChildrenRecursive = [&](entt::entity ParentEntity)
                 {
-                    auto& ParentRelationship = SystemContext.Get<FRelationshipComponent>(ParentEntity);
-                    
-                    for (uint8 i = 0; i < ParentRelationship.NumChildren; ++i)
+                    ECS::Utils::ForEachChild(SystemContext.GetRegistry(), ParentEntity, [&](entt::entity Child)
                     {
-                        entt::entity ChildEntity = ParentRelationship.Children[i];
-                        
                         auto& ParentTransform = SystemContext.Get<STransformComponent>(ParentEntity);
-                        auto& ChildTransform = SystemContext.Get<STransformComponent>(ChildEntity);
+                        auto& ChildTransform = SystemContext.Get<STransformComponent>(Child);
 
                         glm::mat4 ParentWorldTransform = ParentTransform.WorldTransform.GetMatrix();
                         glm::mat4 ChildLocalTransform = ChildTransform.Transform.GetMatrix();
@@ -65,15 +60,13 @@ namespace Lumina
                         ChildTransform.WorldTransform = FTransform(ParentWorldTransform * ChildLocalTransform);
                         ChildTransform.CachedMatrix = ChildTransform.WorldTransform.GetMatrix();
                         
-                        UpdateChildrenRecursive(ChildEntity);
-                    }
+                        UpdateChildrenRecursive(Child);
+                    });
                 };
                 
-                // Update all children of the dirty entity
                 UpdateChildrenRecursive(DirtyEntity);
             };
             
-            // Only schedule tasks if there is a significant amount of transform updates required.
             if (DirtyEntities.size() > 1000)
             {
                 Task::ParallelFor((uint32)DirtyEntities.size(), RelationshipTransformCallable);

@@ -80,6 +80,8 @@ namespace Lumina
 
         RenderScene->Init();
         
+        ProcessAnyNewlyLoadedScripts();
+        
         TVector<TObjectPtr<CEntitySystem>> Systems;
         CEntitySystemRegistry::Get().GetRegisteredSystems(Systems);
         for (CEntitySystem* System : Systems)
@@ -93,8 +95,6 @@ namespace Lumina
         EntityRegistry.on_construct<SSineWaveMovementComponent>().connect<&ThisClass::OnSineWaveMovementComponentCreated>(this);
         EntityRegistry.on_destroy<FRelationshipComponent>().connect<&ThisClass::OnRelationshipComponentDestroyed>(this);
         SystemContext.EventSink<FSwitchActiveCameraEvent>().connect<&ThisClass::OnChangeCameraEvent>(this);
-        
-        ProcessAnyNewlyLoadedScripts();
     }
     
     void CWorld::Update(const FUpdateContext& Context)
@@ -123,6 +123,8 @@ namespace Lumina
         {
             System->Update(SystemContext);
         }
+        
+        UpdateScripts();
     }
 
     void CWorld::Paused(const FUpdateContext& Context)
@@ -141,6 +143,8 @@ namespace Lumina
         {
             System->Update(SystemContext);
         }
+        
+        UpdateScripts();
     }
 
     void CWorld::Render(FRenderGraph& RenderGraph)
@@ -153,8 +157,17 @@ namespace Lumina
         RenderScene->RenderScene(RenderGraph, ViewVolume);
     }
 
+    void CWorld::UpdateScripts()
+    {
+    }
+
     void CWorld::ShutdownWorld()
     {
+        ForEachUniqueSystem([&](CEntitySystem* System)
+        {
+           System->Shutdown(SystemContext); 
+        });
+        
         Scripting::FScriptingContext::Get().OnScriptLoaded.Remove(ScriptUpdatedDelegateHandle);
 
         RenderScene->Shutdown();
@@ -168,7 +181,7 @@ namespace Lumina
     {
         Assert(NewSystem != nullptr)
 
-        NewSystem->RegisterEventListeners(SystemContext);
+        NewSystem->Init(SystemContext);
         
         bool StagesModified[(uint8)EUpdateStage::Max] = {};
 
@@ -247,78 +260,6 @@ namespace Lumina
         EntityRegistry.get<SNameComponent>(To).Name = NewName;
     }
 
-    void CWorld::ReparentEntity(entt::entity Child, entt::entity Parent)
-    {
-        if (Child == Parent)
-        {
-            LOG_ERROR("Cannot parent an entity to itself!");
-            return;
-        }
-
-        if (Child == entt::null || Parent == entt::null)
-        {
-            LOG_ERROR("Cannot parent an entity from/to a null!");
-            return;
-        }
-
-        
-        glm::mat4 ChildWorldMatrix = EntityRegistry.get<STransformComponent>(Child).WorldTransform.GetMatrix();
-    
-        glm::mat4 ParentWorldMatrix = glm::mat4(1.0f);
-        if (Parent != entt::null)
-        {
-            ParentWorldMatrix = EntityRegistry.get<STransformComponent>(Parent).WorldTransform.GetMatrix();
-        }
-    
-        glm::mat4 NewLocalMatrix = glm::inverse(ParentWorldMatrix) * ChildWorldMatrix;
-    
-        glm::vec3 Translation, Scale, Skew;
-        glm::quat Rotation;
-        glm::vec4 Perspective;
-    
-        glm::decompose(NewLocalMatrix, Scale, Rotation, Translation, Skew, Perspective);
-    
-        FRelationshipComponent& ParentRelationshipComponent = EntityRegistry.get_or_emplace<FRelationshipComponent>(Parent);
-        FRelationshipComponent& ChildRelationshipComponent = EntityRegistry.get_or_emplace<FRelationshipComponent>(Child);
-    
-        if (ParentRelationshipComponent.NumChildren >= FRelationshipComponent::MaxChildren)
-        {
-            LOG_ERROR("Parent has reached its max children");
-            return;
-        }
-    
-        if (ChildRelationshipComponent.Parent != entt::null)
-        {
-            if (FRelationshipComponent* ToRemove = EntityRegistry.try_get<FRelationshipComponent>(ChildRelationshipComponent.Parent))
-            {
-                for (SIZE_T i = 0; i < ToRemove->NumChildren; ++i)
-                {
-                    if (ToRemove->Children[i] == Child)
-                    {
-                        for (SIZE_T j = i; j < ToRemove->NumChildren - 1; ++j)
-                        {
-                            ToRemove->Children[j] = ToRemove->Children[j + 1];
-                        }
-    
-                        --ToRemove->NumChildren;
-                        break;
-                    }
-                }
-            }
-        }
-    
-        ParentRelationshipComponent.Children[ParentRelationshipComponent.NumChildren++] = Child;
-        ChildRelationshipComponent.Parent = Parent;
-
-        
-        FTransform NewTransform;
-        NewTransform.Location = Translation;
-        NewTransform.Rotation = Rotation;
-        NewTransform.Scale = Scale;
-        
-        SetEntityTransform(Child, NewTransform);
-    }
-
     void CWorld::DestroyEntity(entt::entity Entity)
     {
         EntityRegistry.destroy(Entity);
@@ -339,16 +280,6 @@ namespace Lumina
         if (EntityRegistry.all_of<SCameraComponent>(InEntity))
         {
             CameraManager->SetActiveCamera(InEntity);
-            return;
-        }
-
-        if (FRelationshipComponent* Relationship = EntityRegistry.try_get<FRelationshipComponent>(InEntity))
-        {
-            for (uint32 i = 0; i < Relationship->NumChildren; ++i)
-            {
-                entt::entity Child = Relationship->Children[i];
-                SetActiveCamera(Child);
-            }
         }
     }
 
@@ -410,33 +341,8 @@ namespace Lumina
 
     void CWorld::OnRelationshipComponentDestroyed(entt::registry& Registry, entt::entity Entity)
     {
-        FRelationshipComponent& ThisRelationship = Registry.get<FRelationshipComponent>(Entity);
-
-        if (ThisRelationship.Parent != entt::null)
-        {
-            FRelationshipComponent& ParentRelationship = Registry.get<FRelationshipComponent>(ThisRelationship.Parent);
-            
-            for (SIZE_T i = 0; i < ParentRelationship.NumChildren; ++i)
-            {
-                if (ParentRelationship.Children[i] == Entity)
-                {
-                    for (SIZE_T j = i; j < ParentRelationship.NumChildren - 1; ++j)
-                    {
-                        ParentRelationship.Children[j] = ParentRelationship.Children[j + 1];
-                    }
-    
-                    --ParentRelationship.NumChildren;
-                    break;
-                }
-            }
-        }
-
-        for (size_t i = 0; i < ThisRelationship.NumChildren; ++i)
-        {
-            entt::entity ChildEntity = ThisRelationship.Children[i];
-            FRelationshipComponent& ChildRelationship = Registry.get<FRelationshipComponent>(ChildEntity);
-            ChildRelationship.Parent = entt::null;
-        }
+        ECS::Utils::RemoveFromParent(Registry, Entity);
+        ECS::Utils::DestroyEntityHierarchy(Registry, Entity);
     }
 
     void CWorld::OnSineWaveMovementComponentCreated(entt::registry& Registry, entt::entity Entity)
@@ -448,6 +354,7 @@ namespace Lumina
     void CWorld::ProcessAnyNewlyLoadedScripts()
     {
         using namespace Scripting;
+        using namespace entt::literals;
         
         auto View = EntityRegistry.view<FLuaScriptsContainerComponent>();
         View.each([&](FLuaScriptsContainerComponent& LuaContainerComponent)
@@ -456,7 +363,7 @@ namespace Lumina
             {
                 LuaContainerComponent.Systems[i].clear();
             }
-
+            
             FScriptingContext::Get().ForEachScript<FLuaSystemScriptEntry>([&](FLuaSystemScriptEntry& Script)
             {
                 LuaContainerComponent.Systems[Script.Stage].emplace_back(Script);
@@ -467,7 +374,9 @@ namespace Lumina
     void CWorld::DrawLine(const glm::vec3& Start, const glm::vec3& End, const glm::vec4& Color, float Thickness, float Duration)
     {
         FLineBatcherComponent& Batcher = GetOrCreateLineBatcher();
-        Batcher.DrawLine(Start, End, Color, Thickness, Duration);
+        
+        float ActualDuration = eastl::max<float>((float)GetWorldDeltaTime() + LE_KINDA_SORTA_SMALL_NUMBER, Duration);
+        Batcher.DrawLine(Start, End, Color, Thickness, ActualDuration);
     }
     
     TOptional<FRayResult> CWorld::CastRay(const FRayCastSettings& Settings)

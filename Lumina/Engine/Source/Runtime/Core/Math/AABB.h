@@ -27,6 +27,9 @@ namespace Lumina
         {}
 
         FUNCTION(Script)
+        FORCEINLINE float MaxScale() const { return glm::max(GetSize().x, glm::max(GetSize().y, GetSize().z)); }
+        
+        FUNCTION(Script)
         FORCEINLINE glm::vec3 GetSize() const { return Max - Min; }
         
         FUNCTION(Script)

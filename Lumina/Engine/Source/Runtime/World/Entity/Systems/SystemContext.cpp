@@ -40,6 +40,7 @@ namespace Lumina
             "View",                 &FSystemContext::Lua_View,
             "AllOf",                &FSystemContext::Lua_HasAllOf,
             "AnyOf",                &FSystemContext::Lua_HasAnyOf,
+            "OnConstruct",          &FSystemContext::Lua_OnConstruct,
             "ConnectEvent",         &FSystemContext::Lua_ConnectEvent,
             "DispatchEvent",        &FSystemContext::Lua_DispatchEvent,
             "Emplace",              &FSystemContext::Lua_Emplace,
@@ -289,6 +290,23 @@ namespace Lumina
         if (const entt::id_type EventID = ECS::DeduceType(Event))
         {
             return ECS::InvokeMetaFunc(EventID, "connect_listener_lua"_hs, entt::forward_as_meta(Dispatcher), Listener);
+        }
+        
+        return entt::meta_any{};
+    }
+
+    entt::meta_any FSystemContext::Lua_OnConstruct(const sol::object& Event, const sol::function& Listener)
+    {
+        using namespace entt::literals;
+        
+        if (!Listener.valid())
+        {
+            return entt::meta_any{};
+        }
+        
+        if (const entt::id_type EventID = ECS::DeduceType(Event))
+        {
+            return ECS::InvokeMetaFunc(EventID, "on_construct_lua"_hs, entt::forward_as_meta(Registry), Listener);
         }
         
         return entt::meta_any{};

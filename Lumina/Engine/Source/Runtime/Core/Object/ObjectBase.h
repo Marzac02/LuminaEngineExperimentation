@@ -64,6 +64,9 @@ namespace Lumina
         /** Removes the object from the root set. */
         LUMINA_API void RemoveFromRoot();
         
+        /** Strips away common CObject prefixes */
+        LUMINA_API virtual FFixedString MakeDisplayName() const;
+        
     private:
 
         LUMINA_API void AddObject();

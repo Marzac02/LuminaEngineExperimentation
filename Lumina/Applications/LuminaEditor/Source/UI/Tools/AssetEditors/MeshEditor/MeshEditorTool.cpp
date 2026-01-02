@@ -6,6 +6,7 @@
 #include "glm/gtx/string_cast.hpp"
 #include "Tools/UI/ImGui/ImGuiFonts.h"
 #include "Tools/UI/ImGui/ImGuiX.h"
+#include "World/Entity/Components/DirtyComponent.h"
 #include "world/entity/components/environmentcomponent.h"
 #include "World/Entity/Components/LightComponent.h"
 #include "World/Entity/Components/StaticMeshComponent.h"
@@ -178,9 +179,14 @@ namespace Lumina
         World->GetEntityRegistry().emplace<SDirectionalLightComponent>(DirectionalLightEntity);
         World->GetEntityRegistry().emplace<SEnvironmentComponent>(DirectionalLightEntity);
         
+        CStaticMesh* StaticMesh = Cast<CStaticMesh>(Asset.Get());
+
         MeshEntity = World->ConstructEntity("MeshEntity");
-        World->GetEntityRegistry().emplace<SStaticMeshComponent>(MeshEntity).StaticMesh = Cast<CStaticMesh>(Asset.Get());
-        World->GetEntityRegistry().get<STransformComponent>(MeshEntity).SetLocation(glm::vec3(0.0f, 0.0f, -2.5f));
+        World->GetEntityRegistry().emplace<SStaticMeshComponent>(MeshEntity).StaticMesh = StaticMesh;
+        World->GetEntityRegistry().get<STransformComponent>(MeshEntity).SetLocation(glm::vec3(0.0f, 0.0f, (-StaticMesh->GetAABB().MaxScale())));
+        World->GetEntityRegistry().emplace_or_replace<FNeedsTransformUpdate>(MeshEntity);
+
+        //FocusViewportToEntity(MeshEntity);
     }
 
     void FMeshEditorTool::Update(const FUpdateContext& UpdateContext)

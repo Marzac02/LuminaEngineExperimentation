@@ -57,4 +57,11 @@ namespace Lumina
             Functor(Pair);
         }
     }
+
+    FFixedString CEnum::MakeDisplayName() const
+    {
+        FFixedString DisplayName = GetName().c_str();
+        DisplayName.erase(0, 1);
+        return DisplayName;
+    }
 }

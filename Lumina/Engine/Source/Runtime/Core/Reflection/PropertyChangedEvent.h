@@ -13,10 +13,9 @@ namespace Lumina
 
     struct FPropertyChangedEvent
     {
-
-        /** Struct in which this property is owned by */
-        CStruct*    OuterStruct;
-
+        /** Type that owns the property */
+        CStruct*    OuterType;
+        
         /** Property in which was changed. */
         FProperty*  Property;
 
