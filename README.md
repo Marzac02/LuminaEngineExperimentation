@@ -40,9 +40,7 @@ https://github.com/user-attachments/assets/e95f8cc4-79d9-4186-8bc6-277dd8ca7487
 
 
 
-
 ## About
-
 Lumina is a modern C++ game engine designed for learning and experimentation with real-world engine architecture. Built from the ground up with Vulkan, it demonstrates professional engine design patterns including reflection systems, ECS architecture, and advanced rendering techniques.
 
 **Perfect for:**
@@ -51,7 +49,8 @@ Lumina is a modern C++ game engine designed for learning and experimentation wit
 - Building prototypes with a clean, modular codebase
 - Understanding how engines like Unreal and Godot work under the hood
 
-> **Note:** Lumina is an educational project in active development. APIs may change, and some features are experimental. If you encounter build issues, please reach out on [Discord](https://discord.gg/xQSB7CRzQE) for assistance.
+> [!CAUTION]
+> Lumina is an educational project in active development. APIs may change, and some features are experimental. If you encounter build issues, please reach out on [Discord](https://discord.gg/xQSB7CRzQE) for assistance.
 
 ---
 
@@ -125,15 +124,15 @@ Performance profiling - Built-in Lua script profiling with Tracy
    - Open the `Sandbox` project to experiment
    - Or run `Tools/ProjectConfigurator.py` to create a new project
 
-### Troubleshooting
+> [!TIP]
+>  **Missing v143 toolset?** Install it via Visual Studio Installer -> Individual Components -> MSVC v143 Build Tools
+> **"Cannot find .generated.h" error?** Build again - Visual Studio sometimes needs a second pass to detect new files
+> **Python not found?** Ensure Python is added to PATH during installation (check "Add Python to PATH" when installing)
+> **Error C1076 compiler limit: internal heap limit reached** - Try again, this is currently an issue with a font file.
+> **Build fails?** [Submit an issue](https://github.com/mrdrelliot/LuminaEngine/issues) or contact me on Discord
 
-- **Missing v143 toolset?** Install it via Visual Studio Installer -> Individual Components -> MSVC v143 Build Tools
-- **"Cannot find .generated.h" error?** Build again - Visual Studio sometimes needs a second pass to detect new files
-- **Python not found?** Ensure Python is added to PATH during installation (check "Add Python to PATH" when installing)
-- **Error C1076 compiler limit: internal heap limit reached** - Try again, this is currently an issue with a font file.
-- **Build fails?** [Submit an issue](https://github.com/mrdrelliot/LuminaEngine/issues) or contact me on Discord
-
-**Note:** The `LUMINA_DIR` environment variable is set automatically during build. If needed, set it manually:
+> [!NOTE]
+> The `LUMINA_DIR` environment variable is set automatically during build. If needed, set it manually:
 ```bash
 setx LUMINA_DIR "C:\path\to\lumina"
 ```
