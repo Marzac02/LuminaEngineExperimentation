@@ -123,7 +123,7 @@ namespace Lumina::Physics
     public:
 
         FJoltPhysicsScene(CWorld* InWorld);
-        ~FJoltPhysicsScene() override = default;
+        ~FJoltPhysicsScene() override;
     	
     	LE_NO_COPYMOVE(FJoltPhysicsScene);
 

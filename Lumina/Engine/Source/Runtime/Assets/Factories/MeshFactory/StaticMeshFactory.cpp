@@ -242,6 +242,10 @@ namespace Lumina
                         for (const Import::Mesh::FMeshImportImage& Image : ImportedData->Textures)
                         {
                             FString ImagePath = Paths::Parent(RawPath) + "/" + Image.RelativePath;
+                            if (!Paths::Exists(ImagePath))
+                            {
+                                continue;
+                            }
                         
                             ImGui::TableNextRow();
                             ImGui::TableSetColumnIndex(0);

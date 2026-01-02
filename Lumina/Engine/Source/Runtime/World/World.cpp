@@ -19,6 +19,7 @@
 #include "Entity/Components/NameComponent.h"
 #include "Entity/Components/SingletonEntityComponent.h"
 #include "Entity/Components/VelocityComponent.h"
+#include "Entity/Systems/ScriptEntitySystem.h"
 #include "Events/KeyCodes.h"
 #include "glm/gtx/matrix_decompose.hpp"
 #include "Physics/Physics.h"
@@ -170,6 +171,7 @@ namespace Lumina
         
         Scripting::FScriptingContext::Get().OnScriptLoaded.Remove(ScriptUpdatedDelegateHandle);
 
+        PhysicsScene.reset();
         RenderScene->Shutdown();
         
         FCoreDelegates::PostWorldUnload.Broadcast();
@@ -219,7 +221,7 @@ namespace Lumina
         entt::entity NewEntity = GetEntityRegistry().create();
 
         FString StringName(Name.c_str());
-        StringName += "_" + eastl::to_string((int)NewEntity);
+        StringName += "_" + eastl::to_string(static_cast<int>(NewEntity));
         
         EntityRegistry.emplace<SNameComponent>(NewEntity).Name = StringName;
         EntityRegistry.emplace<STransformComponent>(NewEntity).Transform = Transform;
@@ -256,7 +258,7 @@ namespace Lumina
             BaseName = OldName.substr(0, Pos);
         }
 
-        FString NewName = BaseName + "_" +  eastl::to_string((uint64)To);
+        FString NewName = BaseName + "_" +  eastl::to_string(entt::to_integral(To));
         EntityRegistry.get<SNameComponent>(To).Name = NewName;
     }
 
@@ -336,7 +338,7 @@ namespace Lumina
 
     const TVector<CEntitySystem*>& CWorld::GetSystemsForUpdateStage(EUpdateStage Stage)
     {
-        return SystemUpdateList[(uint32)Stage];
+        return SystemUpdateList[static_cast<uint32>(Stage)];
     }
 
     void CWorld::OnRelationshipComponentDestroyed(entt::registry& Registry, entt::entity Entity)
@@ -359,7 +361,7 @@ namespace Lumina
         auto View = EntityRegistry.view<FLuaScriptsContainerComponent>();
         View.each([&](FLuaScriptsContainerComponent& LuaContainerComponent)
         {
-            for (uint32 i = 0; i < (uint32)EUpdateStage::Max; ++i)
+            for (uint32 i = 0; i < static_cast<uint32>(EUpdateStage::Max); ++i)
             {
                 LuaContainerComponent.Systems[i].clear();
             }
@@ -368,6 +370,9 @@ namespace Lumina
             {
                 LuaContainerComponent.Systems[Script.Stage].emplace_back(Script);
             });
+
+            // Push updates to initialized lua files.
+            GetMutableDefault<CScriptEntitySystem>()->Init(SystemContext);
         });
     }
 
@@ -375,7 +380,7 @@ namespace Lumina
     {
         FLineBatcherComponent& Batcher = GetOrCreateLineBatcher();
         
-        float ActualDuration = eastl::max<float>((float)GetWorldDeltaTime() + LE_KINDA_SORTA_SMALL_NUMBER, Duration);
+        float ActualDuration = eastl::max<float>(static_cast<float>(GetWorldDeltaTime()) + LE_KINDA_SORTA_SMALL_NUMBER, Duration);
         Batcher.DrawLine(Start, End, Color, Thickness, ActualDuration);
     }
     

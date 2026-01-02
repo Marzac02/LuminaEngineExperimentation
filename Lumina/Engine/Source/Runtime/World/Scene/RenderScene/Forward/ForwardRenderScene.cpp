@@ -3,6 +3,7 @@
 #include "Assets/AssetTypes/Material/Material.h"
 #include "Core/Console/ConsoleVariable.h"
 #include "Core/Windows/Window.h"
+#include "Memory/Memcpy.h"
 #include "Renderer/RendererUtils.h"
 #include "Renderer/RHIStaticStates.h"
 #include "Renderer/ShaderCompiler.h"

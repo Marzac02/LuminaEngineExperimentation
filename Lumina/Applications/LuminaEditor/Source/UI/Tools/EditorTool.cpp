@@ -235,7 +235,7 @@ namespace Lumina
         glm::vec3 NewPosition = EntityTransform.GetLocation() - CurrentForward * FocusDistance;
         EditorTransform.SetLocation(NewPosition);
         
-        glm::quat Rotation = Math::FindLookAtRotation(NewPosition, EntityTransform.GetLocation());
+        glm::quat Rotation = Math::FindLookAtRotation(EntityTransform.GetLocation(), NewPosition);
         EditorTransform.SetRotation(Rotation);
     
         World->MarkTransformDirty(EditorEntity);

@@ -138,11 +138,16 @@ namespace Lumina::Physics
         
         FEntityRegistry& Registry = World->GetEntityRegistry();
         
-        entt::sigh_helper(Registry)
-            .with<SSphereColliderComponent>()
-                .on_construct<&entt::registry::get_or_emplace<SRigidBodyComponent>>()
-            .with<SBoxColliderComponent>()
-                .on_construct<&entt::registry::get_or_emplace<SRigidBodyComponent>>();
+        Registry.on_construct<SSphereColliderComponent>().connect<&entt::registry::get_or_emplace<SRigidBodyComponent>>();
+        Registry.on_construct<SBoxColliderComponent>().connect<&entt::registry::get_or_emplace<SRigidBodyComponent>>();
+    }
+
+    FJoltPhysicsScene::~FJoltPhysicsScene()
+    {
+        FEntityRegistry& Registry = World->GetEntityRegistry();
+
+        Registry.on_construct<SSphereColliderComponent>().disconnect<&entt::registry::get_or_emplace<SRigidBodyComponent>>();
+        Registry.on_construct<SBoxColliderComponent>().disconnect<&entt::registry::get_or_emplace<SRigidBodyComponent>>();
     }
 
     void FJoltPhysicsScene::PreUpdate()

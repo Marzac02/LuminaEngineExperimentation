@@ -1,10 +1,5 @@
 ﻿#pragma once
 
-#include <cstring>
-#include <immintrin.h>
-#include <stdint.h>
-
-#include "Module/API.h"
 #include "Platform/GenericPlatform.h"
 #include "Platform/Platform.h"
 

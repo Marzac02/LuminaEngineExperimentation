@@ -1473,6 +1473,9 @@ namespace Lumina
             World->SetPaused(true);
             bGamePreviewRunning = false;
             
+            ProxyWorld->DestroyEntity(EditorEntity);
+            EditorEntity = entt::null;
+            
             SetWorld(ProxyWorld);
             ProxyWorld->SetActive(true);
             
@@ -1496,6 +1499,9 @@ namespace Lumina
             World = CWorld::DuplicateWorld(ProxyWorld);
             World->SetSimulating(true);
 
+            ProxyWorld->DestroyEntity(EditorEntity);
+            EditorEntity = entt::null;
+            
             entt::entity PreviousSelectedEntity = SelectedEntity;
             SetSelectedEntity(entt::null);
             
@@ -1524,7 +1530,10 @@ namespace Lumina
             SCameraComponent CameraCopy =  World->GetEntityRegistry().get<SCameraComponent>(EditorEntity);
 
             entt::entity PreviousSelectedEntity = SelectedEntity;
-
+            
+            World->DestroyEntity(EditorEntity);
+            EditorEntity = entt::null;
+            
             SetWorld(ProxyWorld);
             ProxyWorld->SetActive(true);
             
@@ -1685,7 +1694,7 @@ namespace Lumina
                             EntityFilterState.ComponentFilters.end(), StructType->GetName());
                         
                         bool bIsFiltered = (It != EntityFilterState.ComponentFilters.end());
-                        if (ImGui::Checkbox(StructType->GetName().c_str(), &bIsFiltered))
+                        if (ImGui::Checkbox(StructType->MakeDisplayName().c_str(), &bIsFiltered))
                         {
                             if (bIsFiltered)
                             {
@@ -1815,7 +1824,7 @@ namespace Lumina
             DrawCreateEntityMenu();
             
             ImGui::SameLine();
-            ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x - (ButtonWidth));
+            ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x - (ButtonWidth) - ImGui::GetStyle().FramePadding.x);
             EntityFilterState.FilterName.Draw("##Search");
             
             ImGui::PopStyleVar();
@@ -1864,9 +1873,11 @@ namespace Lumina
         ImGui::Spacing();
         
         {
+            size_t EntityCount = World->GetEntityRegistry().view<entt::entity>().size<>();
+            ImGui::Text(LE_ICON_FORMAT_LIST_NUMBERED " Total Entities: %s", eastl::to_string(EntityCount).c_str());
+            
             ImGui::PushStyleColor(ImGuiCol_ChildBg, ImVec4(0.08f, 0.08f, 0.1f, 1.0f));
             ImGui::PushStyleVar(ImGuiStyleVar_ChildRounding, 4.0f);
-            
             if (ImGui::BeginChild("EntityList", ImVec2(0, 0), true, ImGuiWindowFlags_NoScrollbar))
             {
                 OutlinerListView.Draw(OutlinerContext);
@@ -2595,6 +2606,8 @@ namespace Lumina
 
         if (World->GetEntityRegistry().valid(Entity))
         {
+            using PairType = TPair<void*, CStruct*>;
+            TVector<PairType> Sorted;
             ECS::Utils::ForEachComponent([&](void* Component, entt::basic_sparse_set<>& Set, const entt::meta_type& Type)
             {
                 entt::meta_any Any = ECS::InvokeMetaFunc(Type, "static_struct"_hs);
@@ -2604,7 +2617,46 @@ namespace Lumina
                 }
                     
                 CStruct* Struct = Any.cast<CStruct*>();
+
+                Sorted.emplace_back(Component, Struct);
+                
+            }, World->GetEntityRegistry(), Entity);
+            
+            
+            eastl::sort(Sorted.begin(), Sorted.end(), [&](const PairType& LHS, const PairType& RHS)
+            {
+                const FFixedString A = LHS.second->MakeDisplayName();
+                const FFixedString B = RHS.second->MakeDisplayName();
+                
+                auto Comparator = [] (const CStruct* Type)
+                {
+                    if (Type == SNameComponent::StaticStruct())
+                    {
+                        return 0;
+                    }
                     
+                    if (Type == STransformComponent::StaticStruct())
+                    {
+                        return 1;
+                    }
+                    
+                    return 2;
+                };
+                
+                uint32 APriority = Comparator(LHS.second);
+                uint32 BPriority = Comparator(RHS.second);
+                
+                if (APriority != BPriority)
+                {
+                    return  APriority < BPriority;
+                }
+                
+                return A < B;
+            });
+
+
+            for (const auto& [Component, Struct] : Sorted)
+            {
                 TUniquePtr<FPropertyTable> NewTable = MakeUniquePtr<FPropertyTable>(Component, Struct);
                 
                 NewTable->SetPreEditCallback([&](const FPropertyChangedEvent& Event)
@@ -2618,9 +2670,7 @@ namespace Lumina
                 });
                 
                 PropertyTables.emplace_back(Move(NewTable))->RebuildTree();
-                
-                
-            }, World->GetEntityRegistry(), Entity);
+            }
         }
     }
 

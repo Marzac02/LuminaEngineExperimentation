@@ -19,7 +19,7 @@ namespace Lumina
         FString GetAssetName() const override { return "Texture"; }
         FString GetDefaultAssetCreationName(const FString& InPath) override { return "NewTexture"; }
 
-        bool IsExtensionSupported(const FString& Ext) override { return Ext == ".png" || Ext == ".jpg"; }
+        bool IsExtensionSupported(const FString& Ext) override { return Ext == ".png" || Ext == ".jpg" || Ext == ".jpeg"; }
         bool CanImport() override { return true; }
         
         void TryImport(const FString& RawPath, const FString& DestinationPath, const eastl::any& ImportSettings) override;

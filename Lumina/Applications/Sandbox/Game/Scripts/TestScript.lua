@@ -10,12 +10,10 @@ local MyScript =
 
         Init = function(Context)
 
-            Context:OnConstruct(STransformComponent, function(Entity, Transform)
 
-                local Uniform = math.random(1, 3)
-                Transform:SetScale(vec3(Uniform, Uniform, Uniform))
+        end,
 
-            end)
+        Shutdown = function(Context)
 
         end,
 
@@ -35,7 +33,7 @@ local MyScript =
                         local RaySettings           = FSphereCastSettings()
                         RaySettings.Start           = Result.Location
                         RaySettings.End             = Result.Location
-                        RaySettings.Radius          = 5.0
+                        RaySettings.Radius          = 10.0
                         RaySettings.bDrawDebug      = false
                         RaySettings.DebugDuration   = 0.1
                         
@@ -48,7 +46,7 @@ local MyScript =
 
                             local Event = SImpulseEvent()
                             Event.BodyID = Hit.BodyID
-                            Event.Impulse = Direction * 100.0
+                            Event.Impulse = Direction * 10000.0
                             Context:DispatchEvent(Event)
                             
                         end

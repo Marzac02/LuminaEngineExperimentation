@@ -11,7 +11,6 @@
 
 #include "EASTL/bit.h"
 #include "Log/Log.h"
-#include "Memory/Memcpy.h"
 #include "Types/BitFlags.h"
 
 namespace Lumina
@@ -137,18 +136,18 @@ namespace Lumina
         virtual FArchive& operator<<(float& Value)
         {
             static_assert(sizeof(float) == sizeof(uint32), "Unexpected float size");
-            uint32 Temp = eastl::bit_cast<uint32>(Value);
+            uint32 Temp = std::bit_cast<uint32>(Value);
             ByteOrderSerialize(Temp);
-            Value = eastl::bit_cast<float>(Temp);
+            Value = std::bit_cast<float>(Temp);
             return *this;
         }
 
         virtual FArchive& operator<<(double& Value)
         {
             static_assert(sizeof(double) == sizeof(uint64), "Unexpected double size");
-            uint64 Temp = eastl::bit_cast<uint64>(Value);
+            uint64 Temp = std::bit_cast<uint64>(Value);
             ByteOrderSerialize(Temp);
-            Value = eastl::bit_cast<double>(Temp);
+            Value = std::bit_cast<double>(Temp);
             return *this;
         }
 
@@ -167,7 +166,7 @@ namespace Lumina
 
         virtual void SerializeBool(bool& D);
     
-        virtual FArchive& operator<<(Lumina::FString& str)
+        virtual FArchive& operator<<(FString& str)
         {
             if (IsReading())
             {
@@ -289,7 +288,8 @@ namespace Lumina
         FORCEINLINE FArchive& operator<<(EnumType& Value)
         requires (eastl::is_enum_v<EnumType>)
         {
-            return *this << reinterpret_cast<eastl::underlying_type_t<EnumType>&>(Value);
+            using Underlying = eastl::underlying_type_t<EnumType>;
+            return *this << reinterpret_cast<Underlying&>(Value);
         }
 
     private:

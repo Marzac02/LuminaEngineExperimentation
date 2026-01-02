@@ -10,16 +10,6 @@
 
 namespace Lumina
 {
-    
-    namespace Concept
-    {
-        template<typename T>
-        concept TEventType = requires 
-        { 
-            { T::IsEvent } -> std::convertible_to<bool>; 
-        } && T::IsEvent;
-    }
-    
     namespace Meta
     {
         inline bool IsValid(const entt::registry& Registry, entt::entity Entity)
@@ -150,6 +140,41 @@ namespace Lumina
             return Function.lua_state(), std::make_unique<FScriptListener>(Registry, Function);
         }
         
+        template<typename TComponent>
+        auto OnDestroy_Lua(entt::registry& Registry, const sol::function& Function)
+        {
+            struct FScriptListener
+            {
+                FScriptListener(entt::registry& Registry, const sol::function& Function)
+                    : Callback(Function)
+                {
+                    Connection = Registry.on_destroy<TComponent>().template connect<&FScriptListener::Receive>(*this);
+                }
+                
+                ~FScriptListener()
+                {
+                    Connection.release();
+                    Callback.abandon();
+                }
+                
+                LE_NO_COPYMOVE(FScriptListener);
+                
+                void Receive(entt::registry& Registry, entt::entity Entity)
+                {
+                    if (Connection && Callback.valid())
+                    {
+                        TComponent& NewComponent = Registry.get<TComponent>(Entity);
+                        Callback(Entity, NewComponent);
+                    }
+                }
+                
+                sol::function Callback;
+                entt::connection Connection;
+            };
+            
+            return Function.lua_state(), std::make_unique<FScriptListener>(Registry, Function);
+        }
+        
         template<typename TEvent>
         auto ConnectListener_Lua(entt::dispatcher& Dispatcher, const sol::function& Function)
         {
@@ -197,6 +222,8 @@ namespace Lumina
         }
         
         // End lua variants
+        
+        
         template<typename TComponent>
         void RegisterComponentMeta()
         {
@@ -218,7 +245,8 @@ namespace Lumina
                 .template func<&EmplaceComponentLua<TComponent>>("emplace_lua"_hs)
                 .template func<&GetComponentLua<TComponent>>("get_lua"_hs)
                 .template func<&OnConstruct_Lua<TComponent>>("on_construct_lua"_hs)
-            
+                .template func<&OnDestroy_Lua<TComponent>>("on_destroy_lua"_hs)
+
                 .template func<&ConnectListener_Lua<TComponent>>("connect_listener_lua"_hs)
                 .template func<&TriggerEvent_Lua<TComponent>>("trigger_event_lua"_hs);
             

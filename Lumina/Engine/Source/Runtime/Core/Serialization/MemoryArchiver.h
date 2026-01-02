@@ -155,7 +155,7 @@ namespace Lumina
 
         int64 TotalSize() override { return Bytes.size(); }
         
-        virtual void Serialize(void* Data, int64 Num) override
+        void Serialize(void* Data, int64 Num) override
         {
             const int64 NumBytesToAdd = Offset + Num - Bytes.size();
             if (NumBytesToAdd > 0)
