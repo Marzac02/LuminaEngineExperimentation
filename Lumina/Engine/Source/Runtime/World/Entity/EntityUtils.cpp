@@ -520,6 +520,56 @@ namespace Lumina::ECS::Utils
         }
     }
 
+    entt::id_type GetTypeID(const sol::table& Data)
+    {
+        auto Name = Data["__type"].get<const char*>();
+        LUM_ASSERT(Name != nullptr)
+    
+        return entt::hashed_string(Name);
+    }
+
+    entt::id_type GetTypeID(const sol::userdata& Data)
+    {
+        auto Name = Data["__type"].get<const char*>();
+        LUM_ASSERT(Name != nullptr)
+    
+        return entt::hashed_string(Name);
+    }
+
+    entt::id_type GetTypeID(FStringView Name)
+    {
+        return entt::hashed_string(Name.data());
+    }
+
+    entt::id_type GetTypeID(const CStruct* Type)
+    {
+        return entt::hashed_string(Type->GetName().c_str());
+    }
+
+    THashSet<entt::id_type> CollectTypes(const sol::variadic_args& Args)
+    {
+        THashSet<entt::id_type> Types;
+        
+        eastl::transform(Args.cbegin(), Args.cend(), eastl::inserter(Types, Types.begin()), [](const sol::object& Object)
+        {
+            return DeduceType(Object);
+        });
+        
+        return Types;
+    }
+
+    THashSet<entt::id_type> CollectTypes(const sol::table& Args)
+    {
+        THashSet<entt::id_type> Types;
+        
+        for (const auto& [key, value] : Args)
+        {
+            Types.insert(DeduceType(value));
+        }
+        
+        return Types;
+    }
+
     void SetEntityBodyType(FEntityRegistry& Registry, entt::entity Entity)
     {
         Registry.emplace_or_replace<FNeedsPhysicsBodyUpdate>(Entity);

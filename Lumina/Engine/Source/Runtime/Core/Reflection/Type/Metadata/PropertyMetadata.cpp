@@ -8,12 +8,12 @@ namespace Lumina
         PairParams.emplace(Key, Value);
     }
 
-    bool FMetaDataPair::HasMetadata(const FName& Key)
+    bool FMetaDataPair::HasMetadata(const FName& Key) const
     {
         return PairParams.find(Key) != PairParams.end();
     }
 
-    FName FMetaDataPair::GetMetadata(const FName& Key)
+    FName FMetaDataPair::GetMetadata(const FName& Key) const
     {
         return PairParams.at(Key);
     }

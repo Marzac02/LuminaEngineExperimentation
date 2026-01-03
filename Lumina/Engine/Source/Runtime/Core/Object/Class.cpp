@@ -1,6 +1,7 @@
 #include "pch.h"
 #include "Class.h"
 #include "Core/Reflection/Type/LuminaTypes.h"
+#include "Core/Reflection/Type/Metadata/PropertyMetadata.h"
 #include "Package/Package.h"
 
 namespace Lumina
@@ -40,6 +41,15 @@ namespace Lumina
 
     //-----------------------------------------------------------------------------------------------
 
+    bool CField::HasMeta(const FName& Key) const
+    {
+        return Metadata.HasMetadata(Key);
+    }
+
+    const FName& CField::GetMeta(const FName& Key) const
+    {
+        return Metadata.GetMetadata(Key);
+    }
 
     CObject* CClass::EmplaceInstance(void* Memory) const
     {

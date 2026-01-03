@@ -91,7 +91,7 @@ namespace Lumina
         void SetWorldPlayInEditor(bool bShouldPlay);
         void SetWorldNewSimulate(bool bShouldSimulate);
 
-        void DrawCreateEntityMenu();
+        void DrawAddToEntityOrWorldPopup(entt::entity Entity = entt::null);
         void DrawFilterOptions();
         void SetSelectedEntity(entt::entity Entity);
         void RebuildSceneOutliner(FTreeListView& Tree);

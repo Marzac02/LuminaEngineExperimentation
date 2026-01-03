@@ -39,9 +39,12 @@ namespace Lumina
 
         FProperty* LinkedProperty = nullptr;
 
-        uint32 GetAlignedSize() const { return Align(Size, Alignment); }
-        uint32 GetSize() const { return Size; }
-        uint32 GetAlignment() const { return Alignment; }
+        LUMINA_API uint32 GetAlignedSize() const { return Align(Size, Alignment); }
+        LUMINA_API uint32 GetSize() const { return Size; }
+        LUMINA_API uint32 GetAlignment() const { return Alignment; }
+        
+        LUMINA_API bool HasMeta(const FName& Key) const;
+        LUMINA_API const FName& GetMeta(const FName& Key) const;
 
         
         uint32 Size = 0;

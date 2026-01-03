@@ -822,6 +822,11 @@ namespace Lumina
                     CStruct* Type = Any.cast<CStruct*>();
                     LUM_ASSERT(Type)
                     
+                    if (Type->HasMeta("HideInComponentList"))
+                    {
+                        continue;
+                    }
+                    
                     FFixedString ComponentName = Type->MakeDisplayName();
                     
                     if (!Filter->PassFilter(ComponentName.c_str()))
@@ -1567,28 +1572,46 @@ namespace Lumina
         }
     }
 
-    void FWorldEditorTool::DrawCreateEntityMenu()
+    void FWorldEditorTool::DrawAddToEntityOrWorldPopup(entt::entity Entity)
     {
-        ImGui::SetNextWindowSize(ImVec2(400.0f, 500.0f), ImGuiCond_Always);
+        ImGui::SetNextWindowSize(ImVec2(450.0f, 550.0f), ImGuiCond_Always);
     
-        if (ImGui::BeginPopup("CreateEntityMenu", ImGuiWindowFlags_NoMove))
+        if (ImGui::BeginPopup("AddToEntityMenu", ImGuiWindowFlags_NoMove))
         {
-            ImGui::TextColored(ImVec4(0.8f, 0.9f, 1.0f, 1.0f), LE_ICON_PLUS " Create New Entity");
-            
-            ImGui::Spacing();
-            ImGui::Separator();
-            ImGui::Spacing();
-            
+            if (Entity == entt::null)
+            {
+                ImGui::TextColored(ImVec4(0.8f, 0.9f, 1.0f, 1.0f), LE_ICON_PLUS " Create New Entity");
+        
+                ImGui::Spacing();
+                ImGui::Separator();
+                ImGui::Spacing();
+            }
+        
             ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 4.0f);
             ImGui::SetNextItemWidth(-1);
             
-            AddEntityComponentFilter.Draw(LE_ICON_FOLDER_SEARCH " Search templates...");
+            AddEntityComponentFilter.Draw("##Search");
+            
+            if (ImGui::IsWindowAppearing())
+            {
+                ImGui::SetKeyboardFocusHere(-1);
+            }
+            
+            if (!AddEntityComponentFilter.IsActive())
+            {
+                ImGuiStyle& Style = ImGui::GetStyle();
+                ImDrawList* DrawList = ImGui::GetWindowDrawList();
+                ImVec2 TextPos = ImGui::GetItemRectMin();
+                TextPos.x += Style.FramePadding.x + 2.0f;
+                TextPos.y += Style.FramePadding.y;
+                DrawList->AddText(TextPos, IM_COL32(110, 110, 110, 255), LE_ICON_FOLDER_SEARCH " Search components...");
+            }
             
             ImGui::PopStyleVar();
             
             ImGui::Spacing();
             
-            ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(4.0f, 4.0f));
+            ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(16.0f, 16.0f));
             ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(4.0f, 4.0f));
             
             if (ImGui::BeginChild("TemplateList", ImVec2(0, -35.0f), true))
@@ -1601,12 +1624,18 @@ namespace Lumina
                     CStruct* Struct = Any.cast<CStruct*>();
                     LUM_ASSERT(Struct)
                     
+                    if (Struct->HasMeta("HideInComponentList"))
+                    {
+                        continue;
+                    }
+                    
                     if (Struct == STransformComponent::StaticStruct() || Struct == SNameComponent::StaticStruct() || Struct == STagComponent::StaticStruct())
                     {
                         continue;
                     }
                     
-                    if (!AddEntityComponentFilter.PassFilter(Struct->MakeDisplayName().c_str()))
+                    FFixedString DisplayName = Struct->MakeDisplayName();
+                    if (!AddEntityComponentFilter.PassFilter(DisplayName.c_str()))
                     {
                         continue;
                     }
@@ -1622,9 +1651,20 @@ namespace Lumina
                     
                     const float ButtonWidth = ImGui::GetContentRegionAvail().x;
                     
-                    if (ImGui::Button(Struct->MakeDisplayName().c_str(), ImVec2(ButtonWidth, 0.0f)))
+                    if (ImGui::Button(DisplayName.c_str(), ImVec2(ButtonWidth, 0.0f)))
                     {
-                        CreateEntityWithComponent(Struct);
+                        if (Entity != entt::null)
+                        {
+                            entt::id_type ID = ECS::Utils::GetTypeID(Struct);
+                            ECS::Utils::InvokeMetaFunc(ID, "emplace"_hs, entt::forward_as_meta(World->GetEntityRegistry()), Entity, entt::forward_as_meta(entt::meta_any{}));
+                            OutlinerListView.MarkTreeDirty();
+                            RebuildPropertyTables(Entity);
+                        }
+                        else
+                        {
+                            CreateEntityWithComponent(Struct);
+                        }
+                        
                         ImGui::CloseCurrentPopup();
                     }
                     
@@ -1643,27 +1683,32 @@ namespace Lumina
             
             ImGui::BeginGroup();
             {
+                ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.75f, 0.25f, 0.25f, 1.0f));
                 if (ImGui::Button("Cancel", ImVec2(80.0f, 0.0f)))
                 {
                     ImGui::CloseCurrentPopup();
                     AddEntityComponentFilter.Clear();
                 }
-                
-                ImGui::SameLine();
-                
-                ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.25f, 0.25f, 0.28f, 1.0f));
-                if (ImGui::Button(LE_ICON_CUBE " Empty Entity", ImVec2(-1, 0.0f)))
-                {
-                    CreateEntity();
-                    ImGui::CloseCurrentPopup();
-                    AddEntityComponentFilter.Clear();
-                }
                 ImGui::PopStyleColor();
-                
-                if (ImGui::IsItemHovered())
+
+                if (Entity == entt::null)
                 {
-                    ImGui::SetTooltip("Create entity without any components");
+                    ImGui::SameLine();
+                    ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.25f, 0.25f, 0.28f, 1.0f));
+                    if (ImGui::Button(LE_ICON_CUBE " Empty Entity", ImVec2(-1, 0.0f)))
+                    {
+                        CreateEntity();
+                        ImGui::CloseCurrentPopup();
+                        AddEntityComponentFilter.Clear();
+                    }
+                    ImGui::PopStyleColor();
+                
+                    if (ImGui::IsItemHovered())
+                    {
+                        ImGui::SetTooltip("Create entity without any components");
+                    }
                 }
+                
             }
             ImGui::EndGroup();
             
@@ -1698,6 +1743,11 @@ namespace Lumina
                     if (entt::meta_any ReturnValue = ECS::Utils::InvokeMetaFunc(MetaType, "static_struct"_hs))
                     {
                         CStruct* StructType = ReturnValue.cast<CStruct*>();
+                        
+                        if (StructType->HasMeta("HideInComponentList"))
+                        {
+                            continue;
+                        }
                         
                         ImGui::TableNextRow();
                         ImGui::TableNextColumn();
@@ -1820,13 +1870,12 @@ namespace Lumina
         
         {
             ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 4.0f);
-            //ImGui::PushStyleColor(ImGuiCol_FrameBg, ImVec4(0.15f, 0.15f, 0.18f, 1.0f));
-            //ImGui::PushStyleColor(ImGuiCol_FrameBgHovered, ImVec4(0.18f, 0.18f, 0.22f, 1.0f));
+
             
             constexpr float ButtonWidth = 30.0f;
             if (ImGui::Button(LE_ICON_PLUS, ImVec2(ButtonWidth, 0.0f)))
             {
-                ImGui::OpenPopup("CreateEntityMenu");
+                ImGui::OpenPopup("AddToEntityMenu");
             }
             
             if (ImGui::IsItemHovered())
@@ -1834,7 +1883,7 @@ namespace Lumina
                 ImGui::SetTooltip("Add something new to the world.");
             }
 
-            DrawCreateEntityMenu();
+            DrawAddToEntityOrWorldPopup();
             
             ImGui::SameLine();
             ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x - (ButtonWidth) - ImGui::GetStyle().FramePadding.x);
@@ -2110,8 +2159,10 @@ namespace Lumina
         
             if (ImGui::Button(LE_ICON_PLUS))
             {
-                PushAddComponentModal(Entity);
+                ImGui::OpenPopup("AddToEntityMenu");
             }
+            
+            DrawAddToEntityOrWorldPopup(Entity);
         
             if (ImGui::IsItemHovered(ImGuiHoveredFlags_DelayShort))
             {

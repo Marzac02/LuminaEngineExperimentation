@@ -307,6 +307,12 @@ namespace Lumina
         
         InitializeAndCreateFProperties(FinalClass, Params.Params, Params.NumProperties);
         
+        for (uint16 i = 0; i < Params.NumMetaData; ++i)
+        {
+            const FMetaDataPairParam& Param = Params.MetaDataArray[i];
+            FinalClass->Metadata.AddValue(Param.NameUTF8, Param.ValueUTF8);
+        }
+        
         // Link this class to its parent. (if it has one).
         //FinalClass->Link();
     }
@@ -323,7 +329,13 @@ namespace Lumina
         CEnum* NewEnum = (CEnum*)StaticAllocateObject(ObjectParms);
         
         *OutEnum = NewEnum;
-
+        
+        for (uint16 i = 0; i < Params.NumMetaData; ++i)
+        {
+            const FMetaDataPairParam& Param = Params.MetaDataArray[i];
+            NewEnum->Metadata.AddValue(Param.NameUTF8, Param.ValueUTF8);
+        }
+        
         for (int16 i = 0; i < Params.NumParams; i++)
         {
             const FEnumeratorParam* Param = &Params.Params[i];
@@ -351,6 +363,12 @@ namespace Lumina
         CObjectForceRegistration(FinalClass);
         
         InitializeAndCreateFProperties(FinalClass, Params.Params, Params.NumProperties);
+        
+        for (uint16 i = 0; i < Params.NumMetaData; ++i)
+        {
+            const FMetaDataPairParam& Param = Params.MetaDataArray[i];
+            FinalClass->Metadata.AddValue(Param.NameUTF8, Param.ValueUTF8);
+        }
 
         if (Params.SuperFunc)
         {

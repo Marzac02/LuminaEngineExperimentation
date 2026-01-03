@@ -3,6 +3,11 @@
 #include "Core/Serialization/Archiver.h"
 #include "Registry/EntityRegistry.h"
 
+namespace Lumina
+{
+    class CStruct;
+}
+
 namespace Lumina::ECS::Utils
 {
     LUMINA_API bool SerializeEntity(FArchive& Ar, FEntityRegistry& Registry, entt::entity& Entity);
@@ -21,26 +26,10 @@ namespace Lumina::ECS::Utils
     LUMINA_API void CollectDescendants(FEntityRegistry& Registry, entt::entity Entity, TVector<entt::entity>& OutDescendants);
     LUMINA_API void CollectChildren(FEntityRegistry& Registry, entt::entity Entity, TVector<entt::entity>& OutChildren);
     
-    NODISCARD inline entt::id_type GetTypeID(const sol::table& Data)
-    {
-        auto Name = Data["__type"].get<const char*>();
-        LUM_ASSERT(Name != nullptr)
-    
-        return entt::hashed_string(Name);
-    }
-    
-    NODISCARD inline entt::id_type GetTypeID(const sol::userdata& Data)
-    {
-        auto Name = Data["__type"].get<const char*>();
-        LUM_ASSERT(Name != nullptr)
-    
-        return entt::hashed_string(Name);
-    }
-    
-    NODISCARD inline entt::id_type GetTypeID(FStringView Name)
-    {
-        return entt::hashed_string(Name.data());
-    }
+    NODISCARD LUMINA_API entt::id_type GetTypeID(const sol::table& Data);
+    NODISCARD LUMINA_API entt::id_type GetTypeID(const sol::userdata& Data);
+    NODISCARD LUMINA_API entt::id_type GetTypeID(FStringView Name);
+    NODISCARD LUMINA_API entt::id_type GetTypeID(const CStruct* Type);
 
     template<typename T>
     NODISCARD entt::id_type DeduceType(T&& Obj)
@@ -55,30 +44,10 @@ namespace Lumina::ECS::Utils
 
         LUMINA_NO_ENTRY()
     }
+    
+    NODISCARD LUMINA_API THashSet<entt::id_type> CollectTypes(const sol::variadic_args& Args);
 
-    NODISCARD inline auto CollectTypes(const sol::variadic_args& Args)
-    {
-        THashSet<entt::id_type> Types;
-        
-        eastl::transform(Args.cbegin(), Args.cend(), eastl::inserter(Types, Types.begin()), [](const sol::object& Object)
-        {
-            return DeduceType(Object);
-        });
-        
-        return Types;
-    }
-
-    NODISCARD inline auto CollectTypes(const sol::table& Args)
-    {
-        THashSet<entt::id_type> Types;
-        
-        for (const auto& [key, value] : Args)
-        {
-            Types.insert(DeduceType(value));
-        }
-        
-        return Types;
-    }
+    NODISCARD LUMINA_API THashSet<entt::id_type> CollectTypes(const sol::table& Args);
 
     template<typename ... TArgs>
     entt::meta_any InvokeMetaFunc(const entt::meta_type& MetaType, entt::id_type FunctionID, TArgs&&... Args)
