@@ -546,7 +546,7 @@ namespace Lumina
             ImGuiTableFlags_BordersOuter | 
             ImGuiTableFlags_BordersInnerH | 
             ImGuiTableFlags_NoBordersInBodyUntilResize | 
-            ImGuiTableFlags_SizingFixedFit;
+            ImGuiTableFlags_SizingStretchSame;
         
         
         ImGui::PushStyleVar(ImGuiStyleVar_CellPadding, ImVec2(4, 8));
@@ -554,8 +554,8 @@ namespace Lumina
 
         if (ImGui::BeginTable("GridTable", 2, Flags))
         {
-            ImGui::TableSetupColumn("##Header", ImGuiTableColumnFlags_WidthFixed, 145);
-            ImGui::TableSetupColumn("##Editor", ImGuiTableColumnFlags_WidthStretch);
+            ImGui::TableSetupColumn("##Header", ImGuiTableColumnFlags_WidthStretch, 0.4f);
+            ImGui::TableSetupColumn("##Editor", ImGuiTableColumnFlags_WidthStretch, 0.6f);
             
             for (auto& [Name, Row] : CategoryMap)
             {

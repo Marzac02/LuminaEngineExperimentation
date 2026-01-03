@@ -13,7 +13,7 @@ namespace Lumina
         GENERATED_BODY()
         ENTITY_COMPONENT(SRigidBodyComponent)
         
-        PROPERTY(Script, Visible, Category = "Physics")
+        PROPERTY(Script, ReadOnly, Category = "Physics")
         uint32 BodyID = UINT32_MAX;
         
         PROPERTY(Script, Editable, Category = "Physics")

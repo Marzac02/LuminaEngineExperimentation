@@ -1061,9 +1061,15 @@ namespace Lumina
             }
             ImGui::PopStyleColor(2);
             
+            
             if (ImGui::IsItemHovered(ImGuiHoveredFlags_DelayShort))
             {
                 ImGui::SetTooltip("Stop Game Preview");
+            }
+            
+            if (ImGui::IsKeyPressed(ImGuiKey_Escape))
+            {
+                SetWorldPlayInEditor(false);
             }
         }
     }
@@ -1466,6 +1472,7 @@ namespace Lumina
             World->SetPaused(false);
             World->BeginPlay();
             
+            OutlinerListView.ClearTree();
             OutlinerListView.MarkTreeDirty();
         }
         else if (bShouldPlay != bGamePreviewRunning && bShouldPlay == false)
@@ -1481,6 +1488,7 @@ namespace Lumina
             
             ProxyWorld = nullptr;
             
+            OutlinerListView.ClearTree();
             OutlinerListView.MarkTreeDirty();
         }
     }
@@ -1505,8 +1513,6 @@ namespace Lumina
             entt::entity PreviousSelectedEntity = SelectedEntity;
             SetSelectedEntity(entt::null);
             
-            OutlinerListView.MarkTreeDirty();
-            
             SetupWorldForTool();
 
             SetSelectedEntity(PreviousSelectedEntity);
@@ -1520,6 +1526,11 @@ namespace Lumina
             {
                 Patch = CameraCopy;
             });
+            
+            
+            OutlinerListView.ClearTree();
+            OutlinerListView.MarkTreeDirty();
+
         }
         else if (bShouldSimulate != bSimulatingWorld && bShouldSimulate == false)
         {
@@ -1538,8 +1549,6 @@ namespace Lumina
             ProxyWorld->SetActive(true);
             
             SetSelectedEntity(PreviousSelectedEntity);
-
-            OutlinerListView.MarkTreeDirty();
             
             World->GetEntityRegistry().patch<STransformComponent>(EditorEntity, [TransformCopy](STransformComponent& Patch)
             {
@@ -1552,6 +1561,9 @@ namespace Lumina
             });
             
             ProxyWorld = nullptr;
+            
+            OutlinerListView.ClearTree();
+            OutlinerListView.MarkTreeDirty();
         }
     }
 
@@ -1740,6 +1752,7 @@ namespace Lumina
             Name.append(LE_ICON_CUBE).append(" ").append(NameComponent.Name.c_str());
             
             entt::entity ItemEntity = Tree.CreateNode(ParentItem, Name);
+            Tree.Get<FTreeNodeDisplay>(ItemEntity).TooltipText = FString("Entity: " + eastl::to_string(entt::to_integral(WorldEntity))).c_str();
             Tree.EmplaceUserData<FEntityListViewItemData>(ItemEntity).Entity = WorldEntity;
 
             if (WorldEntity == SelectedEntity)

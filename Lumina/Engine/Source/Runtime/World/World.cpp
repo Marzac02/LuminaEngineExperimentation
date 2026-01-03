@@ -78,6 +78,7 @@ namespace Lumina
         EntityRegistry.ctx().emplace<Physics::IPhysicsScene*>(PhysicsScene.get());
         EntityRegistry.ctx().emplace<FCameraManager*>(CameraManager.get());
         EntityRegistry.ctx().emplace<IRenderScene*>(RenderScene.get());
+        EntityRegistry.ctx().emplace<FSystemContext&>(SystemContext);
 
         RenderScene->Init();
         
@@ -171,6 +172,10 @@ namespace Lumina
         
         Scripting::FScriptingContext::Get().OnScriptLoaded.Remove(ScriptUpdatedDelegateHandle);
 
+        EntityRegistry.on_construct<SSineWaveMovementComponent>().disconnect<&ThisClass::OnSineWaveMovementComponentCreated>(this);
+        EntityRegistry.on_destroy<FRelationshipComponent>().disconnect<&ThisClass::OnRelationshipComponentDestroyed>(this);
+        
+        EntityRegistry.clear<>();
         PhysicsScene.reset();
         RenderScene->Shutdown();
         

@@ -15,10 +15,8 @@ namespace Lumina
         GENERATED_BODY()
         ENTITY_COMPONENT(SCharacterPhysicsComponent)
     
-        // Jolt character reference
         JPH::Ref<JPH::CharacterVirtual> Character;
     
-        // Physics properties
         PROPERTY(Script, Editable, Category = "Collision")
         float HalfHeight = 1.8f;
 
@@ -44,26 +42,28 @@ namespace Lumina
         GENERATED_BODY()
         ENTITY_COMPONENT(SCharacterMovementComponent)
     
-        // Movement parameters
-        PROPERTY(Script, Editable, Category = "Movement")
+        PROPERTY(Script, Editable, ClampMin = 0.0f, Category = "Movement")
         float MoveSpeed = 5.0f;
 
-        PROPERTY(Script, Editable, Category = "Movement")
+        PROPERTY(Script, Editable, ClampMin = 0.0f, Category = "Movement")
         float Acceleration = 10.0f;
 
-        PROPERTY(Script, Editable, Category = "Movement")
+        PROPERTY(Script, Editable, ClampMin = 0.0f, Category = "Movement")
         float Deceleration = 8.0f;
 
-        PROPERTY(Script, Editable, Category = "Movement")
+        PROPERTY(Script, Editable, ClampMin = 0.0f, Category = "Movement")
         float AirControl = 0.3f;
 
-        PROPERTY(Script, Editable, Category = "Movement")
+        PROPERTY(Script, Editable, ClampMin = 0.0f, Category = "Movement")
         float GroundFriction = 8.0f;
     
-        PROPERTY(Script, Editable, Category = "Movement")
+        PROPERTY(Script, Editable, ClampMin = 0.0f, Category = "Movement")
         float JumpSpeed = 8.0f;
+        
+        PROPERTY(Script, Editable, ClampMin = 0.0f, ClampMax = 1000.0f, Category = "Movement")
+        float RotationRate = 10.0f;
     
-        PROPERTY(Script, Editable, Category = "Movement")
+        PROPERTY(Script, Editable, ClampMin = 0, Category = "Movement")
         int MaxJumpCount = 1;
     
         PROPERTY(Script, Editable, Category = "Gravity")
@@ -71,9 +71,17 @@ namespace Lumina
 
         PROPERTY(Script, Visible, Category = "Movement")
         glm::vec3 Velocity;
+        
+        PROPERTY(Script, Editable, Category = "Rotation")
+        bool bUseControllerRotation = false;
+        
+        PROPERTY(Script, Editable, Category = "Rotation")
+        bool bOrientRotationToMovement = false;
 
-        bool bWantsToJump = false;
+        PROPERTY(Script, ReadOnly, Category = "Movement")
         bool bGrounded = false;
+        
+        PROPERTY(Script, ReadOnly, Category = "Movement")
         int JumpCount = 0;
     };
 

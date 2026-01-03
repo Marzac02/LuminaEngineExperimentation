@@ -37,7 +37,7 @@ namespace Lumina
         template<typename T, typename ... TArgs>
         void DispatchEvent(TArgs&&... Args)
         {
-            Dispatcher.trigger<T, TArgs...>(Forward<TArgs>(Args)...);
+            Dispatcher.trigger<T>(Forward<TArgs>(Args)...);
         }
         
         template<typename... Ts, typename... TArgs>
@@ -154,8 +154,6 @@ namespace Lumina
         LUMINA_API void DrawDebugArrow(const glm::vec3& Start, const glm::vec3& Direction, float Length, const glm::vec4& Color, float Thickness = 1.0f, float Duration = 1.0f, float HeadSize = 0.2f);
         //~ End Debug Drawing
         
-        LUMINA_API entt::runtime_view CreateRuntimeView(const TVector<FName>& Components);
-        LUMINA_API entt::runtime_view CreateRuntimeView(const TVector<entt::id_type>& Components);
         LUMINA_API entt::runtime_view CreateRuntimeView(const THashSet<entt::id_type>& Components);
 
         LUMINA_API entt::entity Create(const FName& Name, const FTransform& Transform = FTransform()) const;
@@ -164,6 +162,8 @@ namespace Lumina
 
         LUMINA_API size_t GetNumEntities() const;
         LUMINA_API bool IsValidEntity(entt::entity Entity) const;
+        
+        LUMINA_API bool IsPlayWorld() const;
         
     private:
         
@@ -175,7 +175,7 @@ namespace Lumina
         bool Lua_HasAnyOf(entt::entity Entity, const sol::variadic_args& Args);
         bool Lua_Has(entt::entity Entity, const sol::object& Type);
         
-        void Lua_View(const sol::variadic_args& Args, const sol::function& Callback);
+        entt::runtime_view Lua_View(const sol::variadic_args& Args);
         void Lua_SetActiveCamera(uint32 Entity);
         
         void Lua_Remove(entt::entity Entity, const sol::object& Component);

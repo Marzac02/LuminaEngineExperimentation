@@ -12,16 +12,23 @@ namespace Lumina
         GENERATED_BODY()
         ENTITY_COMPONENT(SCharacterControllerComponent)
         
-        PROPERTY(Script)
+        FUNCTION(Script)
+        FORCEINLINE void AddMovementInput(const glm::vec2& Move) { MoveInput += Move; }
+        
+        FUNCTION(Script)
+        FORCEINLINE void AddLookInput(const glm::vec2& Look) { LookInput += Look; }
+        
+        FUNCTION(Script)
+        FORCEINLINE void Jump() { bJumpPressed = true; }
+        
+        
+        PROPERTY(Script, ReadOnly)
         glm::vec2 MoveInput;
 
-        PROPERTY(Script)
+        PROPERTY(Script, ReadOnly)
         glm::vec2 LookInput;
 
-        PROPERTY(Script)
+        PROPERTY(Script, ReadOnly)
         bool bJumpPressed = false;
-
-        PROPERTY(Script, Editable)
-        bool bUseControllerRotation = false;
     };
 }

@@ -226,97 +226,6 @@ namespace Lumina::Physics
                 }
             }
         });
-        
-        auto View = Registry.view<SCharacterControllerComponent, SCharacterPhysicsComponent, SCharacterMovementComponent>();
-
-        View.each([&](SCharacterControllerComponent& Controller, const SCharacterPhysicsComponent& Physics, SCharacterMovementComponent& Movement)
-        {
-            JPH::CharacterVirtual* Character = Physics.Character.GetPtr();
-            if (Character == nullptr)
-            {
-                return;
-            }
-
-            JPH::CharacterVirtual::EGroundState GroundState = Character->GetGroundState();
-            bool bWasGrounded = Movement.bGrounded;
-            Movement.bGrounded = (GroundState == JPH::CharacterVirtual::EGroundState::OnGround);
-
-            if (!bWasGrounded && Movement.bGrounded)
-            {
-                Movement.JumpCount = 0;
-            }
-
-            glm::vec3 DesiredDirection(0.0f);
-            if (glm::length(Controller.MoveInput) > 0.001f)
-            {
-                glm::vec3 Forward = RenderUtils::GetForwardVector(Controller.LookInput.x, 0.0f);
-                glm::vec3 Right = RenderUtils::GetRightVector(Controller.LookInput.x);
-
-                Forward = glm::normalize(glm::vec3(Forward.x, 0.0f, Forward.z));
-                Right = glm::normalize(glm::vec3(Right.x, 0.0f, Right.z));
-
-                DesiredDirection = Forward * Controller.MoveInput.y + Right * Controller.MoveInput.x;
-                DesiredDirection = glm::normalize(DesiredDirection);
-            }
-
-            float TargetSpeed = Movement.MoveSpeed;
-            glm::vec3 TargetVelocity = DesiredDirection * TargetSpeed;
-
-            glm::vec3 HorizontalVelocity(Movement.Velocity.x, 0.0f, Movement.Velocity.z);
-
-            float AccelerationRate = Movement.Acceleration;
-            float DecelerationRate = Movement.Deceleration;
-
-            if (glm::length(TargetVelocity) > 0.001f)
-            {
-                HorizontalVelocity = glm::mix(HorizontalVelocity, TargetVelocity, AccelerationRate * (float)DeltaTime);
-            }
-            else
-            {
-                float Friction = 1.0f - Movement.GroundFriction * (float)DeltaTime;
-                HorizontalVelocity *= glm::max(0.0f, Friction);
-            }
-
-            Movement.Velocity.x = HorizontalVelocity.x;
-            Movement.Velocity.z = HorizontalVelocity.z;
-
-            if (Movement.bWantsToJump)
-            {
-                Movement.Velocity.y = Movement.JumpSpeed;
-                Movement.bWantsToJump = false;
-                Movement.JumpCount++;
-            }
-
-            if (Movement.bGrounded)
-            {
-                JPH::Vec3 GroundVelocity = Character->GetGroundVelocity();
-                Movement.Velocity.x += GroundVelocity.GetX();
-                Movement.Velocity.z += GroundVelocity.GetZ();
-            }
-            else
-            {
-                Movement.Velocity.y += Movement.Gravity * (float)DeltaTime;
-            }
-            
-
-            Character->SetLinearVelocity(JoltUtils::ToJPHRVec3(Movement.Velocity));
-
-            JPH::CharacterVirtual::ExtendedUpdateSettings UpdateSettings;
-            UpdateSettings.mStickToFloorStepDown = JPH::Vec3(0.0f, -0.5f, 0.0f);
-            UpdateSettings.mWalkStairsStepUp = JPH::Vec3(0.0f, 0.04f, 0.0f);
-
-            Character->ExtendedUpdate((float)DeltaTime,
-                JPH::Vec3(0.0f, Movement.Gravity, 0.0f),
-                UpdateSettings,
-                JoltSystem->GetDefaultBroadPhaseLayerFilter(Layers::MOVING),
-                JoltSystem->GetDefaultLayerFilter(Layers::MOVING),
-                {},
-                {},
-                *FJoltPhysicsContext::GetAllocator());
-
-            JPH::Vec3 ActualVelocity = Character->GetLinearVelocity();
-            Movement.Velocity = JoltUtils::FromJPHVec3(ActualVelocity);
-        });
     }
 
     void FJoltPhysicsScene::PostUpdate()
@@ -343,15 +252,146 @@ namespace Lumina::Physics
             DebugRenderer->DrawBodies(JoltSystem.get(), World);
         }
         
+        auto View = World->GetEntityRegistry().view<SCharacterControllerComponent, SCharacterPhysicsComponent, SCharacterMovementComponent>();
+        
+        View.each([&](
+            SCharacterControllerComponent& Controller, 
+            const SCharacterPhysicsComponent& Physics, 
+            SCharacterMovementComponent& Movement)
+        {
+            JPH::CharacterVirtual* Character = Physics.Character.GetPtr();
+            if (Character == nullptr)
+            {
+                return;
+            }
+        
+            JPH::CharacterVirtual::EGroundState GroundState = Character->GetGroundState();
+            bool bWasGrounded = Movement.bGrounded;
+            Movement.bGrounded = (GroundState == JPH::CharacterVirtual::EGroundState::OnGround);
+        
+            if (!bWasGrounded && Movement.bGrounded)
+            {
+                Movement.JumpCount = 0;
+            }
+        
+            glm::vec3 DesiredDirection(0.0f);
+            bool bHasMovementInput = false;
+            
+            if (glm::length(Controller.MoveInput) > 0.001f)
+            {
+                bHasMovementInput = true;
+                glm::vec3 Forward = RenderUtils::GetForwardVector(Controller.LookInput.x, 0.0f);
+                glm::vec3 Right = RenderUtils::GetRightVector(Controller.LookInput.x);
+        
+                Forward = glm::normalize(glm::vec3(Forward.x, 0.0f, Forward.z));
+                Right = glm::normalize(glm::vec3(Right.x, 0.0f, Right.z));
+        
+                DesiredDirection = Forward * Controller.MoveInput.y + Right * Controller.MoveInput.x;
+                DesiredDirection = glm::normalize(DesiredDirection);
+                
+                Controller.MoveInput = {};
+            }
+        
+            float TargetSpeed = bHasMovementInput ? Movement.MoveSpeed : 0.0f;
+            glm::vec3 TargetVelocity = DesiredDirection * TargetSpeed;
+            
+            glm::quat TargetRotation = JoltUtils::FromJPHQuat(Character->GetRotation());
+            if (Movement.bUseControllerRotation)
+            {
+                TargetRotation = glm::quat(glm::vec3(0.0f, glm::radians(Controller.LookInput.x), 0.0f));
+            }
+            else if (Movement.bOrientRotationToMovement && bHasMovementInput)
+            {
+                float targetYaw = glm::atan(DesiredDirection.x, DesiredDirection.z);
+                glm::quat Rotation = glm::quat(glm::vec3(0.0f, targetYaw, 0.0f));
+                
+                TargetRotation = glm::slerp(TargetRotation, Rotation, Movement.RotationRate * (float)DeltaTime);
+            }
+        
+            glm::vec3 HorizontalVelocity(Movement.Velocity.x, 0.0f, Movement.Velocity.z);
+            float CurrentSpeed = glm::length(HorizontalVelocity);
+        
+            if (bHasMovementInput)
+            {
+                HorizontalVelocity = glm::mix(HorizontalVelocity, TargetVelocity, Movement.Acceleration * (float)DeltaTime);
+            }
+            else if (Movement.bGrounded)
+            {
+                float DecelerationAmount = Movement.Deceleration * (float)DeltaTime;
+                float NewSpeed = glm::max(0.0f, CurrentSpeed - DecelerationAmount);
+                
+                if (CurrentSpeed > 0.001f)
+                {
+                    HorizontalVelocity = glm::normalize(HorizontalVelocity) * NewSpeed;
+                }
+                else
+                {
+                    HorizontalVelocity = glm::vec3(0.0f);
+                }
+                
+                float Friction = glm::max(0.0f, 1.0f - Movement.GroundFriction * (float)DeltaTime);
+                HorizontalVelocity *= Friction;
+            }
+            else
+            {
+                float AirFriction = glm::max(0.0f, 1.0f - (Movement.GroundFriction * 0.1f) * (float)DeltaTime);
+                HorizontalVelocity *= AirFriction;
+            }
+        
+            Movement.Velocity.x = HorizontalVelocity.x;
+            Movement.Velocity.z = HorizontalVelocity.z;
+        
+            if (Controller.bJumpPressed)
+            {
+                Controller.bJumpPressed = false;
+                
+                if (Movement.JumpCount != Movement.MaxJumpCount)
+                {
+                    Movement.Velocity.y = Movement.JumpSpeed;
+                    Movement.JumpCount++;
+                }
+            }
+        
+            if (Movement.bGrounded)
+            {
+                JPH::Vec3 GroundVelocity = Character->GetGroundVelocity();
+                Movement.Velocity.x += GroundVelocity.GetX();
+                Movement.Velocity.z += GroundVelocity.GetZ();
+            }
+            else
+            {
+                Movement.Velocity.y += Movement.Gravity * (float)DeltaTime;
+            }
+        
+            Character->SetRotation(JoltUtils::ToJPHQuat(TargetRotation));
+            Character->SetLinearVelocity(JoltUtils::ToJPHRVec3(Movement.Velocity));
+        
+            JPH::CharacterVirtual::ExtendedUpdateSettings UpdateSettings;
+            UpdateSettings.mStickToFloorStepDown = JPH::Vec3(0.0f, -0.5f, 0.0f);
+            UpdateSettings.mWalkStairsStepUp = JPH::Vec3(0.0f, Physics.StepHeight, 0.0f);
+        
+            Character->ExtendedUpdate((float)DeltaTime,
+                JPH::Vec3(0.0f, Movement.Gravity, 0.0f),
+                UpdateSettings,
+                JoltSystem->GetDefaultBroadPhaseLayerFilter(Layers::MOVING),
+                JoltSystem->GetDefaultLayerFilter(Layers::MOVING),
+                {},
+                {},
+                *FJoltPhysicsContext::GetAllocator());
+        
+            JPH::Vec3 ActualVelocity = Character->GetLinearVelocity();
+            Movement.Velocity = JoltUtils::FromJPHVec3(ActualVelocity);
+        });
+        
         if (CollisionSteps > 0)
         {
             PreUpdate();
 
-            JoltSystem->Update(FixedTimeStep, CollisionSteps, FJoltPhysicsContext::GetAllocator(), FJoltPhysicsContext::GetThreadPool());
+            JoltSystem->Update(static_cast<float>(FixedTimeStep), CollisionSteps, FJoltPhysicsContext::GetAllocator(), FJoltPhysicsContext::GetThreadPool());
         
             PostUpdate();
             
-            Accumulator -= CollisionSteps * FixedTimeStep;
+            Accumulator -= static_cast<double>(CollisionSteps) * FixedTimeStep;
         
             // Clamp accumulator if we hit max steps
             if (CollisionSteps >= MaxSteps)
@@ -386,7 +426,8 @@ namespace Lumina::Physics
         JoltSystem->OptimizeBroadPhase();
         
         Registry.on_construct<SCharacterPhysicsComponent>().connect<&FJoltPhysicsScene::OnCharacterComponentConstructed>(this);
-        
+        Registry.on_destroy<SCharacterPhysicsComponent>().connect<&FJoltPhysicsScene::OnCharacterComponentDestroyed>(this);
+
         Registry.on_update<SRigidBodyComponent>().connect<&FJoltPhysicsScene::OnRigidBodyComponentUpdated>(this);
         Registry.on_construct<SRigidBodyComponent>().connect<&FJoltPhysicsScene::OnRigidBodyComponentConstructed>(this);
         Registry.on_destroy<SRigidBodyComponent>().connect<&FJoltPhysicsScene::OnRigidBodyComponentDestroyed>(this);
@@ -408,7 +449,8 @@ namespace Lumina::Physics
         entt::registry& Registry = World->GetEntityRegistry();
 
         Registry.on_construct<SCharacterPhysicsComponent>().disconnect<&FJoltPhysicsScene::OnCharacterComponentConstructed>(this);
-        
+        Registry.on_destroy<SCharacterPhysicsComponent>().disconnect<&FJoltPhysicsScene::OnCharacterComponentDestroyed>(this);
+
         Registry.on_construct<SRigidBodyComponent>().disconnect<&FJoltPhysicsScene::OnRigidBodyComponentConstructed>(this);
         Registry.on_destroy<SRigidBodyComponent>().disconnect<&FJoltPhysicsScene::OnRigidBodyComponentDestroyed>(this);
 
@@ -688,30 +730,38 @@ namespace Lumina::Physics
     {
         SCharacterPhysicsComponent& CharacterComponent = Registry.get<SCharacterPhysicsComponent>(Entity);
         STransformComponent& TransformComponent = Registry.get<STransformComponent>(Entity);
-
-        JPH::Ref<JPH::CharacterVirtualSettings> Settings = Memory::New<JPH::CharacterVirtualSettings>();
         
         JPH::Ref<JPH::Shape> StandingShape = JPH::RotatedTranslatedShapeSettings(
-            JPH::Vec3(0, CharacterComponent.HalfHeight, 0),
+            JPH::Vec3(0, 0, 0),
             JPH::Quat::sIdentity(),
             Memory::New<JPH::CapsuleShape>(CharacterComponent.HalfHeight, CharacterComponent.Radius * TransformComponent.MaxScale())).Create().Get();
 
+        JPH::Ref Settings = Memory::New<JPH::CharacterVirtualSettings>();
         Settings->mShape = StandingShape;
+        Settings->mInnerBodyShape = StandingShape;
+        Settings->mInnerBodyLayer = Layers::MOVING;
         Settings->mMass = CharacterComponent.Mass;
         Settings->mMaxStrength = CharacterComponent.MaxStrength;
         Settings->mCharacterPadding = 0.02f;
         Settings->mPenetrationRecoverySpeed = 1.0f;
         Settings->mPredictiveContactDistance = 0.1f;
-
         Settings->mSupportingVolume = JPH::Plane(JPH::Vec3::sAxisY(), 0.0f);
 
-        JPH::CharacterVirtual* Character = Memory::New<JPH::CharacterVirtual>(Settings,
+
+        JPH::Ref Character = Memory::New<JPH::CharacterVirtual>(Settings,
             JoltUtils::ToJPHRVec3(TransformComponent.GetLocation()),
             JoltUtils::ToJPHQuat(TransformComponent.GetRotation()),
             0,
             JoltSystem.get());
         
-        CharacterComponent.Character = Character;
+        JPH::BodyInterface& BodyInterface = JoltSystem->GetBodyInterface();
+        BodyInterface.SetUserData(Character->GetInnerBodyID(), entt::to_integral(Entity));
+        
+        CharacterComponent.Character = Move(Character);
+    }
+
+    void FJoltPhysicsScene::OnCharacterComponentDestroyed(entt::registry& Registry, entt::entity Entity)
+    {
     }
 
     void FJoltPhysicsScene::OnRigidBodyComponentUpdated(entt::registry& Registry, entt::entity Entity)
@@ -723,7 +773,7 @@ namespace Lumina::Physics
     {
         if (!Registry.any_of<SSphereColliderComponent, SBoxColliderComponent>(Entity))
         {
-            LOG_ERROR("Entity {} attempted to construct a rigid body without a collider!");
+            LOG_ERROR("Entity {} attempted to construct a rigid body without a collider!", entt::to_integral(Entity));
             return;
         }
 

@@ -149,11 +149,11 @@ namespace Lumina
         TQueue<entt::entity>                    EntityDestroyRequests;
         TVector<TUniquePtr<FPropertyTable>>     PropertyTables;
 
-        float                                   GuizmoSnapTranslate = 1.0f;
+        float                                   GuizmoSnapTranslate = 0.1f;
 		float                                   GuizmoSnapRotate = 5.0f;
-		float                                   GuizmoSnapScale = 1.0f;
+		float                                   GuizmoSnapScale = 0.1f;
 
-		bool									bGuizmoSnapEnabled = false;
+		bool									bGuizmoSnapEnabled = true;
         bool                                    bGamePreviewRunning = false;
         bool                                    bSimulatingWorld = false;
 

@@ -21,6 +21,8 @@ namespace Lumina
         
         for (entt::entity EditorEntity : View)
         {
+            SystemContext.DispatchEvent<FSwitchActiveCameraEvent>(FSwitchActiveCameraEvent{EditorEntity});
+            
             STransformComponent& Transform      = View.get<STransformComponent>(EditorEntity);
             SVelocityComponent& Velocity        = View.get<SVelocityComponent>(EditorEntity);
             FEditorComponent& Editor            = View.get<FEditorComponent>(EditorEntity);

@@ -92,8 +92,108 @@ namespace Lumina
         }
     }
 
+    void IPrimitiveDrawInterface::DrawCapsule(const glm::vec3& Start, const glm::vec3& End, float Radius, const glm::vec4& Color, uint8 Segments, float Thickness, float Duration)
+    {
+        glm::vec3 axis = End - Start;
+        float height = glm::length(axis);
+        glm::vec3 direction = height > 0.0f ? axis / height : glm::vec3(0, 1, 0);
+        
+        glm::vec3 up = glm::abs(direction.y) < 0.999f ? glm::vec3(0, 1, 0) : glm::vec3(1, 0, 0);
+        glm::vec3 right = glm::normalize(glm::cross(up, direction));
+        glm::vec3 forward = glm::cross(direction, right);
+        
+        for (uint8 i = 0; i <= Segments; ++i)
+        {
+            float t = static_cast<float>(i) / Segments;
+            glm::vec3 center = glm::mix(Start, End, t);
+            
+            for (uint8 lon = 0; lon < Segments; ++lon)
+            {
+                float angle1 = glm::two_pi<float>() * lon / Segments;
+                float angle2 = glm::two_pi<float>() * (lon + 1) / Segments;
+                
+                glm::vec3 p1 = center + Radius * (cos(angle1) * right + sin(angle1) * forward);
+                glm::vec3 p2 = center + Radius * (cos(angle2) * right + sin(angle2) * forward);
+                
+                DrawLine(p1, p2, Color, Thickness, Duration);
+            }
+        }
+        
+        for (uint8 lon = 0; lon < Segments; ++lon)
+        {
+            float angle = glm::two_pi<float>() * lon / Segments;
+            glm::vec3 offset = Radius * (cos(angle) * right + sin(angle) * forward);
+            
+            DrawLine(Start + offset, End + offset, Color, Thickness, Duration);
+        }
+        
+        for (uint8 lat = 1; lat <= Segments / 2; ++lat)
+        {
+            float latAngle = glm::half_pi<float>() * lat / (Segments / 2);
+            float y = Radius * sin(latAngle);
+            float ringRadius = Radius * cos(latAngle);
+            
+            for (uint8 lon = 0; lon < Segments; ++lon)
+            {
+                float lonAngle1 = glm::two_pi<float>() * lon / Segments;
+                float lonAngle2 = glm::two_pi<float>() * (lon + 1) / Segments;
+                
+                glm::vec3 offset1 = ringRadius * (cos(lonAngle1) * right + sin(lonAngle1) * forward) + y * direction;
+                glm::vec3 offset2 = ringRadius * (cos(lonAngle2) * right + sin(lonAngle2) * forward) + y * direction;
+                
+                DrawLine(End + offset1, End + offset2, Color, Thickness, Duration);
+            }
+        }
+        
+        for (uint8 lat = 1; lat <= Segments / 2; ++lat)
+        {
+            float latAngle = glm::half_pi<float>() * lat / (Segments / 2);
+            float y = Radius * sin(latAngle);
+            float ringRadius = Radius * cos(latAngle);
+            
+            for (uint8 lon = 0; lon < Segments; ++lon)
+            {
+                float lonAngle1 = glm::two_pi<float>() * lon / Segments;
+                float lonAngle2 = glm::two_pi<float>() * (lon + 1) / Segments;
+                
+                glm::vec3 offset1 = ringRadius * (cos(lonAngle1) * right + sin(lonAngle1) * forward) - y * direction;
+                glm::vec3 offset2 = ringRadius * (cos(lonAngle2) * right + sin(lonAngle2) * forward) - y * direction;
+                
+                DrawLine(Start + offset1, Start + offset2, Color, Thickness, Duration);
+            }
+        }
+        
+        for (uint8 lon = 0; lon < Segments; ++lon)
+        {
+            float lonAngle = glm::two_pi<float>() * lon / Segments;
+            glm::vec3 radialDir = cos(lonAngle) * right + sin(lonAngle) * forward;
+            
+            for (uint8 lat = 0; lat < Segments / 2; ++lat)
+            {
+                float latAngle1 = glm::half_pi<float>() * lat / (Segments / 2);
+                float latAngle2 = glm::half_pi<float>() * (lat + 1) / (Segments / 2);
+                
+                glm::vec3 p1 = End + Radius * (cos(latAngle1) * radialDir + sin(latAngle1) * direction);
+                glm::vec3 p2 = End + Radius * (cos(latAngle2) * radialDir + sin(latAngle2) * direction);
+                
+                DrawLine(p1, p2, Color, Thickness, Duration);
+            }
+            
+            for (uint8 lat = 0; lat < Segments / 2; ++lat)
+            {
+                float latAngle1 = glm::half_pi<float>() * lat / (Segments / 2);
+                float latAngle2 = glm::half_pi<float>() * (lat + 1) / (Segments / 2);
+                
+                glm::vec3 p1 = Start + Radius * (cos(latAngle1) * radialDir - sin(latAngle1) * direction);
+                glm::vec3 p2 = Start + Radius * (cos(latAngle2) * radialDir - sin(latAngle2) * direction);
+                
+                DrawLine(p1, p2, Color, Thickness, Duration);
+            }
+        }
+    }
+
     void IPrimitiveDrawInterface::DrawCone(const glm::vec3& Apex, const glm::vec3& Direction, float AngleRadians,
-        float Length, const glm::vec4& Color, uint8 Segments, uint8 Stacks, float Thickness, float Duration)
+                                           float Length, const glm::vec4& Color, uint8 Segments, uint8 Stacks, float Thickness, float Duration)
     {
         glm::vec3 dir = glm::normalize(Direction);
         

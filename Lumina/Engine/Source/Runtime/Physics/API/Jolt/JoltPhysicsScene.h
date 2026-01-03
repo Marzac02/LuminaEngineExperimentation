@@ -144,6 +144,7 @@ namespace Lumina::Physics
 		TVector<FRayResult> CastSphere(const FSphereCastSettings& Settings) override;
     	
     	void OnCharacterComponentConstructed(entt::registry& Registry, entt::entity Entity);
+    	void OnCharacterComponentDestroyed(entt::registry& Registry, entt::entity Entity);
     	
     	void OnRigidBodyComponentUpdated(entt::registry& Registry, entt::entity Entity);
     	void OnRigidBodyComponentConstructed(entt::registry& Registry, entt::entity Entity);
@@ -169,8 +170,8 @@ namespace Lumina::Physics
         CWorld* World;
 
 
-        float FixedTimeStep = 1.0f / 60.0f;
-        float Accumulator = 0.0f;
+        double FixedTimeStep = 1.0 / 60.0;
+        double Accumulator = 0.0;
         int CollisionSteps = 1;
     
     };

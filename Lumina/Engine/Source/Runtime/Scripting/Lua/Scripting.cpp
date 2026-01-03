@@ -156,6 +156,7 @@ namespace Lumina::Scripting
 
     void FScriptingContext::RegisterCoreTypes()
     {
+        
         State.set_function("LoadObject", [](const sol::object& Name)
         {
             CObject* Object = LoadObject<CObject>(Name.as<const char*>());
@@ -453,6 +454,7 @@ namespace Lumina::Scripting
         
         // Matrix operations
         GLMTable.set_function("LookAt", [](glm::vec3 Eye, glm::vec3 Center, glm::vec3 Up) { return glm::lookAt(Eye, Center, Up); });
+        GLMTable.set_function("QuatLookAt", [](const glm::vec3& Direction, const glm::vec3& Up) { return glm::quatLookAt(Direction, Up); });
         GLMTable.set_function("Perspective", [](float FOV, float Aspect, float Near, float Far) { return glm::perspective(FOV, Aspect, Near, Far); });
         GLMTable.set_function("Translate", [](glm::mat4 M, glm::vec3 V) { return glm::translate(M, V); });
         GLMTable.set_function("Rotate", [](glm::mat4 M, float AngleRad, glm::vec3 Axis) { return glm::rotate(M, AngleRad, Axis); });

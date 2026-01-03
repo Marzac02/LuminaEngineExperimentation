@@ -3,6 +3,7 @@
 
 #include "Core/Math/Color.h"
 #include "Renderer/PrimitiveDrawInterface.h"
+#include "World/Entity/Components/CharacterComponent.h"
 #include "world/entity/components/lightcomponent.h"
 #include "World/Entity/Components/TransformComponent.h"
 
@@ -56,6 +57,23 @@ namespace Lumina
         const STransformComponent& Transform = Registry.get<STransformComponent>(Entity);
         
         PDI->DrawSphere(Transform.GetLocation(), PointLight.Attenuation, 
-            glm::vec4(PointLight.LightColor, 1.0f), 32, 1.0f, 0.025f);
+            glm::vec4(PointLight.LightColor, 1.0f), 32, 1.0f, 0.0f);
+    }
+
+    CStruct* CComponentVisualizer_CharacterPhysics::GetSupportedComponentType() const
+    {
+        return SCharacterPhysicsComponent::StaticStruct();
+    }
+
+    void CComponentVisualizer_CharacterPhysics::Draw(IPrimitiveDrawInterface* PDI, entt::registry& Registry, entt::entity Entity)
+    {
+        const SCharacterPhysicsComponent& Character = Registry.get<SCharacterPhysicsComponent>(Entity);
+        const STransformComponent& Transform = Registry.get<STransformComponent>(Entity);
+    
+        glm::vec3 Location = Transform.GetLocation();
+        glm::vec3 Start = Location - glm::vec3(0, Character.HalfHeight, 0);
+        glm::vec3 End = Location + glm::vec3(0, Character.HalfHeight, 0);
+    
+        PDI->DrawCapsule(Start, End, Character.Radius, glm::vec4(0.0f, 1.0f, 0.0f, 1.0f), 16, 2.0f, 0.0f);
     }
 }

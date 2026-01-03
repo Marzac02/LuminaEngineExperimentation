@@ -86,6 +86,23 @@ namespace Lumina
                 
             "CastSphere",           &FSystemContext::CastSphere);
         
+        
+        Lua.new_usertype<entt::runtime_view>("View", 
+            sol::no_constructor,
+            
+            "SizeHint", &entt::runtime_view::size_hint,
+            "Contains", &entt::runtime_view::contains,
+            "Each", [](const entt::runtime_view& Self, const sol::function& Callback)
+            {
+               if (Callback.valid())
+               {
+                   for (entt::entity Entity : Self)
+                   {
+                       Callback(Entity);
+                   }
+               }
+            });
+        
         Lua.new_enum("EMoveMode",
             "Teleport",       EMoveMode::Teleport,
             "MoveKinematic",  EMoveMode::MoveKinematic,
@@ -93,51 +110,6 @@ namespace Lumina
         
     }
     
-    entt::runtime_view FSystemContext::CreateRuntimeView(const TVector<FName>& Components)
-    {
-        LUMINA_PROFILE_SCOPE();
-
-        entt::runtime_view RuntimeView;
-        
-        for (const FName& ComponentName : Components)
-        {
-            entt::hashed_string HashedString = entt::hashed_string(ComponentName.c_str());
-            entt::meta_type Meta = entt::resolve(HashedString);
-            if (!Meta)
-            {
-                continue;
-            }
-
-            if (entt::basic_sparse_set<>* Storage = Registry.storage(Meta.info().hash()))
-            {
-                RuntimeView.iterate(*Storage);
-            }
-        }
-
-        return RuntimeView;
-    }
-
-    entt::runtime_view FSystemContext::CreateRuntimeView(const TVector<entt::id_type>& Components)
-    {
-        entt::runtime_view RuntimeView;
-        
-        for (entt::id_type Type : Components)
-        {
-            entt::meta_type Meta = entt::resolve(Type);
-            if (!Meta)
-            {
-                continue;
-            }
-
-            if (entt::basic_sparse_set<>* Storage = Registry.storage(Meta.info().hash()))
-            {
-                RuntimeView.iterate(*Storage);
-            }
-        }
-
-        return RuntimeView;
-    }
-
     entt::runtime_view FSystemContext::CreateRuntimeView(const THashSet<entt::id_type>& Components)
     {
         entt::runtime_view RuntimeView;
@@ -147,6 +119,11 @@ namespace Lumina
             entt::meta_type Meta = entt::resolve(Type);
             if (!Meta)
             {
+                if (entt::basic_sparse_set<>* Storage = Registry.storage(Type))
+                {
+                    RuntimeView.iterate(*Storage);
+                }
+                
                 continue;
             }
 
@@ -268,6 +245,11 @@ namespace Lumina
         return Registry.valid(Entity);
     }
 
+    bool FSystemContext::IsPlayWorld() const
+    {
+        return World->IsPlayWorld();
+    }
+
     void FSystemContext::Lua_DispatchEvent(const sol::object& Event)
     {
         using namespace entt::literals;
@@ -335,15 +317,10 @@ namespace Lumina
         return Any ? Any.cast<bool>() : false;
     }
 
-    void FSystemContext::Lua_View(const sol::variadic_args& Args, const sol::function& Callback)
+    entt::runtime_view FSystemContext::Lua_View(const sol::variadic_args& Args)
     {
         const THashSet<entt::id_type>& Types = ECS::CollectTypes(Args);
-        entt::runtime_view View = CreateRuntimeView(Types);
-        
-        View.each([&](entt::entity Itr)
-        {
-            Callback(Itr);
-        });
+       return CreateRuntimeView(Types);
     }
 
     void FSystemContext::Lua_SetActiveCamera(uint32 Entity)

@@ -15,7 +15,7 @@ namespace Lumina
         int64 BodyID;
         
         PROPERTY(Script)
-        uint32 Entity;
+        uint32 Entity = entt::null;
         
         PROPERTY(Script)
         glm::vec3 Start;
