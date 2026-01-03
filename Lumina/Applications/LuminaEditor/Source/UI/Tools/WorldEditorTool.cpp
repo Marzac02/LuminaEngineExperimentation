@@ -162,7 +162,7 @@ namespace Lumina
                 
                 if (entt::meta_type Meta = entt::resolve(entt::hashed_string(ComponentFilter.c_str())))
                 {
-                    entt::meta_any Return = ECS::InvokeMetaFunc(Meta, "has"_hs, entt::forward_as_meta(World->GetEntityRegistry()), Entity);
+                    entt::meta_any Return = ECS::Utils::InvokeMetaFunc(Meta, "has"_hs, entt::forward_as_meta(World->GetEntityRegistry()), Entity);
                     if (!Return.cast<bool>())
                     {
                         bPasses = false;
@@ -272,7 +272,7 @@ namespace Lumina
         
         ECS::Utils::ForEachComponent([&](void*, entt::basic_sparse_set<>& Set, const entt::meta_type& Type)
         {
-            if (entt::meta_any ReturnValue = ECS::InvokeMetaFunc(Type, "static_struct"_hs))
+            if (entt::meta_any ReturnValue = ECS::Utils::InvokeMetaFunc(Type, "static_struct"_hs))
             {
                 CStruct* StructType = ReturnValue.cast<CStruct*>();
 
@@ -512,7 +512,7 @@ namespace Lumina
                         using namespace entt::literals;
                         
                         entt::meta_type MetaType = entt::resolve(Set.info());
-                        if (entt::meta_any ReturnValue = ECS::InvokeMetaFunc(MetaType, "static_struct"_hs))
+                        if (entt::meta_any ReturnValue = ECS::Utils::InvokeMetaFunc(MetaType, "static_struct"_hs))
                         {
                             CStruct* StructType = ReturnValue.cast<CStruct*>();
                             if (StructType == SNameComponent::StaticStruct() || StructType == STransformComponent::StaticStruct())
@@ -818,7 +818,7 @@ namespace Lumina
                 for(auto&& [_, MetaType]: entt::resolve())
                 {
                     using namespace entt::literals;
-                    entt::meta_any Any = ECS::InvokeMetaFunc(MetaType, "static_struct"_hs);
+                    entt::meta_any Any = ECS::Utils::InvokeMetaFunc(MetaType, "static_struct"_hs);
                     CStruct* Type = Any.cast<CStruct*>();
                     LUM_ASSERT(Type)
                     
@@ -865,7 +865,7 @@ namespace Lumina
                     {
                         using namespace entt::literals;
 
-                        ECS::InvokeMetaFunc(CompInfo.MetaType, "emplace"_hs, entt::forward_as_meta(World->GetEntityRegistry()), SelectedEntity, entt::forward_as_meta(entt::meta_any{}));
+                        ECS::Utils::InvokeMetaFunc(CompInfo.MetaType, "emplace"_hs, entt::forward_as_meta(World->GetEntityRegistry()), SelectedEntity, entt::forward_as_meta(entt::meta_any{}));
                         bComponentAdded = true;
                     }
                     
@@ -1597,7 +1597,7 @@ namespace Lumina
                 {
                     using namespace entt::literals;
                     
-                    entt::meta_any Any = ECS::InvokeMetaFunc(MetaType, "static_struct"_hs);
+                    entt::meta_any Any = ECS::Utils::InvokeMetaFunc(MetaType, "static_struct"_hs);
                     CStruct* Struct = Any.cast<CStruct*>();
                     LUM_ASSERT(Struct)
                     
@@ -1695,7 +1695,7 @@ namespace Lumina
             {
                 if (entt::meta_type MetaType = entt::resolve(Storage.info()))
                 {
-                    if (entt::meta_any ReturnValue = ECS::InvokeMetaFunc(MetaType, "static_struct"_hs))
+                    if (entt::meta_any ReturnValue = ECS::Utils::InvokeMetaFunc(MetaType, "static_struct"_hs))
                     {
                         CStruct* StructType = ReturnValue.cast<CStruct*>();
                         
@@ -1888,6 +1888,11 @@ namespace Lumina
         {
             size_t EntityCount = World->GetEntityRegistry().view<entt::entity>().size<>();
             ImGui::Text(LE_ICON_FORMAT_LIST_NUMBERED " Total Entities: %s", eastl::to_string(EntityCount).c_str());
+            ImGui::SameLine(ImGui::GetContentRegionAvail().x - 24 - ImGui::GetStyle().FramePadding.x);
+            if (ImGui::Button(LE_ICON_REFRESH))
+            {
+                OutlinerListView.MarkTreeDirty();
+            }
             
             ImGui::PushStyleColor(ImGuiCol_ChildBg, ImVec4(0.08f, 0.08f, 0.1f, 1.0f));
             ImGui::PushStyleVar(ImGuiStyleVar_ChildRounding, 4.0f);
@@ -2497,7 +2502,7 @@ namespace Lumina
         {
             using namespace entt::literals;
             
-            if (entt::meta_any ReturnValue = ECS::InvokeMetaFunc(Type, "static_struct"_hs))
+            if (entt::meta_any ReturnValue = ECS::Utils::InvokeMetaFunc(Type, "static_struct"_hs))
             {
                 CStruct* StructType = ReturnValue.cast<CStruct*>();
                 
@@ -2568,10 +2573,10 @@ namespace Lumina
     {
         using namespace entt::literals;
         
-        entt::id_type TypeID = ECS::GetTypeID(Event.OuterType->GetName().c_str());
+        entt::id_type TypeID = ECS::Utils::GetTypeID(Event.OuterType->GetName().c_str());
         
-        entt::meta_any Component = ECS::InvokeMetaFunc(TypeID, "get"_hs, entt::forward_as_meta(World->GetEntityRegistry()), SelectedEntity);
-        ECS::InvokeMetaFunc(TypeID, "patch"_hs, entt::forward_as_meta(World->GetEntityRegistry()), SelectedEntity, entt::forward_as_meta(Component));
+        entt::meta_any Component = ECS::Utils::InvokeMetaFunc(TypeID, "get"_hs, entt::forward_as_meta(World->GetEntityRegistry()), SelectedEntity);
+        ECS::Utils::InvokeMetaFunc(TypeID, "patch"_hs, entt::forward_as_meta(World->GetEntityRegistry()), SelectedEntity, entt::forward_as_meta(Component));
         
         if (World->GetPackage())
         {
@@ -2623,7 +2628,7 @@ namespace Lumina
             TVector<PairType> Sorted;
             ECS::Utils::ForEachComponent([&](void* Component, entt::basic_sparse_set<>& Set, const entt::meta_type& Type)
             {
-                entt::meta_any Any = ECS::InvokeMetaFunc(Type, "static_struct"_hs);
+                entt::meta_any Any = ECS::Utils::InvokeMetaFunc(Type, "static_struct"_hs);
                 if (!Any)
                 {
                     return;
@@ -2698,7 +2703,7 @@ namespace Lumina
         
         CreatedEntity = World->ConstructEntity("Entity");
         World->GetEntityRegistry().get<SNameComponent>(CreatedEntity).Name = Component->MakeDisplayName() + "_" + eastl::to_string((uint32)CreatedEntity).c_str();
-        ECS::InvokeMetaFunc(MetaType, "emplace"_hs, entt::forward_as_meta(World->GetEntityRegistry()), CreatedEntity, entt::forward_as_meta(entt::meta_any{}));
+        ECS::Utils::InvokeMetaFunc(MetaType, "emplace"_hs, entt::forward_as_meta(World->GetEntityRegistry()), CreatedEntity, entt::forward_as_meta(entt::meta_any{}));
 
         if (CreatedEntity != entt::null)
         {

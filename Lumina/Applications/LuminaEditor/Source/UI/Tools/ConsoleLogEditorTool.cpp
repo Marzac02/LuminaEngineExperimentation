@@ -1,7 +1,5 @@
 ﻿#include "ConsoleLogEditorTool.h"
 
-#include <algorithm>
-
 #include "Core/Console/ConsoleVariable.h"
 #include "EASTL/sort.h"
 

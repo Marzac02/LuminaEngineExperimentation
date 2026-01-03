@@ -1,17 +1,15 @@
 ﻿#pragma once
 
 #include "Core/Object/ObjectMacros.h"
-#include "Component.h"
 #include "Physics/PhysicsTypes.h"
 #include "PhysicsComponent.generated.h"
 
 namespace Lumina
 {
-    REFLECT()
+    REFLECT(Component)
     struct LUMINA_API SRigidBodyComponent
     {
         GENERATED_BODY()
-        ENTITY_COMPONENT(SRigidBodyComponent)
         
         PROPERTY(Script, ReadOnly, Category = "Physics")
         uint32 BodyID = UINT32_MAX;
@@ -32,11 +30,10 @@ namespace Lumina
         bool bUseGravity = true;
     };
 
-    REFLECT()
+    REFLECT(Component)
     struct LUMINA_API SBoxColliderComponent
     {
         GENERATED_BODY()
-        ENTITY_COMPONENT(SBoxColliderComponent)
 
         PROPERTY(Editable)
         glm::vec3 HalfExtent = glm::vec3(0.5f);
@@ -45,11 +42,10 @@ namespace Lumina
         glm::vec3 Offset;
     };
 
-    REFLECT()
+    REFLECT(Component)
     struct LUMINA_API SSphereColliderComponent
     {
         GENERATED_BODY()
-        ENTITY_COMPONENT(SSphereColliderComponent)
 
         PROPERTY(Editable)
         float Radius = 0.5f;

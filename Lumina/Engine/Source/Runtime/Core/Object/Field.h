@@ -12,10 +12,7 @@ namespace Lumina
     class CStruct;
     class FProperty;
     
-    struct FFieldOwner
-    {
-        TVariant<CStruct*, FField*>     Variant;
-    };
+    using FFieldOwner = TVariant<CStruct*, FField*>;
     
     class FField
     {
@@ -30,7 +27,6 @@ namespace Lumina
 
         virtual ~FField() = default;
 
-        // Mirrored in CStruct.
         LUMINA_API virtual void AddProperty(FProperty* Property) { LUMINA_NO_ENTRY() }
 
         const FName& GetPropertyName() const { return Name; }

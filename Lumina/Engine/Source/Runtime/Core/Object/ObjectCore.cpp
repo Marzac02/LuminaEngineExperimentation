@@ -261,7 +261,7 @@ namespace Lumina
         for (; ReadMore; --ReadMore)
         {
             FFieldOwner Owner;
-            Owner.Variant.emplace<FField*>(NewProperty);
+            Owner.emplace<FField*>(NewProperty);
             ConstructProperties(Owner, Properties, NumProperties);
         }
     }
@@ -273,7 +273,7 @@ namespace Lumina
         while (NumProperties)
         {
             FFieldOwner Owner;
-            Owner.Variant.emplace<CStruct*>(Outer);
+            Owner.emplace<CStruct*>(Outer);
             ConstructProperties(Owner, PropertyArray, NumProperties);
         }
     }

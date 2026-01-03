@@ -25,7 +25,7 @@ namespace Lumina
             }
         });
     }
-
+    
     void CScriptEntitySystem::Update(FSystemContext& SystemContext)
     {
         LUMINA_PROFILE_SCOPE();
@@ -35,15 +35,7 @@ namespace Lumina
         {
             for (const Scripting::FLuaSystemScriptEntry& Entry : ScriptContainer.Systems[(uint32)SystemContext.GetUpdateStage()])
             {
-                entt::runtime_view RuntimeView = SystemContext.CreateRuntimeView(Entry.Queries);
-                std::vector<entt::entity> Entities(RuntimeView.begin(), RuntimeView.end());
-
-                if (Entities.empty())
-                {
-                    continue;
-                }
-                
-                if (sol::protected_function_result Result = Entry.ExecuteFunc(std::ref(SystemContext), std::ref(Entities), SystemContext.GetDeltaTime()); !Result.valid())
+                if (sol::protected_function_result Result = Entry.ExecuteFunc(std::ref(SystemContext), SystemContext.GetDeltaTime()); !Result.valid())
                 {
                     sol::error Error = Result;
                     LOG_ERROR("Script Error in system '{0}': {1}", Entry.Name, Error.what());
@@ -51,7 +43,7 @@ namespace Lumina
             }
         });
     }
-
+    
     void CScriptEntitySystem::Shutdown(FSystemContext& SystemContext)
     {
         auto View = SystemContext.CreateView<FLuaScriptsContainerComponent>();

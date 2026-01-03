@@ -8,7 +8,6 @@
 #include "Core/Object/ObjectBase.h"
 #include "Paths/Paths.h"
 #include "Scripting/Lua/Scripting.h"
-#include "world/entity/components/EntityComponentRegistry.h"
 
 
 namespace Lumina
@@ -45,7 +44,6 @@ namespace Lumina
             if (IModuleInterface* Module = FModuleManager::Get().LoadModule(Path))
             {
                 ProcessNewlyLoadedCObjects();
-                FEntityComponentRegistry::Get().RegisterAll();
             }
             else
             {

@@ -1,14 +1,13 @@
 ﻿#pragma once
-#include "Component.h"
+
 #include "TagComponent.generated.h"
 
 namespace Lumina
 {
-    REFLECT()
+    REFLECT(Component)
     struct LUMINA_API STagComponent
     {
         GENERATED_BODY()
-        ENTITY_COMPONENT(STagComponent)
 
         PROPERTY(Script)
         FName Tag;

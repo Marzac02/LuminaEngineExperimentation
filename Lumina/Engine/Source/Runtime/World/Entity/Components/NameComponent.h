@@ -1,16 +1,14 @@
 #pragma once
 
-#include "Component.h"
 #include "Containers/Name.h"
 #include "NameComponent.generated.h"
 
 namespace Lumina
 {
-    REFLECT()
+    REFLECT(Component)
     struct LUMINA_API SNameComponent
     {
         GENERATED_BODY()
-        ENTITY_COMPONENT(SNameComponent)
 
         PROPERTY(Editable)
         FName Name;

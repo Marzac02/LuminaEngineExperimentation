@@ -1,7 +1,6 @@
 ﻿#include "pch.h"
 #include "Engine.h"
 #include "Assets/AssetManager/AssetManager.h"
-#include "Assets/AssetRegistry/AssetRegistry.h"
 #include "Core/Application/Application.h"
 #include "Core/Console/ConsoleVariable.h"
 #include "Core/Delegates/CoreDelegates.h"
@@ -51,8 +50,6 @@ namespace Lumina
 
         ProcessNewlyLoadedCObjects();
         
-        FEntityComponentRegistry::Get().RegisterAll();
-
         WorldManager = EngineSubsystems.AddSubsystem<FWorldManager>();
         
         UpdateContext.SubsystemManager = &EngineSubsystems;

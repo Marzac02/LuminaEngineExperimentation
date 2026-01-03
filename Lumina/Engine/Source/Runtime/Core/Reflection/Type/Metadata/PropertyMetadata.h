@@ -6,7 +6,7 @@
 
 namespace Lumina
 {
-    class LUMINA_API FPropertyMetadata
+    class LUMINA_API FMetaDataPair
     {
     public:
 
@@ -19,6 +19,6 @@ namespace Lumina
 
     private:
 
-        THashMap<FName, FName>              PairParams;
+        THashMap<FName, FName> PairParams;
     };
 }

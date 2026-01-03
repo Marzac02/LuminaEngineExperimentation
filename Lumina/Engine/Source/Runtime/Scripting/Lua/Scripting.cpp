@@ -10,6 +10,7 @@
 #include "Paths/Paths.h"
 #include "Scripting/DeferredScriptRegistry.h"
 #include "Scripting/ScriptFactory.h"
+#include "Scripting/EnttGlue/EnttGlue.h"
 #include "World/Entity/Components/TagComponent.h"
 #include "World/Entity/Systems/SystemContext.h"
 
@@ -156,7 +157,6 @@ namespace Lumina::Scripting
 
     void FScriptingContext::RegisterCoreTypes()
     {
-        
         State.set_function("LoadObject", [](const sol::object& Name)
         {
             CObject* Object = LoadObject<CObject>(Name.as<const char*>());
@@ -167,7 +167,7 @@ namespace Lumina::Scripting
 	        sol::constructors<sol::types<>, sol::types<const char*>>(),
 		    "size", [](const FString& Self) { return Self.size(); },
 		    "trim", [](FString& Self) { return Self.trim(); },
-	        sol::meta_function::to_string, [](const FString &s) { return s.data(); },
+	        sol::meta_function::to_string, [](const FString &s) { return s.c_str(); },
 	        sol::meta_function::length, &FString::size,
 	        sol::meta_function::index, [](const FString &s, size_t i) { return s.at(i - 1); },
 	        "append", sol::overload(
@@ -175,6 +175,20 @@ namespace Lumina::Scripting
 	            [](FString &self, const char *suffix) { self.append(suffix); }
 		    )
 	    );
+        
+        State.new_usertype<FName>("FName",
+	        sol::constructors<sol::types<>, sol::types<const char*>>(),
+		    "Length",   [](const FName& Self) { return Self.Length(); },
+		    "IsNone",   [](const FName& Self) { return Self.IsNone(); },
+	        sol::meta_function::to_string, [](const FName &s) { return s.c_str(); },
+	        sol::meta_function::length, &FName::Length,
+	        sol::meta_function::index, [](const FName &s, size_t i) { return s.At(i - 1); }
+	    );
+        
+        auto EnttModule = State["entt"].get_or_create<sol::table>();
+        
+        Glue::RegisterRegistry(EnttModule);
+        Glue::RegisterRuntimeView(EnttModule);
 
         State.set_function("System", [](const sol::table& Descriptor)
         {
@@ -184,31 +198,12 @@ namespace Lumina::Scripting
                 "Type",     "System",
                 "Name",     Descriptor.get_or("Name", std::string("UnnamedSystem")),
                 "Stage",    Descriptor.get_or("Stage", 0),
+                "Enabled",  Descriptor.get_or("Enabled", true),
                 "Priority", Descriptor.get_or("Priority", 0),
                 "Init",     Descriptor["Init"],
                 "Execute",  Descriptor["Execute"],
                 "Shutdown", Descriptor["Shutdown"],
                 "Query",    Descriptor.get_or("Query", lua.create_table()));
-        });
-        
-
-        State.set_function("Metadata", [](const sol::table& Descriptor)
-        {
-            sol::state_view lua(Descriptor.lua_state());
-            
-            return lua.create_table_with(
-                "Type", "Metadata",
-                "Name", Descriptor.get_or("Name", std::string("")),
-                "Author", Descriptor.get_or("Author", std::string("")),
-                "Version", Descriptor.get_or("Version", std::string("1.0.0")),
-                "Description", Descriptor.get_or("Description", std::string(""))
-            );
-        });
-
-        State.new_usertype<entt::entity>("Entity",
-        sol::meta_function::to_string, [](const entt::entity& e)
-        {
-            return std::to_string(static_cast<uint32>(e));
         });
         
         State.new_usertype<FGuid>("FGuid",

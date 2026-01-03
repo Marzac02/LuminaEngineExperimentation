@@ -49,4 +49,17 @@ namespace Lumina
         Memory::Delete(GNameTable);
         GNameTable = nullptr;
     }
+
+    char FName::At(size_t Pos) const
+    {
+        const char* Str = c_str();
+        size_t Len = strlen(Str);
+    
+        if (Pos >= Len)
+        {
+            return '\0';
+        }
+    
+        return Str[Pos];
+    }
 }

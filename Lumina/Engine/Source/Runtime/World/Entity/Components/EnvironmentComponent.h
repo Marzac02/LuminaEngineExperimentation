@@ -1,6 +1,4 @@
 #pragma once
-#include "Component.h"
-#include "EntityComponentRegistry.h"
 #include "Core/Object/ObjectMacros.h"
 #include "EnvironmentComponent.generated.h"
 
@@ -34,11 +32,10 @@ namespace Lumina
         
     };
     
-    REFLECT()
+    REFLECT(Component)
     struct LUMINA_API SEnvironmentComponent
     {
         GENERATED_BODY()
-        ENTITY_COMPONENT(SEnvironmentComponent);
         
         PROPERTY(Editable, Category = "Lighting")
         SAmbientLight AmbientLight;

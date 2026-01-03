@@ -2,9 +2,9 @@
 #include "EASTL/hash_map.h"
 #include "EASTL/queue.h"
 #include "Engine/Source/Runtime/Platform/GenericPlatform.h"
-#include "Reflector/ReflectionCore/ReflectionMacro.h"
 #include "Reflector/TypeReflector.h"
 #include "Reflector/ReflectionCore/ReflectionDatabase.h"
+#include "Reflector/ReflectionCore/ReflectionMacro.h"
 
 namespace Lumina::Reflection
 {
@@ -16,10 +16,13 @@ namespace Lumina::Reflection
             : ParentReflectedType(nullptr)
             , LastReflectedType(nullptr)
             , Solution("")
-        {
-        }
-
-        ~FClangParserContext();
+        {}
+        
+        ~FClangParserContext() = default;
+        FClangParserContext(const FClangParserContext&) = delete;
+        FClangParserContext(FClangParserContext&&) = delete;
+        FClangParserContext& operator = (const FClangParserContext&) = delete;
+        FClangParserContext& operator = (FClangParserContext&&) = delete;
         
         void AddReflectedMacro(FReflectionMacro&& Macro);
         void AddGeneratedBodyMacro(FReflectionMacro&& Macro);

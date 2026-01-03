@@ -1,17 +1,16 @@
 ﻿#pragma once
-#include "Component.h"
-#include "Core/Object/ManualReflectTypes.h"
+
+#include <glm/glm.hpp>
 #include "Core/Math/Sine.h"
 #include "InterpolatingMovementComponent.generated.h"
 
 namespace Lumina
 {
     
-    REFLECT()
+    REFLECT(Component)
     struct LUMINA_API SInterpolatingMovementComponent
     {
         GENERATED_BODY()
-        ENTITY_COMPONENT(SInterpolatingMovementComponent)
 
         PROPERTY(Editable, Category = "Interp")
         FTransform Start;
@@ -27,11 +26,10 @@ namespace Lumina
         bool bForward = true;
     };
 
-    REFLECT()
+    REFLECT(Component)
     struct LUMINA_API SSineWaveMovementComponent
     {
         GENERATED_BODY()
-        ENTITY_COMPONENT(SSineWaveMovementComponent)
     
         // Wave Parameters
         PROPERTY(Editable, Category = "Wave")

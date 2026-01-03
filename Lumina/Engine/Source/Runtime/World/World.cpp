@@ -18,16 +18,15 @@
 #include "Entity/Components/LuaComponent.h"
 #include "Entity/Components/NameComponent.h"
 #include "Entity/Components/SingletonEntityComponent.h"
-#include "Entity/Components/VelocityComponent.h"
 #include "Entity/Systems/ScriptEntitySystem.h"
 #include "Events/KeyCodes.h"
 #include "glm/gtx/matrix_decompose.hpp"
 #include "Physics/Physics.h"
 #include "Scene/RenderScene/Forward/ForwardRenderScene.h"
+#include "Scripting/Lua/Scripting.h"
 #include "Subsystems/FCameraManager.h"
 #include "World/Entity/Components/RelationshipComponent.h"
 #include "World/entity/systems/EntitySystem.h"
-#include "World/Scene/RenderScene/Deferred/DeferredRenderScene.h"
 
 namespace Lumina
 {
@@ -165,17 +164,18 @@ namespace Lumina
 
     void CWorld::ShutdownWorld()
     {
+        EntityRegistry.on_construct<SSineWaveMovementComponent>().disconnect<&ThisClass::OnSineWaveMovementComponentCreated>(this);
+        EntityRegistry.on_destroy<FRelationshipComponent>().disconnect<&ThisClass::OnRelationshipComponentDestroyed>(this);
+        
+        EntityRegistry.clear<>();
+        
         ForEachUniqueSystem([&](CEntitySystem* System)
         {
            System->Shutdown(SystemContext); 
         });
         
         Scripting::FScriptingContext::Get().OnScriptLoaded.Remove(ScriptUpdatedDelegateHandle);
-
-        EntityRegistry.on_construct<SSineWaveMovementComponent>().disconnect<&ThisClass::OnSineWaveMovementComponentCreated>(this);
-        EntityRegistry.on_destroy<FRelationshipComponent>().disconnect<&ThisClass::OnRelationshipComponentDestroyed>(this);
         
-        EntityRegistry.clear<>();
         PhysicsScene.reset();
         RenderScene->Shutdown();
         
@@ -373,6 +373,11 @@ namespace Lumina
             
             FScriptingContext::Get().ForEachScript<FLuaSystemScriptEntry>([&](FLuaSystemScriptEntry& Script)
             {
+                if (!Script.bEnabled)
+                {
+                    return;
+                }
+                
                 LuaContainerComponent.Systems[Script.Stage].emplace_back(Script);
             });
 

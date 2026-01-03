@@ -6,8 +6,8 @@ local MyScript =
     CameraSystem = System
     {
         Stage = UpdateStage.PrePhysics,
+        Enabled = true,
         Priority = 5,
-        Query = { "SCameraComponent", "STransformComponent", "SCharacterControllerComponent" },
 
         Init = function(Context)
         end,
@@ -15,13 +15,15 @@ local MyScript =
         Shutdown = function(Context)
         end,
 
-        Execute = function(Context, Entities, DeltaTime)
-            for _, Entity in ipairs(Entities) do
-                
-                local CameraTransform = Context:Get(Entity, STransformComponent)
+        Execute = function(Context, DeltaTime)
+            
+            local CameraView = Context:View("SCameraComponent", "STransformComponent")
+            CameraView:Each(function(CameraEntity)
 
-                local View = Context:View(SInputComponent, SCharacterControllerComponent, STransformComponent)
-                View:Each(function(Player)
+                local CameraTransform = Context:Get(CameraEntity, STransformComponent)
+
+                local PlayerView = Context:View(SInputComponent, SCharacterControllerComponent, STransformComponent)
+                PlayerView:Each(function(Player)
                 
                     local PlayerTransform = Context:Get(Player, STransformComponent)
 
@@ -34,19 +36,18 @@ local MyScript =
                     
                     CameraTransform:SetRotation(LookAt)
 
-                    Context:DirtyTransform(Entity)
+                    Context:DirtyTransform(CameraEntity)
 
                 end)
-
-            end
+            end)
         end
     },
 
     EnemySystem = System
     {
         Stage = UpdateStage.PrePhysics,
+        Enabled = true,
         Priority = 15,
-        Query = { "Enemy" },
 
         Init = function(Context)
         end,
@@ -54,14 +55,16 @@ local MyScript =
         Shutdown = function(Context)
         end,
 
-        Execute = function(Context, Entities, DeltaTime)
-            for _, Enemy in ipairs(Entities) do    
-                local View = Context:View(SInputComponent, STransformComponent, SCharacterControllerComponent)
+        Execute = function(Context, DeltaTime)
+            
+            local EnemyView = Context:View("Enemy")
+            EnemyView:Each(function(Enemy)
 
-                View:Each(function(Entity)
+                local PlayerView = Context:View(SInputComponent, STransformComponent, SCharacterControllerComponent)
+                PlayerView:Each(function(Player)
 
                     local EnemyTransform = Context:Get(Enemy, STransformComponent)
-                    local PlayerTransform = Context:Get(Entity, STransformComponent)
+                    local PlayerTransform = Context:Get(Player, STransformComponent)
                     local Controller = Context:Get(Enemy, SCharacterControllerComponent)
 
                     local Direction = (PlayerTransform:GetLocation() - EnemyTransform:GetLocation()):Normalize()
@@ -71,15 +74,15 @@ local MyScript =
                     Context:DirtyTransform(Enemy, EMoveMode.MoveKinematic)
 
                 end)
-            end
+            end)
         end
     },
 
     CoolSystem = System
     {
         Stage = UpdateStage.PrePhysics,
+        Enabled = true,
         Priority = 10,
-        Query = { "SInputComponent", "SCharacterControllerComponent", "STransformComponent" },
 
         Init = function(Context)
         end,
@@ -87,8 +90,10 @@ local MyScript =
         Shutdown = function(Context)
         end,
 
-        Execute = function(Context, Entities, DeltaTime)            
-            for _, Player in ipairs(Entities) do
+        Execute = function(Context, DeltaTime)
+            
+            local View = Context:View(SInputComponent, SCharacterControllerComponent, STransformComponent)
+            View:Each(function(Player)
                 
                 local PlayerTransform = Context:Get(Player, STransformComponent)
                 local PlayerController = Context:Get(Player, SCharacterControllerComponent)
@@ -111,7 +116,7 @@ local MyScript =
                     PlayerController:AddMovementInput(vec2(-1, 0))
                 end
                     
-                if(InputComponent:IsKeyDown(Input.EKeyCode.Space)) then
+                if InputComponent:IsKeyDown(Input.EKeyCode.Space) then
                     PlayerController:Jump()
                 end
                     
@@ -139,7 +144,7 @@ local MyScript =
                         end
                     end
                 end
-            end
+            end)
         end
     },
 }

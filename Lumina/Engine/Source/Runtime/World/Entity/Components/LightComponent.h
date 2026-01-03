@@ -1,20 +1,15 @@
 #pragma once
 
-#include "Component.h"
 #include "RenderComponent.h"
-#include "Core/Engine/Engine.h"
-#include "Core/Object/Class.h"
-#include "World/Entity/Registry/EntityRegistry.h"
 #include "glm/glm.hpp"
 #include "LightComponent.generated.h"
 
 namespace Lumina
 {
-    REFLECT()
+    REFLECT(Component)
     struct LUMINA_API SPointLightComponent : SRenderComponent
     {
         GENERATED_BODY()
-        ENTITY_COMPONENT(SPointLightComponent);
         
         PROPERTY(Editable, Color, Category = "Light")
         glm::vec3 LightColor = glm::vec3(1.0f);
@@ -32,11 +27,10 @@ namespace Lumina
         bool bCastShadows = false;
     };
 
-    REFLECT()
+    REFLECT(Component)
     struct LUMINA_API SSpotLightComponent : SRenderComponent
     {
         GENERATED_BODY()
-        ENTITY_COMPONENT(SSpotLightComponent);
 
         PROPERTY(Editable, Color, Category = "Light")
         glm::vec3 LightColor = glm::vec3(1.0f);
@@ -76,11 +70,10 @@ namespace Lumina
     };
 
 
-    REFLECT()
+    REFLECT(Component)
     struct LUMINA_API SDirectionalLightComponent : SRenderComponent
     {
         GENERATED_BODY()
-        ENTITY_COMPONENT(SDirectionalLightComponent);
 
         PROPERTY(Editable, Color, Category = "Light")
         glm::vec3 Color = glm::vec4(1.0f);

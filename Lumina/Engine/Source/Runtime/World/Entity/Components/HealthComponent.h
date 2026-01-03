@@ -1,16 +1,14 @@
 ﻿#pragma once
 
-#include "Component.h"
 #include "Core/Object/ObjectMacros.h"
 #include "HealthComponent.generated.h"
 
 namespace Lumina
 {
-    REFLECT()
+    REFLECT(Component)
     struct LUMINA_API SHealthComponent
     {
         GENERATED_BODY()
-        ENTITY_COMPONENT(SHealthComponent)
         
         FUNCTION(Script)
         void ApplyDamage(float Damage) { Health -= Damage; }

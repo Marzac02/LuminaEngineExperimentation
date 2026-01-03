@@ -1,6 +1,5 @@
 #pragma once
 
-#include "Component.h"
 #include "Core/Object/ObjectMacros.h"
 #include <Jolt/Physics/Character/CharacterVirtual.h>
 #include "Physics/Physics.h"
@@ -9,11 +8,10 @@
 
 namespace Lumina
 {
-    REFLECT()
+    REFLECT(Component)
     struct LUMINA_API SCharacterPhysicsComponent
     {
         GENERATED_BODY()
-        ENTITY_COMPONENT(SCharacterPhysicsComponent)
     
         JPH::Ref<JPH::CharacterVirtual> Character;
     
@@ -36,11 +34,10 @@ namespace Lumina
         float StepHeight = 0.4f;
     };
 
-    REFLECT()
+    REFLECT(Component)
     struct LUMINA_API SCharacterMovementComponent
     {
         GENERATED_BODY()
-        ENTITY_COMPONENT(SCharacterMovementComponent)
     
         PROPERTY(Script, Editable, ClampMin = 0.0f, Category = "Movement")
         float MoveSpeed = 5.0f;

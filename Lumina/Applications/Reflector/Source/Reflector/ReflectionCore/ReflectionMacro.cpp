@@ -12,15 +12,16 @@ namespace Lumina::Reflection
     {
         clang_getExpansionLocation(clang_getRangeStart(Range), nullptr, &LineNumber, nullptr, nullptr);
         
-        CXToken* tokens = nullptr;
-        uint32_t numTokens = 0;
-        CXTranslationUnit translationUnit = clang_Cursor_getTranslationUnit(Cursor);
-        clang_tokenize(translationUnit, Range, &tokens, &numTokens);
-        for (uint32_t n = 0; n < numTokens; n++)
+        CXToken* Tokens = nullptr;
+        CXTranslationUnit TranslationUnit = clang_Cursor_getTranslationUnit(Cursor);
+        
+        uint32_t NumTokens = 0;
+        clang_tokenize(TranslationUnit, Range, &Tokens, &NumTokens);
+        for (uint32_t n = 0; n < NumTokens; n++)
         {
-            MacroContents += ClangUtils::GetString(clang_getTokenSpelling(translationUnit, tokens[n]));
+            MacroContents += ClangUtils::GetString(clang_getTokenSpelling(TranslationUnit, Tokens[n]));
         }
-        clang_disposeTokens(translationUnit, tokens, numTokens);
+        clang_disposeTokens(TranslationUnit, Tokens, NumTokens);
 
         const size_t StartIdx = MacroContents.find_first_of("(");
         const size_t EndIdx = MacroContents.find_last_of(')');

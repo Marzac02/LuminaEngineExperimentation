@@ -146,22 +146,17 @@ namespace Lumina
         
     public:
         
-        SIZE_T              ElementSize;
-
         FName               TypeName;
+        
+        FMetaDataPair       Metadata;
 
-        /** Linked list of properties from most-derived to base */
-        FProperty*          PropertyLinkNext;
+        SIZE_T              ElementSize;
 
         /** Specifies the type of property this is */
         EPropertyTypeFlags  TypeFlags;
         
+        /** Flags this property has (ReadOnly, Transient, etc.) */
         EPropertyFlags      Flags;
-
-        #ifdef WITH_DEVELOPMENT_TOOLS
-        FPropertyMetadata   Metadata;
-        #endif
-        
     };
 
     template <typename PropertyBaseClass>

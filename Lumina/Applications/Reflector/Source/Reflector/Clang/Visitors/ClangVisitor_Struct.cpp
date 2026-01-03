@@ -379,6 +379,7 @@ namespace Lumina::Reflection::Visitor
         
         eastl::shared_ptr<FReflectedStruct> ReflectedStruct = Context->ReflectionDatabase.GetOrCreateReflectedType<FReflectedStruct>(FStringHash(FullyQualifiedCursorName));
         ReflectedStruct->DisplayName = CursorName;
+        ReflectedStruct->GenerateMetadata(Macro.MacroContents);
         ReflectedStruct->Project = Context->Project->Name;
         ReflectedStruct->Type = FReflectedType::EType::Structure;
         ReflectedStruct->GeneratedBodyLineNumber = GeneratedBody.LineNumber;

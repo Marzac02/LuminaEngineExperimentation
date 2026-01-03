@@ -5,7 +5,7 @@
 
 namespace Lumina
 {
-    enum class EMoveMode;
+    enum class EMoveMode : uint8;
 
     struct LUMINA_API FNeedsTransformUpdate
     {

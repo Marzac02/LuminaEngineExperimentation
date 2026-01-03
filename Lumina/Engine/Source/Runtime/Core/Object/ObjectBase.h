@@ -8,6 +8,7 @@
 
 namespace Lumina
 {
+    struct FMetaDataPairParam;
     class CObjectBase;
     class CClass;
     
@@ -166,7 +167,7 @@ namespace Lumina
 //---------------------------------------------------------------------------------------------------
     
 
-    /** Helper for static registration, mostly from LRT code */
+    /** Helper for static registration in LRT code */
     struct FRegisterCompiledInInfo
     {
         template<typename ... TArgs>
@@ -181,18 +182,27 @@ namespace Lumina
         class CClass* (*RegisterFn)();
         const TCHAR* Package;
         const TCHAR* Name;
+        
+        uint16 NumMetaData;
+        const FMetaDataPairParam* MetaDataArray;
     };
 
     struct FStructRegisterCompiledInInfo
     {
         class CStruct* (*RegisterFn)();
         const TCHAR* Name;
+        
+        uint16 NumMetaData;
+        const FMetaDataPairParam* MetaDataArray;
     };
 
     struct FEnumRegisterCompiledInInfo
     {
         class CEnum* (*RegisterFn)();
         const TCHAR* Name;
+        
+        uint16 NumMetaData;
+        const FMetaDataPairParam* MetaDataArray;
     };
 
 

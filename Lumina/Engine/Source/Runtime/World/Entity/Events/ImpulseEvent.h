@@ -1,15 +1,14 @@
 ﻿#pragma once
-#include "World/Entity/Components/Component.h"
+
 #include "Core/Object/ObjectMacros.h"
 #include "ImpulseEvent.generated.h"
 
 namespace Lumina
 {
-    REFLECT()
+    REFLECT(Component)
     struct SImpulseEvent
     {
         GENERATED_BODY()
-        ENTITY_COMPONENT(SImpulseEvent)
         
         PROPERTY(Script)
         uint32 BodyID;
@@ -18,11 +17,10 @@ namespace Lumina
         glm::vec3 Impulse;
     };
     
-    REFLECT()
+    REFLECT(Component)
     struct SForceEvent
     {
         GENERATED_BODY()
-        ENTITY_COMPONENT(SForceEvent)
     
         PROPERTY(Script)
         uint32 BodyID;
@@ -31,11 +29,10 @@ namespace Lumina
         glm::vec3 Force;
     };
 
-    REFLECT()
+    REFLECT(Component)
     struct STorqueEvent
     {
         GENERATED_BODY()
-        ENTITY_COMPONENT(STorqueEvent)
     
         PROPERTY(Script)
         uint32 BodyID;
@@ -44,11 +41,10 @@ namespace Lumina
         glm::vec3 Torque;
     };
 
-    REFLECT()
+    REFLECT(Component)
     struct SAngularImpulseEvent
     {
         GENERATED_BODY()
-        ENTITY_COMPONENT(SAngularImpulseEvent)
     
         PROPERTY(Script)
         uint32 BodyID;
@@ -57,11 +53,10 @@ namespace Lumina
         glm::vec3 AngularImpulse;
     };
 
-    REFLECT()
+    REFLECT(Component)
     struct SSetVelocityEvent
     {
         GENERATED_BODY()
-        ENTITY_COMPONENT(SSetVelocityEvent)
     
         PROPERTY(Script)
         uint32 BodyID;
@@ -70,11 +65,10 @@ namespace Lumina
         glm::vec3 Velocity;
     };
 
-    REFLECT()
+    REFLECT(Component)
     struct SSetAngularVelocityEvent
     {
         GENERATED_BODY()
-        ENTITY_COMPONENT(SSetAngularVelocityEvent)
     
         PROPERTY(Script)
         uint32 BodyID;
@@ -83,11 +77,10 @@ namespace Lumina
         glm::vec3 AngularVelocity;
     };
 
-    REFLECT()
+    REFLECT(Component)
     struct SAddImpulseAtPositionEvent
     {
         GENERATED_BODY()
-        ENTITY_COMPONENT(SAddImpulseAtPositionEvent)
     
         PROPERTY(Script)
         uint32 BodyID;
@@ -99,11 +92,10 @@ namespace Lumina
         glm::vec3 Position;
     };
 
-    REFLECT()
+    REFLECT(Component)
     struct SAddForceAtPositionEvent
     {
         GENERATED_BODY()
-        ENTITY_COMPONENT(SAddForceAtPositionEvent)
     
         PROPERTY(Script)
         uint32 BodyID;
@@ -115,11 +107,10 @@ namespace Lumina
         glm::vec3 Position;
     };
 
-    REFLECT()
+    REFLECT(Component)
     struct SSetGravityFactorEvent
     {
         GENERATED_BODY()
-        ENTITY_COMPONENT(SSetGravityFactorEvent)
     
         PROPERTY(Script)
         uint32 BodyID;

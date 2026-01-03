@@ -1,15 +1,13 @@
 ﻿#pragma once
 #include "Core/Object/ObjectMacros.h"
-#include "Component.h"
 #include "SpringArmComponent.generated.h"
 
 namespace Lumina
 {
-    REFLECT()
+    REFLECT(Component)
     struct SSpringArmComponent
     {
         GENERATED_BODY()
-        ENTITY_COMPONENT(SSpringArmComponent)
 
         PROPERTY(Editable)
         float TargetArmLength = 3.0f;

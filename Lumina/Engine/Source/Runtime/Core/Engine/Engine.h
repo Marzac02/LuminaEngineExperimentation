@@ -3,8 +3,8 @@
 #include "Lumina.h"
 #include "Core/UpdateContext.h"
 #include "Module/API.h"
-#include <entt/entt.hpp>
 #include "Subsystems/Subsystem.h"
+#include <entt/entt.hpp>
 
 
 namespace Lumina

@@ -53,7 +53,7 @@ namespace Lumina::Scripting
         FName                   Name;
         int                     Stage;
         int                     Priority;
-        THashSet<entt::id_type> Queries;
+        bool                    bEnabled;
         
         sol::protected_function InitFunc;
         sol::protected_function ExecuteFunc;

@@ -128,10 +128,10 @@ namespace Lumina::ECS::Utils
                         entt::hashed_string HashString(Struct->GetName().c_str());
                         if (entt::meta_type Meta = entt::resolve(HashString))
                         {
-                            entt::meta_any Any = ECS::InvokeMetaFunc(Meta, "create_instance"_hs);
+                            entt::meta_any Any = ECS::Utils::InvokeMetaFunc(Meta, "create_instance"_hs);
                             
-                            ECS::InvokeMetaFunc(Meta, "serialize"_hs, entt::forward_as_meta(Ar), entt::forward_as_meta(Any));
-                            ECS::InvokeMetaFunc(Meta, "emplace"_hs, entt::forward_as_meta(Registry), Entity, entt::forward_as_meta(Any));
+                            ECS::Utils::InvokeMetaFunc(Meta, "serialize"_hs, entt::forward_as_meta(Ar), entt::forward_as_meta(Any));
+                            ECS::Utils::InvokeMetaFunc(Meta, "emplace"_hs, entt::forward_as_meta(Registry), Entity, entt::forward_as_meta(Any));
                         }
                     }
                 }

@@ -82,28 +82,26 @@ workspace "Lumina"
         symbols "On"
         editandcontinue "Off"
         defines { "LE_DEBUG", "LUMINA_DEBUG", "_DEBUG", "JPH_DEBUG", "SOL_ALL_SAFETIES_ON", }
-        flags { "NoRuntimeChecks", "NoIncrementalLink" }
+        flags { "NoRuntimeChecks" }
+        linktimeoptimization "Off"
 
 
     -- Release Configuration (Developer build with symbols)
     filter "configurations:Development"
-        --vectorextensions "AVX2"
-        --isaextensions { "BMI", "POPCNT", "LZCNT", "F16C" }
         optimize "Speed"
-        symbols "On" -- Keep symbols for profiling
+        symbols "On"
         defines { "LE_RELEASE", "LUMINA_DEVELOPMENT", "NDEBUG", "LUMINA_DEVELOPMENT", "SOL_ALL_SAFETIES_ON", }
-        flags { "LinkTimeOptimization" }
-        
+        linktimeoptimization "on"
+
+
 
     -- Shipping Configuration (Maximum optimization, no symbols)
     filter "configurations:Shipping"
-        --vectorextensions "AVX2"
-        --isaextensions { "BMI", "POPCNT", "LZCNT", "F16C" }
         optimize "Full"
         symbols "Off"
         defines { "LE_SHIP", "LUMINA_SHIPPING", "NDEBUG" }
         removedefines { "TRACY_ENABLE" }
-        flags { "LinkTimeOptimization" }
+        linktimeoptimization "on"
         
 
     filter {}

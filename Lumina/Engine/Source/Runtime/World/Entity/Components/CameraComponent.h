@@ -1,19 +1,15 @@
 #pragma once
-#include "Component.h"
 #include "Core/Engine/Engine.h"
-#include "Scripting/Lua/Scripting.h"
 #include "Renderer/ViewVolume.h"
-#include "Core/Object/Class.h"
 #include "CameraComponent.generated.h"
 
 
 namespace Lumina
 {
-    REFLECT()
+    REFLECT(Component)
     struct LUMINA_API SCameraComponent
     {
         GENERATED_BODY()
-        ENTITY_COMPONENT(SCameraComponent)
         
         SCameraComponent(float fov = 90.0f, float aspect = 16.0f / 9.0f)
             :ViewVolume(fov, aspect)

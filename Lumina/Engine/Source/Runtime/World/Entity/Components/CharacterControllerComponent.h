@@ -1,16 +1,15 @@
 #pragma once
+
 #include "Core/Object/ObjectMacros.h"
-#include "Component.h"
 #include "CharacterControllerComponent.generated.h"
 
 
 namespace Lumina
 {
-    REFLECT()
+    REFLECT(Component)
     struct LUMINA_API SCharacterControllerComponent
     {
         GENERATED_BODY()
-        ENTITY_COMPONENT(SCharacterControllerComponent)
         
         FUNCTION(Script)
         FORCEINLINE void AddMovementInput(const glm::vec2& Move) { MoveInput += Move; }

@@ -1,6 +1,5 @@
 ﻿#pragma once
 
-#include "Component.h"
 #include "Events/KeyCodes.h"
 #include "Input/Input.h"
 #include "Events/MouseCodes.h"
@@ -9,11 +8,10 @@
 
 namespace Lumina
 {
-    REFLECT()
+    REFLECT(Component)
     struct LUMINA_API SInputComponent
     {
         GENERATED_BODY()
-        ENTITY_COMPONENT(SInputComponent)
         
         FUNCTION(Script)
         FORCEINLINE double GetMouseX() const { return FInputProcessor::Get().GetMouseX(); }

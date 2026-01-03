@@ -1658,20 +1658,19 @@ namespace Lumina
 	
     struct FGraphicsPipelineDesc
     {
+        FRenderState							RenderState;
+        TFixedVector<FRHIBindingLayoutRef, 1>	BindingLayouts;
     	FString									DebugName;
-        EPrimitiveType							PrimType = EPrimitiveType::TriangleList;
-        uint32									PatchControlPoints = 0;
         FRHIInputLayoutRef						InputLayout;
         FRHIVertexShaderRef						VS;
         FRHIPixelShaderRef						PS;
     	FRHIGeometryShaderRef					GS;
-        FRenderState							RenderState;
         FVariableRateShadingState				ShadingRateState;
-        TFixedVector<FRHIBindingLayoutRef, 1>	BindingLayouts;
         
-		FORCEINLINE FGraphicsPipelineDesc& SetDebugName(FString InDebugName) { DebugName = Move(DebugName); return *this; }
+        EPrimitiveType							PrimType = EPrimitiveType::TriangleList;
+    	
+		FORCEINLINE FGraphicsPipelineDesc& SetDebugName(const FString& InDebugName) { DebugName = Move(InDebugName); return *this; }
         FORCEINLINE FGraphicsPipelineDesc& SetPrimType(EPrimitiveType value) { PrimType = value; return *this; }
-        FORCEINLINE FGraphicsPipelineDesc& SetPatchControlPoints(uint32 value) { PatchControlPoints = value; return *this; }
         FORCEINLINE FGraphicsPipelineDesc& SetInputLayout(IRHIInputLayout* value) { InputLayout = value; return *this; }
     	FORCEINLINE FGraphicsPipelineDesc& SetVertexShader(FRHIVertexShader* value) { VS = value; return *this; }
         FORCEINLINE FGraphicsPipelineDesc& SetPixelShader(FRHIPixelShader* value) { PS = value; return *this; }

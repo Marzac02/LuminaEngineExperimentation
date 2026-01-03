@@ -1,17 +1,15 @@
 #pragma once
 
-#include "Component.h"
 #include "Core/Math/Transform.h"
 #include <glm/glm.hpp>
 #include "TransformComponent.generated.h"
 
 namespace Lumina
 {
-    REFLECT()
+    REFLECT(Component)
     struct LUMINA_API STransformComponent
     {
         GENERATED_BODY()
-        ENTITY_COMPONENT(STransformComponent)
         
         STransformComponent() = default;
         STransformComponent(const FTransform& InTransform)

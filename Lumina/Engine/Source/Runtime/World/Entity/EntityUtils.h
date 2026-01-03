@@ -20,6 +20,99 @@ namespace Lumina::ECS::Utils
     LUMINA_API size_t GetSiblingIndex(FEntityRegistry& Registry, entt::entity Entity);
     LUMINA_API void CollectDescendants(FEntityRegistry& Registry, entt::entity Entity, TVector<entt::entity>& OutDescendants);
     LUMINA_API void CollectChildren(FEntityRegistry& Registry, entt::entity Entity, TVector<entt::entity>& OutChildren);
+    
+    NODISCARD inline entt::id_type GetTypeID(const sol::table& Data)
+    {
+        auto Name = Data["__type"].get<const char*>();
+        LUM_ASSERT(Name != nullptr)
+    
+        return entt::hashed_string(Name);
+    }
+    
+    NODISCARD inline entt::id_type GetTypeID(const sol::userdata& Data)
+    {
+        auto Name = Data["__type"].get<const char*>();
+        LUM_ASSERT(Name != nullptr)
+    
+        return entt::hashed_string(Name);
+    }
+    
+    NODISCARD inline entt::id_type GetTypeID(FStringView Name)
+    {
+        return entt::hashed_string(Name.data());
+    }
+
+    template<typename T>
+    NODISCARD entt::id_type DeduceType(T&& Obj)
+    {
+        switch (Obj.get_type())
+        {
+            case sol::type::number:     return Obj.template as<entt::id_type>();
+            case sol::type::table:      return GetTypeID(Obj.template as<sol::table>());
+            case sol::type::userdata:   return GetTypeID(Obj.template as<sol::userdata>());
+            case sol::type::string:     return GetTypeID(Obj.template as<const char*>());
+        }
+
+        LUMINA_NO_ENTRY()
+    }
+
+    NODISCARD inline auto CollectTypes(const sol::variadic_args& Args)
+    {
+        THashSet<entt::id_type> Types;
+        
+        eastl::transform(Args.cbegin(), Args.cend(), eastl::inserter(Types, Types.begin()), [](const sol::object& Object)
+        {
+            return DeduceType(Object);
+        });
+        
+        return Types;
+    }
+
+    NODISCARD inline auto CollectTypes(const sol::table& Args)
+    {
+        THashSet<entt::id_type> Types;
+        
+        for (const auto& [key, value] : Args)
+        {
+            Types.insert(DeduceType(value));
+        }
+        
+        return Types;
+    }
+
+    template<typename ... TArgs>
+    entt::meta_any InvokeMetaFunc(const entt::meta_type& MetaType, entt::id_type FunctionID, TArgs&&... Args)
+    {
+        LUMINA_PROFILE_SCOPE();
+        if (!MetaType)
+        {
+            return entt::meta_any{};
+        }
+
+        auto&& F = MetaType.func(FunctionID);
+        if (!F)
+        {
+            return entt::meta_any{};
+        }
+        
+        return F.invoke({}, Forward<TArgs>(Args)...);
+    }
+
+    template<typename ... TArgs>
+    auto InvokeMetaFunc(const entt::id_type& TypeID, entt::id_type FunctionID, TArgs&&... Args)
+    {
+        return InvokeMetaFunc(entt::resolve(TypeID), FunctionID, Forward<TArgs>(Args)...);
+    }
+    
+    LUMINA_API inline auto GetSharedMetaCtxHandle()
+    {
+        return entt::locator<entt::meta_ctx>::handle();
+    }
+
+    void SetMetaContext(auto SharedCtx)
+    {
+        entt::locator<entt::meta_ctx>::reset(SharedCtx);
+    }
 
     template<typename TFunc>
     requires(eastl::is_invocable_v<TFunc, void*, entt::basic_sparse_set<>&, entt::meta_type>)

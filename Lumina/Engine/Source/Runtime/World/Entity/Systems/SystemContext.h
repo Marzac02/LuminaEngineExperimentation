@@ -1,4 +1,5 @@
 ﻿#pragma once
+#include "Core/UpdateStage.h"
 #include "Physics/PhysicsTypes.h"
 #include "Physics/Ray/RayCast.h"
 #include "TaskSystem/TaskSystem.h"
@@ -7,7 +8,7 @@
 
 namespace Lumina
 {
-    enum class EMoveMode;
+    enum class EMoveMode : uint8;
 
     namespace Physics
     {
@@ -59,7 +60,7 @@ namespace Lumina
             auto View = Registry.view<Ts...>(eastl::forward<TArgs>(Args)...);
             auto Entities = View.handle();
     
-            Task::ParallelFor(Entities.size(), Entities.size(), [&](uint32 Index)
+            Task::ParallelFor(Entities.size(), [&](uint32 Index)
             {
                 entt::entity EntityID = (*Entities)[Index];
                 
@@ -181,7 +182,8 @@ namespace Lumina
         void Lua_Remove(entt::entity Entity, const sol::object& Component);
         sol::object Lua_Emplace(entt::entity Entity, const sol::table& Component);
         sol::variadic_results Lua_Get(entt::entity Entity, const sol::variadic_args& Args);
-        
+        sol::variadic_results Lua_Try_Get(entt::entity Entity, const sol::variadic_args& Args);
+
     private:
 
         double                  DeltaTime = 0.0;

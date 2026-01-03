@@ -4,6 +4,7 @@
 #include "Module/API.h"
 #include "Object.h"
 #include "Containers/Function.h"
+#include "Core/Reflection/Type/Metadata/PropertyMetadata.h"
 #include "Core/Templates/Align.h"
 #include "Initializer/ObjectInitializer.h"
 
@@ -45,6 +46,8 @@ namespace Lumina
         
         uint32 Size = 0;
         uint32 Alignment = 0;
+        
+        FMetaDataPair Metadata;
     };
 
 
@@ -70,8 +73,7 @@ namespace Lumina
         FFixedString MakeDisplayName() const override;
 
         TVector<TPair<FName, uint64>> Names;
-
-
+        
     };
     
 

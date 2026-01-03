@@ -38,14 +38,14 @@ namespace Lumina::ClangUtils
 
     inline eastl::string MakeCodeFriendlyNamespace(eastl::string Input)
     {
-        const eastl::string from = "::";
-        const eastl::string to = "_";
+        const eastl::string From = "::";
+        const eastl::string To = "_";
 
-        size_t start_pos = 0;
-        while ((start_pos = Input.find(from, start_pos)) != eastl::string::npos)
+        size_t StartPos = 0;
+        while ((StartPos = Input.find(From, StartPos)) != eastl::string::npos)
         {
-            Input.replace(start_pos, from.length(), to);
-            start_pos += to.length(); // Move past the replacement
+            Input.replace(StartPos, From.length(), To);
+            StartPos += To.length();
         }
 
         return Input;

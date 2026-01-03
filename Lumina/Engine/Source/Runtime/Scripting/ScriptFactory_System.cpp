@@ -1,6 +1,5 @@
 ﻿#include "pch.h"
 #include "ScriptFactory_System.h"
-
 #include "World/Entity/Components/Component.h"
 
 namespace Lumina
@@ -28,17 +27,10 @@ namespace Lumina
         Entry.Name          = Name;
         Entry.Priority      = ScriptTable["Priority"].get_or(0);
         Entry.Stage         = ScriptTable["Stage"].get_or(0);
+        Entry.bEnabled      = ScriptTable["Enabled"];
         Entry.InitFunc      = ScriptTable["Init"];
         Entry.ExecuteFunc   = ScriptTable["Execute"];
         Entry.ShutdownFunc  = ScriptTable["Shutdown"];
-
-        if (sol::optional<sol::table> QueryTable = ScriptTable["Query"])
-        {
-            for (entt::id_type IDType : ECS::CollectTypes(QueryTable.value()))
-            {
-                Entry.Queries.emplace(IDType);
-            }
-        }
         
         ScriptRegistry.emplace<FLuaSystemScriptEntry>(ScriptEntity, Entry);
         

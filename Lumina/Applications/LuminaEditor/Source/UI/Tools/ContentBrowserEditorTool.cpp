@@ -15,6 +15,7 @@
 #include "Platform/Filesystem/FileHelper.h"
 #include "Platform/Process/PlatformProcess.h"
 #include "Project/Project.h"
+#include "Scripting/Lua/Scripting.h"
 #include "TaskSystem/TaskSystem.h"
 #include "Tools/Dialogs/Dialogs.h"
 #include "Tools/Import/ImportHelpers.h"

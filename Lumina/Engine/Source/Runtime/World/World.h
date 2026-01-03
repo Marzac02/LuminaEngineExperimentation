@@ -13,6 +13,7 @@
 #include "Subsystems/FCameraManager.h"
 #include "Physics/Ray/RayCast.h"
 #include "Renderer/PrimitiveDrawInterface.h"
+#include "Core/Delegates/Delegate.h"
 #include "World.generated.h"
 
 

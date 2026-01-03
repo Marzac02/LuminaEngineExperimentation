@@ -1,7 +1,6 @@
 #pragma once
 
 
-#include "Component.h"
 #include "MeshComponent.h"
 #include "Assets/AssetTypes/Mesh/StaticMesh/StaticMesh.h"
 #include "Core/Object/ObjectHandleTyped.h"
@@ -9,11 +8,10 @@
 
 namespace Lumina
 {
-    REFLECT()
+    REFLECT(Component)
     struct LUMINA_API SStaticMeshComponent : SMeshComponent
     {
         GENERATED_BODY()
-        ENTITY_COMPONENT(SStaticMeshComponent)
         
         CMaterialInterface* GetMaterialForSlot(SIZE_T Slot) const;
         

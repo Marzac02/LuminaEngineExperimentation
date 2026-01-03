@@ -8,11 +8,6 @@
 
 namespace Lumina::Reflection
 {
-
-    FClangParserContext::~FClangParserContext()
-    {
-    }
-
     void FClangParserContext::AddReflectedMacro(FReflectionMacro&& Macro)
     {
         uint64 Hash = XXH64(Macro.HeaderID.c_str(), strlen(Macro.HeaderID.c_str()), 0);

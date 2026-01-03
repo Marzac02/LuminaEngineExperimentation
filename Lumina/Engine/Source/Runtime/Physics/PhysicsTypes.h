@@ -5,14 +5,15 @@
 
 namespace Lumina
 {
-    enum class EMoveMode
+    REFLECT()
+    enum class LUMINA_API EMoveMode : uint8
     {
         Teleport,           // Hard set position (loses velocity)
         MoveKinematic,      // Move with velocity calculation (preserves physics)
         ActivateOnly        // Just wake up, don't move
     };
     
-    REFLECT()
+    REFLECT(Scriptable)
     enum class LUMINA_API EBodyType : uint8
     {
         None,

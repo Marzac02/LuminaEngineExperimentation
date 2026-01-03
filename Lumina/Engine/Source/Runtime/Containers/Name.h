@@ -148,6 +148,8 @@ namespace Lumina
             return GNameTable->GetString(ID);
         }
         
+        char At(size_t Pos) const;
+        
         FString ToString() const
         {
             const char* Str = c_str();
@@ -218,36 +220,7 @@ namespace Lumina
             Result += Rhs.c_str();
             return Result;
         }
-
-        FName& operator+=(const FName& Other)
-        {
-            FString Combined = FString(c_str()) + FString(Other.c_str());
-            *this = FName(Combined);
-            return *this;
-        }
     
-        FName& operator+=(const FString& Str)
-        {
-            FString Combined = FString(c_str()) + Str;
-            *this = FName(Combined);
-            return *this;
-        }
-    
-        FName& operator+=(const char* Str)
-        {
-            FString Combined = FString(c_str()) + FString(Str);
-            *this = FName(Combined);
-            return *this;
-        }
-    
-        FName& operator+=(char Ch)
-        {
-            FString Combined = FString(c_str());
-            Combined += Ch;
-            *this = FName(Combined);
-            return *this;
-        }
-
     private:
         
         FStringView View;

@@ -1,10 +1,7 @@
 ﻿#include "ReflectedType.h"
-
-#include <iostream>
-
-#include "Engine/Source/Runtime/Core/Templates/Optional.h"
 #include "Functions/ReflectedFunction.h"
 #include "Properties/ReflectedProperty.h"
+#include "Reflector/Clang/Utils.h"
 
 
 namespace Lumina::Reflection
@@ -85,7 +82,19 @@ namespace Lumina::Reflection
 
         Stream += "struct Construct_CEnum_" + Namespace + "_" + DisplayName + "_Statics\n";
         Stream +="{\n";
+        
+        if (!Metadata.empty())
+        {
+            Stream += "\tstatic constexpr Lumina::FMetaDataPairParam " + ClangUtils::MakeCodeFriendlyNamespace(QualifiedName) +  + "_Metadata[] = {\n";
 
+            for (const FMetadataPair& Metadata : Metadata)
+            {
+                Stream += "\t\t{ \"" + Metadata.Key + "\", \"" + Metadata.Value + "\" },\n";    
+            }
+            
+            Stream += "\t};\n";
+        }
+        
         Stream += "\tstatic constexpr Lumina::FEnumeratorParam Enumerators[] = {\n";
         for (const FReflectedEnum::FConstant& Constant : Constants)
         {
@@ -97,9 +106,19 @@ namespace Lumina::Reflection
         Stream += "};\n";
         Stream += "const Lumina::FEnumParams Construct_CEnum_" + Namespace + "_" + DisplayName + "_Statics::EnumParams = {\n";
         Stream += "\t\"" + DisplayName + "\",\n";
-        Stream += "\t Construct_CEnum_" + Namespace + "_" + DisplayName + "_Statics::Enumerators,\n";
-        Stream += "\tstd::size(Construct_CEnum_" + Namespace + "_" + DisplayName + "_Statics::Enumerators),\n";
-        Stream += "};\n\n";
+        Stream += "\tEnumerators,\n";
+        Stream += "\t(uint32)std::size(Enumerators)";
+        
+        if (!Metadata.empty())
+        {
+            eastl::string MetaDataName = Namespace + "_" + DisplayName + "_Metadata";
+            Stream += ",\n";
+            Stream += "\t(uint32)std::size(" + MetaDataName + "),\n";
+            Stream += "\t" + MetaDataName;
+        }
+        
+        Stream += "\n};\n\n";
+        
         Stream += "Lumina::CEnum* Construct_CEnum_" + Namespace + "_" + DisplayName + "()\n";
         Stream += "{\n";
         Stream += "\tif(!Registration_Info_CEnum_" + Namespace + "_" + DisplayName + ".InnerSingleton)" + "\n";
@@ -121,7 +140,8 @@ namespace Lumina::Reflection
 
     void FReflectedEnum::DeclareStaticRegistration(eastl::string& Stream)
     {
-        Stream += "\t{ Construct_CEnum_" + Namespace + "_" + DisplayName + ", TEXT(\"" + DisplayName + "\") },\n";
+        eastl::string FriendlyName = ClangUtils::MakeCodeFriendlyNamespace(QualifiedName);
+        Stream += "\t{ Construct_CEnum_" + FriendlyName + ", TEXT(\"" + DisplayName + "\") },\n";
     }
 
 
@@ -204,9 +224,17 @@ namespace Lumina::Reflection
         Stream += "\tstatic class Lumina::CStruct* StaticStruct();\\\n";
         if (!Parent.empty())
         {
-            Stream += "\tusing Super = " + Namespace + "::" + Parent + ";\\\n\n";
+            Stream += "\tusing Super = " + Namespace + "::" + Parent + ";\\\n";
         }
 
+        for (const FMetadataPair& Data : Metadata)
+        {
+            if (Data.Key == "Component")
+            {
+                Stream += "\tstatic constexpr auto in_place_delete = true;\\\n";
+            }
+        }
+        
         Stream += "\n\n";
     }
 
@@ -218,6 +246,20 @@ namespace Lumina::Reflection
         Stream += "static Lumina::FStructRegistrationInfo Registration_Info_CStruct_" + Namespace + "_" + DisplayName + ";\n\n";
         
         DefineConstructionStatics(Stream);
+        
+        eastl::string FriendlyName = ClangUtils::MakeCodeFriendlyNamespace(QualifiedName);
+        
+        if (!Metadata.empty())
+        {
+            Stream += "\tstatic constexpr Lumina::FMetaDataPairParam " + FriendlyName +  + "_Metadata[] = {\n";
+
+            for (const FMetadataPair& Data : Metadata)
+            {
+                Stream += "\t\t{ \"" + Data.Key + "\", \"" + Data.Value + "\" },\n";    
+            }
+            
+            Stream += "\t};\n";
+        }   
 
         for (const eastl::shared_ptr<FReflectedProperty>& Prop : Props)
         {
@@ -233,7 +275,7 @@ namespace Lumina::Reflection
                 Stream += "\t\t{ \"" + Metadata.Key + "\", \"" + Metadata.Value + "\" },\n";    
             }
             
-            Stream += "\n\t};\n";
+            Stream += "\t};\n";
         }
         
         Stream += "\n";
@@ -252,24 +294,33 @@ namespace Lumina::Reflection
         }
         Stream += "};\n\n";
         
-        Stream += "Lumina::CStruct* Construct_CStruct_" + Namespace + "_" + DisplayName + "()\n";
+        Stream += "Lumina::CStruct* Construct_CStruct_" + FriendlyName + "()\n";
         Stream += "{\n";
-        Stream += "\tif (!Registration_Info_CStruct_" + Namespace + "_" + DisplayName + ".InnerSingleton)\n";
+        Stream += "\tif (!Registration_Info_CStruct_" + FriendlyName + ".InnerSingleton)\n";
         Stream += "\t{\n";
-        Stream += "\t\tLumina::ConstructCStruct(&Registration_Info_CStruct_" + Namespace + "_" + DisplayName + ".InnerSingleton, Construct_CStruct_" + Namespace + "_" + DisplayName + "_Statics::StructParams);\n";
+        Stream += "\t\tLumina::ConstructCStruct(&Registration_Info_CStruct_" + FriendlyName + ".InnerSingleton, Construct_CStruct_" + FriendlyName + "_Statics::StructParams);\n";
+        
+        for (const FMetadataPair& Data : Metadata)
+        {
+            if (Data.Key == "Component")
+            {
+                Stream += "\t\t::Lumina::Meta::RegisterComponentMeta<" + QualifiedName + ">();\n";
+            }
+        }
+        
         Stream += "\t}\n";
-        Stream += "\treturn Registration_Info_CStruct_" + Namespace + "_" + DisplayName + ".InnerSingleton;\n";
+        Stream += "\treturn Registration_Info_CStruct_" + FriendlyName + ".InnerSingleton;\n";
         Stream += "}\n\n";
 
         if (!IsManualReflectFile(eastl::string(HeaderID)))
         {
-            Stream += "class Lumina::CStruct* " + Namespace + "::" + DisplayName + "::StaticStruct()\n";
+            Stream += "class Lumina::CStruct* " + QualifiedName + "::StaticStruct()\n";
             Stream += "{\n";
-            Stream += "\tif (!Registration_Info_CStruct_" + Namespace + "_" + DisplayName + ".OuterSingleton)\n";
+            Stream += "\tif (!Registration_Info_CStruct_" + FriendlyName + ".OuterSingleton)\n";
             Stream += "\t{\n";
-            Stream += "\t\tRegistration_Info_CStruct_" + Namespace + "_" + DisplayName + ".OuterSingleton = Construct_CStruct_" + Namespace + "_" + DisplayName + "();\n";
+            Stream += "\t\tRegistration_Info_CStruct_" + FriendlyName + ".OuterSingleton = Construct_CStruct_" + FriendlyName + "();\n";
             Stream += "\t}\n";
-            Stream += "\treturn Registration_Info_CStruct_" + Namespace + "_" + DisplayName + ".OuterSingleton;\n";
+            Stream += "\treturn Registration_Info_CStruct_" + FriendlyName + ".OuterSingleton;\n";
             Stream += "}\n";
         }
 
@@ -282,36 +333,36 @@ namespace Lumina::Reflection
             
             for (const eastl::shared_ptr<FReflectedProperty>& Prop : Props)
             {
-                Stream += "const Lumina::" + eastl::string(Prop->GetPropertyParamType()) + " Construct_CStruct_" + Namespace + "_" + DisplayName + "_Statics::" + Prop->Name + " = ";
+                Stream += "const Lumina::" + eastl::string(Prop->GetPropertyParamType()) + " Construct_CStruct_" + FriendlyName + "_Statics::" + Prop->Name + " = ";
                 Prop->AppendDefinition(Stream);
             }
             
             Stream += "\n";
-            Stream += "const Lumina::FPropertyParams* const Construct_CStruct_" + Namespace + "_" + DisplayName + "_Statics::PropPointers[] = {\n";
+            Stream += "const Lumina::FPropertyParams* const Construct_CStruct_" + FriendlyName + "_Statics::PropPointers[] = {\n";
         
             for (const auto& Prop : Props)
             {
-                Stream += "\t(const Lumina::FPropertyParams*)&Construct_CStruct_" + Namespace + "_" + DisplayName + "_Statics::" + Prop->Name + ",\n";
+                Stream += "\t(const Lumina::FPropertyParams*)&Construct_CStruct_" + FriendlyName + "_Statics::" + Prop->Name + ",\n";
             }
         
             Stream += "};\n\n";
         }
 
-        Stream += "const Lumina::FStructParams Construct_CStruct_" + Namespace + "_" + DisplayName + "_Statics::StructParams = {\n";
+        Stream += "const Lumina::FStructParams Construct_CStruct_" + FriendlyName + "_Statics::StructParams = {\n";
         if (Parent.empty())
         {
             Stream += "\tnullptr,\n";
         }
         else
         {
-            Stream += "\t" + Namespace + "::" + DisplayName + "::" + "Super::StaticStruct,\n";
+            Stream += "\t" + QualifiedName + "::" + "Super::StaticStruct,\n";
         }
         Stream += "\t\"" + DisplayName + "\",\n";
         
         if (!Props.empty())
         {
-            Stream += "\tConstruct_CStruct_" + Namespace + "_" + DisplayName + "_Statics::PropPointers,\n";
-            Stream += "\t(uint32)std::size(Construct_CStruct_" + Namespace + "_" + DisplayName + "_Statics::PropPointers),\n";
+            Stream += "\tPropPointers,\n";
+            Stream += "\t(uint32)std::size(PropPointers),\n";
         }
         else
         {
@@ -319,10 +370,19 @@ namespace Lumina::Reflection
             Stream += "\t0,\n";
         }
 
-        Stream += "\tsizeof(" + Namespace + "::" + DisplayName + "),\n";
-        Stream += "\talignof(" + Namespace + "::" + DisplayName + ")\n";
+        Stream += "\tsizeof(" + QualifiedName + "),\n";
+        Stream += "\talignof(" + QualifiedName + ")";
         
-        Stream += "};\n\n";
+        if (!Metadata.empty())
+        {
+            eastl::string MetaDataName = FriendlyName + "_Metadata";
+            Stream += ",\n";
+            Stream += "\t(uint32)std::size(" + MetaDataName + "),\n";
+            Stream += "\t" + MetaDataName;
+        }
+        
+        
+        Stream += "\n};\n\n";
 
         Stream += "//~ End " + DisplayName + "\n\n";
         Stream += "//------------------------------------------------------------\n\n";
@@ -330,7 +390,8 @@ namespace Lumina::Reflection
 
     void FReflectedStruct::DeclareStaticRegistration(eastl::string& Stream)
     {
-        Stream += "\t{ Construct_CStruct_" + Namespace + "_" + DisplayName + ", TEXT(\"" + DisplayName + "\") },\n";
+        eastl::string FriendlyName = ClangUtils::MakeCodeFriendlyNamespace(QualifiedName);
+        Stream += "\t{ Construct_CStruct_" + FriendlyName + ", TEXT(\"" + DisplayName + "\") },\n";
     }
 
 
@@ -396,7 +457,19 @@ namespace Lumina::Reflection
         Stream += "// Begin " + DisplayName + "\n";
         Stream += "IMPLEMENT_CLASS(" + Namespace + ", " + DisplayName + ")\n";
         DefineConstructionStatics(Stream);
+        
+        if (!Metadata.empty())
+        {
+            Stream += "\tstatic constexpr Lumina::FMetaDataPairParam " + ClangUtils::MakeCodeFriendlyNamespace(QualifiedName) +  + "_Metadata[] = {\n";
 
+            for (const FMetadataPair& Metadata : Metadata)
+            {
+                Stream += "\t\t{ \"" + Metadata.Key + "\", \"" + Metadata.Value + "\" },\n";    
+            }
+            
+            Stream += "\t};\n";
+        }
+        
         for (const eastl::shared_ptr<FReflectedProperty>& Prop : Props)
         {
             if (Prop->Metadata.empty())
@@ -428,6 +501,8 @@ namespace Lumina::Reflection
         {
             Stream += "\tstatic const Lumina::FPropertyParams* const PropPointers[];\n";
         }
+        
+        
         Stream += "};\n\n";
         
         Stream += "Lumina::CClass* Construct_CClass_" + Namespace + "_" + DisplayName + "()\n";
@@ -452,6 +527,7 @@ namespace Lumina::Reflection
                 Prop->AppendDefinition(Stream);
             }
             
+            
             Stream += "\n";
             Stream += "const Lumina::FPropertyParams* const Construct_CClass_" + Namespace + "_" + DisplayName + "_Statics::PropPointers[] = {\n";
         
@@ -468,16 +544,25 @@ namespace Lumina::Reflection
         Stream += "\t&" + Namespace + "::" + DisplayName + "::StaticClass,\n";
         if (!Props.empty())
         {
-            Stream += "\tConstruct_CClass_" + Namespace + "_" + DisplayName + "_Statics::PropPointers,\n";
-            Stream += "\t(uint32)std::size(Construct_CClass_" + Namespace + "_" + DisplayName + "_Statics::PropPointers),\n";
+            Stream += "\tPropPointers,\n";
+            Stream += "\t(uint32)std::size(PropPointers),";
         }
         else
         {
             Stream += "\tnullptr,\n";
-            Stream += "\t0\n";
+            Stream += "\t0";
         }
-
-        Stream += "};\n\n";
+        
+        if (!Metadata.empty())
+        {
+            eastl::string MetaDataName = Namespace + "_" + DisplayName + "_Metadata";
+            Stream += ",\n";
+            Stream += "\t(uint32)std::size(" + MetaDataName + "),\n";
+            Stream += "\t" + MetaDataName;
+        }
+        
+        
+        Stream += "\n};\n\n";
         
         
         Stream += "//~ End " + DisplayName + "\n\n";
@@ -486,6 +571,7 @@ namespace Lumina::Reflection
 
     void FReflectedClass::DeclareStaticRegistration(eastl::string& Stream)
     {
-        Stream += "\t{ Construct_CClass_" + Namespace + "_" + DisplayName + ", " + "TEXT(\"script://\"), TEXT(\"" + DisplayName + "\") },\n";
+        eastl::string FriendlyName = ClangUtils::MakeCodeFriendlyNamespace(QualifiedName);
+        Stream += "\t{ Construct_CClass_" + FriendlyName + ", " + "TEXT(\"script://\"), TEXT(\"" + DisplayName + "\") },\n";
     }
 }

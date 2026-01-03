@@ -1,7 +1,7 @@
 #include "pch.h"
 #ifdef LE_PLATFORM_WINDOWS
-#include "Dialogs.h"
 #include <windows.h>
+#include "Dialogs.h"
 
 namespace Lumina::Dialogs
 {

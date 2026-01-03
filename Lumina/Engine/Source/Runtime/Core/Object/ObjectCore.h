@@ -242,66 +242,52 @@ namespace Lumina
 
     struct FNumericPropertyParams : FPropertyParams
     {
-        #ifdef WITH_DEVELOPMENT_TOOLS
         uint16 NumMetaData;
         const FMetaDataPairParam* MetaDataArray;
-        #endif
     };
 
     struct FStringPropertyParams : FPropertyParams
     {
-        #ifdef WITH_DEVELOPMENT_TOOLS
         uint16 NumMetaData;
         const FMetaDataPairParam* MetaDataArray;
-        #endif
     };
 
     struct FNamePropertyParams : FPropertyParams
     {
-        #ifdef WITH_DEVELOPMENT_TOOLS
         uint16 NumMetaData;
         const FMetaDataPairParam* MetaDataArray;
-        #endif
     };
 
     struct FObjectPropertyParams : FPropertyParams
     {
         CClass*            (*ClassFunc)();
 
-        #ifdef WITH_DEVELOPMENT_TOOLS
         uint16 NumMetaData;
         const FMetaDataPairParam* MetaDataArray;
-        #endif
     };
 
     struct FClassPropertyParams : FPropertyParams
     {
         CClass*            (*ClassFunc)();
 
-        #ifdef WITH_DEVELOPMENT_TOOLS
         uint16 NumMetaData;
         const FMetaDataPairParam* MetaDataArray;
-        #endif
     };
 
     struct FStructPropertyParams : FPropertyParams
     {
         CStruct*            (*StructFunc)();
 
-        #ifdef WITH_DEVELOPMENT_TOOLS
         uint16 NumMetaData;
         const FMetaDataPairParam* MetaDataArray;
-        #endif
     };
 
     struct FEnumPropertyParams : FPropertyParams
     {
         CEnum*              (*EnumFunc)();
 
-        #ifdef WITH_DEVELOPMENT_TOOLS
         uint16 NumMetaData;
         const FMetaDataPairParam* MetaDataArray;
-        #endif
     };
 
     struct FArrayPropertyParams : FPropertyParams
@@ -312,10 +298,8 @@ namespace Lumina
         ArrayClearPtr       ClearFn;
         ArrayGetAtPtr       GetAtFn;
         
-        #ifdef WITH_DEVELOPMENT_TOOLS
         uint16 NumMetaData;
         const FMetaDataPairParam* MetaDataArray;
-        #endif
     };
     
     struct FClassParams
@@ -323,6 +307,9 @@ namespace Lumina
         CClass*                         (*RegisterFunc)();
         const FPropertyParams* const*   Params;
         uint32                          NumProperties;
+        
+        uint16 NumMetaData;
+        const FMetaDataPairParam* MetaDataArray;
     };
 
     struct FStructParams
@@ -333,6 +320,9 @@ namespace Lumina
         uint32                          NumProperties;
         uint16                          SizeOf;
         uint16                          AlignOf;
+        
+        uint16 NumMetaData;
+        const FMetaDataPairParam* MetaDataArray;
     };
     
     struct FEnumeratorParam
@@ -346,6 +336,9 @@ namespace Lumina
         const char*                 Name;
         const FEnumeratorParam*     Params;
         int16                       NumParams;
+        
+        uint16 NumMetaData;
+        const FMetaDataPairParam* MetaDataArray;
     };
     
 

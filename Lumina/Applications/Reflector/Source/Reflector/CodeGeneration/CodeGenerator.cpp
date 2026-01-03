@@ -17,7 +17,7 @@
 
 namespace eastl
 {
-    inline std::ostream& operator<<(std::ostream& os, const eastl::string& str)
+    static std::ostream& operator<<(std::ostream& os, const eastl::string& str)
     {
         os.write(str.c_str(), str.size());
         return os;
@@ -128,8 +128,7 @@ namespace Lumina::Reflection
 
         if (OutputFile.is_open())
         {
-            OutputFile.write(Stream.c_str(), Stream.size());
-            OutputFile.close();
+            OutputFile.write(Stream.c_str(), static_cast<std::streamsize>(Stream.size()));
         }
     }
 
@@ -217,6 +216,7 @@ namespace Lumina::Reflection
         Stream += "#include \"pch.h\"\n";
         Stream += "#include \"";
         Stream += Header.HeaderPath + "\"\n";
+        Stream += "#include \"World/Entity/Components/Component.h\"\n";
         Stream += "#include \"Runtime/Core/Object/Class.h\"\n";
         Stream += "\n\n";
 
@@ -269,7 +269,7 @@ namespace Lumina::Reflection
         Stream += "//*************************************************************************\n";
         Stream += "// Type Implementations. \n";
         Stream += "//*************************************************************************\n\n";
-        for (eastl::shared_ptr<FReflectedType> Type : ReflectedTypes)
+        for (const eastl::shared_ptr<FReflectedType>& Type : ReflectedTypes)
         {
             Type->DeclareImplementation(Stream);
         }
