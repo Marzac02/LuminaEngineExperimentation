@@ -13,7 +13,7 @@ namespace Lumina
         return PairParams.find(Key) != PairParams.end();
     }
 
-    FName FMetaDataPair::GetMetadata(const FName& Key) const
+    const FName& FMetaDataPair::GetMetadata(const FName& Key) const
     {
         return PairParams.at(Key);
     }

@@ -58,6 +58,11 @@ namespace Lumina::Scripting
 
 
     private:
+        
+        void Lua_Print(const sol::variadic_args& Args);
+        void Lua_Info(const sol::variadic_args& Args);
+        void Lua_Warning(const sol::variadic_args& Args);
+        void Lua_Error(const sol::variadic_args& Args);
 
         TVector<entt::entity> LoadScriptPath(FStringView ScriptPath, bool bFailSilently = false);
     

@@ -43,7 +43,7 @@ namespace Lumina::Paths
     
     /** Returns the virtual path prefix from a virtual path (Assuming the path given is already a virtual path) */
     LUMINA_API FString GetVirtualPathPrefix(const FString& VirtualPath);
-
+    
     LUMINA_API bool CreateDirectories(FStringView Path);
     
     /** 

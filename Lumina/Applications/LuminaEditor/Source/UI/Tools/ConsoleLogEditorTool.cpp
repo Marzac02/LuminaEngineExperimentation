@@ -1,7 +1,10 @@
 ﻿#include "ConsoleLogEditorTool.h"
 
+#include <utility>
+
 #include "Core/Console/ConsoleVariable.h"
 #include "EASTL/sort.h"
+#include "Log/LogMessage.h"
 
 namespace Lumina
 {
@@ -9,10 +12,8 @@ namespace Lumina
     {
         CreateToolWindow("Console", [&] (bool bIsFocused)
         {
-           DrawLogWindow(bIsFocused); 
+            DrawLogWindow(bIsFocused); 
         });
-
-        RebuildFilteredMessages();
     }
 
     void FConsoleLogEditorTool::OnDeinitialize(const FUpdateContext& UpdateContext)
@@ -22,7 +23,6 @@ namespace Lumina
 
     void FConsoleLogEditorTool::DrawToolMenu(const FUpdateContext& UpdateContext)
     {
-        // Filter Menu
         if (ImGui::BeginMenu(LE_ICON_FILTER " Filter"))
         {
             ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(4, 3));
@@ -30,7 +30,6 @@ namespace Lumina
 
             bool bFilterChanged = false;
 
-            // Log level filters
             ImGui::SeparatorText("Log Levels");
             bFilterChanged |= ImGui::Checkbox("Trace", &Filter.bShowTrace);
             bFilterChanged |= ImGui::Checkbox("Debug", &Filter.bShowDebug);
@@ -41,7 +40,6 @@ namespace Lumina
 
             ImGui::Spacing();
 
-            // Quick filter buttons
             if (ImGui::Button("All", ImVec2(70, 0)))
             {
                 Filter.bShowTrace = Filter.bShowDebug = Filter.bShowInfo = 
@@ -64,16 +62,10 @@ namespace Lumina
                 bFilterChanged = true;
             }
 
-            if (bFilterChanged)
-            {
-                RebuildFilteredMessages();
-            }
-
             ImGui::PopStyleVar(2);
             ImGui::EndMenu();
         }
         
-        // Settings Menu
         if (ImGui::BeginMenu(LE_ICON_COG " Settings"))
         {
             ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(4, 3));
@@ -92,10 +84,10 @@ namespace Lumina
             
             if (ImGui::SliderFloat("Font Scale", &Settings.FontScale, 0.7f, 2.0f, "%.1f"))
             {
-                // Font scale changed, might need to update rendering
+                
             }
 
-            ImGui::SliderInt("Max Messages", &Settings.MaxMessageCount, 1000, 50000);
+            ImGui::SliderInt("Max Messages", &Settings.MaxMessageCount, 100, 2500);
 
             ImGui::Spacing();
             ImGui::SeparatorText("Actions");
@@ -107,7 +99,6 @@ namespace Lumina
 
             if (ImGui::Button("Export Logs", ImVec2(-1, 0)))
             {
-                // Open file dialog or export to default location
                 ExportLogs("console_log.txt");
             }
 
@@ -115,7 +106,6 @@ namespace Lumina
             ImGui::EndMenu();
         }
 
-        // Stats in menu bar
         ImGui::Separator();
         ImGui::Text("Messages: %zu / %zu", FilteredMessageCount, PreviousMessageSize);
     }
@@ -124,24 +114,12 @@ namespace Lumina
     {
         const float InputHeight = ImGui::GetFrameHeightWithSpacing() * 1.2f;
         
-        // Search bar
-        {
-            ImGui::SetNextItemWidth(-1);
-            char SearchBuffer[256];
-            strncpy(SearchBuffer, Filter.SearchFilter.c_str(), sizeof(SearchBuffer));
-            SearchBuffer[sizeof(SearchBuffer) - 1] = '\0';
-
-            if (ImGui::InputTextWithHint("##Search", LE_ICON_MAGNIFY " Search...", 
-                SearchBuffer, sizeof(SearchBuffer)))
-            {
-                Filter.SearchFilter = SearchBuffer;
-                RebuildFilteredMessages();
-            }
-        }
+        ImGui::SetNextItemWidth(-1);
+        
+        Filter.TextFilter.Draw("##LogFilter");
 
         ImGui::Spacing();
 
-        // Main log area
         ImGui::PushStyleColor(ImGuiCol_ChildBg, ImVec4(0.08f, 0.08f, 0.08f, 0.95f));
         ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(8, 8));
         
@@ -149,24 +127,21 @@ namespace Lumina
         ImGui::BeginChild("##LogMessages", ImVec2(0, LogHeight), true, 
             ImGuiWindowFlags_HorizontalScrollbar | ImGuiWindowFlags_NoScrollWithMouse);
         
-        // Check for new messages
         const Logging::FLogQueue& Messages = Logging::GetConsoleLogQueue();
         SIZE_T NewMessageSize = Messages.size();
         
         if (NewMessageSize > PreviousMessageSize)
         {
             bNeedsScrollToBottom = Settings.bAutoScroll;
-            RebuildFilteredMessages();
         }
+
         PreviousMessageSize = NewMessageSize;
 
-        // Font scaling
         if (Settings.FontScale != 1.0f)
         {
-            ImGui::PushFontSize(Settings.FontScale);
+            ImGui::PushFontSize(ImGui::GetFontSize() * Settings.FontScale);
         }
 
-        // Render log table
         ImGuiTableFlags TableFlags = 
             ImGuiTableFlags_Resizable | 
             ImGuiTableFlags_RowBg | 
@@ -178,7 +153,7 @@ namespace Lumina
             TableFlags |= ImGuiTableFlags_Hideable;
         }
 
-        int ColumnCount = 1; // Message column always visible
+        int ColumnCount = 1;
         if (Settings.bShowTimestamps)
         {
             ColumnCount++;
@@ -190,7 +165,6 @@ namespace Lumina
 
         if (ImGui::BeginTable("##LogTable", ColumnCount, TableFlags))
         {
-            // Setup columns
             if (Settings.bShowTimestamps)
             {
                 ImGui::TableSetupColumn("Time", ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_NoHide, 80.0f * Settings.FontScale);
@@ -203,15 +177,17 @@ namespace Lumina
 
             ImGui::TableHeadersRow();
 
+			FilteredMessageCount = 0;
             for (SIZE_T i = 0; i < Messages.size(); ++i)
             {
                 const FConsoleMessage& Message = Messages[i];
 
-                // Apply filter
-                if (!Filter.PassesFilter(FConsoleEntry(Message.Message, Message.Time, Message.LoggerName, Message.Level)))
+                if (!Filter.PassesFilter(Message))
                 {
                     continue;
                 }
+
+                FilteredMessageCount++;
 
                 ImGui::TableNextRow();
                 ImGui::PushID((int)i);
@@ -240,7 +216,6 @@ namespace Lumina
                     }
                 }
 
-                // Logger column
                 if (Settings.bShowLogger)
                 {
                     ImGui::TableSetColumnIndex(Settings.bShowTimestamps ? 1 : 0);
@@ -248,7 +223,7 @@ namespace Lumina
                     {
                         ImGui::PushStyleColor(ImGuiCol_Text, Color);
                     }
-                    ImGui::TextUnformatted(Message.LoggerName.c_str());
+                    ImGui::TextUnformatted(Message.LoggerName.data());
                     if (Settings.bColorWholeRow)
                     {
                         ImGui::PopStyleColor();
@@ -321,28 +296,20 @@ namespace Lumina
     
         ImGui::Spacing();
         ImGui::SetNextItemWidth(-1);
-        
-        char InputBuffer[512];
-        strncpy(InputBuffer, CurrentCommand.c_str(), sizeof(InputBuffer));
-        InputBuffer[sizeof(InputBuffer) - 1] = '\0';
+       
 
-        ImGuiInputTextFlags InputFlags = 
-            ImGuiInputTextFlags_EnterReturnsTrue | 
-            ImGuiInputTextFlags_EscapeClearsAll |
-            ImGuiInputTextFlags_CallbackAlways;
+        ImGuiInputTextFlags InputFlags =
+            ImGuiInputTextFlags_EnterReturnsTrue |
+            ImGuiInputTextFlags_EscapeClearsAll;
 
-        auto InputCallback = [](ImGuiInputTextCallbackData* data) -> int
+        bool bExecuteCommand = ImGui::InputTextWithHint("##CommandInput", "> Enter command or console variable...", CurrentCommand.data(), CurrentCommand.max_size(), InputFlags);
+        CurrentCommand = FFixedString(CurrentCommand.data(), strlen(CurrentCommand.data()));
+
+        if (ImGui::IsItemEdited())
         {
-            FConsoleLogEditorTool* Console = static_cast<FConsoleLogEditorTool*>(data->UserData);
-            Console->CurrentCommand = FString(data->Buf, data->BufTextLen);
-            Console->UpdateAutoComplete(Console->CurrentCommand);
-            return 0;
-        };
-
-        bool bExecuteCommand = ImGui::InputTextWithHint("##CommandInput", "> Enter command or console variable...", InputBuffer, sizeof(InputBuffer), InputFlags, InputCallback, this);
-
-        CurrentCommand = InputBuffer;
-
+            UpdateAutoComplete(CurrentCommand);
+        }
+        
         if (bExecuteCommand && !CurrentCommand.empty())
         {
             ProcessCommand(CurrentCommand);
@@ -357,9 +324,9 @@ namespace Lumina
         {
             if (ImGui::IsKeyPressed(ImGuiKey_Tab))
             {
-                if (AutoCompleteSelectedIndex >= 0 && AutoCompleteSelectedIndex < (int32)AutoCompleteCandidates.size())
+                if (AutoCompleteSelectedIndex >= 0 && std::cmp_less(AutoCompleteSelectedIndex, AutoCompleteCandidates.size()))
                 {
-                    CurrentCommand = AutoCompleteCandidates[AutoCompleteSelectedIndex].Name;
+                    CurrentCommand = AutoCompleteCandidates[AutoCompleteSelectedIndex].Name.data();
                     bShowAutoComplete = false;
                 }
             }
@@ -388,19 +355,16 @@ namespace Lumina
             }
         }
 
-        // Ctrl+Space to show history
         if (bInputFocused && ImGui::IsKeyPressed(ImGuiKey_Space) && (ImGui::GetIO().KeyCtrl || ImGui::GetIO().KeySuper))
         {
             bShowHistory = !bShowHistory;
         }
 
-        // Draw auto-complete popup
         if (bShowAutoComplete && !AutoCompleteCandidates.empty())
         {
             DrawAutoCompletePopup();
         }
 
-        // Draw history popup
         if (bShowHistory)
         {
             DrawHistoryPopup();
@@ -421,16 +385,15 @@ namespace Lumina
         }
     }
 
-
-    void FConsoleLogEditorTool::ProcessCommand(const FString& Command)
+    void FConsoleLogEditorTool::ProcessCommand(FStringView Command)
     {
         LOG_INFO("> {}", Command);
 
         size_t Index = Command.find_first_of(' ');
         if (Index != FString::npos)
         {
-            FString VariableName = Command.substr(0, Index);
-            FString ValueString = Command.substr(Index + 1);
+            FStringView VariableName = Command.substr(0, Index);
+            FStringView ValueString = Command.substr(Index + 1);
 
 
             if (FConsoleRegistry::Get().Find(VariableName))
@@ -447,7 +410,7 @@ namespace Lumina
         }
     }
 
-    void FConsoleLogEditorTool::AddCommandToHistory(const FString& Command)
+    void FConsoleLogEditorTool::AddCommandToHistory(FStringView Command)
     {
         if (!CommandHistory.empty() && CommandHistory.back() == Command)
         {
@@ -455,7 +418,7 @@ namespace Lumina
             return;
         }
 
-        CommandHistory.push_back(Command);
+        CommandHistory.push_back(FString(Command));
 
         constexpr SIZE_T MaxHistory = 100;
         if (CommandHistory.size() > MaxHistory)
@@ -478,7 +441,7 @@ namespace Lumina
             if (HistoryIndex > 0)
             {
                 HistoryIndex--;
-                CurrentCommand = CommandHistory[HistoryIndex];
+                CurrentCommand = CommandHistory[HistoryIndex].c_str();
             }
         }
         else if (Direction > 0)
@@ -486,7 +449,7 @@ namespace Lumina
             if (HistoryIndex < CommandHistory.size() - 1)
             {
                 HistoryIndex++;
-                CurrentCommand = CommandHistory[HistoryIndex];
+                CurrentCommand = CommandHistory[HistoryIndex].c_str();
             }
             else if (HistoryIndex == CommandHistory.size() - 1)
             {
@@ -500,7 +463,6 @@ namespace Lumina
     {
         PreviousMessageSize = 0;
         FilteredMessageCount = 0;
-        FilteredMessages.clear();
         bNeedsScrollToBottom = false;
     }
 
@@ -509,26 +471,7 @@ namespace Lumina
         LOG_INFO("Exporting logs to: {}", FilePath);
     }
 
-    void FConsoleLogEditorTool::RebuildFilteredMessages()
-    {
-        FilteredMessages.clear();
-        FilteredMessageCount = 0;
-
-        const Logging::FLogQueue& Messages = Logging::GetConsoleLogQueue();
-        
-        for (SIZE_T i = 0; i < Messages.size(); ++i)
-        {
-            const FConsoleMessage& Message = Messages[i];
-            FConsoleEntry Entry(Message.Message, Message.Time, Message.LoggerName, Message.Level);
-            
-            if (Filter.PassesFilter(Entry))
-            {
-                FilteredMessageCount++;
-            }
-        }
-    }
-
-    void FConsoleLogEditorTool::UpdateAutoComplete(const FString& CurrentInput)
+    void FConsoleLogEditorTool::UpdateAutoComplete(FStringView CurrentInput)
     {
         AutoCompleteCandidates.clear();
         AutoCompleteSelectedIndex = 0;
@@ -608,7 +551,7 @@ namespace Lumina
                 
                 if (ImGui::Selectable("##Candidate", bIsSelected, 0, ImVec2(0, 0)))
                 {
-                    CurrentCommand = Candidate.Name;
+                    CurrentCommand = FFixedString(Candidate.Name.data(), Candidate.Name.size());
                     bShowAutoComplete = false;
                 }
 
@@ -679,7 +622,6 @@ namespace Lumina
 
             ImGui::Separator();
 
-            // Scrollable area
             ImGui::BeginChild("##HistoryList", ImVec2(0, 0), false);
 
             if (CommandHistory.empty())
@@ -688,7 +630,6 @@ namespace Lumina
             }
             else
             {
-                // Display in reverse order (newest first)
                 for (int32 i = (int32)CommandHistory.size() - 1; i >= 0; --i)
                 {
                     const FString& Cmd = CommandHistory[i];
@@ -699,7 +640,7 @@ namespace Lumina
                     
                     if (ImGui::Selectable(Cmd.c_str(), bIsSelected))
                     {
-                        CurrentCommand = Cmd;
+                        CurrentCommand = Cmd.c_str();
                         bShowHistory = false;
                     }
 
@@ -721,25 +662,23 @@ namespace Lumina
             bShowHistory = false;
         }
     }
-
-    float FConsoleLogEditorTool::CalculateMatchScore(FStringView Candidate, const FString& Input)
+    
+    float FConsoleLogEditorTool::CalculateMatchScore(FStringView Candidate, FStringView Input)
     {
         if (Candidate.empty() || Input.empty())
         {
             return 0.0f;
         }
-
-        FString LowerCandidate = FString(Candidate.data());
-
-        if (LowerCandidate.find(Input) == 0)
+        
+        if (Candidate.starts_with(Input))
         {
             return 1.0f;
         }
 
-        size_t Pos = LowerCandidate.find(Input);
+        size_t Pos = Candidate.find(Input);
         if (Pos != FString::npos)
         {
-            return 0.7f - (float)Pos / (float)LowerCandidate.size() * 0.2f;
+            return 0.7f - static_cast<float>(Pos) / static_cast<float>(Input.size()) * 0.2f;
         }
 
         size_t CandidatePos = 0;

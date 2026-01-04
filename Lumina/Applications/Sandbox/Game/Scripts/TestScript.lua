@@ -17,7 +17,7 @@ local MyScript =
 
         Execute = function(Context, DeltaTime)
             
-            local CameraView = Context:View("SCameraComponent", "STransformComponent")
+            local CameraView = Context:View(SInputComponent, SCameraComponent, STransformComponent, "FollowCamera")
             CameraView:Each(function(CameraEntity)
 
                 local CameraTransform = Context:Get(CameraEntity, STransformComponent)
@@ -92,7 +92,7 @@ local MyScript =
 
         Execute = function(Context, DeltaTime)
             
-            local View = Context:View(SInputComponent, SCharacterControllerComponent, STransformComponent)
+            local View = Context:View(SInputComponent, SCharacterControllerComponent, STransformComponent, "Player")
             View:Each(function(Player)
                 
                 local PlayerTransform = Context:Get(Player, STransformComponent)

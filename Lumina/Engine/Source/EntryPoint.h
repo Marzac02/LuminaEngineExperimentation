@@ -1,9 +1,10 @@
 #pragma once
 
-#ifdef _DEBUG
-#ifdef LE_PLATFORM_WINDOWS
-#include <crtdbg.h>
+#if LE_PLATFORM_WINDOWS
+#ifndef WIN32_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN
 #endif
+#include <windows.h>
 #endif
 
 #include "Core/Application/ApplicationGlobalState.h"
@@ -28,7 +29,9 @@ inline int GuardedMain(int argc, char** argv)
 }
 
 #if LE_PLATFORM_WINDOWS
-
+#ifndef WIN32_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN
+#endif
 int APIENTRY WinMain(HINSTANCE hInst, HINSTANCE hInstPrev, PSTR cmdline, int cmdshow)
 {
 	return GuardedMain(__argc, __argv);

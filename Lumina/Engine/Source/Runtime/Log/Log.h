@@ -1,6 +1,5 @@
 #pragma once
 
-#include "LogMessage.h"
 #include "Containers/Array.h"
 #include "Core/DisableAllWarnings.h"
 
@@ -10,6 +9,7 @@ PRAGMA_DISABLE_ALL_WARNINGS
 PRAGMA_ENABLE_ALL_WARNINGS
 
 #include "Module/API.h"
+#include "LogMessage.h"
 
 
 namespace Lumina::Logging

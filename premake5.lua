@@ -70,6 +70,7 @@ workspace "Lumina"
             "/MP",      -- Multi-processor compilation
             "/Zc:inline", -- Remove unreferenced functions/data
             "/Zc:__cplusplus",
+            "/we4238"
         }
 
     filter "system:linux"
