@@ -5,8 +5,7 @@
 #include "Core/Utils/CommandLineParser.h"
 #include "Core/Windows/Window.h"
 #include "Core/Windows/WindowTypes.h"
-#include "FileSystem/NativeFileSystem.h"
-#include "FileSystem/VirtualFileSystem.h"
+#include "FileSystem/FileSystem.h"
 #include "Input/InputProcessor.h"
 #include "Paths/Paths.h"
 
@@ -70,8 +69,6 @@ namespace Lumina
 
         LOG_TRACE("Shutting down application: {0}", ApplicationName.c_str());
         
-        FileSystem::FVirtualFileSystem::Shutdown();
-        
         Shutdown();
         
         GEngine->Shutdown();
@@ -103,12 +100,11 @@ namespace Lumina
         Instance->bExitRequested = true;
     }
     
-
     void FApplication::PreInitStartup()
     {
         Paths::InitializePaths();
-        FileSystem::FVirtualFileSystem::Initialize();
-        GFileSystem->CreateFileSystem<FileSystem::FNativeFileSystem>("engine://", Paths::GetEngineContentDirectory());
+
+        FileSystem::Mount<FileSystem::FNativeFileSystem>("engine://", Paths::GetEngineContentDirectory());
         Paths::Mount("engine://", Paths::GetEngineContentDirectory());
     }
 

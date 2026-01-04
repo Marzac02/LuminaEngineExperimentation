@@ -181,7 +181,7 @@ namespace Lumina
         
         // Converts string to lower case
         template<StringLike StringType>
-        inline StringType ToLower(StringType const& originalString)
+        inline StringType ToLower(const StringType& originalString)
         {
             StringType lowerString = originalString;
             eastl::transform(lowerString.begin(), lowerString.end(), lowerString.begin(), ::tolower);
@@ -190,7 +190,7 @@ namespace Lumina
 
         // Converts string to upper case
         template<StringLike StringType>
-        inline StringType ToUpper(StringType const& originalString)
+        inline StringType ToUpper(const StringType& originalString)
         {
             StringType upperString = originalString;
             eastl::transform(upperString.begin(), upperString.end(), upperString.begin(), ::toupper);

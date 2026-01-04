@@ -213,15 +213,15 @@ namespace Lumina
          * @param FileName 
          * @return 
          */
-        LUMINA_API static CPackage* CreatePackage(const FString& FileName);
+        LUMINA_API static CPackage* CreatePackage(FStringView Path);
         
-        LUMINA_API static bool DestroyPackage(const FString& PackageFilePath);
+        LUMINA_API static bool DestroyPackage(FStringView Path);
 
         LUMINA_API static bool DestroyPackage(CPackage* PackageToDestroy);
 
-        LUMINA_API static CPackage* FindPackageByPath(const FString& FullPath);
+        LUMINA_API static CPackage* FindPackageByPath(FStringView Path);
 
-        LUMINA_API static void RenamePackage(const FString& OldPath, const FString& NewPath);
+        LUMINA_API static void RenamePackage(FStringView OldPath, FStringView NewPath);
 
 
         /**
@@ -230,7 +230,7 @@ namespace Lumina
          * @param FileName File name to load the linker from.
          * @return Loaded package.
          */
-        LUMINA_API static CPackage* LoadPackage(const FName& FileName);
+        LUMINA_API static CPackage* LoadPackage(FStringView Path);
         
         /**
          * Saves one specific object to disk.
@@ -239,7 +239,7 @@ namespace Lumina
          *
          * @return true if package saved successfully.
          */
-        LUMINA_API static bool SavePackage(CPackage* Package, const FName& FileName);
+        LUMINA_API static bool SavePackage(CPackage* Package, FStringView Path);
 
         void CreateLoader(const TVector<uint8>& FileBinary);
         
@@ -280,11 +280,17 @@ namespace Lumina
         LUMINA_API NODISCARD TSharedPtr<FPackageThumbnail> GetPackageThumbnail() const { return PackageThumbnail; }
 
         LUMINA_API NODISCARD FString GetPackageFilename() const;
-        LUMINA_API NODISCARD FString GetFullPackageFilePath() const;
+        LUMINA_API NODISCARD FFixedString GetPackagePath() const;
         
         LUMINA_API void MarkDirty() { bDirty = true; }
         LUMINA_API void ClearDirty() { bDirty = false; }
         LUMINA_API NODISCARD bool IsDirty() const { return bDirty; }
+        
+        template<typename T>
+        static void AddPackageExt(T& String)
+        {
+            String += ".lasset";
+        }
         
     public:
 

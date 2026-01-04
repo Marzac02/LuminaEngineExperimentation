@@ -1,6 +1,7 @@
 ﻿#include "AssetEditorTool.h"
 #include "Core/Object/Package/Package.h"
 #include "Core/Object/Package/Thumbnail/PackageThumbnail.h"
+#include "FileSystem/FileSystem.h"
 #include "Paths/Paths.h"
 #include "Platform/Filesystem/FileHelper.h"
 #include "Renderer/RenderContext.h"
@@ -41,10 +42,7 @@ namespace Lumina
     {
         GenerateThumbnailOnLoad();
         
-        FString FullPath = Paths::ResolveVirtualPath(Asset->GetPackage()->GetName().ToString());
-        Paths::AddPackageExtension(FullPath);
-        
-        if (CPackage::SavePackage(Asset->GetPackage(), FullPath.c_str()))
+        if (CPackage::SavePackage(Asset->GetPackage(), Asset->GetPackage()->GetPackagePath()))
         {
             FAssetRegistry::Get().AssetSaved(Asset);
             ImGuiX::Notifications::NotifySuccess("Successfully saved package: \"{0}\"", Asset->GetName().c_str());

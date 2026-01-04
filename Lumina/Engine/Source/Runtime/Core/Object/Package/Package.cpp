@@ -1,6 +1,8 @@
 #include "pch.h"
 #include "Package.h"
 
+#include <utility>
+
 #include "Assets/AssetRegistry/AssetRegistry.h"
 #include "Core/Engine/Engine.h"
 #include "Core/Object/Cast.h"
@@ -13,6 +15,7 @@
 
 #include "Core/Serialization/Package/PackageSaver.h"
 #include "Core/Serialization/Package/PackageLoader.h"
+#include "FileSystem/FileSystem.h"
 #include "TaskSystem/TaskSystem.h"
 #include "Thumbnail/PackageThumbnail.h"
 
@@ -60,7 +63,7 @@ namespace Lumina
                     if (CObject* Object = Export.Object.Get())
                     {
                         LUM_ASSERT(Object->GetName() == OldFileName)
-                            Object->Rename(FileName, nullptr);
+                        Object->Rename(FileName, nullptr);
                         break;
                     }
                 }
@@ -70,8 +73,7 @@ namespace Lumina
 		bool bSuccess = CObject::Rename(NewName, NewPackage);
         if (bSuccess && bFileNameDirty)
         {
-			FString FilePath = Paths::ResolveVirtualPath(GetName().ToString()) + ".lasset";
-            CPackage::SavePackage(this, FilePath);
+            SavePackage(this, GetPackagePath());
 
             for (FObjectExport& Export : ExportTable)
             {
@@ -86,55 +88,42 @@ namespace Lumina
         return bSuccess;
     }
 
-    CPackage* CPackage::CreatePackage(const FString& FileName)
+    CPackage* CPackage::CreatePackage(FStringView Path)
     {
-        FString VirtualPath = Paths::ConvertToVirtualPath(FileName.c_str());
-        
-        CPackage* Package = FindObject<CPackage>(VirtualPath);
+        CPackage* Package = FindObject<CPackage>(Path);
         if (Package)
         {
-            LOG_WARN("Attempted to create a package that already existed {}", FileName);
+            LOG_WARN("Attempted to create a package that already existed {}", Path);
             return Package;
         }
         
-        Package = NewObject<CPackage>(nullptr, VirtualPath);
+        Package = NewObject<CPackage>(nullptr, Path);
         Package->AddToRoot();
 
         Package->PackageThumbnail = MakeSharedPtr<FPackageThumbnail>();
         
-        LOG_INFO("Created Package: \"{}\"", VirtualPath);
+        LOG_INFO("Created Package: \"{}\"", Path);
         
         Package->MarkDirty();
         
         return Package;
     }
     
-    bool CPackage::DestroyPackage(const FString& PackageFilePath)
+    bool CPackage::DestroyPackage(FStringView Path)
     {
-        FString PackageVirtualPath = Paths::ConvertToVirtualPath(PackageFilePath);
-
         // If the package is loaded, we need to handle replacing references to its assets.
-        if (CPackage* Package = FindObject<CPackage>(PackageVirtualPath))
+        if (CPackage* Package = FindPackageByPath(Path))
         {
-            return CPackage::DestroyPackage(Package);
-        }
-
-        FString PackagePath = PackageFilePath;
-        if (!Paths::HasExtension(PackagePath, "lasset"))
-        {
-            Paths::AddPackageExtension(PackagePath);
+            return DestroyPackage(Package);
         }
         
         TVector<uint8> PackageBlob;
-        if (!FileHelper::LoadFileToArray(PackageBlob, PackageFilePath))
+        if (!FileSystem::ReadFile(PackageBlob, Path))
         {
-            LOG_ERROR("Failed to load package file at path {}", PackagePath);
+            LOG_ERROR("Failed to load package file at path {}", Path);
             return false;
         }
-
-        FName PackageFileName = Paths::FileName(PackagePath, true);
-
-
+        
         FPackageHeader Header;
         FMemoryReader Reader(PackageBlob);
         Reader << Header;
@@ -143,6 +132,8 @@ namespace Lumina
         
         TVector<FObjectExport> Exports;
         Reader << Exports;
+
+        FName PackageFileName = FileSystem::FileName(Path).data();
 
         TOptional<FObjectExport> Export;
         for (const FObjectExport& E : Exports)
@@ -165,7 +156,7 @@ namespace Lumina
 
         try
         {
-            std::filesystem::remove(PackagePath.c_str());
+            FileSystem::Remove(Path);
         }
         catch (std::filesystem::filesystem_error& Error)
         {
@@ -206,34 +197,23 @@ namespace Lumina
         
         PackageToDestroy->ExportTable.clear();
         PackageToDestroy->ImportTable.clear();
-
-        FName PackagePath = PackageToDestroy->GetFullPackageFilePath();
         
         PackageToDestroy->RemoveFromRoot();
         PackageToDestroy->ConditionalBeginDestroy();
 
         FAssetRegistry::Get().AssetDeleted(AssetGUID);
 
-        std::filesystem::remove(PackagePath.c_str());
-
+        FileSystem::Remove(PackageToDestroy->GetPackagePath());
         return true;
     }
 
-    CPackage* CPackage::FindPackageByPath(const FString& FullPath)
+    CPackage* CPackage::FindPackageByPath(FStringView Path)
     {
-        FString Path = FullPath;
-        if (!Paths::HasExtension(Path, "lasset"))
-        {
-            Paths::AddPackageExtension(Path);
-        }
-
-        FString VirtualPath = Paths::ConvertToVirtualPath(Path);
-        CPackage* Package = FindObject<CPackage>(VirtualPath);
-
+        CPackage* Package = FindObject<CPackage>(FName(Path.data()));
         return Package;
     }
 
-    void CPackage::RenamePackage(const FString& OldPath, const FString& NewPath)
+    void CPackage::RenamePackage(FStringView OldPath, FStringView NewPath)
     {
         if (CPackage* Package = FindObject<CPackage>(OldPath))
         {
@@ -241,8 +221,8 @@ namespace Lumina
             return;
         }
 
-		FName NewFileName = Paths::FileName(NewPath, true);
-		FName OldFileName = Paths::FileName(OldPath, true);
+		FName NewFileName = FileSystem::FileName(NewPath);
+		FName OldFileName = FileSystem::FileName(OldPath);
         bool bFileNameDirty = NewFileName != OldFileName;
         if (!bFileNameDirty)
         {
@@ -250,11 +230,10 @@ namespace Lumina
 		}
 
 		// This is kind of weird but the file has already been moved, so we need to use the new path to load it.
-		FString FilePath = Paths::ResolveVirtualPath(NewPath) + ".lasset";
         TVector<uint8> FileBlob;
-        if (!FileHelper::LoadFileToArray(FileBlob, FilePath))
+        if (!FileSystem::ReadFile(FileBlob, NewPath))
         {
-			LOG_ERROR("Failed to load package file at path {}", FilePath);
+			LOG_ERROR("Failed to load package file at path {}", NewPath);
             return;
         }
 
@@ -280,21 +259,15 @@ namespace Lumina
         Writer.Seek(Header.ExportTableOffset);
         Writer << Exports;
 
-		FileHelper::SaveArrayToFile(FileBlob, FilePath);
+        FileSystem::WriteFile(NewPath, FileBlob);
 	}
 
-    CPackage* CPackage::LoadPackage(const FName& FileName)
+    CPackage* CPackage::LoadPackage(FStringView Path)
     {
         LUMINA_PROFILE_SCOPE();
 
-        FString FullName = FileName.ToString();
-        if (!Paths::HasExtension(FullName, "lasset"))
-        {
-            Paths::AddPackageExtension(FullName);
-        }
-
-        FString VirtualPath = Paths::ConvertToVirtualPath(FullName);
-        CPackage* Package = FindObject<CPackage>(VirtualPath.c_str());
+        FName ObjectName = FName(Path.data());
+        CPackage* Package = FindObject<CPackage>(ObjectName);
         if (Package)
         {
             // Package is already loaded.
@@ -302,15 +275,15 @@ namespace Lumina
         }
         
         TVector<uint8> FileBinary;
-        if (!FileHelper::LoadFileToArray(FileBinary, FullName))
+        if (!FileSystem::ReadFile(FileBinary, Path))
         {
             return nullptr;
         }
         
-        Package = NewObject<CPackage>(nullptr, VirtualPath.c_str());
+        Package = NewObject<CPackage>(nullptr, ObjectName);
         Package->CreateLoader(FileBinary);
         
-        FPackageLoader& Reader = *(FPackageLoader*)Package->Loader.get();
+        FPackageLoader& Reader = *static_cast<FPackageLoader*>(Package->Loader.get());
         
         FPackageHeader PackageHeader;
         Reader << PackageHeader;
@@ -341,30 +314,23 @@ namespace Lumina
         return Package;
     }
 
-    bool CPackage::SavePackage(CPackage* Package, const FName& FileName)
+    bool CPackage::SavePackage(CPackage* Package, FStringView Path)
     {
         LUMINA_PROFILE_SCOPE();
 
         if (Package == nullptr)
         {
-            LOG_ERROR("Cannot save a null package! {}", FileName);
+            LOG_ERROR("Cannot save a null package! {}", Path);
             return false;
         }
 
         Package->FullyLoad();
-
-        FString PathString = FileName.ToString();
-        if (!Paths::HasExtension(PathString, "lasset"))
-        {
-            Paths::AddPackageExtension(PathString);
-        }
         
         Package->ExportTable.clear();
         Package->ImportTable.clear();
         
         TVector<uint8> FileBinary;
         FPackageSaver Writer(FileBinary, Package);
-
         
         FPackageHeader Header;
         Header.Tag = PACKAGE_FILE_TAG;
@@ -396,10 +362,10 @@ namespace Lumina
 
         // Reload the package loader to match the new file binary.
         Package->CreateLoader(FileBinary);
-
-        if (!FileHelper::SaveArrayToFile(FileBinary, PathString))
+        
+        if(!FileSystem::WriteFile(Path, FileBinary))
         {
-            return false;
+            LOG_ERROR("Failed to save package: {}", Path);
         }
         
         LOG_INFO("Saved Package: \"{}\" - ( [{}] Exports | [{}] Imports | [{:.2f}] KiB)",
@@ -440,7 +406,7 @@ namespace Lumina
 
     void CPackage::CreateExports()
     {
-        while (ExportIndex < (int64)ExportTable.size())
+        while (std::cmp_less(ExportIndex, ExportTable.size()))
         {
             
 
@@ -475,9 +441,8 @@ namespace Lumina
             ExportTable.emplace_back(Export);
         }
 
-        for (size_t i = 0; i < ExportTable.size(); ++i)
+        for (FObjectExport& Export : ExportTable)
         {
-            FObjectExport& Export = ExportTable[i];
             LUM_ASSERT(Export.Object.Get() != nullptr)
             
             Export.Offset = Ar.Tell();
@@ -511,7 +476,7 @@ namespace Lumina
 
         int32 LoaderIndex = FObjectPackageIndex(Object->LoaderIndex).GetArrayIndex();
 
-        if (LoaderIndex < 0 || LoaderIndex >= (int32)ExportTable.size())
+        if (LoaderIndex < 0 || std::cmp_greater_equal(LoaderIndex, ExportTable.size()))
         {
             LOG_ERROR("Invalid loader index {} for object {}", LoaderIndex, Object->GetName());
             return;
@@ -693,11 +658,12 @@ namespace Lumina
     {
         return Paths::FileName(GetName().c_str(), true);
     }
-
-    FString CPackage::GetFullPackageFilePath() const
+    
+    FFixedString CPackage::GetPackagePath() const
     {
-        FString Path = Paths::ResolveVirtualPath(GetName().ToString());
-        Paths::AddPackageExtension(Path);
+        FFixedString Path(GetName().c_str(), GetName().Length());
+        AddPackageExt(Path);
+        
         return Path;
     }
 }

@@ -133,6 +133,7 @@ namespace Lumina
         FName(const FWString& Str) : FName(Str.c_str()) {}
         FName(const FFixedString& Str) : FName(Str.c_str()) {}
         FName(const FFixedWString& Str) : FName(Str.c_str()) {}
+        FName(FStringView Str) : FName(Str.data()) {}
 
         explicit FName(uint64 InID)
             : ID(InID) 

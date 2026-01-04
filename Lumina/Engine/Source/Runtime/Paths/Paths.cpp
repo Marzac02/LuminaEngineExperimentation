@@ -91,18 +91,6 @@ namespace Lumina::Paths
         return {};
     }
 
-    bool HasExtension(const FString& Path, const FString& Ext)
-    {
-        size_t Dot = Path.find_last_of('.');
-        if (Dot == FString::npos || Dot + 1 >= Path.length())
-        {
-            return false;
-        }
-
-        FString ActualExt = Path.substr(Dot + 1);
-        return StringUtils::ToLower(ActualExt) == StringUtils::ToLower(Ext);
-    }
-
     bool IsDirectory(const FString& Path)
     {
         return std::filesystem::is_directory(Path.c_str());
@@ -164,49 +152,6 @@ namespace Lumina::Paths
         return true;
     }
     
-    FString ResolveVirtualPath(const FString& VirtualPath)
-    {
-        FString NormalizedPath = RemoveExtension(VirtualPath);
-        StringUtils::ReplaceAllOccurrencesInPlace(NormalizedPath, "\\", "/");
-
-        for (const auto& [VirtualPrefix, PhysicalPath] : VirtualPathMap)
-        {
-            const FString& PrefixStr = VirtualPrefix.ToString();
-            if (StringUtils::StartsWith(NormalizedPath, PrefixStr.c_str()))
-            {
-                FString Remaining = NormalizedPath.substr(PrefixStr.length());
-                return PhysicalPath + "/" + Remaining;
-            }
-        }
-
-        return NormalizedPath;
-    }
-
-    FString ConvertToVirtualPath(const FString& AbsolutePath)
-    {
-        FString NormalizedAbsolutePath = AbsolutePath;
-        StringUtils::ReplaceAllOccurrencesInPlace(NormalizedAbsolutePath, "\\", "/");
-
-        for (const auto& [VirtualPrefix, PhysicalPath] : VirtualPathMap)
-        {
-            FString NormalizedPhysical = PhysicalPath;
-            StringUtils::ReplaceAllOccurrencesInPlace(NormalizedPhysical, "\\", "/");
-
-            if (StringUtils::StartsWith(NormalizedAbsolutePath, NormalizedPhysical.c_str()))
-            {
-                FString Remaining = NormalizedAbsolutePath.substr(NormalizedPhysical.length());
-                if (StringUtils::StartsWith(Remaining, "/"))
-                {
-                    Remaining.erase(0, 1);
-                }
-
-                Remaining = RemoveExtension(Remaining);
-                return VirtualPrefix.ToString() + Remaining;
-            }
-        }
-
-        return RemoveExtension(NormalizedAbsolutePath);
-    }
 
     FString MakeRelativeTo(const FString& Path, const FString& BasePath)
     {
@@ -404,14 +349,6 @@ namespace Lumina::Paths
         }
 
         return true;
-    }
-
-    void AddPackageExtension(FString& FileName)
-    {
-        if (GetExtension(FileName).empty())
-        {
-            FileName += ".lasset";
-        }
     }
     
     bool SetEnvVariable(const FString& name, const FString& value)

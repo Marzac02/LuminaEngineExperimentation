@@ -1,5 +1,7 @@
 ﻿#include "pch.h"
 #include "NativeFileSystem.h"
+#include <fstream>
+
 
 namespace Lumina::FileSystem
 {
@@ -9,7 +11,7 @@ namespace Lumina::FileSystem
     {
     }
 
-    bool FNativeFileSystem::ReadFile(TVector<uint8>& Result, FStringView Path, uint32)
+    bool FNativeFileSystem::ReadFile(TVector<uint8>& Result, FStringView Path)
     {
         FFixedString NativeFilePath;
         if (Path.starts_with(AliasPath))
@@ -51,7 +53,7 @@ namespace Lumina::FileSystem
     }
 
 
-    bool FNativeFileSystem::ReadFile(FString& OutString, FStringView Path, uint32)
+    bool FNativeFileSystem::ReadFile(FString& OutString, FStringView Path)
     {
         std::ifstream File(Path.data(), std::ios::binary);
         if (!File)

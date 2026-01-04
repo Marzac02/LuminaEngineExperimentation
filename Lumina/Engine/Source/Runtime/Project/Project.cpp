@@ -1,11 +1,12 @@
 #include "pch.h"
 #include "Project.h"
 #include "Log/Log.h"
-#include "Platform/Filesystem/FileHelper.h"
 #include <string>
 #include "Assets/AssetRegistry/AssetRegistry.h"
 #include "Core/Module/ModuleManager.h"
 #include "Core/Object/ObjectBase.h"
+#include "Platform/Filesystem/FileHelper.h"
+#include "FileSystem/FileSystem.h"
 #include "Paths/Paths.h"
 #include "Scripting/Lua/Scripting.h"
 
@@ -27,6 +28,8 @@ namespace Lumina
 
         Settings.ProjectName = Paths::FileName(ProjectPath, true);
         Settings.ProjectPath = ProjectPath;
+        
+        FileSystem::Mount<FileSystem::FNativeFileSystem>("project://", GetProjectGameDirectory());
         
         Paths::Mount("project://", GetProjectGameDirectory());
 

@@ -30,9 +30,7 @@ namespace Lumina::Paths
     LUMINA_API FString FileName(const FString& InPath, bool bRemoveExtension = false);
 
     LUMINA_API FString GetExtension(const FString& InPath);
-
-    LUMINA_API bool HasExtension(const FString& Path, const FString& Ext);
-
+    
     LUMINA_API bool IsDirectory(const FString& Path);
     
     /** Removes and returns the path without its file extension. */
@@ -51,16 +49,6 @@ namespace Lumina::Paths
      * This does a path-based comparison, not a file system query.
      */
     LUMINA_API bool IsUnderDirectory(const FString& ParentDirectory, const FString& Directory);
-    
-    /** 
-     * Resolves a virtual path (e.g., starting with "/Lumina/") to an absolute path on the file system.
-     */
-    LUMINA_API FString ResolveVirtualPath(const FString& VirtualPath);
-
-    /** 
-     * Converts an absolute path on the file system to a virtual path understood by the Lumina engine.
-     */
-    LUMINA_API FString ConvertToVirtualPath(const FString& AbsolutePath);
 
     /**
      * Makes a path relative to a base path.
@@ -109,10 +97,7 @@ namespace Lumina::Paths
      * @return True if the operation succeeded, false otherwise.
      */
     LUMINA_API bool SetEnvVariable(const FString& name, const FString& value);
-
-
-    LUMINA_API void AddPackageExtension(FString& FileName);
-
+    
     
     // -------------------------------------------------------------------
 
