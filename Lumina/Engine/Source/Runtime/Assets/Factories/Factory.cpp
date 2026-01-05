@@ -4,6 +4,7 @@
 #include "Assets/AssetRegistry/AssetRegistry.h"
 #include "Core/Engine/Engine.h"
 #include "Core/Object/Package/Package.h"
+#include "FileSystem/FileSystem.h"
 #include "Paths/Paths.h"
 #include "TaskSystem/TaskSystem.h"
 
@@ -34,12 +35,12 @@ namespace Lumina
         CFactoryRegistry::Get().RegistryFactory(this);
     }
     
-    CObject* CFactory::TryCreateNew(const FString& Path)
+    CObject* CFactory::TryCreateNew(FStringView Path)
     {
         CPackage* Package = CPackage::CreatePackage(Path);
-        FString FileName = Paths::FileName(Path, true);
+        FStringView FileName = FileSystem::FileName(Path);
 
-        CObject* New = CreateNew(FileName.c_str(), Package);
+        CObject* New = CreateNew(FileName, Package);
         Package->ExportTable.emplace_back(New);
         
         New->SetFlag(OF_Public);
@@ -47,12 +48,12 @@ namespace Lumina
         return New;
     }
     
-    void CFactory::Import(const FString& ImportFile, const FString& DestinationPath, const eastl::any& ImportSettings)
+    void CFactory::Import(const FFixedString& ImportFile, const FFixedString& DestinationPath, const eastl::any& ImportSettings)
     {
         TryImport(ImportFile, DestinationPath, ImportSettings);
     }
 
-    bool CFactory::ShowImportDialogue(CFactory* Factory, const FString& RawPath, const FString& DestinationPath)
+    bool CFactory::ShowImportDialogue(CFactory* Factory, const FFixedString& RawPath, const FFixedString& DestinationPath)
     {
         bool bShouldClose = false;
         bool bShouldReimport = true;
@@ -71,7 +72,7 @@ namespace Lumina
         return bShouldClose;
     }
 
-    bool CFactory::ShowCreationDialogue(CFactory* Factory, const FString& Path)
+    bool CFactory::ShowCreationDialogue(CFactory* Factory, FStringView Path)
     {
         bool bShouldClose = false;
         if (Factory->DrawCreationDialogue(Path, bShouldClose))

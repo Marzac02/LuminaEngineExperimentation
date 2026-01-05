@@ -1,13 +1,9 @@
 #include "pch.h"
 #include "Paths.h"
-#include <cstdlib>
-
 #include "Core/Assertions/Assert.h"
-#include "Core/Threading/Thread.h"
 
 namespace Lumina::Paths
 {
-    static THashMap<FName, FString> VirtualPathMap;
     static THashMap<FName, FString> CachedDirectories;
 
     namespace
@@ -16,6 +12,7 @@ namespace Lumina::Paths
         const char* EngineFontDirectoryName         = "EngineFontDirectory";
         const char* EngineContentDirectoryName      = "EngineContentDirectory";
         const char* EngineShadersDirectoryName      = "EngineShadersDirectory";
+        const char* EngineConfigDirectoryName       = "EngineConfigDirectory";
         const char* EngineDirectoryName             = "EngineDirectory";
 
     }
@@ -26,6 +23,8 @@ namespace Lumina::Paths
             
         CachedDirectories[EngineDirectoryName] = FString(LuminaDir) + "/Lumina/Engine";
         
+        CachedDirectories[EngineConfigDirectoryName] = FString(GetEngineDirectory() + "/Config");
+        
         CachedDirectories[EngineResourceDirectoryName] = FString(LuminaDir) + "/Lumina/Engine/Resources";
 
         CachedDirectories[EngineFontDirectoryName] = FString(GetEngineResourceDirectory() + "/Fonts");
@@ -34,28 +33,7 @@ namespace Lumina::Paths
 
         CachedDirectories[EngineShadersDirectoryName] = FString(GetEngineResourceDirectory() + "/Shaders");
         
-    }
-
-    void Mount(const FName& VirtualPrefix, const FString& PhysicalPath)
-    {
-        Assert(VirtualPathMap.find(VirtualPrefix) == VirtualPathMap.end())
-
-        LOG_DEBUG("Virtual file path mounted: {} - {}", VirtualPrefix, PhysicalPath);
-        VirtualPathMap[VirtualPrefix] = PhysicalPath;
-    }
-
-    void Unmount(const FName& VirtualPrefix)
-    {
-        auto Itr = VirtualPathMap.find(VirtualPrefix);
-        Assert(Itr != VirtualPathMap.end())
-
-        LOG_DEBUG("Virtual file path unmounted: {} - {}", VirtualPrefix, Itr->second);
-        VirtualPathMap.erase(Itr);
-    }
-
-    const THashMap<FName, FString>& GetMountedPaths()
-    {
-        return VirtualPathMap;
+        
     }
 
     FString GetEngineDirectory()
@@ -180,57 +158,6 @@ namespace Lumina::Paths
         return RelativePath.string().c_str();
     }
 
-    FString MakeUniquePath(FStringView OriginPath)
-    {
-        FString Path = FString(OriginPath);
-
-        // Normalize path separators to '/'
-        NormalizePath(Path);
-
-        // Split path into directory, base name, and extension
-        const size_t LastSlash = Path.find_last_of('/');
-        const size_t Dot = Path.find_last_of('.');
-
-        FString Directory;
-        FString BaseName;
-        FString Extension;
-
-        if (LastSlash != FString::npos)
-        {
-            Directory = Path.substr(0, LastSlash + 1);
-        }
-
-        if (Dot != FString::npos && Dot > LastSlash)
-        {
-            BaseName = Path.substr(LastSlash + 1, Dot - LastSlash - 1);
-            Extension = Path.substr(Dot); // includes '.'
-        }
-        else
-        {
-            BaseName = Path.substr(LastSlash + 1);
-        }
-
-        // If the path doesn't exist, return it as-is
-        if (!Exists(Path))
-        {
-            return Path;
-        }
-
-        // Incrementally append suffixes until we find a free name
-        for (uint32 i = 1; i < 10000; ++i)
-        {
-            FString Candidate = Directory + BaseName + "_" + eastl::to_string(i) + Extension;
-            if (!Exists(Candidate))
-            {
-                return Candidate;
-            }
-        }
-
-        // Give up, too many conflicts
-        LOG_WARN("MakeUniquePath: Failed to find unique path for '{}'", Path);
-        return Path;
-    }
-
     void ReplaceFilename(FString& Path, const FString& NewFilename)
     {
         // Find the last occurrence of a path separator
@@ -260,6 +187,11 @@ namespace Lumina::Paths
     const FString& GetEngineContentDirectory()
     {
         return CachedDirectories[EngineContentDirectoryName];
+    }
+
+    const FString& GetEngineConfigDirectory()
+    {
+        return CachedDirectories[EngineConfigDirectoryName];
     }
 
     const FString& GetEngineShadersDirectory()
@@ -311,15 +243,21 @@ namespace Lumina::Paths
         return Parent(GetEngineDirectory());
     }
 
-    void NormalizePath(FString& Path)
+    void Normalize(FString& Path)
     {
         eastl::replace(Path.begin(), Path.end(), '\\', '/');
+    }
 
-        size_t Pos = 0;
-        while ((Pos = Path.find("//", Pos)) != FString::npos)
-        {
-            Path.erase(Pos, 1);
-        }
+    void Normalize(FFixedString& Path)
+    {
+        eastl::replace(Path.begin(), Path.end(), '\\', '/');
+    }
+
+    FFixedString Normalize(FStringView Path)
+    {
+        FFixedString RetVal = { Path.begin(), Path.end() };
+        eastl::replace(RetVal.begin(), RetVal.end(), '\\', '/');
+        return RetVal;
     }
 
     bool PathsEqual(FStringView A, FStringView B)

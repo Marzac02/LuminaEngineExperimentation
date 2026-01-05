@@ -2,7 +2,8 @@
 #include "EntryPoint.h"
 #include "Core/Module/ModuleManager.h"
 #include "Core/Windows/Window.h"
-#include "Project/Project.h"
+#include "FileSystem/FileSystem.h"
+#include "Paths/Paths.h"
 #include "Renderer/RenderResource.h"
 #include "UI/EditorUI.h"
 
@@ -11,14 +12,12 @@ namespace Lumina
     bool FEditorEngine::Init(FApplication* App)
     {
         InitializeCObjectSystem();
-
-        Project = MakeUniquePtr<FProject>();
         
-        TOptional<FString> ProjectPath = FApplication::CommandLine.Get("project");
+        TOptional<FString> MaybeProject = FApplication::CommandLine.Get("project");
         
-        if (ProjectPath.has_value())
+        if (MaybeProject.has_value())
         {
-            Project->LoadProject(ProjectPath.value());
+            LoadProject(MaybeProject.value());
         }
         else
         {
@@ -26,8 +25,8 @@ namespace Lumina
         }
         
         bool bSuccess = FEngine::Init(App);
-
-        if (Project->HasLoadedProject())
+        
+        if (!ProjectPath.empty())
         {
             FAssetRegistry::Get().RunInitialDiscovery();
         }
@@ -46,7 +45,18 @@ namespace Lumina
     {
         return Memory::New<FEditorUI>();
     }
-    
+
+    void FEditorEngine::LoadProject(FStringView Path)
+    {
+        FStringView Parent = FileSystem::Parent(Path);
+        FFixedString GameDir = Paths::Combine(Parent, "Game");
+        FFixedString ConfigDir = Paths::Combine(Parent, "Config");
+
+        FileSystem::Mount<FileSystem::FNativeFileSystem>("/Game", GameDir);
+        FileSystem::Mount<FileSystem::FNativeFileSystem>("/Config", ConfigDir);
+
+    }
+
     FApplication* CreateApplication(int argc, char** argv)
     {
         return Memory::New<LuminaEditor>();

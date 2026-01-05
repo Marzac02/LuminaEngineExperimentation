@@ -10,6 +10,7 @@
 
 namespace Lumina
 {
+    class FTransform;
     class FProperty;
 }
 
@@ -24,7 +25,7 @@ namespace Lumina
     {
     public:
 
-        DECLARE_CLASS(Lumina, CField, CObject, "script://lumina", LUMINA_API)
+        DECLARE_CLASS(Lumina, CField, CObject, "/Script", LUMINA_API)
         DEFINE_CLASS_FACTORY(CField)
         
         CField() = default;
@@ -62,11 +63,10 @@ namespace Lumina
     {
     public:
         
-        DECLARE_CLASS(Lumina, CEnum, CField, "script://lumina", LUMINA_API)
+        DECLARE_CLASS(Lumina, CEnum, CField, "/Script", LUMINA_API)
         DEFINE_CLASS_FACTORY(CEnum)
 
-        CEnum()
-        {}
+        CEnum() = default;
 
         LUMINA_API FName GetNameAtValue(uint64 Value);
         LUMINA_API uint64 GetEnumValueByName(FName Name);
@@ -89,7 +89,7 @@ namespace Lumina
     class CStruct : public CField
     {
 
-        DECLARE_CLASS(Lumina, CStruct, CField, "script://lumina", LUMINA_API)
+        DECLARE_CLASS(Lumina, CStruct, CField, "/Script", LUMINA_API)
         DEFINE_CLASS_FACTORY(CStruct)
 
     public:
@@ -171,7 +171,7 @@ namespace Lumina
     {
     public:
 
-        DECLARE_CLASS(Lumina, CClass, CStruct, "script://lumina", LUMINA_API)
+        DECLARE_CLASS(Lumina, CClass, CStruct, "/Script", LUMINA_API)
         DEFINE_CLASS_FACTORY(CClass)
 
         using FactoryFunctionType = CObject*(*)(void*);

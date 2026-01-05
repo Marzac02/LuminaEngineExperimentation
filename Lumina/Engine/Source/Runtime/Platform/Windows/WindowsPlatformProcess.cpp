@@ -226,11 +226,11 @@ namespace Lumina::Platform
 
         for (const FString& Path : SearchPaths)
         {
-            FString FullPath = Paths::Combine(Path.c_str(), Filename.c_str());
+            FFixedString FullPath = Paths::Combine(Path, Filename);
             if (Paths::Exists(FullPath))
             {
-                FWString Wide = StringUtils::ToWideString(FullPath);
-                if (void* Handle = LoadLibraryW(Wide.c_str()))
+                FWString WideStr = StringUtils::ToWideString(FullPath);
+                if (void* Handle = LoadLibraryW(WideStr.c_str()))
                 {
                     return Handle;
                 }
@@ -240,7 +240,7 @@ namespace Lumina::Platform
         return nullptr;
     }
 
-    bool OpenFileDialogue(FString& OutFile, const char* Title, const char* Filter, const char* InitialDir)
+    bool OpenFileDialogue(FFixedString& OutFile, const char* Title, const char* Filter, const char* InitialDir)
     {
         OPENFILENAMEA ofn{};
         char Buffer[MAX_PATH] = {};

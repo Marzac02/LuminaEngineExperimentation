@@ -346,8 +346,8 @@ namespace Lumina
         Package->WriteImports(Writer, Header, SaveContext);
         Package->WriteExports(Writer, Header, SaveContext);
         
-        Header.ImportCount = (uint32)Package->ImportTable.size();
-        Header.ExportCount = (uint32)Package->ExportTable.size();
+        Header.ImportCount = static_cast<uint32>(Package->ImportTable.size());
+        Header.ExportCount = static_cast<uint32>(Package->ExportTable.size());
 
         Header.ThumbnailDataOffset = Writer.Tell();
         if (!Package->PackageThumbnail)

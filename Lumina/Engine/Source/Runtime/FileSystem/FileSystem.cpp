@@ -2,86 +2,76 @@
 #include "FileSystem.h"
 
 #include "Core/Templates/LuminaTemplate.h"
+#include "Paths/Paths.h"
 
 
 namespace Lumina::FileSystem
 {
-    static THashMap<FName, FAnyFileSystem> FileSystemStorage;
+    static THashMap<FName, TVector<FFileSystem>> FileSystemStorage;
     
-    namespace Detail
-    {
-        struct FResolvedPath
-        {
-            FAnyFileSystem* FileSystem;
-            FStringView RelativePath;
-            bool bValid;
-        };
-        
-        static FResolvedPath ResolvePath(FStringView Path)
-        {
-            size_t DelimPos = Path.find("://");
-            if (DelimPos != FStringView::npos)
-            {
-                FStringView AliasStr = Path.substr(0, DelimPos);
-                FStringView RelPath = Path.substr(DelimPos + 3);
-                
-                FName Alias(AliasStr.data());
-                if (FAnyFileSystem* FS = GetFileSystem(Alias))
-                {
-                    return { FS, RelPath, true };
-                }
-                
-                return { nullptr, {}, false };
-            }
-            
-            if (FAnyFileSystem* DefaultFS = GetFileSystem(FName("default")))
-            {
-                return {.FileSystem = DefaultFS, .RelativePath = Path, .bValid = true };
-            }
-            
-            return { nullptr, {}, false };
-        }
-    }
     
-    bool FAnyFileSystem::ReadFile(TVector<uint8>& Result, FStringView Path)
+    bool FFileSystem::ReadFile(TVector<uint8>& Result, FStringView Path)
     {
         return eastl::visit([&](auto& fs) { return fs.ReadFile(Result, Path); }, Storage);
     }
 
-    bool FAnyFileSystem::ReadFile(FString& OutString, FStringView Path)
+    bool FFileSystem::ReadFile(FString& OutString, FStringView Path)
     {
         return eastl::visit([&](auto& fs) { return fs.ReadFile(OutString, Path); }, Storage);
     }
 
-    bool FAnyFileSystem::WriteFile(FStringView Path, FStringView Data)
+    bool FFileSystem::WriteFile(FStringView Path, FStringView Data)
     {
         return eastl::visit([&](auto& fs) { return fs.WriteFile(Path, Data); }, Storage);
     }
 
-    bool FAnyFileSystem::WriteFile(FStringView Path, TSpan<const uint8> Data)
+    bool FFileSystem::WriteFile(FStringView Path, TSpan<const uint8> Data)
     {
         return eastl::visit([&](auto& fs) { return fs.WriteFile(Path, Data); }, Storage);
     }
 
-    FStringView FAnyFileSystem::GetAliasPath() const
+    FStringView FFileSystem::GetAliasPath() const
     {
         return eastl::visit([](const auto& fs) { return fs.GetAliasPath(); }, Storage);
     }
 
-    FStringView FAnyFileSystem::GetBasePath() const
+    FStringView FFileSystem::GetBasePath() const
     {
         return eastl::visit([](const auto& fs) { return fs.GetBasePath(); }, Storage);
     }
 
-    FStringView FileName(FStringView Path)
+    FStringView Extension(FStringView Path)
     {
-        size_t Pos = Path.find_last_of('/');
-        if (Pos == FStringView::npos)
+        size_t Dot = Path.find_last_of('.');
+        if (Dot == FString::npos)
+        {
+            return {};
+        }
+
+        return Path.substr(Dot);
+    }
+
+    FStringView FileName(FStringView Path, bool bRemoveExtension)
+    {
+        FFixedString NormalizedPath = Paths::Normalize(Path);
+        
+        size_t LastSlash = Path.find_last_of('/');
+        if (LastSlash == FString::npos)
         {
             return {};
         }
         
-        return Path.substr(Pos + 1);
+        FFixedString FilePart = NormalizedPath.left(LastSlash + 1);
+        if (bRemoveExtension)
+        {
+            size_t DotPos = FilePart.find_last_of('.');
+            if (DotPos != FString::npos)
+            {
+                return FilePart.left(DotPos);
+            }
+        }
+
+        return FilePart;
     }
 
     bool Remove(FStringView Path)
@@ -98,106 +88,83 @@ namespace Lumina::FileSystem
 
     FFixedString ResolvePath(FStringView Path)
     {
-        FFixedString NativeFilePath;
-        if (Path.starts_with(GetMountPath(Path.data())))
-        {
-            FStringView Remainder = Path.substr(Path.length());
-            NativeFilePath.append(Path.data()).append("/").append(Remainder.data());
-        }
-        
-        return NativeFilePath;
+        return {};
     }
 
-    FStringView GetMountPath(const FName& Alias)
+    bool CreateDir(FStringView Path)
     {
-        auto It = FileSystemStorage.find(Alias);
-        if (It == FileSystemStorage.end())
+        return std::filesystem::create_directory(Path.data());
+    }
+
+    bool IsUnderDirectory(FStringView Parent, FStringView Path)
+    {
+        if (!Path.starts_with(Parent))
+        {
+            return false;
+        }
+    
+        return Path.length() == Parent.length() || 
+               Path[Parent.length()] == '/' || 
+               Path[Parent.length()] == '\\';
+    }
+
+    bool IsDirectory(FStringView Path)
+    {
+        return std::filesystem::is_directory(Path.data());
+    }
+
+    bool IsLuaAsset(FStringView Path)
+    {
+        return Extension(Path) == ".lua";
+    }
+
+    bool IsLuminaAsset(FStringView Path)
+    {
+        return Extension(Path) == ".lasset";
+    }
+
+    FStringView Parent(FStringView Path)
+    {
+        FFixedString Str(Path.begin(), Path.end());
+        Paths::Normalize(Str);
+        size_t Pos = Path.find_last_of('/');
+        if (Pos == FString::npos)
         {
             return {};
         }
         
-        return It->second.GetBasePath();
-    }
-
-    FAnyFileSystem* GetFileSystem(const FName& Alias)
-    {
-        auto It = FileSystemStorage.find(Alias);
-        if (It == FileSystemStorage.end())
-        {
-            return nullptr;
-        }
-        
-        return &It->second;
+        return Path.substr(Pos + 1);
     }
 
     bool ReadFile(TVector<uint8>& Result, FStringView Path)
     {
-        Detail::FResolvedPath ResolvedPath = Detail::ResolvePath(Path);
-        if (!ResolvedPath.bValid)
-        {
-            return false;
-        }
-        
-        return ResolvedPath.FileSystem->ReadFile(Result, Path);
+        return true;//return ResolvedPath.FileSystem->ReadFile(Result, Path);
     }
 
     bool ReadFile(FString& OutString, FStringView Path)
     {
-        Detail::FResolvedPath ResolvedPath = Detail::ResolvePath(Path);
-        if (!ResolvedPath.bValid)
-        {
-            return false;
-        }
-        
-        return ResolvedPath.FileSystem->ReadFile(OutString, Path);
+        return true;//return ResolvedPath.FileSystem->ReadFile(OutString, Path);
     }
 
     bool WriteFile(FStringView Path, FStringView Data)
     {
-        Detail::FResolvedPath ResolvedPath = Detail::ResolvePath(Path);
-        if (!ResolvedPath.bValid)
-        {
-            return false;
-        }
-        
-        return ResolvedPath.FileSystem->WriteFile(Path, Data);
+        return true;//return ResolvedPath.FileSystem->WriteFile(Path, Data);
     }
 
     bool WriteFile(FStringView Path, TSpan<const uint8> Data)
     {
-        Detail::FResolvedPath ResolvedPath = Detail::ResolvePath(Path);
-        if (!ResolvedPath.bValid)
-        {
-            return false;
-        }
-        
-        return ResolvedPath.FileSystem->WriteFile(Path, Data);
+        return true;//return ResolvedPath.FileSystem->WriteFile(Path, Data);
     }
     
-    FAnyFileSystem* Detail::AddFileSystemImpl(const FName& Alias, FAnyFileSystem&& System)
+    FFileSystem& Detail::AddFileSystemImpl(const FName& Alias, FFileSystem&& System)
     {
-        auto [It, bInserted] = FileSystemStorage.emplace(Alias, Move(System));
-        if (!bInserted)
-        {
-            return nullptr;
-        }
-        
-        return &It->second;
-    }
-
-    FAnyFileSystem* Detail::GetFileSystemImpl(const FName& Alias)
-    {
-        auto It = FileSystemStorage.find(Alias);
-        if (It == FileSystemStorage.end())
-        {
-            return nullptr;
-        }
-        
-        return &It->second;
+        return FileSystemStorage[Alias].emplace_back(Move(System));
     }
     
     bool HasExtension(FStringView Path, FStringView Ext)
     {
+        Path = Paths::Normalize(Path);
+        Ext = Paths::Normalize(Ext);
         size_t Dot = Path.find_last_of('.');
         if (Dot == FString::npos)
         {
@@ -205,6 +172,25 @@ namespace Lumina::FileSystem
         }
 
         FStringView ActualExt = Path.substr(Dot);
-        return StringUtils::ToLower(ActualExt) == StringUtils::ToLower(Ext);
+        return ActualExt == Ext;
+    }
+
+    void DirectoryIterator(FStringView Path, const TFunctionRef<void(FStringView Path)>& Func)
+    {
+        for (const std::filesystem::directory_entry& Directory : std::filesystem::directory_iterator(Path.data()))
+        {
+            Func(FStringView(Directory.path().generic_string().data(), Directory.path().generic_string().size()));
+        }
+    }
+
+    void ForEachFileSystem(const TFunctionRef<void(FFileSystem&)>& Func)
+    {
+        for (auto& [Alias, FileSystems] : FileSystemStorage)
+        {
+            for (FFileSystem& System : FileSystems)
+            {
+                Func(System);
+            }
+        }
     }
 }

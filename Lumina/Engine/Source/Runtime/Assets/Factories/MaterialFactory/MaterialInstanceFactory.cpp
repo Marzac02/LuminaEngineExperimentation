@@ -12,7 +12,7 @@ namespace Lumina
         return true;
     }
 
-    bool CMaterialInstanceFactory::DrawCreationDialogue(const FString& Path, bool& bShouldClose)
+    bool CMaterialInstanceFactory::DrawCreationDialogue(FStringView Path, bool& bShouldClose)
     {
         return SelectedMaterial != nullptr;
     }

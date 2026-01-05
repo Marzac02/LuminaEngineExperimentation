@@ -9,7 +9,7 @@ namespace Lumina
 
     }
 
-    void FEditorModalManager::CreateDialogue(const FString& Title, ImVec2 Size, TMoveOnlyFunction<bool(const FUpdateContext&)> DrawFunction, bool bBlocking)
+    void FEditorModalManager::CreateDialogue(const FString& Title, ImVec2 Size, TMoveOnlyFunction<bool()> DrawFunction, bool bBlocking)
     {
         if (ActiveModal != nullptr)
         {
@@ -23,7 +23,7 @@ namespace Lumina
     }
 
 
-    void FEditorModalManager::DrawDialogue(const FUpdateContext& UpdateContext)
+    void FEditorModalManager::DrawDialogue()
     {
         if (!ActiveModal)
         {
@@ -46,7 +46,7 @@ namespace Lumina
             bool bOpen = true;
             if (ImGui::BeginPopupModal(ActiveModal->Title.c_str(), &bOpen, ImGuiWindowFlags_NoResize))
             {
-                if (ActiveModal->DrawModal(UpdateContext) || !bOpen)
+                if (ActiveModal->DrawModal() || !bOpen)
                 {
                     ImGui::CloseCurrentPopup();
                     ActiveModal.reset();
@@ -59,7 +59,7 @@ namespace Lumina
             bool bOpen = true;
             if (ImGui::Begin(ActiveModal->Title.c_str(), &bOpen, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse))
             {
-                if (ActiveModal->DrawModal(UpdateContext) || !bOpen)
+                if (ActiveModal->DrawModal() || !bOpen)
                 {
                     ActiveModal.reset();
                 }

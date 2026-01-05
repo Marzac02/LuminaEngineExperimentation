@@ -85,10 +85,10 @@ namespace Lumina
     void CThumbnailManager::TryLoadThumbnailsForPackage(const FString& PackagePath)
     {
         FString ActualPackagePath = PackagePath;
-        if (!Paths::HasExtension(ActualPackagePath, "lasset"))
-        {
-            Paths::AddPackageExtension(ActualPackagePath);
-        }
+        //if (!Paths::HasExtension(ActualPackagePath, "lasset"))
+        //{
+        //    Paths::AddPackageExtension(ActualPackagePath);
+        //}
         if (CPackage* Package = CPackage::LoadPackage(ActualPackagePath))
         {
             TSharedPtr<FPackageThumbnail> Thumbnail = Package->GetPackageThumbnail();

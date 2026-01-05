@@ -148,7 +148,7 @@ namespace Lumina::Scripting
             {
                 FString ScriptPath = Itr.path().generic_string().c_str();
                 FString ScriptDirectory = Itr.path().parent_path().generic_string().c_str();
-                Paths::NormalizePath(ScriptDirectory);
+                Paths::Normalize(ScriptDirectory);
 
                 LoadScriptPath(ScriptPath);
             }
@@ -750,7 +750,7 @@ namespace Lumina::Scripting
         sol::environment Environment(State, sol::create, State.globals());
         
         FString NormalizedPath(ScriptPath);
-        Paths::NormalizePath(NormalizedPath);
+        Paths::Normalize(NormalizedPath);
         for (entt::entity EntityToRemove : PathToScriptEntities[NormalizedPath])
         {
             ScriptRegistry.destroy(EntityToRemove);

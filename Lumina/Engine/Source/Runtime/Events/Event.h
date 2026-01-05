@@ -399,13 +399,13 @@ namespace Lumina
     class FFileDropEvent : public FEvent
     {
     public:
-        FFileDropEvent(const TVector<FString>& InPaths, float InMouseX, float InMouseY)
+        FFileDropEvent(const TVector<FFixedString>& InPaths, float InMouseX, float InMouseY)
             : Paths(InPaths)
             , MouseX(InMouseX)
             , MouseY(InMouseY)
         {}
         
-        const TVector<FString>& GetPaths() const { return Paths; }
+        const TVector<FFixedString>& GetPaths() const { return Paths; }
         size_t GetCount() const { return Paths.size(); }
         float GetMouseX() const { return MouseX; }
         float GetMouseY() const { return MouseY; }
@@ -414,7 +414,7 @@ namespace Lumina
         
     private:
         
-        TVector<FString> Paths;
+        TVector<FFixedString> Paths;
         float MouseX, MouseY;
     };
 

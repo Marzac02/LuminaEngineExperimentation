@@ -6,6 +6,7 @@
 #include "Assets/Factories/TextureFactory/TextureFactory.h"
 #include "Core/Object/Cast.h"
 #include "Core/Object/Package/Package.h"
+#include "FileSystem/FileSystem.h"
 #include "Paths/Paths.h"
 
 #include "TaskSystem/TaskSystem.h"
@@ -21,7 +22,7 @@ namespace Lumina
         return NewObject<CStaticMesh>(Package, Name);
     }
 
-    bool CStaticMeshFactory::DrawImportDialogue(const FString& RawPath, const FString& DestinationPath, eastl::any& ImportSettings, bool& bShouldClose, bool& bShouldReimport)
+    bool CStaticMeshFactory::DrawImportDialogue(const FFixedString& RawPath, const FFixedString& DestinationPath, eastl::any& ImportSettings, bool& bShouldClose, bool& bShouldReimport)
     {
         static Import::Mesh::FMeshImportOptions Options;
         
@@ -32,7 +33,7 @@ namespace Lumina
         {
             ImportedData = MakeSharedPtr<Import::Mesh::FMeshImportData>();
             
-            FName FileExtension = Paths::GetExtension(RawPath);
+            FName FileExtension = FileSystem::Extension(RawPath);
             
             if (FileExtension == ".obj")
             {
@@ -65,7 +66,7 @@ namespace Lumina
         ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(12, 8));
     
         ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.9f, 0.9f, 0.9f, 1.0f));
-        ImGui::TextWrapped("Importing: %s", Paths::FileName(RawPath).c_str());
+        ImGui::TextWrapped("Importing: %s", FileSystem::FileName(RawPath).data());
         ImGui::PopStyleColor();
         ImGui::Spacing();
     
@@ -330,7 +331,7 @@ namespace Lumina
         return bShouldImport;
     }
     
-    void CStaticMeshFactory::TryImport(const FString& RawPath, const FString& DestinationPath, const eastl::any& ImportSettings)
+    void CStaticMeshFactory::TryImport(const FFixedString& RawPath, const FFixedString& DestinationPath, const eastl::any& ImportSettings)
     {
         uint32 Counter = 0;
         
@@ -356,11 +357,12 @@ namespace Lumina
         for (TUniquePtr<FMeshResource>& MeshResource : ImportData->Resources)
         {
             size_t LastSlashPos = DestinationPath.find_last_of('/');
-            FString QualifiedPath = DestinationPath.substr(0, LastSlashPos + 1) + MeshResource->Name.ToString();
+            FFixedString QualifiedPath = DestinationPath.substr(0, LastSlashPos + 1)
+                .append_convert(MeshResource->Name.ToString());
             
             if (Counter)
             {
-                QualifiedPath += eastl::to_string(Counter);
+                QualifiedPath.append_convert(eastl::to_string(Counter));
             }
             
             CStaticMesh* NewMesh = TryCreateNew<CStaticMesh>(QualifiedPath);
@@ -383,12 +385,13 @@ namespace Lumina
                     FString TextureFileName = Paths::FileName(TexturePath, true);
                                          
                     FString DestinationParent = Paths::Parent(QualifiedPath);
-                    FString TextureDestination = DestinationParent + "/" + TextureFileName + ".lasset";
+                    FString TextureDestination = DestinationParent + "/" + TextureFileName;
+                    CPackage::AddPackageExt(TextureDestination);
 
-                    if (!FindObject<CPackage>(Paths::ConvertToVirtualPath(TextureDestination)))
-                    {
-                        TextureFactory->Import(TexturePath, TextureDestination);
-                    }
+                    //if (!FindObject<CPackage>(Paths::ConvertToVirtualPath(TextureDestination)))
+                    //{
+                    //    TextureFactory->Import(TexturePath, TextureDestination);
+                    //}
                 });
             }
 
@@ -404,7 +407,7 @@ namespace Lumina
             //}
 
             CPackage* NewPackage = NewMesh->GetPackage();
-            CPackage::SavePackage(NewPackage, NewPackage->GetFullPackageFilePath());
+            CPackage::SavePackage(NewPackage, NewPackage->GetPackagePath());
             FAssetRegistry::Get().AssetCreated(NewMesh);
             
             Counter++;

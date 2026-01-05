@@ -38,7 +38,7 @@ namespace Lumina::Platform
     LUMINA_API FVoidFuncPtr LumGetProcAddress(void* Handle, const char* Procedure);
     LUMINA_API void* LoadLibraryWithSearchPaths(const FString& Filename, const TVector<FString>& SearchPaths);
 
-    LUMINA_API bool OpenFileDialogue(FString& OutFile, const char* Title = "Open File", const char* Filter = "*.*", const char* InitialDir = nullptr);
+    LUMINA_API bool OpenFileDialogue(FFixedString& OutFile, const char* Title = "Open File", const char* Filter = "*.*", const char* InitialDir = nullptr);
     
 
     

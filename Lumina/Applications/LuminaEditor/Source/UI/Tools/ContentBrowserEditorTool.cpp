@@ -11,10 +11,10 @@
 #include "Core/Object/Package/Thumbnail/PackageThumbnail.h"
 #include "Core/Windows/Window.h"
 #include "EASTL/sort.h"
+#include "FileSystem/FileSystem.h"
 #include "Paths/Paths.h"
 #include "Platform/Filesystem/FileHelper.h"
 #include "Platform/Process/PlatformProcess.h"
-#include "Project/Project.h"
 #include "Scripting/Lua/Scripting.h"
 #include "TaskSystem/TaskSystem.h"
 #include "Tools/Dialogs/Dialogs.h"
@@ -30,7 +30,7 @@ namespace Lumina
     {
     public:
         
-        void Initialize(const FString& CurrentName)
+        void Initialize(FStringView CurrentName)
         {
             Buffer.assign(CurrentName.begin(), CurrentName.end());
         }
@@ -53,7 +53,7 @@ namespace Lumina
 
             ImVec2 DropCursor = ImVec2(FileEvent.GetMouseX(), FileEvent.GetMouseY());
 
-            for (const FString& Path : FileEvent.GetPaths())
+            for (const FFixedString& Path : FileEvent.GetPaths())
             {
                 ActionRegistry.EnqueueAction<FPendingOSDrop>(FPendingOSDrop{ Path, DropCursor });
             }
@@ -235,31 +235,31 @@ namespace Lumina
         {
             if (Paths::Exists(SelectedPath))
             {
-                TFixedVector<FString, 8> DirectoryPaths;
-                TFixedVector<FString, 6> FilePaths;
+                TFixedVector<FFixedString, 8> DirectoryPaths;
+                TFixedVector<FFixedString, 6> FilePaths;
 
-                for (const std::filesystem::directory_entry& Directory : std::filesystem::directory_iterator(SelectedPath.c_str()))
+                FileSystem::DirectoryIterator(SelectedPath, [&](FStringView Path)
                 {
-                    if (std::filesystem::is_directory(Directory))
+                    if (FileSystem::IsDirectory(Path))
                     {
-                        FString VirtualPath = Paths::ConvertToVirtualPath(Directory.path().generic_string().c_str());
-                        DirectoryPaths.push_back(Directory.path().generic_string().c_str());
+                        DirectoryPaths.emplace_back(Path);
                     }
-					else if (Directory.path().extension() == ".lasset" || Directory.path().extension() == ".lua")
+                    else if (FileSystem::IsLuaAsset(Path) || FileSystem::IsLuminaAsset(Path))
                     {
-                        FilePaths.push_back(Directory.path().generic_string().c_str());
+                        FilePaths.emplace_back(Path);
                     }
-                }
+                });
+
 
                 eastl::sort(DirectoryPaths.begin(), DirectoryPaths.end());
                 eastl::sort(FilePaths.begin(), FilePaths.end());
                 
-                for (const FString& Directory : DirectoryPaths)
+                for (const FFixedString& Directory : DirectoryPaths)
                 {
                     ContentBrowserTileView.AddItemToTree<FContentBrowserTileViewItem>(nullptr, Directory);
                 }
 
-                for (const FString& FilePath : FilePaths)
+                for (const FFixedString& FilePath : FilePaths)
                 {
                     ContentBrowserTileView.AddItemToTree<FContentBrowserTileViewItem>(nullptr, FilePath);
                 }
@@ -305,7 +305,7 @@ namespace Lumina
         
         DirectoryContext.RebuildTreeFunction = [this](FTreeListView& Tree)
         {
-            for (const auto& [VirtualPrefix, PhysicalRootStr] : Paths::GetMountedPaths())
+            FileSystem::ForEachFileSystem([&](FileSystem::FFileSystem& FS)
             {
                 TFunction<void(entt::entity, const FFixedString&)> AddChildrenRecursive;
 
@@ -339,12 +339,16 @@ namespace Lumina
                 };
 
                 FFixedString Name;
-                Name.append(LE_ICON_FOLDER).append(" ").append(VirtualPrefix.c_str());
+                Name.append(LE_ICON_FOLDER).append(" ").append(FS.GetAliasPath().begin(), FS.GetAliasPath().end());
+                
+                FFixedString BasePath;
+                BasePath.assign(FS.GetBasePath().begin(), FS.GetBasePath().end());
+                
                 entt::entity RootItem = Tree.CreateNode(entt::null, Name);
-                Tree.EmplaceUserData<FContentBrowserListViewItemData>(RootItem).Path = PhysicalRootStr.c_str();
+                Tree.EmplaceUserData<FContentBrowserListViewItemData>(RootItem).Path = BasePath;
 
-                AddChildrenRecursive(RootItem, PhysicalRootStr.c_str());
-            }
+                AddChildrenRecursive(RootItem, BasePath);
+            });
         };
 
         DirectoryContext.ItemSelectedFunction = [this] (FTreeListView& Tree, entt::entity Item)
@@ -383,10 +387,10 @@ namespace Lumina
         {
             try
             {
-                if (std::filesystem::is_directory(Destroy.PendingDestroy.c_str()))
+                if (FileSystem::IsDirectory(Destroy.PendingDestroy))
                 {
-                    std::filesystem::remove_all(Destroy.PendingDestroy.c_str());
-                    ImGuiX::Notifications::NotifySuccess("Deleted Directory {0}", Destroy.PendingDestroy.c_str());
+                    FileSystem::RemoveAll(Destroy.PendingDestroy);
+                    ImGuiX::Notifications::NotifySuccess("Deleted Directory {0}", Destroy.PendingDestroy);
                 }
                 else
                 {
@@ -400,8 +404,7 @@ namespace Lumina
 
                     if (CPackage::DestroyPackage(Destroy.PendingDestroy))
                     {
-                        FString PackagePathWithExt = Destroy.PendingDestroy + ".lasset";
-                        ImGuiX::Notifications::NotifySuccess("Deleted Asset {0}", Destroy.PendingDestroy.c_str());
+                        ImGuiX::Notifications::NotifySuccess("Deleted Asset {0}", Destroy.PendingDestroy);
 
                     }
                 }
@@ -428,11 +431,11 @@ namespace Lumina
                 if (Extension == ".lasset")
                 {
                     // Rename the underlying asset's package.
-                    FString OldObjectName = Paths::ConvertToVirtualPath(Rename.OldName);
-                    FString NewObjectName = Paths::ConvertToVirtualPath(Rename.NewName);
+                    //FString OldObjectName = Paths::ConvertToVirtualPath(Rename.OldName);
+                    //FString NewObjectName = Paths::ConvertToVirtualPath(Rename.NewName);
 
-                    CPackage::RenamePackage(OldObjectName, NewObjectName);
-                    FAssetRegistry::Get().AssetRenamed(Rename.OldName, Rename.NewName);
+                    //CPackage::RenamePackage(OldObjectName, NewObjectName);
+                    //FAssetRegistry::Get().AssetRenamed(Rename.OldName, Rename.NewName);
                 }
                 else if (Extension.empty())
                 {
@@ -448,22 +451,22 @@ namespace Lumina
                         {
                             FString CurrentPath = Directory.path().string().c_str();
 
-                            FString CurrentVirtualPath = Paths::ConvertToVirtualPath(CurrentPath);
-
-                            FString OldDirVirtual = Paths::ConvertToVirtualPath(Rename.OldName);
-                            FString NewDirVirtual = Paths::ConvertToVirtualPath(Rename.NewName);
-
-                            FString OldObjectName = CurrentVirtualPath;
-                            if (CurrentVirtualPath.find(NewDirVirtual) == 0)
-                            {
-                                OldObjectName = OldDirVirtual + CurrentVirtualPath.substr(NewDirVirtual.length());
-                            }
-
-                            CPackage::RenamePackage(OldObjectName, CurrentVirtualPath);
-
-                            FString OldObjectFilePath = Paths::ResolveVirtualPath(OldObjectName) += ".lasset";
-                            Paths::NormalizePath(CurrentPath);
-                            FAssetRegistry::Get().AssetRenamed(OldObjectFilePath, CurrentPath);
+                            //FString CurrentVirtualPath = Paths::ConvertToVirtualPath(CurrentPath);
+                            //
+                            //FString OldDirVirtual = Paths::ConvertToVirtualPath(Rename.OldName);
+                            //FString NewDirVirtual = Paths::ConvertToVirtualPath(Rename.NewName);
+                            //
+                            //FString OldObjectName = CurrentVirtualPath;
+                            //if (CurrentVirtualPath.find(NewDirVirtual) == 0)
+                            //{
+                            //    OldObjectName = OldDirVirtual + CurrentVirtualPath.substr(NewDirVirtual.length());
+                            //}
+                            //
+                            //CPackage::RenamePackage(OldObjectName, CurrentVirtualPath);
+                            //
+                            //FString OldObjectFilePath = Paths::ResolveVirtualPath(OldObjectName) += ".lasset";
+                            //Paths::NormalizePath(CurrentPath);
+                            //FAssetRegistry::Get().AssetRenamed(OldObjectFilePath, CurrentPath);
                         }
                     }
                 }
@@ -526,7 +529,7 @@ namespace Lumina
 
     void FContentBrowserEditorTool::OpenDeletionWarningPopup(const FContentBrowserTileViewItem* Item, const TFunction<void(EYesNo)>& Callback)
     {
-        if (Dialogs::Confirmation("Confirm Deletion", "Are you sure you want to delete \"{0}\"?\n""\nThis action cannot be undone.", Item->GetFileName()))
+        if (Dialogs::Confirmation("Confirm Deletion", "Are you sure you want to delete \"{0}\"?\n""\nThis action cannot be undone.", Item->GetName()))
         {
             Callback(EYesNo::Yes);
             ActionRegistry.EnqueueAction<FPendingDestroy>(FPendingDestroy{ Item->GetPath() });
@@ -573,7 +576,7 @@ namespace Lumina
     }
     
 
-    void FContentBrowserEditorTool::TryImport(const FString& Path)
+    void FContentBrowserEditorTool::TryImport(const FFixedString& Path)
     {
         const TVector<CFactory*>& Factories = CFactoryRegistry::Get().GetFactories();
         for (CFactory* Factory : Factories)
@@ -583,22 +586,19 @@ namespace Lumina
                 continue;
             }
         
-            FString Ext = Paths::GetExtension(Path);
+            FStringView Ext = FileSystem::Extension(Path);
             if (!Factory->IsExtensionSupported(Ext))
             {
                 continue;
             }
             
-            FString NoExtFileName = Paths::FileName(Path, true);
-            FString PathString = Paths::Combine(SelectedPath.c_str(), NoExtFileName.c_str());
-        
-            Paths::AddPackageExtension(PathString);
-            PathString = Paths::MakeUniquePath(PathString);
-            PathString = Paths::RemoveExtension(PathString);
-        
+            FStringView NoExtFileName = FileSystem::FileName(Path);
+            FFixedString PathString = Paths::Combine(SelectedPath, NoExtFileName);
+            
             if (Factory->HasImportDialogue())
             {
-                ToolContext->PushModal("Import", {700, 800}, [this, Factory, Path, PathString](const FUpdateContext&)
+                ToolContext->PushModal("Import", {700, 800}, [this, Factory, 
+                    Path = Move(Path), PathString = Move(PathString)]
                 {
                     bool bShouldClose = CFactory::ShowImportDialogue(Factory, Path, PathString);
                     if (bShouldClose)
@@ -622,9 +622,9 @@ namespace Lumina
 
     void FContentBrowserEditorTool::PushRenameModal(FContentBrowserTileViewItem* ContentItem)
     {
-        ToolContext->PushModal("Rename", ImVec2(480.0f, 320.0f), [this, ContentItem, RenameState = MakeUniquePtr<FRenameModalState<>>()](const FUpdateContext&) -> bool
+        ToolContext->PushModal("Rename", ImVec2(480.0f, 320.0f), [this, ContentItem, RenameState = MakeUniquePtr<FRenameModalState<>>()] -> bool
         {
-            RenameState->Initialize(ContentItem->GetFileName());
+            RenameState->Initialize(ContentItem->GetName());
             
             const ImGuiStyle& style = ImGui::GetStyle();
             const float ContentWidth = ImGui::GetContentRegionAvail().x;
@@ -642,7 +642,7 @@ namespace Lumina
             
             ImGui::SameLine();
             
-            ImGuiX::TextColored(ImVec4(0.85f, 0.85f, 0.9f, 1.0f), "{0}", ContentItem->GetFileName().c_str());
+            ImGuiX::TextColored(ImVec4(0.85f, 0.85f, 0.9f, 1.0f), "{0}", ContentItem->GetName());
             
             ImGui::Spacing();
             ImGui::Spacing();
@@ -668,7 +668,7 @@ namespace Lumina
             ImGui::Spacing();
             
             bool bIsValid = RenameState->IsValid();
-            bool bNameUnchanged = strcmp(RenameState->CStr(), ContentItem->GetFileName().c_str()) == 0;
+            bool bNameUnchanged = strcmp(RenameState->CStr(), ContentItem->GetName().data()) == 0;
             FString ValidationMessage;
             bool bHasError = false;
             
@@ -682,16 +682,16 @@ namespace Lumina
                 }
                 else
                 {
-                    FString Extension = ContentItem->GetExtension();
-                    FString PathNoExt = Paths::RemoveExtension(ContentItem->GetPath());
-                    FString TestPath = PathNoExt + "/" + RenameState->CStr() + Extension;
-
-                    if (std::filesystem::exists(TestPath.c_str()))
-                    {
-                        ValidationMessage = std::format("Path already exists: {}", TestPath.c_str()).c_str();
-                        bHasError = true;
-                        bIsValid = false;
-                    }
+                    //FStringView Extension = ContentItem->GetExtension();
+                    //FString PathNoExt = Paths::RemoveExtension(ContentItem->GetPath());
+                    //FString TestPath = PathNoExt + "/" + RenameState->CStr() + Extension;
+                    //
+                    //if (std::filesystem::exists(TestPath.c_str()))
+                    //{
+                    //    ValidationMessage = std::format("Path already exists: {}", TestPath.c_str()).c_str();
+                    //    bHasError = true;
+                    //    bIsValid = false;
+                    //}
                 }
             }
             
@@ -719,10 +719,10 @@ namespace Lumina
             
             if (bSubmitted && bIsValid)
             {
-                FString Extension = ContentItem->GetExtension();
-                FString ParentPath = Paths::Parent(ContentItem->GetPath());
-                FString NewPath = ParentPath + "/" + RenameState->CStr() + Extension;
-                ActionRegistry.EnqueueAction<FPendingRename>(FPendingRename{ ContentItem->GetPath(), NewPath });
+                //FString Extension = ContentItem->GetExtension();
+                //FString ParentPath = Paths::Parent(ContentItem->GetPath());
+                //FString NewPath = ParentPath + "/" + RenameState->CStr() + Extension;
+                //ActionRegistry.EnqueueAction<FPendingRename>(FPendingRename{ ContentItem->GetPath(), NewPath });
                 return true;
             }
             
@@ -752,10 +752,10 @@ namespace Lumina
             {
                 if (bIsValid)
                 {
-                    FString Extension = ContentItem->GetExtension();
-                    FString ParentPath = Paths::Parent(ContentItem->GetPath());
-                    FString NewPath = ParentPath + "/" + RenameState->CStr() + Extension;
-                    ActionRegistry.EnqueueAction<FPendingRename>(FPendingRename{ ContentItem->GetPath(), NewPath });
+                    //FString Extension = ContentItem->GetExtension();
+                    //FString ParentPath = Paths::Parent(ContentItem->GetPath());
+                    //FString NewPath = ParentPath + "/" + RenameState->CStr() + Extension;
+                    //ActionRegistry.EnqueueAction<FPendingRename>(FPendingRename{ ContentItem->GetPath(), NewPath });
                     return true;
                 }
             }
@@ -829,12 +829,11 @@ namespace Lumina
             if (ImGui::MenuItem(MenuItemName.c_str()))
             {
                 FString PathString = FString(SelectedPath + "/NewFolder");
-                PathString = Paths::MakeUniquePath(PathString);
-                std::filesystem::create_directory(PathString.c_str());
+                FileSystem::CreateDir(PathString);
                 RefreshContentBrowser();
             }
 
-            if (Paths::IsUnderDirectory(GEditorEngine->GetProject().GetProjectScriptsDirectory(), SelectedPath))
+            if (FileSystem::IsUnderDirectory(GEditorEngine->GetProject().GetProjectScriptsDirectory(), SelectedPath))
             {
                 DrawScriptsDirectoryContextMenu();
             }
@@ -849,10 +848,10 @@ namespace Lumina
 
         ImGui::BeginHorizontal("Breadcrumbs");
 
-        auto gameDirPos = SelectedPath.find("Game");
-        if (gameDirPos != std::string::npos)
+        auto GameDirPos = SelectedPath.find("Game");
+        if (GameDirPos != std::string::npos)
         {
-            FString BasePathStr = SelectedPath.substr(0, gameDirPos);
+            FFixedString BasePathStr = SelectedPath.substr(0, GameDirPos);
             std::filesystem::path BasePath(BasePathStr.c_str());
             std::filesystem::path RelativePath = std::filesystem::path(SelectedPath.c_str()).lexically_relative(BasePath);
     
@@ -862,7 +861,7 @@ namespace Lumina
             {
                 BuildingPath /= *it;
         
-                ImGui::PushID((int)std::distance(RelativePath.begin(), it));
+                ImGui::PushID(static_cast<int>(std::distance(RelativePath.begin(), it)));
                 {
                     ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(4, 2));
                     ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(2, 0));
@@ -918,9 +917,9 @@ namespace Lumina
         
         if (ImGui::MenuItem(LE_ICON_FOLDER " Show in Explorer", nullptr, false))
         {
-            FString ParentPath = ContentItem->GetPath();
-            ParentPath = Paths::Parent(ParentPath);
-            Platform::LaunchURL(StringUtils::ToWideString(ParentPath).c_str());
+            const FFixedString& ParentPath = ContentItem->GetPath();
+            FStringView Parent = FileSystem::Parent(ParentPath);
+            Platform::LaunchURL(StringUtils::ToWideString(Parent).c_str());
         }
 
         if (ImGui::MenuItem(LE_ICON_CONTENT_COPY " Copy Path", nullptr, false))
@@ -952,9 +951,8 @@ namespace Lumina
         
         if (ImGui::MenuItem(LE_ICON_FOLDER " Show in Explorer", nullptr, false))
         {
-            FString ParentPath = ContentItem->GetPath();
-            ParentPath = Paths::Parent(ParentPath);
-            Platform::LaunchURL(StringUtils::ToWideString(ParentPath).c_str());
+            FStringView Parent = Paths::Parent(ContentItem->GetPath());
+            Platform::LaunchURL(StringUtils::ToWideString(Parent).c_str());
         }
         
         if (ImGui::MenuItem(LE_ICON_CONTENT_COPY " Copy Path", nullptr, false))
@@ -986,9 +984,8 @@ namespace Lumina
         
         if (ImGui::MenuItem(LE_ICON_FOLDER " Show in Explorer", nullptr, false))
         {
-            FString PackagePath = ContentItem->GetPath();
-            PackagePath = Paths::Parent(PackagePath);
-            Platform::LaunchURL(StringUtils::ToWideString(PackagePath).c_str());
+            FStringView Parent = Paths::Parent(ContentItem->GetPath());
+            Platform::LaunchURL(StringUtils::ToWideString(Parent).c_str());
         }
         
         if (ImGui::MenuItem(LE_ICON_CONTENT_COPY " Copy Path", nullptr, false))
@@ -1026,13 +1023,11 @@ namespace Lumina
     {
         if (ImGui::MenuItem(LE_ICON_OPEN_IN_NEW " New Script"))
         {
-            FString NewScriptPath = SelectedPath + "/" + "NewScript.lua";
-            NewScriptPath = Paths::MakeUniquePath(NewScriptPath);
+            FFixedString NewScriptPath = SelectedPath + "/" + "NewScript.lua";
             
             FileHelper::CreateNewFile(NewScriptPath);
 
             Platform::LaunchURL(StringUtils::ToWideString(NewScriptPath.data()).c_str());
-
         }
     }
 
@@ -1042,7 +1037,7 @@ namespace Lumina
         FString MenuItemName = FString(ImportIcon) + " " + "Import Asset";
         if (ImGui::MenuItem(MenuItemName.c_str()))
         {
-            FString SelectedFile;
+            FFixedString SelectedFile;
             const char* Filter = "Supported Assets (*.png;*.jpg;*.fbx;*.gltf;*.glb;*.obj)\0*.png;*.jpg;*.fbx;*.gltf;*.glb;*.obj\0All Files (*.*)\0*.*\0";
             if (Platform::OpenFileDialogue(SelectedFile, "Import Asset", Filter))
             {
@@ -1070,19 +1065,15 @@ namespace Lumina
                 FString DisplayName = Factory->GetAssetName();
                 if (ImGui::MenuItem(DisplayName.c_str()))
                 {
-                    FString PathString = Paths::Combine(SelectedPath.c_str(), Factory->GetDefaultAssetCreationName(PathString).c_str());
-                    Paths::AddPackageExtension(PathString);
-                    PathString = Paths::MakeUniquePath(PathString);
-                    PathString = Paths::RemoveExtension(PathString);
-                    
+                    FFixedString Path = Paths::Combine(SelectedPath, Factory->GetDefaultAssetCreationName());
                     if (Factory->HasCreationDialogue())
                     {
-                        ToolContext->PushModal("Create New", {500, 500}, [this, Factory, PathString](const FUpdateContext& DrawContext)
+                        ToolContext->PushModal("Create New", {500, 500}, [this, Factory, Path = Move(Path)]
                         {
-                            bool bShouldClose = CFactory::ShowCreationDialogue(Factory, PathString);
+                            bool bShouldClose = CFactory::ShowCreationDialogue(Factory, Path);
                             if (bShouldClose)
                             {
-                                ImGuiX::Notifications::NotifySuccess("Successfully Created: \"{0}\"", PathString.c_str());
+                                ImGuiX::Notifications::NotifySuccess("Successfully Created: \"{0}\"", Path);
                             }
                     
                             return bShouldClose;
@@ -1090,17 +1081,17 @@ namespace Lumina
                     }
                     else
                     {
-                        if (CObject* Object = Factory->TryCreateNew(PathString))
+                        if (CObject* Object = Factory->TryCreateNew(Path))
                         {
-                            CPackage* Package = CPackage::FindPackageByPath(PathString);
-                            CPackage::SavePackage(Package, PathString);
+                            CPackage* Package = CPackage::FindPackageByPath(Path);
+                            CPackage::SavePackage(Package, Path);
                             FAssetRegistry::Get().AssetCreated(Object);
 
-                            ImGuiX::Notifications::NotifySuccess("Successfully Created: \"{0}\"", PathString.c_str());
+                            ImGuiX::Notifications::NotifySuccess("Successfully Created: \"{0}\"", Path);
                         }
                         else
                         {
-                            ImGuiX::Notifications::NotifyError("Failed to create new: \"{0}\"", PathString.c_str());
+                            ImGuiX::Notifications::NotifyError("Failed to create new: \"{0}\"", Path);
         
                         }
                     }

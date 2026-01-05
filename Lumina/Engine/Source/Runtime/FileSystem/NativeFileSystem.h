@@ -8,7 +8,7 @@ namespace Lumina::FileSystem
     class LUMINA_API FNativeFileSystem
     {
     public:
-        FNativeFileSystem(const FName& InAliasPath, const FString& InBasePath) noexcept;
+        FNativeFileSystem(const FName& InAliasPath, FStringView InBasePath) noexcept;
         
         
         bool ReadFile(TVector<uint8>& Result, FStringView Path);
@@ -22,7 +22,7 @@ namespace Lumina::FileSystem
         
     private:
         
-        FString AliasPath;
-        FString BasePath;
+        FFixedString AliasPath;
+        FFixedString BasePath;
     };
 }

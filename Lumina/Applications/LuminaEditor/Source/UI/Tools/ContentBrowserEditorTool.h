@@ -4,9 +4,9 @@
 #include "Core/LuminaCommonTypes.h"
 #include "Core/Object/ObjectRename.h"
 #include "Core/Object/Package/Package.h"
+#include "FileSystem/FileSystem.h"
 #include "Paths/Paths.h"
 #include "Platform/Filesystem/DirectoryWatcher.h"
-#include "Renderer/RHIFwd.h"
 #include "Tools/Actions/DeferredActions.h"
 #include "Tools/UI/ImGui/imfilebrowser.h"
 #include "Tools/UI/ImGui/ImGuiX.h"
@@ -28,7 +28,7 @@ namespace Lumina
 
         struct FPendingOSDrop
         {
-            FString Path;
+            FFixedString Path;
             ImVec2 MousePos;
         };
 
@@ -40,7 +40,7 @@ namespace Lumina
 
         struct FPendingDestroy
         {
-            FString PendingDestroy;
+            FFixedString PendingDestroy;
         };
 
         struct FContentBrowserListViewItemData
@@ -52,10 +52,9 @@ namespace Lumina
         {
         public:
             
-            FContentBrowserTileViewItem(FTileViewItem* InParent, const FString& InPath)
+            FContentBrowserTileViewItem(FTileViewItem* InParent, const FFixedString& InPath)
                 : FTileViewItem(InParent)
                 , Path(InPath)
-                , VirtualPath(Paths::ConvertToVirtualPath(InPath))
             {
             }
 
@@ -70,7 +69,7 @@ namespace Lumina
             void DrawTooltip() const override
             {
                 ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(50, 200, 50, 255));
-                ImGui::TextUnformatted(Paths::FileName(VirtualPath).c_str());
+                ImGuiX::TextUnformatted(FileSystem::FileName(Path));
                 ImGui::PopStyleColor();
 
                 if (IsAsset())
@@ -91,7 +90,7 @@ namespace Lumina
                 
                 ImGui::Separator();
 
-                ImGui::Text(LE_ICON_FOLDER " %s", VirtualPath.c_str());
+                ImGui::Text(LE_ICON_FOLDER " %s", Path.c_str());
 
                 if (!IsDirectory())
                 {
@@ -105,27 +104,20 @@ namespace Lumina
             
             bool HasContextMenu() override { return true; }
 
-            FName GetName() const override
+            NODISCARD FStringView GetName() const override
             {
-                FFixedString NameString;
-                NameString.append(Paths::FileName(Path, true).c_str());
-                return NameString;
+                return FileSystem::FileName(Path);
             }
-
-            FString GetFileName() const { return Paths::FileName(Path, true); }
-
-            void SetPath(FStringView NewPath) { Path = NewPath; Paths::ConvertToVirtualPath(Path); }
-            const FString& GetPath() const { return Path; }
-            const FString& GetVirtualPath() const { return VirtualPath; }
-            bool IsAsset() const { return Paths::GetExtension(Path) == ".lasset"; }
-            bool IsDirectory() const { return !IsAsset() && !IsLuaScript(); }
-            bool IsLuaScript() const { return Paths::GetExtension(Path) == ".lua"; }
-            FString GetExtension() const { return Paths::GetExtension(Path); }
+            
+            void SetPath(FStringView NewPath) { Path = FFixedString{NewPath.begin(), NewPath.end()}; }
+            NODISCARD const FFixedString& GetPath() const { return Path; }
+            NODISCARD bool IsAsset() const { return FileSystem::IsLuminaAsset(Path); }
+            NODISCARD bool IsDirectory() const { return !IsAsset() && !IsLuaScript(); }
+            NODISCARD bool IsLuaScript() const { return FileSystem::IsLuaAsset(Path); }
+            NODISCARD FStringView GetExtension() const { return FileSystem::Extension(Path); }
             
         private:
-            
-            FString                 Path;
-            FString                 VirtualPath;
+            FFixedString                 Path;
         };
 
         LUMINA_SINGLETON_EDITOR_TOOL(FContentBrowserEditorTool)
@@ -160,7 +152,7 @@ namespace Lumina
         void OpenDeletionWarningPopup(const FContentBrowserTileViewItem* Item, const TFunction<void(EYesNo)>& Callback = TFunction<void(EYesNo)>());
         void OnProjectLoaded();
 
-        void TryImport(const FString& Path);
+        void TryImport(const FFixedString& Path);
         
         void PushRenameModal(FContentBrowserTileViewItem* ContentItem);
         
@@ -184,7 +176,7 @@ namespace Lumina
         FTileViewWidget             ContentBrowserTileView;
         FTileViewContext            ContentBrowserTileViewContext;
 
-        FString                     SelectedPath;
+        FFixedString                SelectedPath;
         THashMap<FName, bool>       FilterState;
     };
 }

@@ -50,6 +50,11 @@ namespace Lumina::ImGuiX
     	ImGui::PopStyleColor();
     }
 
+    void TextUnformatted(FStringView String)
+    {
+    	ImGui::TextUnformatted(String.begin(), String.end());
+    }
+
     FStringView ImGuizmoOpToString(ImGuizmo::OPERATION Op)
     {
     	switch (Op)

@@ -1,7 +1,6 @@
 #pragma once
 #include "Assets/Factories/Factory.h"
-#include "Memory/RefCounted.h"
-#include "Renderer/RHIFwd.h"
+#include "Containers/String.h"
 #include "Assets/AssetTypes/Textures/Texture.h"
 #include "TextureFactory.generated.h"
 
@@ -17,12 +16,12 @@ namespace Lumina
         CObject* CreateNew(const FName& Name, CPackage* Package) override;
         CClass* GetAssetClass() const override { return CTexture::StaticClass(); }
         FString GetAssetName() const override { return "Texture"; }
-        FString GetDefaultAssetCreationName(const FString& InPath) override { return "NewTexture"; }
+        FStringView GetDefaultAssetCreationName() override { return "NewTexture"; }
 
-        bool IsExtensionSupported(const FString& Ext) override { return Ext == ".png" || Ext == ".jpg" || Ext == ".jpeg"; }
+        bool IsExtensionSupported(FStringView Ext) override { return Ext == ".png" || Ext == ".jpg" || Ext == ".jpeg"; }
         bool CanImport() override { return true; }
         
-        void TryImport(const FString& RawPath, const FString& DestinationPath, const eastl::any& ImportSettings) override;
+        void TryImport(const FFixedString& RawPath, const FFixedString& DestinationPath, const eastl::any& ImportSettings) override;
 
     private:
 

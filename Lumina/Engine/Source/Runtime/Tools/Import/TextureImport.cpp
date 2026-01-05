@@ -14,7 +14,7 @@
 
 namespace Lumina::Import::Textures
 {
-    TOptional<FTextureImportResult> ImportTexture(const FString& RawFilePath, bool bFlipVertical)
+    TOptional<FTextureImportResult> ImportTexture(FStringView RawFilePath, bool bFlipVertical)
     {
         FTextureImportResult Result = {};
         
@@ -22,9 +22,9 @@ namespace Lumina::Import::Textures
         
         int x, y, channels;
         
-        if (stbi_is_hdr(RawFilePath.c_str()))
+        if (stbi_is_hdr(RawFilePath.data()))
         {
-            float* data = stbi_loadf(RawFilePath.c_str(), &x, &y, &channels, 0);
+            float* data = stbi_loadf(RawFilePath.data(), &x, &y, &channels, 0);
             if (data == nullptr)
             {
                 LOG_WARN("Failed to load HDR image: {0}", RawFilePath);
@@ -51,9 +51,9 @@ namespace Lumina::Import::Textures
             return Result;
         }
         
-        if (stbi_is_16_bit(RawFilePath.c_str()))
+        if (stbi_is_16_bit(RawFilePath.data()))
         {
-            uint16* data = stbi_load_16(RawFilePath.c_str(), &x, &y, &channels, 0);
+            uint16* data = stbi_load_16(RawFilePath.data(), &x, &y, &channels, 0);
             if (data == nullptr)
             {
                 LOG_WARN("Failed to load 16-bit image: {0}", RawFilePath);
@@ -99,7 +99,7 @@ namespace Lumina::Import::Textures
         }
         
         // Standard 8-bit image
-        uint8* data = stbi_load(RawFilePath.c_str(), &x, &y, &channels, 0);
+        uint8* data = stbi_load(RawFilePath.data(), &x, &y, &channels, 0);
         if (data == nullptr)
         {
             LOG_WARN("Failed to load 8-bit image: {0}", RawFilePath);

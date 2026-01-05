@@ -323,14 +323,14 @@ namespace Lumina
 		double xpos, ypos;
 		glfwGetCursorPos(Window, &xpos, &ypos);
 		
-		TVector<FString> StringPaths;
+		TVector<FFixedString> StringPaths;
 
 		for (int i = 0; i < PathCount; ++i)
 		{
 			StringPaths.emplace_back(Paths[i]);
 		}
 		
-		FApplication::Get().GetEventProcessor().Dispatch<FFileDropEvent>(StringPaths, (float)xpos, (float)ypos);
+		FApplication::Get().GetEventProcessor().Dispatch<FFileDropEvent>(StringPaths, static_cast<float>(xpos), static_cast<float>(ypos));
 	}
 
 	void FWindow::WindowCloseCallback(GLFWwindow* window)

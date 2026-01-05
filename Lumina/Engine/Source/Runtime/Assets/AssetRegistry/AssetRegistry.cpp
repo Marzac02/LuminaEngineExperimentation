@@ -2,6 +2,7 @@
 #include "AssetRegistry.h"
 
 #include "Core/Object/Package/Package.h"
+#include "FileSystem/FileSystem.h"
 #include "Paths/Paths.h"
 #include "Platform/Filesystem/FileHelper.h"
 #include "TaskSystem/TaskSystem.h"
@@ -26,16 +27,16 @@ namespace Lumina
         ClearAssets();
         
         TFixedVector<FFixedString, 256> PackagePaths;
-        for (const auto& [ID, Path] : Paths::GetMountedPaths())
+        FileSystem::ForEachFileSystem([&](FileSystem::FFileSystem& FS)
         {
-            for (const auto& Directory : std::filesystem::recursive_directory_iterator(Path.c_str()))
+            FileSystem::DirectoryIterator(FS.GetBasePath(), [&](FStringView Path)
             {
-                if (!Directory.is_directory() && Directory.path().extension() == ".lasset")
+                if (FileSystem::IsLuminaAsset(Path))
                 {
-                    PackagePaths.push_back(Directory.path().generic_string().c_str());
+                    PackagePaths.emplace_back(FFixedString{Path.begin(), Path.end()});
                 }
-            }
-        }
+            });
+        });
         
         uint32 NumPackages = (uint32)PackagePaths.size();
         Task::AsyncTask(NumPackages, NumPackages, [this, PackagePaths = std::move(PackagePaths)] (uint32 Start, uint32 End, uint32)
@@ -60,14 +61,14 @@ namespace Lumina
 
     void FAssetRegistry::AssetCreated(CObject* Asset)
     {
-        FString FilePath = Paths::ResolveVirtualPath(Asset->GetPackage()->GetName().ToString()) + ".lasset";
+        FFixedString FilePath = Asset->GetPackage()->GetPackagePath();
+        CPackage::AddPackageExt(FilePath);
         
         TSharedPtr<FAssetData> AssetData = MakeSharedPtr<FAssetData>();
         AssetData->AssetClass   = Asset->GetClass()->GetName();
         AssetData->AssetGUID    = Asset->GetGUID();
         AssetData->AssetName    = Asset->GetName();
-        AssetData->FilePath     = Move(FilePath);
-        AssetData->PackageName  = Asset->GetPackage()->GetName();
+        AssetData->Path         = Move(FilePath);
 
         FScopeLock Lock(AssetsMutex);
         Assets.emplace(Move(AssetData));
@@ -87,20 +88,19 @@ namespace Lumina
         GetOnAssetRegistryUpdated().Broadcast();
     }
 
-    void FAssetRegistry::AssetRenamed(const FString& OldPath, const FString& NewPath)
+    void FAssetRegistry::AssetRenamed(FStringView OldPath, FStringView NewPath)
     {
         FScopeLock Lock(AssetsMutex);
 
         auto It = eastl::find_if(Assets.begin(), Assets.end(), [&OldPath](const TSharedPtr<FAssetData>& Asset)
         {
-            return Asset->FilePath == OldPath;
+            return Asset->Path == OldPath;
         });
 
         LUM_ASSERT(It != Assets.end())
 
-        TSharedPtr<FAssetData> Data = *It;
-        Data->PackageName = Paths::ConvertToVirtualPath(NewPath);
-        Data->FilePath = NewPath;
+        const TSharedPtr<FAssetData>& Data = *It;
+        Data->Path.assign_convert(NewPath);
 
         GetOnAssetRegistryUpdated().Broadcast();
     }
@@ -111,8 +111,7 @@ namespace Lumina
         
         GetOnAssetRegistryUpdated().Broadcast();
     }
-
-    LUMINA_DISABLE_OPTIMIZATION
+    
     void FAssetRegistry::ProcessPackagePath(FStringView Path)
     {
         TVector<uint8> PackageBlob;
@@ -155,13 +154,12 @@ namespace Lumina
         AssetData->AssetClass   = Export->ClassName;
         AssetData->AssetGUID    = Export->ObjectGUID;
         AssetData->AssetName    = Export->ObjectName;
-        AssetData->FilePath     = Path;
-        AssetData->PackageName  = Paths::ConvertToVirtualPath(Path.data());
+        AssetData->Path         .assign_convert(Path);
 
         FScopeLock Lock(AssetsMutex);
         Assets.emplace(Move(AssetData));
     }
-    LUMINA_ENABLE_OPTIMIZATION
+    
     void FAssetRegistry::ClearAssets()
     {
         FScopeLock Lock(AssetsMutex);

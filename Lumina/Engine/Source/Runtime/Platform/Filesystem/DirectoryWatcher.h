@@ -36,7 +36,7 @@ namespace Lumina
         ~FDirectoryWatcher();
 
         bool Stop();
-        bool Watch(const FString& InPath, FFileEventCallback InCallback, bool bRecursive = true);
+        bool Watch(const FFixedString& InPath, FFileEventCallback InCallback, bool bRecursive = true);
     
         bool IsRunning() const { return bRunning.load(Atomic::MemoryOrderRelaxed); }
     
@@ -44,7 +44,7 @@ namespace Lumina
         void WatchThreadFunc();
         FString WideToUtf8(const FWString& Wide);
         
-        FString Path;
+        FFixedString Path;
         FFileEventCallback Callback;
         bool bWatchRecursive = true;
         TAtomic<bool> bRunning;

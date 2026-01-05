@@ -16,12 +16,11 @@ namespace Lumina
         intptr_t Callable = 0;
 
         template<typename TCallable>
-        static TRet callback_fn(intptr_t callable, TArgs... Args)
+        static TRet CallbackFn(intptr_t callable, TArgs... Args)
         {
             return (*reinterpret_cast<TCallable*>(callable))(eastl::forward<TArgs>(Args)...);
         }
 
-        // Helper traits for constraints
         template<typename TCallable>
         struct IsValidCallable
         {
@@ -44,7 +43,7 @@ namespace Lumina
         template <typename TCallable>
         TFunctionRef(TCallable InCallable) noexcept
         requires IsValidCallable<TCallable>::value 
-        : Callback(callback_fn<eastl::remove_reference_t<TCallable>>)
+        : Callback(CallbackFn<eastl::remove_reference_t<TCallable>>)
         , Callable(reinterpret_cast<intptr_t>(&InCallable))
         {}
 

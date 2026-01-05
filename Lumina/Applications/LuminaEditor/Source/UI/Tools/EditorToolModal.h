@@ -20,11 +20,11 @@ namespace Lumina
 
         ~FEditorModalManager();
 
-        void CreateDialogue(const FString& Title, ImVec2 Size, TMoveOnlyFunction<bool(const FUpdateContext&)> DrawFunction, bool bBlocking = true);
+        void CreateDialogue(const FString& Title, ImVec2 Size, TMoveOnlyFunction<bool()> DrawFunction, bool bBlocking = true);
 
         FORCEINLINE bool HasModal() const { return ActiveModal.get() != nullptr; }
 
-        void DrawDialogue(const FUpdateContext& UpdateContext);
+        void DrawDialogue();
 
     private:
         
@@ -48,17 +48,17 @@ namespace Lumina
         }
 
         /** Return true to indicate the modal is ready to close */
-        bool DrawModal(const FUpdateContext& UpdateContext)
+        bool DrawModal()
         {
-            return DrawFunction(UpdateContext);
+            return DrawFunction();
         }
         
     protected:
 
-        TMoveOnlyFunction<bool(const FUpdateContext&)>  DrawFunction;
-        FString                                         Title;
-        ImVec2                                          Size;
-        bool                                            bBlocking;
+        TMoveOnlyFunction<bool()>   DrawFunction;
+        FString                     Title;
+        ImVec2                      Size;
+        bool                        bBlocking;
     
     };
 }

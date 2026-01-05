@@ -19,11 +19,8 @@ namespace Lumina
         return NewObject<CTexture>(Package, Name);
     }
     
-    void CTextureFactory::TryImport(const FString& RawPath, const FString& DestinationPath, const eastl::any& ImportSettings)
+    void CTextureFactory::TryImport(const FFixedString& RawPath, const FFixedString& DestinationPath, const eastl::any& ImportSettings)
     {
-        FString VirtualPath = Paths::ConvertToVirtualPath(DestinationPath);
-        FString FileName = Paths::FileName(DestinationPath, true);
-
         CTexture* NewTexture = TryCreateNew<CTexture>(DestinationPath);
         NewTexture->SetFlag(OF_NeedsPostLoad);
 
@@ -152,7 +149,7 @@ namespace Lumina
         GRenderContext->UnMapStagingTexture(StagingImage);
 
         CPackage* NewPackage = NewTexture->GetPackage();
-        CPackage::SavePackage(NewPackage, NewPackage->GetFullPackageFilePath());
+        CPackage::SavePackage(NewPackage, NewPackage->GetPackagePath());
         FAssetRegistry::Get().AssetCreated(NewTexture);
     }
     

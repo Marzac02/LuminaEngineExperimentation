@@ -2,7 +2,6 @@
 
 #include "ObjectBase.h"
 #include "ObjectMacros.h"
-#include "Core/Object/ManualReflectTypes.h"
 #include "Core/Serialization/Archiver.h"
 #include "Core/Serialization/Structured/StructuredArchive.h"
 
@@ -33,7 +32,7 @@ namespace Lumina
 
         friend CObject* StaticAllocateObject();
 
-        DECLARE_CLASS(Lumina, CObject, CObject, "script://lumina", LUMINA_API)
+        DECLARE_CLASS(Lumina, CObject, CObject, "/Script", LUMINA_API)
         DEFINE_CLASS_FACTORY(CObject)
 
         CObject() = default;

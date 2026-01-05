@@ -23,7 +23,7 @@ namespace Lumina
             , bSelected(false)
         {}
 
-        virtual FName GetName() const { return {}; }
+        virtual FStringView GetName() const { return {}; }
         
         virtual void DrawTooltip() const { }
 
@@ -37,7 +37,7 @@ namespace Lumina
         
         virtual FFixedString GetDisplayName() const
         {
-            return GetName().c_str();
+            return { GetName().begin(), GetName().end() };
         }
 
     private:

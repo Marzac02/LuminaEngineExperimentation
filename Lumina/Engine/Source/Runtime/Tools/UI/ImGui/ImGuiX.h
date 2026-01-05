@@ -43,7 +43,9 @@ namespace Lumina::ImGuiX
     {
         ImGui::TextUnformatted(std::format(fmt, std::forward<TArgs>(Args)...).c_str());
     }
-
+    
+    LUMINA_API void TextUnformatted(FStringView String);
+    
     template <typename... TArgs>
     void TextColored(const ImVec4& Color, std::format_string<TArgs...> fmt, TArgs&&... Args)
     {

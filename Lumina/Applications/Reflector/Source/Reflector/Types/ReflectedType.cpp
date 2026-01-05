@@ -408,7 +408,8 @@ namespace Lumina::Reflection
     {
         eastl::string LowerProject = Project;
         LowerProject.make_lower();
-        eastl::string PackageName = "script://" + LowerProject;
+        
+        eastl::string PackageName = "/Script";
         
 
         if (!Namespace.empty())
@@ -572,6 +573,6 @@ namespace Lumina::Reflection
     void FReflectedClass::DeclareStaticRegistration(eastl::string& Stream)
     {
         eastl::string FriendlyName = ClangUtils::MakeCodeFriendlyNamespace(QualifiedName);
-        Stream += "\t{ Construct_CClass_" + FriendlyName + ", " + "TEXT(\"script://\"), TEXT(\"" + DisplayName + "\") },\n";
+        Stream += "\t{ Construct_CClass_" + FriendlyName + ", " + R"(TEXT("/Script"), TEXT(")" + DisplayName + "\") },\n";
     }
 }

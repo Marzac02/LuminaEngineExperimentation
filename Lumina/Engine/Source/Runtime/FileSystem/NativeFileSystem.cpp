@@ -5,9 +5,9 @@
 
 namespace Lumina::FileSystem
 {
-    FNativeFileSystem::FNativeFileSystem(const FName& InAliasPath, const FString& InBasePath) noexcept
+    FNativeFileSystem::FNativeFileSystem(const FName& InAliasPath, FStringView InBasePath) noexcept
         : AliasPath(InAliasPath.c_str())
-        , BasePath(InBasePath)
+        , BasePath(InBasePath.begin(), InBasePath.end())
     {
     }
 

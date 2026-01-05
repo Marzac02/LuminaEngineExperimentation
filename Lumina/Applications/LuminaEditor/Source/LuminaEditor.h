@@ -5,7 +5,6 @@
 
 namespace Lumina
 {
-    class FProject;
     class FCamera;
     class FEditorSettings;
     class FEditorLayer;
@@ -20,13 +19,16 @@ namespace Lumina
         bool Init(FApplication* App) override;
         bool Shutdown() override;
         IDevelopmentToolUI* CreateDevelopmentTools() override;
-
-        FProject& GetProject() const { return *Project.get(); }
     
-    private:
+        void LoadProject(FStringView Path);
         
-        TUniquePtr<FProject> Project;
-
+        FORCEINLINE NODISCARD FStringView GetProjectName() const { return ProjectName; }
+        FORCEINLINE NODISCARD FStringView GetProjectPath() const { return ProjectPath; }
+        
+    private:
+    
+        FString ProjectName;
+        FFixedString ProjectPath;
     };
     
 

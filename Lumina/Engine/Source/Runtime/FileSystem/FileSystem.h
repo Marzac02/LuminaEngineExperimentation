@@ -4,6 +4,8 @@
 #include "Containers/String.h"
 #include "Memory/SmartPtr.h"
 #include "NativeFileSystem.h"
+#include "Containers/Function.h"
+#include "Core/Functional/FunctionRef.h"
 #include "Core/Templates/LuminaTemplate.h"
 #include "Core/Templates/SameAs.h"
 #include "Core/Variant/Variant.h"
@@ -22,12 +24,12 @@ namespace Lumina::FileSystem
         { FS.GetBasePath() }                    -> std::convertible_to<FStringView>;
     };
     
-    class LUMINA_API FAnyFileSystem
+    class LUMINA_API FFileSystem
     {
     public:
         
         template<CFileSystem T>
-        FAnyFileSystem(T&& FS) 
+        explicit FFileSystem(T&& FS) 
             : Storage(Move(FS)) 
         {}
         
@@ -46,8 +48,8 @@ namespace Lumina::FileSystem
         ////
         
         template<CFileSystem T, typename... TArgs>
-        requires(eastl::is_constructible_v<T, FName, TArgs...>)
-        friend T* Mount(const FName& Alias, TArgs&&... Args);
+        requires(eastl::is_nothrow_constructible_v<T, FName, TArgs...>)
+        friend T& Mount(const FName& Alias, TArgs&&... Args);
         
         template<CFileSystem T>
         friend T* GetFileSystem(const FName& Alias);
@@ -58,38 +60,33 @@ namespace Lumina::FileSystem
     
     namespace Detail
     {
-        LUMINA_API FAnyFileSystem* AddFileSystemImpl(const FName& Alias, FAnyFileSystem&& System);
-        LUMINA_API FAnyFileSystem* GetFileSystemImpl(const FName& Alias);
+        LUMINA_API FFileSystem& AddFileSystemImpl(const FName& Alias, FFileSystem&& System);
     }
     
     template<CFileSystem T, typename... TArgs>
-    requires(eastl::is_constructible_v<T, FName, TArgs...>)
-    T* Mount(const FName& Alias, TArgs&&... Args)
+    requires(eastl::is_nothrow_constructible_v<T, FName, TArgs...>)
+    T& Mount(const FName& Alias, TArgs&&... Args)
     {
         T TypeT(Alias, Forward<TArgs>(Args)...);
-        FAnyFileSystem FS(TypeT);
+        FFileSystem FS(TypeT);
         
-        FAnyFileSystem* Result = Detail::AddFileSystemImpl(Alias, Move(FS));
-        return Result ? eastl::get_if<T>(&Result->Storage) : nullptr;
+        FFileSystem& Result = Detail::AddFileSystemImpl(Alias, Move(FS));
+        return eastl::get<T>(Result.Storage);
     }
     
-    template<CFileSystem T>
-    T* GetFileSystem(const FName& Alias)
-    {
-        if (FAnyFileSystem* FS = Detail::GetFileSystemImpl(Alias))
-        {
-            return eastl::get_if<T>(&FS->Storage);
-        }
-        return nullptr;
-    }
     
-    LUMINA_API FStringView FileName(FStringView Path);
+    LUMINA_API FStringView Extension(FStringView Path);
+    LUMINA_API FStringView FileName(FStringView Path, bool bRemoveExtension = false);
     LUMINA_API bool Remove(FStringView Path);
     LUMINA_API bool RemoveAll(FStringView Path);
     LUMINA_API FFixedString ResolvePath(FStringView Path);
-    LUMINA_API FStringView GetMountPath(const FName& Alias);
-    LUMINA_API FAnyFileSystem* GetFileSystem(const FName& Alias);
     LUMINA_API bool DoesAliasExists(const FName& Alias);
+    LUMINA_API bool CreateDir(FStringView Path);
+    LUMINA_API bool IsUnderDirectory(FStringView Parent, FStringView Path);
+    LUMINA_API bool IsDirectory(FStringView Path);
+    LUMINA_API bool IsLuaAsset(FStringView Path);
+    LUMINA_API bool IsLuminaAsset(FStringView Path);
+    LUMINA_API FStringView Parent(FStringView Path);
     
     LUMINA_API bool ReadFile(TVector<uint8>& Result, FStringView Path);
     LUMINA_API bool ReadFile(FString& OutString, FStringView Path);
@@ -97,4 +94,8 @@ namespace Lumina::FileSystem
     LUMINA_API bool WriteFile(FStringView Path, TSpan<const uint8> Data);
     
     LUMINA_API bool HasExtension(FStringView Path, FStringView Ext);
+    
+    void DirectoryIterator(FStringView Path, const TFunctionRef<void(FStringView Path)>& Func);
+    void ForEachFileSystem(const TFunctionRef<void(FFileSystem&)>& Func);
+    
 }

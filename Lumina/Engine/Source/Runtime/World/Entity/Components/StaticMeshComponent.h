@@ -2,6 +2,7 @@
 
 
 #include "MeshComponent.h"
+#include "Core/Math/Transform.h"
 #include "Assets/AssetTypes/Mesh/StaticMesh/StaticMesh.h"
 #include "Core/Object/ObjectHandleTyped.h"
 #include "StaticMeshComponent.generated.h"

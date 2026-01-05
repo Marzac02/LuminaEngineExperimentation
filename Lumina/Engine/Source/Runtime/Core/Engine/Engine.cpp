@@ -8,7 +8,9 @@
 #include "Core/Object/ObjectIterator.h"
 #include "Core/Profiler/Profile.h"
 #include "Core/Windows/Window.h"
+#include "FileSystem/FileSystem.h"
 #include "Input/InputProcessor.h"
+#include "Paths/Paths.h"
 #include "Physics/Physics.h"
 #include "Renderer/RenderContext.h"
 #include "Renderer/RenderManager.h"
@@ -32,6 +34,9 @@ namespace Lumina
         //-------------------------------------------------------------------------
         // Initialize core engine state.
         //-------------------------------------------------------------------------
+        
+        FileSystem::Mount<FileSystem::FNativeFileSystem>("/Engine", Paths::GetEngineContentDirectory());
+        FileSystem::Mount<FileSystem::FNativeFileSystem>("/Config", Paths::GetEngineConfigDirectory());
         
         LUMINA_PROFILE_SCOPE();
         FCoreDelegates::OnPreEngineInit.BroadcastAndClear();

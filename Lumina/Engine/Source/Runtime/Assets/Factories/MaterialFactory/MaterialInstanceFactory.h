@@ -15,12 +15,12 @@ namespace Lumina
         CObject* CreateNew(const FName& Name, CPackage* Package) override;
         CClass* GetAssetClass() const override { return CMaterialInstance::StaticClass(); }
         FString GetAssetName() const override { return "Material Instance"; }
-        FString GetDefaultAssetCreationName(const FString& InPath) override { return "NewMaterialInstance"; }
+        FStringView GetDefaultAssetCreationName() override { return "NewMaterialInstance"; }
 
         FString GetAssetDescription() const override { return "An instance of a material."; }
         
         bool HasCreationDialogue() const override;
-        bool DrawCreationDialogue(const FString& Path, bool& bShouldClose) override;
+        bool DrawCreationDialogue(FStringView Path, bool& bShouldClose) override;
 
     private:
 

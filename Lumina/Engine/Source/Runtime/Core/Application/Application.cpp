@@ -5,7 +5,6 @@
 #include "Core/Utils/CommandLineParser.h"
 #include "Core/Windows/Window.h"
 #include "Core/Windows/WindowTypes.h"
-#include "FileSystem/FileSystem.h"
 #include "Input/InputProcessor.h"
 #include "Paths/Paths.h"
 
@@ -103,9 +102,6 @@ namespace Lumina
     void FApplication::PreInitStartup()
     {
         Paths::InitializePaths();
-
-        FileSystem::Mount<FileSystem::FNativeFileSystem>("engine://", Paths::GetEngineContentDirectory());
-        Paths::Mount("engine://", Paths::GetEngineContentDirectory());
     }
 
     bool FApplication::CreateApplicationWindow()

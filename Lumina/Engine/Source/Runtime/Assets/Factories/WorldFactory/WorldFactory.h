@@ -14,7 +14,7 @@ namespace Lumina
 
         CClass* GetAssetClass() const override { return CWorld::StaticClass(); }
         FString GetAssetName() const override { return "World"; }
-        FString GetDefaultAssetCreationName(const FString& InPath) override { return "NewWorld"; }
+        FStringView GetDefaultAssetCreationName() override { return "NewWorld"; }
         
         CObject* CreateNew(const FName& Name, CPackage* Package) override;
     

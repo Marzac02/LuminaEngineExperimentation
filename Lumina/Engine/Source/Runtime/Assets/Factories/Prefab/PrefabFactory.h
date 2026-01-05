@@ -12,7 +12,7 @@ namespace Lumina
         
         CClass* GetAssetClass() const override;
         FString GetAssetName() const override { return "Prefab"; }
-        FString GetDefaultAssetCreationName(const FString& InPath) override { return "NewPrefab"; }
+        FStringView GetDefaultAssetCreationName() override { return "NewPrefab"; }
         
         CObject* CreateNew(const FName& Name, CPackage* Package) override;
     

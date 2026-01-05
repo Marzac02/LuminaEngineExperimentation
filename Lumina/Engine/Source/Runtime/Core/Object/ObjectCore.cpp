@@ -62,7 +62,7 @@ namespace Lumina
         
         if (const FAssetData* Data = FAssetQuery().WithGuid(GUID).ExecuteFirst())
         {
-            return FAssetManager::Get().LoadAssetSynchronous(Data->FilePath, GUID);
+            return FAssetManager::Get().LoadAssetSynchronous(Data->Path, GUID);
         }
         
         return nullptr;
@@ -70,9 +70,9 @@ namespace Lumina
 
     CObject* StaticLoadObject(const FString& PathName)
     {
-        if (const FAssetData* Data = FAssetQuery().WithPath(Paths::ResolveVirtualPath(PathName)).ExecuteFirst())
+        if (const FAssetData* Data = FAssetQuery().WithPath(PathName.begin(), PathName.end()).ExecuteFirst())
         {
-            return FAssetManager::Get().LoadAssetSynchronous(PathName, Data->AssetGUID);
+            return StaticLoadObject(Data->AssetGUID);
         }
         
         return nullptr;

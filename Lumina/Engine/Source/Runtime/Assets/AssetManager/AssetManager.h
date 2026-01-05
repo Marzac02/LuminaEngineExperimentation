@@ -17,8 +17,8 @@ namespace Lumina
 
 		static FAssetManager& Get();
 		
-		TSharedPtr<FAssetRequest> LoadAssetAsync(const FString& PackagePath, const FGuid& RequestedAsset);
-		CObject* LoadAssetSynchronous(const FString& PackagePath, const FGuid& RequestedAsset);
+		TSharedPtr<FAssetRequest> LoadAssetAsync(const FFixedString& PackagePath, const FGuid& RequestedAsset);
+		CObject* LoadAssetSynchronous(const FFixedString& PackagePath, const FGuid& RequestedAsset);
 		
 		void NotifyAssetRequestCompleted(const TSharedPtr<FAssetRequest>& Request);
 
@@ -26,7 +26,7 @@ namespace Lumina
 		
 	private:
 
-		TSharedPtr<FAssetRequest> CreateOrFindAssetRequest(const FString& InAssetPath, const FGuid& GUID, bool& bAlreadyInQueue);
+		TSharedPtr<FAssetRequest> CreateOrFindAssetRequest(const FFixedString& InAssetPath, const FGuid& GUID, bool& bAlreadyInQueue);
 		void SubmitAssetRequest(const TSharedPtr<FAssetRequest>& Request);
 		
 	

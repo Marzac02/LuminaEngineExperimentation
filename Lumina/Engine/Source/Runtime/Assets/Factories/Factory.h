@@ -37,37 +37,37 @@ namespace Lumina
         void PostCreateCDO() override;
 
         template<Concept::IsACObject T>
-        T* TryCreateNew(const FString& Path)
+        T* TryCreateNew(FStringView Path)
         {
             return Cast<T>(TryCreateNew(Path));
         }
         
-        CObject* TryCreateNew(const FString& Path);
+        CObject* TryCreateNew(FStringView Path);
         
         virtual FString GetAssetName() const { return ""; }
         virtual FString GetAssetDescription() const { return ""; }
         virtual CClass* GetAssetClass() const { return nullptr; }
-        virtual FString GetDefaultAssetCreationName(const FString& InPath) { return "New_Asset"; }
+        virtual FStringView GetDefaultAssetCreationName() { return "New_Asset"; }
         
         virtual CObject* CreateNew(const FName& Name, CPackage* Package) { return nullptr; }
 
-        void Import(const FString& ImportFile, const FString& DestinationPath, const eastl::any& ImportSettings = eastl::any());
+        void Import(const FFixedString& ImportFile, const FFixedString& DestinationPath, const eastl::any& ImportSettings = eastl::any());
         
         virtual bool CanImport() { return false; }
-        virtual void TryImport(const FString& ImportFilePath, const FString& DestinationPath, const eastl::any& ImportSettings) { }
+        virtual void TryImport(const FFixedString& ImportFilePath, const FFixedString& DestinationPath, const eastl::any& ImportSettings) { }
         
-        virtual bool IsExtensionSupported(const FString& Ext) { return false; }
+        virtual bool IsExtensionSupported(FStringView Ext) { return false; }
         
-        static bool ShowImportDialogue(CFactory* Factory, const FString& RawPath, const FString& DestinationPath);
-        static bool ShowCreationDialogue(CFactory* Factory, const FString& Path);
+        static bool ShowImportDialogue(CFactory* Factory, const FFixedString& RawPath, const FFixedString& DestinationPath);
+        static bool ShowCreationDialogue(CFactory* Factory, FStringView Path);
 
         virtual bool HasImportDialogue() const { return false; }
         virtual bool HasCreationDialogue() const { return false; }
         
     protected:
         
-        virtual bool DrawImportDialogue(const FString& RawPath, const FString& DestinationPath, eastl::any& ImportSettings, bool& bShouldClose, bool& bShouldReimport) { return true; }
-        virtual bool DrawCreationDialogue(const FString& Path, bool& bShouldClose) { return true; }
+        virtual bool DrawImportDialogue(const FFixedString& RawPath, const FFixedString& DestinationPath, eastl::any& ImportSettings, bool& bShouldClose, bool& bShouldReimport) { return true; }
+        virtual bool DrawCreationDialogue(FStringView Path, bool& bShouldClose) { return true; }
         
     };
 }

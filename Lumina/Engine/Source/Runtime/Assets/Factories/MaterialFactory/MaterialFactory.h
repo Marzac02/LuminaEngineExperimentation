@@ -16,7 +16,7 @@ namespace Lumina
 		CObject* CreateNew(const FName& Name, CPackage* Package) override;
 
 		FString GetAssetName() const override { return "Material"; }
-		FString GetDefaultAssetCreationName(const FString& InPath) override { return "NewMaterial"; }
+		FStringView GetDefaultAssetCreationName() override { return "NewMaterial"; }
 		FString GetAssetDescription() const override { return "A material."; }
 		CClass* GetAssetClass() const override { return CMaterial::StaticClass(); }
 

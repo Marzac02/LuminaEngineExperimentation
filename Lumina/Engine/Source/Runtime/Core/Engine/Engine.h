@@ -49,6 +49,8 @@ namespace Lumina
 
         LUMINA_API void SetReadyToClose(bool bReadyToClose) { bEngineReadyToClose = bReadyToClose; }
         
+        LUMINA_API FORCEINLINE NODISCARD double GetDeltaTime() const { return UpdateContext.DeltaTime; }
+        
         template<typename T>
         requires(eastl::is_base_of_v<ISubsystem, T>)
         T* GetEngineSubsystem()

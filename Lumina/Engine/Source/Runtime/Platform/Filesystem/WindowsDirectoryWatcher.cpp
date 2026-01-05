@@ -34,7 +34,7 @@ namespace Lumina
         return true;
     }
 
-    bool FDirectoryWatcher::Watch(const FString& InPath, FFileEventCallback InCallback, bool bRecursive)
+    bool FDirectoryWatcher::Watch(const FFixedString& InPath, FFileEventCallback InCallback, bool bRecursive)
     {
         if (bRunning.load(Atomic::MemoryOrderRelaxed))
         {

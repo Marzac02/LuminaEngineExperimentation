@@ -16,7 +16,7 @@ namespace Lumina
         friend class FAssetManager;
 
         
-        FAssetRequest(const FString& InPath, const FGuid& GUID)
+        FAssetRequest(const FFixedString& InPath, const FGuid& GUID)
             : AssetPath(InPath)
             , RequestedGUID(GUID)
             , PendingObject(nullptr)
@@ -34,7 +34,7 @@ namespace Lumina
     private:
 
         TVector<TFunction<void(CObject*)>>  Listeners;
-        FString                             AssetPath;
+        FFixedString                        AssetPath;
         FGuid                               RequestedGUID;
         CObject*                            PendingObject;
     };

@@ -649,7 +649,7 @@ namespace Lumina
         
         TUniquePtr<FTagModalState> State = MakeUniquePtr<FTagModalState>();
         
-        ToolContext->PushModal("Add Tag", ImVec2(400.0f, 180.0f), [this, Entity, State = Move(State)](const FUpdateContext& Context) -> bool
+        ToolContext->PushModal("Add Tag", ImVec2(400.0f, 180.0f), [this, Entity, State = Move(State)] -> bool
         {
             bool bTagAdded = false;
     
@@ -757,7 +757,7 @@ namespace Lumina
     void FWorldEditorTool::PushAddComponentModal(entt::entity Entity)
     {
         TUniquePtr<ImGuiTextFilter> Filter = MakeUniquePtr<ImGuiTextFilter>();
-        ToolContext->PushModal("Add Component", ImVec2(650.0f, 500.0f), [this, Entity, Filter = Move(Filter)](const FUpdateContext& Context) -> bool
+        ToolContext->PushModal("Add Component", ImVec2(650.0f, 500.0f), [this, Entity, Filter = Move(Filter)] -> bool
         {
             bool bComponentAdded = false;
     
@@ -924,7 +924,7 @@ namespace Lumina
 
     void FWorldEditorTool::PushRenameEntityModal(entt::entity Entity)
     {
-        ToolContext->PushModal("Rename Entity", ImVec2(600.0f, 350.0f), [this, Entity](const FUpdateContext& Context) -> bool
+        ToolContext->PushModal("Rename Entity", ImVec2(600.0f, 350.0f), [this, Entity] -> bool
         {
             FName& Name = World->GetEntityRegistry().get<SNameComponent>(Entity).Name;
             FString CopyName = Name.ToString();

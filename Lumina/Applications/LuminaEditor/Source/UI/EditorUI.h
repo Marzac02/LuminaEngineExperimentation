@@ -50,7 +50,7 @@ namespace Lumina
 
         void DestroyTool(const FUpdateContext& UpdateContext, FEditorTool* Tool);
 
-        void PushModal(const FString& Title, ImVec2 Size, TMoveOnlyFunction<bool(const FUpdateContext&)> DrawFunction) override;
+        void PushModal(const FString& Title, ImVec2 Size, TMoveOnlyFunction<bool()> DrawFunction) override;
 
         void OpenScriptEditor(FStringView ScriptPath) override;
         void OpenAssetEditor(const FGuid& AssetGUID) override;

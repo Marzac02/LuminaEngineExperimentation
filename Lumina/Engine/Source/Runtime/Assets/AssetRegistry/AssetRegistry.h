@@ -69,7 +69,7 @@ namespace Lumina
 
 		void AssetCreated(CObject* Asset);
 		void AssetDeleted(const FGuid& GUID);
-		void AssetRenamed(const FString& OldPath, const FString& NewPath);
+		void AssetRenamed(FStringView OldPath, FStringView NewPath);
 		void AssetSaved(CObject* Asset);
 
 		FAssetRegistryUpdatedDelegate& GetOnAssetRegistryUpdated() { return OnAssetRegistryUpdated; }
@@ -128,17 +128,17 @@ namespace Lumina
 
     class LUMINA_API FPathPredicate : public IAssetPredicate
     {
-        FString Path;
+        FFixedString Path;
         bool bExactMatch;
         bool bRecursive;
     
     public:
-        explicit FPathPredicate(FString InPath, bool bExact = false, bool bRec = true)
+        explicit FPathPredicate(FFixedString InPath, bool bExact = false, bool bRec = true)
             : Path(Move(InPath)), bExactMatch(bExact), bRecursive(bRec) {}
     
         bool Evaluate(const FAssetData& Asset) const override
         {
-            const FString& AssetPath = Asset.FilePath;
+            const FFixedString& AssetPath = Asset.Path;
         
             if (bExactMatch)
             {
@@ -423,7 +423,7 @@ namespace Lumina
         FAssetQuery& operator=(const FAssetQuery&) = default;
         FAssetQuery& operator=(FAssetQuery&&) noexcept = default;
         
-        FAssetQuery& WithPath(const FString& Path, bool bExact = false, bool bRecursive = true)
+        FAssetQuery& WithPath(const FFixedString& Path, bool bExact = false, bool bRecursive = true)
         {
             AddPredicate(MakeSharedPtr<FPathPredicate>(Path, bExact, bRecursive));
             return *this;
@@ -751,7 +751,7 @@ namespace Lumina
         }
     
         // Override return types for method chaining
-        TAssetQuery& WithPath(const FString& Path, bool bExact = false, bool bRec = true)
+        TAssetQuery& WithPath(const FFixedString& Path, bool bExact = false, bool bRec = true)
         {
             FAssetQuery::WithPath(Path, bExact, bRec);
             return *this;

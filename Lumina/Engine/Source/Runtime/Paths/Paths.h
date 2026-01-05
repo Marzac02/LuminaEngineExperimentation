@@ -1,23 +1,13 @@
 #pragma once
 
-#include <filesystem>
-
+#include "Core/Templates/LuminaTemplate.h"
 #include "Containers/Name.h"
 #include "Log/Log.h"
-#include "Project/Project.h"
 
 namespace Lumina::Paths
 {
     void InitializePaths();
-
-
-    /** Mounts a virtual file system to a specified path */
-    LUMINA_API void Mount(const FName& VirtualPrefix, const FString& PhysicalPath);
-
-    /** Unmounts a virtual file system */
-    LUMINA_API void Unmount(const FName& VirtualPrefix);
-
-    LUMINA_API const THashMap<FName, FString>& GetMountedPaths();
+    
     
     /** Gets the directory where the Lumina engine is installed. */
     LUMINA_API FString GetEngineDirectory();
@@ -55,11 +45,7 @@ namespace Lumina::Paths
      * For example, MakeRelativeTo("/a/b/c.txt", "/a/") would return "b/c.txt".
      */
     LUMINA_API FString MakeRelativeTo(const FString& Path, const FString& BasePath);
-
-    /**
-     * Makes a unique path.
-     */
-    LUMINA_API FString MakeUniquePath(FStringView OriginPath);
+    
     
     /**
      * Replaces the filename portion of a given path.
@@ -76,6 +62,8 @@ namespace Lumina::Paths
 
     /** Gets the path to the engine's content directory */
     LUMINA_API const FString& GetEngineContentDirectory();
+    
+    LUMINA_API const FString& GetEngineConfigDirectory();
 
     /** Gets the path to the engine's shaders */
     LUMINA_API const FString& GetEngineShadersDirectory();
@@ -83,7 +71,9 @@ namespace Lumina::Paths
     /** Gets the engine installation directory (one level above the engine binary). */
     LUMINA_API FString GetEngineInstallDirectory();
 
-    LUMINA_API void NormalizePath(FString& Path);
+    LUMINA_API void Normalize(FString& Path);
+    LUMINA_API void Normalize(FFixedString& Path);
+    LUMINA_API FFixedString Normalize(FStringView Path);
 
     LUMINA_API bool PathsEqual(FStringView A, FStringView B);
 
@@ -110,18 +100,31 @@ namespace Lumina::Paths
         requires(T s) { { s.data() } -> std::convertible_to<const T::value_type*>; }
     );
     
-    /**
-     * Combines multiple path segments into a single normalized path string.
-     * @param InPaths One or more path fragments to join.
-     * @return The combined path as an FString.
-     */
-    template <typename... Paths>
-    NODISCARD FString Combine(Paths&&... InPaths)
+   template <typename... Paths>
+   NODISCARD FFixedString Combine(Paths&&... InPaths)
     {
-        std::filesystem::path Path = (std::filesystem::path(std::forward<Paths>(InPaths)) /= ...);
-        return Path.string().c_str();
+        FFixedString Result;
+    
+        auto AppendPath = [&Result, bFirst = true](FStringView Path) mutable
+        {
+            if (Path.empty())
+            {
+                return;
+            }
+        
+            if (!bFirst && !Result.empty())
+            {
+                Result += '/';
+            }
+        
+            Result += Path.data();
+            bFirst = false;
+        };
+    
+        (AppendPath(Forward<Paths>(InPaths)), ...);
+    
+        return Result;
     }
-
     
 
     template<ValidStringType StringType>

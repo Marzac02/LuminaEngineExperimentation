@@ -1,7 +1,5 @@
 #include "pch.h"
-
 #include "AssetRequest.h"
-
 #include "Core/Object/Cast.h"
 #include "Core/Object/Package/Package.h"
 #include "Paths/Paths.h"
@@ -11,13 +9,10 @@ namespace Lumina
 {
     bool FAssetRequest::Process()
     {
-        FString FullPath = Paths::RemoveExtension(AssetPath);
-        FullPath = Paths::ResolveVirtualPath(FullPath);
-        
-        CPackage* Package = CPackage::LoadPackage(FullPath.c_str());
+        CPackage* Package = CPackage::LoadPackage(AssetPath);
         if (Package == nullptr)
         {
-            LOG_INFO("Failed to load package at path: {}", FullPath);
+            LOG_INFO("Failed to load package at path: {}", AssetPath);
             return false;
         }
         

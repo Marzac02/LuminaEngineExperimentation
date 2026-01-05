@@ -6,7 +6,6 @@
 #include "Core/Object/Class.h"
 #include "Core/Object/Object.h"
 #include "Memory/Memory.h"
-#include "Project/Project.h"
 #include "Renderer/RenderContext.h"
 #include "Tools/ConsoleLogEditorTool.h"
 #include "Tools/ContentBrowserEditorTool.h"
@@ -490,14 +489,12 @@ namespace Lumina
             EditorTools.push_back(NewTool);
         }
 
-        if (!GEditorEngine->GetProject().HasLoadedProject())
+        if (GEditorEngine->GetProjectName().empty())
         {
             OpenProjectDialog();
         }
         
-
-        ModalManager.DrawDialogue(UpdateContext);
-        
+        ModalManager.DrawDialogue();
     }
 
     void FEditorUI::OnUpdate(const FUpdateContext& UpdateContext)
@@ -564,7 +561,7 @@ namespace Lumina
         Memory::Delete(Tool);
     }
 
-    void FEditorUI::PushModal(const FString& Title, ImVec2 Size, TMoveOnlyFunction<bool(const FUpdateContext&)> DrawFunction)
+    void FEditorUI::PushModal(const FString& Title, ImVec2 Size, TMoveOnlyFunction<bool()> DrawFunction)
     {
         ModalManager.CreateDialogue(Title, Size, Move(DrawFunction));
     }
@@ -1377,7 +1374,7 @@ namespace Lumina
 
     void FEditorUI::DrawMemoryDialog()
     {
-        ModalManager.CreateDialogue("Memory Profiler", ImVec2(1000, 900), [this](const FUpdateContext& Ctx) -> bool
+        ModalManager.CreateDialogue("Memory Profiler", ImVec2(1000, 900), [this]() -> bool
         {
             // Static state for persistent tracking
             struct MemorySnapshot
@@ -1395,7 +1392,7 @@ namespace Lumina
             static bool isPaused = false;
             
             // Update history
-            updateTimer += Ctx.GetDeltaTime();
+            updateTimer += GEngine->GetDeltaTime();
             if (!isPaused && updateTimer >= 1.0f)
             {
                 updateTimer = 0.0f;
@@ -1761,7 +1758,7 @@ namespace Lumina
         TVector<ESaveState> SaveStates;
         SaveStates.resize(DirtyPackages.size(), ESaveState::Idle);
         
-        ModalManager.CreateDialogue("Save Modified Packages", ImVec2(450, 600), [&, Packages = Move(DirtyPackages), PackageSelection, SaveStates](const FUpdateContext&) mutable
+        ModalManager.CreateDialogue("Save Modified Packages", ImVec2(450, 600), [&, Packages = Move(DirtyPackages), PackageSelection, SaveStates] mutable
         {
             bool bShouldClose = false;
             
@@ -1852,7 +1849,7 @@ namespace Lumina
                         {
                             ImGui::Text(LE_ICON_FILE " %s", Package->GetName().c_str());
                             
-                            ImGui::TextColored(ImVec4(0.6f, 0.6f, 0.6f, 1.0f), "%s", Package->GetFullPackageFilePath().c_str());
+                            ImGui::TextColored(ImVec4(0.6f, 0.6f, 0.6f, 1.0f), "%s", Package->GetPackagePath().c_str());
                             
                             switch (SaveStates[i])
                             {
@@ -1907,7 +1904,7 @@ namespace Lumina
                         {
                             SaveStates[i] = ESaveState::Saving;
                             
-                            bool bSaveSuccess = CPackage::SavePackage(Packages[i], Packages[i]->GetFullPackageFilePath());
+                            bool bSaveSuccess = CPackage::SavePackage(Packages[i], Packages[i]->GetPackagePath());
                             SaveStates[i] = bSaveSuccess ? ESaveState::Success : ESaveState::Failed;
                         }
                     }
@@ -2275,7 +2272,7 @@ namespace Lumina
 
     void FEditorUI::OpenProjectDialog()
     {
-        ModalManager.CreateDialogue("Open Project", ImVec2(1000, 650), [this](const FUpdateContext& Ctx) -> bool
+        ModalManager.CreateDialogue("Open Project", ImVec2(1000, 650), [this] -> bool
         {
             bool bShouldClose = false;
 
@@ -2322,7 +2319,7 @@ namespace Lumina
                         if (ImGui::Button("##SandboxCard", ImVec2(cardWidth, cardHeight)))
                         {
                             FString SandboxProjectDirectory = Paths::GetEngineInstallDirectory() + "/Applications/Sandbox/Sandbox.lproject";
-                            GEditorEngine->GetProject().LoadProject(SandboxProjectDirectory);
+                            GEditorEngine->LoadProject(SandboxProjectDirectory);
                             ContentBrowser->RefreshContentBrowser();
                             FAssetRegistry::Get().RunInitialDiscovery();
                             bShouldClose = true;
@@ -2397,10 +2394,10 @@ namespace Lumina
 
                 if (ImGui::Button(LE_ICON_FOLDER_OPEN " Browse for Project...", ImVec2(200, 32)))
                 {
-                    FString Project;
+                    FFixedString Project;
                     if (Platform::OpenFileDialogue(Project, "Open Project", "Lumina Project (*.lproject)\0*.lproject\0All Files (*.*)\0*.*\0"))
                     {
-                        GEditorEngine->GetProject().LoadProject(Project);
+                        GEditorEngine->LoadProject(Project);
                         ContentBrowser->RefreshContentBrowser();
                         FAssetRegistry::Get().RunInitialDiscovery();
                         bShouldClose = true;
@@ -2431,7 +2428,7 @@ namespace Lumina
 
     void FEditorUI::NewProjectDialog()
     {
-        ModalManager.CreateDialogue("New Project", ImVec2(900, 600), [this](const FUpdateContext& Ctx) -> bool
+        ModalManager.CreateDialogue("New Project", ImVec2(900, 600), [this] -> bool
         {
             ImGui::TextColored(ImVec4(0.7f, 0.7f, 0.7f, 1.0f), LE_ICON_FOLDER_PLUS " Create a new Lumina project");
             ImGui::Separator();
@@ -2491,7 +2488,7 @@ namespace Lumina
 
     void FEditorUI::ProjectSettingsDialog()
     {
-        ModalManager.CreateDialogue("Project Settings", ImVec2(1000, 700), [this](const FUpdateContext& Ctx) -> bool
+        ModalManager.CreateDialogue("Project Settings", ImVec2(1000, 700), [this] -> bool
         {
             ImGui::BeginChild("SettingsCategories", ImVec2(200, 0), true);
             {
@@ -2551,7 +2548,7 @@ namespace Lumina
 
     void FEditorUI::AssetRegistryDialog()
     {
-        ModalManager.CreateDialogue("Asset Registry", ImVec2(1400, 800), [this](const FUpdateContext& Ctx) -> bool
+        ModalManager.CreateDialogue("Asset Registry", ImVec2(1400, 800), [this] -> bool
         {
             return false;
         }, false);

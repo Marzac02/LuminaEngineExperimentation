@@ -31,7 +31,7 @@ namespace Lumina::Import
         };
         
         /** Gets an image's raw pixel data */
-        LUMINA_API TOptional<FTextureImportResult> ImportTexture(const FString& RawFilePath, bool bFlipVertical = true);
+        LUMINA_API TOptional<FTextureImportResult> ImportTexture(FStringView RawFilePath, bool bFlipVertical = true);
     
         /** Creates a raw RHI Image */
         NODISCARD LUMINA_API FRHIImageRef CreateTextureFromImport(IRenderContext* RenderContext, const FString& RawFilePath, bool bFlipVerticalOnLoad = true);
