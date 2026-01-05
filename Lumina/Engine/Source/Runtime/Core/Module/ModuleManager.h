@@ -39,7 +39,7 @@ namespace Lumina
     public:
         
 
-        LUMINA_API IModuleInterface* LoadModule(const FString& ModuleName);
+        LUMINA_API IModuleInterface* LoadModule(FStringView ModuleName);
         LUMINA_API bool UnloadModule(const FString& ModuleName);
 
         void UnloadAllModules();
@@ -47,7 +47,7 @@ namespace Lumina
 
     private:
 
-        FModuleInfo* GetOrCreateModuleInfo(const FString& ModuleName);
+        FModuleInfo* GetOrCreateModuleInfo(const FName& ModuleName);
 
 
     private:

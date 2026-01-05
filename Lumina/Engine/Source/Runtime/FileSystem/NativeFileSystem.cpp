@@ -11,18 +11,28 @@ namespace Lumina::FileSystem
     {
     }
 
+    FFixedString FNativeFileSystem::ResolveVirtualPath(FStringView Path) const
+    {
+        if (!Path.starts_with(AliasPath))
+        {
+            return {};
+        }
+    
+        FStringView RelativePath = Path.substr(AliasPath.length());
+    
+        FFixedString FullPath = BasePath;
+        FullPath.append(RelativePath.begin(), RelativePath.end());
+        
+        return FullPath;
+    }
+
     bool FNativeFileSystem::ReadFile(TVector<uint8>& Result, FStringView Path)
     {
-        FFixedString NativeFilePath;
-        if (Path.starts_with(AliasPath))
-        {
-            FStringView Remainder = Path.substr(AliasPath.length());
-            NativeFilePath.append(BasePath.c_str()).append("/").append(Remainder.data());
-        }
+        FFixedString FullPath = ResolveVirtualPath(Path);
         
         Result.clear();
 
-        std::ifstream File(NativeFilePath.data(), std::ios::binary | std::ios::ate);
+        std::ifstream File(FullPath.data(), std::ios::binary | std::ios::ate);
         if (!File)
         {
             return false;
@@ -55,7 +65,9 @@ namespace Lumina::FileSystem
 
     bool FNativeFileSystem::ReadFile(FString& OutString, FStringView Path)
     {
-        std::ifstream File(Path.data(), std::ios::binary);
+        FFixedString FullPath = ResolveVirtualPath(Path);
+
+        std::ifstream File(FullPath.data(), std::ios::binary);
         if (!File)
         {
             return false;
@@ -82,7 +94,8 @@ namespace Lumina::FileSystem
 
     bool FNativeFileSystem::WriteFile(FStringView Path, FStringView Data)
     {
-        std::ofstream File(Path.data(), std::ios::binary | std::ios::trunc);
+        FFixedString FullPath = ResolveVirtualPath(Path);
+        std::ofstream File(FullPath.data(), std::ios::binary | std::ios::trunc);
         if (!File)
         {
             return false;
@@ -94,7 +107,8 @@ namespace Lumina::FileSystem
 
     bool FNativeFileSystem::WriteFile(FStringView Path, TSpan<const uint8> Data)
     {
-        std::ofstream OutFile(Path.data(), std::ios::binary | std::ios::trunc);
+        FFixedString FullPath = ResolveVirtualPath(Path);
+        std::ofstream OutFile(FullPath.data(), std::ios::binary | std::ios::trunc);
         if (!OutFile)
         {
             return false;
@@ -105,6 +119,32 @@ namespace Lumina::FileSystem
             return false;
         }
 
+        return true;
+    }
+
+    bool FNativeFileSystem::Exists(FStringView Path) const
+    {
+        return std::filesystem::exists(ResolveVirtualPath(Path).c_str());
+    }
+
+    bool FNativeFileSystem::CreateDir(FStringView Path) const
+    {
+        return std::filesystem::create_directory(ResolveVirtualPath(Path).c_str());
+    }
+
+    bool FNativeFileSystem::Remove(FStringView Path) const
+    {
+        return std::filesystem::remove(ResolveVirtualPath(Path).c_str());
+    }
+
+    bool FNativeFileSystem::RemoveAll(FStringView Path) const
+    {
+        return std::filesystem::remove_all(ResolveVirtualPath(Path).c_str());
+    }
+
+    bool FNativeFileSystem::Rename(FStringView Old, FStringView New) const
+    {
+        std::filesystem::rename(ResolveVirtualPath(Old).c_str(), ResolveVirtualPath(New).c_str());
         return true;
     }
 }

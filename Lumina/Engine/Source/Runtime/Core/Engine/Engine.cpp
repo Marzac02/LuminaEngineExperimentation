@@ -1,6 +1,7 @@
 ﻿#include "pch.h"
 #include "Engine.h"
 #include "Assets/AssetManager/AssetManager.h"
+#include "Config/Config.h"
 #include "Core/Application/Application.h"
 #include "Core/Console/ConsoleVariable.h"
 #include "Core/Delegates/CoreDelegates.h"
@@ -35,8 +36,10 @@ namespace Lumina
         // Initialize core engine state.
         //-------------------------------------------------------------------------
         
-        FileSystem::Mount<FileSystem::FNativeFileSystem>("/Engine", Paths::GetEngineContentDirectory());
-        FileSystem::Mount<FileSystem::FNativeFileSystem>("/Config", Paths::GetEngineConfigDirectory());
+        FileSystem::Mount<FileSystem::FNativeFileSystem>("/Engine", Paths::GetEngineDirectory());
+        
+        CConfigRegistry::Get().Initialize();
+        CConfigRegistry::Get().LoadConfigInDirectory("/Engine/Config");
         
         LUMINA_PROFILE_SCOPE();
         FCoreDelegates::OnPreEngineInit.BroadcastAndClear();

@@ -3,6 +3,7 @@
 
 #include <nlohmann/json.hpp>
 
+#include "Config_Base.h"
 #include "Core/Object/Class.h"
 #include "FileSystem/FileSystem.h"
 #include "Paths/Paths.h"
@@ -22,15 +23,14 @@ namespace Lumina
         return *Singleton;
     }
 
-    void CConfigRegistry::Initialize(FStringView Project)
+    void CConfigRegistry::Initialize()
     {
-        ProjectPath.assign_convert(Project);
-        LoadConfigs();
+        
     }
 
     void CConfigRegistry::RegisterConfig(CConfig* Config)
     {
-        LUM_ASSERT(Config);
+        LUM_ASSERT(Config)
 
         Configs.emplace_back(Config);
         LoadConfig(Config);
@@ -38,35 +38,32 @@ namespace Lumina
 
     void CConfigRegistry::OnDestroy()
     {
-        for (CConfig* Config : Configs)
-        {
-            SaveConfig(Config);
-        }
-        
-        Configs.clear();
     }
 
-    void CConfigRegistry::LoadConfigs()
+    void CConfigRegistry::LoadConfigInDirectory(FStringView Directory)
     {
-        for (CConfig* Config : Configs)
+        FFixedString Path;
+        Path.append(Directory.begin(), Directory.end()).append("/Base.json");
+        if (!FileSystem::Exists(Path))
         {
-            LoadConfig(Config);
+            SaveConfig(GetMutableDefault<CConfig_Base>(), Path);
         }
     }
 
     void CConfigRegistry::SaveConfigs()
     {
-        for (CConfig* Config : Configs)
-        {
-            SaveConfig(Config);
-        }
+        
     }
 
     FFixedString CConfigRegistry::GetConfigFilePath(CConfig* Config) const
     {
-        LUM_ASSERT(Config);
+        LUM_ASSERT(Config)
 
         FString ConfigName = Config->GetConfigName();
+        if (ConfigName.empty())
+        {
+            return {};
+        }
         
         return FFixedString()
                     .assign("Config/")
@@ -76,10 +73,14 @@ namespace Lumina
 
     void CConfigRegistry::LoadConfig(CConfig* Config)
     {
-        LUM_ASSERT(Config);
+        LUM_ASSERT(Config)
         
         FString ConfigName = Config->GetConfigName();
         FFixedString DefaultPath = GetConfigFilePath(Config);
+        if (DefaultPath.empty())
+        {
+            return;
+        }
         
         FString JsonContent;
         if (FileSystem::ReadFile(JsonContent, DefaultPath))
@@ -96,19 +97,20 @@ namespace Lumina
         }
     }
 
-    void CConfigRegistry::SaveConfig(CConfig* Config)
+    void CConfigRegistry::SaveConfig(CConfig* Config, FStringView Path)
     {
-        LUM_ASSERT(Config);
+        LUM_ASSERT(Config)
 
+        FFixedString Header = "// Lumina Engine Configuration File\n";
+        
         nlohmann::json Json;
+        
         Config->SaveConfig(Json);
         
-        FFixedString Path = GetConfigFilePath(Config);
         FFixedString JsonString;
         JsonString.assign_convert(Json.dump(4));
         
-        FileSystem::WriteFile(Path, JsonString);
-        
+        FileSystem::WriteFile(Path, Header + JsonString);
     }
 
     void CConfig::PostCreateCDO()

@@ -75,11 +75,11 @@ namespace Lumina
         using namespace Import::Textures;
 
         (void)FAssetRegistry::Get().GetOnAssetRegistryUpdated().AddMember(this, &FContentBrowserEditorTool::RefreshContentBrowser);
-        (void)GEditorEngine->GetProject().OnProjectLoaded.AddMember(this, &FContentBrowserEditorTool::OnProjectLoaded);
+        (void)GEditorEngine->GetProjectLoadedDelegate().AddMember(this, &FContentBrowserEditorTool::OnProjectLoaded);
 
-        if (GEditorEngine->GetProject().HasLoadedProject())
+        if (GEditorEngine->HasLoadedProject())
         {
-            SelectedPath = GEditorEngine->GetProject().GetProjectContentDirectory();
+            SelectedPath = GEditorEngine->GetProjectContentDirectory();
         }
 
         const TVector<CFactory*>& Factories = CFactoryRegistry::Get().GetFactories();
@@ -238,17 +238,17 @@ namespace Lumina
                 TFixedVector<FFixedString, 8> DirectoryPaths;
                 TFixedVector<FFixedString, 6> FilePaths;
 
-                FileSystem::DirectoryIterator(SelectedPath, [&](FStringView Path)
-                {
-                    if (FileSystem::IsDirectory(Path))
-                    {
-                        DirectoryPaths.emplace_back(Path);
-                    }
-                    else if (FileSystem::IsLuaAsset(Path) || FileSystem::IsLuminaAsset(Path))
-                    {
-                        FilePaths.emplace_back(Path);
-                    }
-                });
+                //FileSystem::DirectoryIterator(SelectedPath, [&](FStringView Path)
+                //{
+                //    if (FileSystem::IsDirectory(Path))
+                //    {
+                //        DirectoryPaths.emplace_back(FFixedString{Path.begin(), Path.end()});
+                //    }
+                //    else if (FileSystem::IsLuaAsset(Path) || FileSystem::IsLuminaAsset(Path))
+                //    {
+                //        FilePaths.emplace_back(FFixedString{Path.begin(), Path.end()});
+                //    }
+                //});
 
 
                 eastl::sort(DirectoryPaths.begin(), DirectoryPaths.end());
@@ -305,50 +305,50 @@ namespace Lumina
         
         DirectoryContext.RebuildTreeFunction = [this](FTreeListView& Tree)
         {
-            FileSystem::ForEachFileSystem([&](FileSystem::FFileSystem& FS)
-            {
-                TFunction<void(entt::entity, const FFixedString&)> AddChildrenRecursive;
-
-                AddChildrenRecursive = [&](entt::entity ParentItem, const FFixedString& CurrentPath)
-                {
-                    std::error_code ec;
-                    for (auto& Entry : std::filesystem::directory_iterator(CurrentPath.c_str(), ec))
-                    {
-                        if (ec || !Entry.is_directory())
-                        {
-                            continue;
-                        }
-
-                        FFixedString Path = Entry.path().generic_string().c_str();
-                        FFixedString FileName = Entry.path().filename().string().c_str();
-                        
-                        FFixedString DisplayName;
-                        DisplayName.append(LE_ICON_FOLDER).append(" ").append(FileName);
-
-                        entt::entity ItemEntity = Tree.CreateNode(ParentItem, DisplayName, Hash::GetHash64(Path));
-                        Tree.EmplaceUserData<FContentBrowserListViewItemData>(ItemEntity).Path = Path;
-
-                        if (Entry.path() == SelectedPath.c_str())
-                        {
-                            FTreeNodeState& State = Tree.Get<FTreeNodeState>(ItemEntity);
-                            State.bSelected = true;
-                        }
-
-                        AddChildrenRecursive(ItemEntity, Path);
-                    }
-                };
-
-                FFixedString Name;
-                Name.append(LE_ICON_FOLDER).append(" ").append(FS.GetAliasPath().begin(), FS.GetAliasPath().end());
-                
-                FFixedString BasePath;
-                BasePath.assign(FS.GetBasePath().begin(), FS.GetBasePath().end());
-                
-                entt::entity RootItem = Tree.CreateNode(entt::null, Name);
-                Tree.EmplaceUserData<FContentBrowserListViewItemData>(RootItem).Path = BasePath;
-
-                AddChildrenRecursive(RootItem, BasePath);
-            });
+            //FileSystem::ForEachFileSystem([&](FileSystem::FFileSystem& FS)
+            //{
+            //    TFunction<void(entt::entity, const FFixedString&)> AddChildrenRecursive;
+            //
+            //    AddChildrenRecursive = [&](entt::entity ParentItem, const FFixedString& CurrentPath)
+            //    {
+            //        std::error_code ec;
+            //        for (auto& Entry : std::filesystem::directory_iterator(CurrentPath.c_str(), ec))
+            //        {
+            //            if (ec || !Entry.is_directory())
+            //            {
+            //                continue;
+            //            }
+            //
+            //            FFixedString Path = Entry.path().generic_string().c_str();
+            //            FFixedString FileName = Entry.path().filename().string().c_str();
+            //            
+            //            FFixedString DisplayName;
+            //            DisplayName.append(LE_ICON_FOLDER).append(" ").append(FileName);
+            //
+            //            entt::entity ItemEntity = Tree.CreateNode(ParentItem, DisplayName, Hash::GetHash64(Path));
+            //            Tree.EmplaceUserData<FContentBrowserListViewItemData>(ItemEntity).Path = Path;
+            //
+            //            if (Entry.path() == SelectedPath.c_str())
+            //            {
+            //                FTreeNodeState& State = Tree.Get<FTreeNodeState>(ItemEntity);
+            //                State.bSelected = true;
+            //            }
+            //
+            //            AddChildrenRecursive(ItemEntity, Path);
+            //        }
+            //    };
+            //
+            //    FFixedString Name;
+            //    Name.append(LE_ICON_FOLDER).append(" ").append(FS.GetAliasPath().begin(), FS.GetAliasPath().end());
+            //    
+            //    FFixedString BasePath;
+            //    BasePath.assign(FS.GetBasePath().begin(), FS.GetBasePath().end());
+            //    
+            //    entt::entity RootItem = Tree.CreateNode(entt::null, Name);
+            //    Tree.EmplaceUserData<FContentBrowserListViewItemData>(RootItem).Path = BasePath;
+            //
+            //    AddChildrenRecursive(RootItem, BasePath);
+            //});
         };
 
         DirectoryContext.ItemSelectedFunction = [this] (FTreeListView& Tree, entt::entity Item)
@@ -540,10 +540,10 @@ namespace Lumina
 
     void FContentBrowserEditorTool::OnProjectLoaded()
     {
-        SelectedPath = GEditorEngine->GetProject().GetProjectGameDirectory();
+        SelectedPath = GEditorEngine->GetProjectGameDirectory();
         
         Watcher.Stop();
-        Watcher.Watch(GEditorEngine->GetProject().GetProjectScriptsDirectory(), [&](const FFileEvent& Event)
+        Watcher.Watch(GEditorEngine->GetProjectScriptDirectory(), [&](const FFileEvent& Event)
         {
             switch (Event.Action)
             {
@@ -833,7 +833,7 @@ namespace Lumina
                 RefreshContentBrowser();
             }
 
-            if (FileSystem::IsUnderDirectory(GEditorEngine->GetProject().GetProjectScriptsDirectory(), SelectedPath))
+            if (FileSystem::IsUnderDirectory(GEditorEngine->GetProjectScriptDirectory(), SelectedPath))
             {
                 DrawScriptsDirectoryContextMenu();
             }

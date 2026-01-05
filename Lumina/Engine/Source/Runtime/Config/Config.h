@@ -17,12 +17,12 @@ namespace Lumina
         
         static CConfigRegistry& Get();
         
-        void Initialize(FStringView Project);
+        void Initialize();
         
         void RegisterConfig(CConfig* Config);
         void OnDestroy() override;
         
-        void LoadConfigs();
+        void LoadConfigInDirectory(FStringView Directory);
         void SaveConfigs();
         
         FFixedString GetConfigFilePath(CConfig* Config) const;
@@ -30,13 +30,12 @@ namespace Lumina
     private:
         
         void LoadConfig(CConfig* Config);
-        void SaveConfig(CConfig* Config);
+        void SaveConfig(CConfig* Config, FStringView Path);
         
         
     private:
         
         TVector<CConfig*>   Configs;
-        FFixedString        ProjectPath;
     };
     
     

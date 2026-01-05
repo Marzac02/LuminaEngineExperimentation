@@ -1,10 +1,12 @@
 #include "LuminaEditor.h"
 #include "EntryPoint.h"
+#include "Config/Config.h"
 #include "Core/Module/ModuleManager.h"
 #include "Core/Windows/Window.h"
 #include "FileSystem/FileSystem.h"
 #include "Paths/Paths.h"
 #include "Renderer/RenderResource.h"
+#include "Scripting/Lua/Scripting.h"
 #include "UI/EditorUI.h"
 
 namespace Lumina
@@ -48,13 +50,83 @@ namespace Lumina
 
     void FEditorEngine::LoadProject(FStringView Path)
     {
-        FStringView Parent = FileSystem::Parent(Path);
-        FFixedString GameDir = Paths::Combine(Parent, "Game");
-        FFixedString ConfigDir = Paths::Combine(Parent, "Config");
+        namespace FS = FileSystem;
+        
+        ProjectPath                     .assign_convert(FS::Parent(Paths::Normalize(Path)));
+        ProjectName                     = FS::FileName(Path, true);
+        FFixedString GameDir            = Paths::Combine(ProjectPath, "Game");
+        FFixedString BinariesDirectory  = Paths::Combine(ProjectPath, "Binaries");
+        
+        FS::Mount<FS::FNativeFileSystem>("/Game", GameDir);
 
-        FileSystem::Mount<FileSystem::FNativeFileSystem>("/Game", GameDir);
-        FileSystem::Mount<FileSystem::FNativeFileSystem>("/Config", ConfigDir);
+        LoadProjectDLL();
+        LoadProjectScripts();
+        
+        bHasLoadedProject = true;
+        
+        OnProjectLoaded.Broadcast();
+    }
 
+    FFixedString FEditorEngine::GetProjectScriptDirectory() const
+    {
+        if (!bHasLoadedProject)
+        {
+            return {};
+        }
+        
+        return Paths::Combine(ProjectPath, "Game", "Scripts");
+    }
+
+    FFixedString FEditorEngine::GetProjectGameDirectory() const
+    {
+        if (!bHasLoadedProject)
+        {
+            return {};
+        }
+        
+        return Paths::Combine(ProjectPath, "Game");
+
+    }
+
+    FFixedString FEditorEngine::GetProjectContentDirectory() const
+    {
+        if (!bHasLoadedProject)
+        {
+            return {};
+        }
+        
+        return Paths::Combine(ProjectPath, "Game", "Content");
+    }
+
+    void FEditorEngine::LoadProjectDLL()
+    {
+        
+        FFixedString DLLPath;
+        
+        #if LE_DEBUG
+        DLLPath.append(ProjectPath).append("/Binaries/Debug/").append_convert(ProjectName).append(".dll");
+        #else
+        DLLPath.append(ProjectPath).append("/Binaries/Release/").append_convert(ProjectName).append(".dll");
+        #endif
+
+        if (Paths::Exists(DLLPath))
+        {
+            if (IModuleInterface* Module = FModuleManager::Get().LoadModule(DLLPath))
+            {
+                ProcessNewlyLoadedCObjects();
+            }
+            else
+            {
+                LOG_INFO("No project module found");
+            }
+        }
+    }
+
+    void FEditorEngine::LoadProjectScripts()
+    {
+        FFixedString ScriptPath;
+        ScriptPath.append(ProjectPath).append("/Game/Scripts/");
+        Scripting::FScriptingContext::Get().LoadScriptsInDirectoryRecursively(ScriptPath);
     }
 
     FApplication* CreateApplication(int argc, char** argv)

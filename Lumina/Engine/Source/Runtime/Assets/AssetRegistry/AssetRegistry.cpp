@@ -27,16 +27,16 @@ namespace Lumina
         ClearAssets();
         
         TFixedVector<FFixedString, 256> PackagePaths;
-        FileSystem::ForEachFileSystem([&](FileSystem::FFileSystem& FS)
-        {
-            FileSystem::DirectoryIterator(FS.GetBasePath(), [&](FStringView Path)
-            {
-                if (FileSystem::IsLuminaAsset(Path))
-                {
-                    PackagePaths.emplace_back(FFixedString{Path.begin(), Path.end()});
-                }
-            });
-        });
+        //FileSystem::ForEachFileSystem([&](FileSystem::FFileSystem& FS)
+        //{
+        //    FileSystem::DirectoryIterator(FS.GetBasePath(), [&](FStringView Path)
+        //    {
+        //        if (FileSystem::IsLuminaAsset(Path))
+        //        {
+        //            PackagePaths.emplace_back(FFixedString{Path.begin(), Path.end()});
+        //        }
+        //    });
+        //});
         
         uint32 NumPackages = (uint32)PackagePaths.size();
         Task::AsyncTask(NumPackages, NumPackages, [this, PackagePaths = std::move(PackagePaths)] (uint32 Start, uint32 End, uint32)

@@ -63,6 +63,7 @@ namespace Lumina::Paths
     /** Gets the path to the engine's content directory */
     LUMINA_API const FString& GetEngineContentDirectory();
     
+    
     LUMINA_API const FString& GetEngineConfigDirectory();
 
     /** Gets the path to the engine's shaders */

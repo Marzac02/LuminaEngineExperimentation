@@ -1,7 +1,9 @@
 #pragma once
 
 #include "Core/Application/Application.h"
-#include "Memory/SmartPtr.h"
+#include "Core/Delegates/Delegate.h"
+
+DECLARE_MULTICAST_DELEGATE(FProjectLoadedDelegate);
 
 namespace Lumina
 {
@@ -24,11 +26,25 @@ namespace Lumina
         
         FORCEINLINE NODISCARD FStringView GetProjectName() const { return ProjectName; }
         FORCEINLINE NODISCARD FStringView GetProjectPath() const { return ProjectPath; }
+        FORCEINLINE FProjectLoadedDelegate& GetProjectLoadedDelegate() { return OnProjectLoaded; }
+        FORCEINLINE NODISCARD bool HasLoadedProject() const { return bHasLoadedProject; }
+        NODISCARD FFixedString GetProjectScriptDirectory() const;
+        NODISCARD FFixedString GetProjectGameDirectory() const;
+        NODISCARD FFixedString GetProjectContentDirectory() const;
         
     private:
-    
+        
+        void LoadProjectDLL();
+        void LoadProjectScripts();
+        
+    private:
+        
+        FProjectLoadedDelegate OnProjectLoaded;
+        
         FString ProjectName;
         FFixedString ProjectPath;
+        
+        bool bHasLoadedProject = false;
     };
     
 

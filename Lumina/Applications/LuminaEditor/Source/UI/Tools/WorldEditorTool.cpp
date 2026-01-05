@@ -951,11 +951,8 @@ namespace Lumina
             ImGuiX::Notifications::NotifyError("Cannot save world: No associated package.");
             return;
         }
-
-        FString FullPath = Paths::ResolveVirtualPath(World->GetPackage()->GetName().ToString());
-        Paths::AddPackageExtension(FullPath);
-
-        if (CPackage::SavePackage(World->GetPackage(), FullPath.c_str()))
+        
+        if (CPackage::SavePackage(World->GetPackage(), World->GetPackage()->GetPackagePath()))
         {
             FAssetRegistry::Get().AssetSaved(World);
             ImGuiX::Notifications::NotifySuccess("Successfully saved world: \"{0}\"", World->GetName().c_str());

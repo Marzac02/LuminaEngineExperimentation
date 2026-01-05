@@ -2,9 +2,7 @@
 
 #include "Containers/Name.h"
 #include "Containers/String.h"
-#include "Memory/SmartPtr.h"
 #include "NativeFileSystem.h"
-#include "Containers/Function.h"
 #include "Core/Functional/FunctionRef.h"
 #include "Core/Templates/LuminaTemplate.h"
 #include "Core/Templates/SameAs.h"
@@ -20,6 +18,11 @@ namespace Lumina::FileSystem
         { FS.ReadFile(OutStr, Path) }           -> Concept::TSameAs<bool>;
         { FS.WriteFile(Path, Path) }            -> Concept::TSameAs<bool>;
         { FS.WriteFile(Path, Data) }            -> Concept::TSameAs<bool>;
+        { FS.Exists(Path) }                     -> Concept::TSameAs<bool>;
+        { FS.CreateDir(Path) }                  -> Concept::TSameAs<bool>;
+        { FS.Remove(Path) }                     -> Concept::TSameAs<bool>;
+        { FS.RemoveAll(Path) }                  -> Concept::TSameAs<bool>;
+        { FS.Rename(Path, Path) }               -> Concept::TSameAs<bool>;
         { FS.GetAliasPath() }                   -> std::convertible_to<FStringView>;
         { FS.GetBasePath() }                    -> std::convertible_to<FStringView>;
     };
@@ -37,6 +40,11 @@ namespace Lumina::FileSystem
         bool ReadFile(FString& OutString, FStringView Path);
         bool WriteFile(FStringView Path, FStringView Data);
         bool WriteFile(FStringView Path, TSpan<const uint8> Data);
+        bool Exists(FStringView Path) const;
+        bool CreateDir(FStringView Path) const;
+        bool Remove(FStringView Path) const;
+        bool RemoveAll(FStringView Path) const;
+        bool Rename(FStringView Old, FStringView New) const;
         
         FStringView GetAliasPath() const;
         FStringView GetBasePath() const;
@@ -61,6 +69,7 @@ namespace Lumina::FileSystem
     namespace Detail
     {
         LUMINA_API FFileSystem& AddFileSystemImpl(const FName& Alias, FFileSystem&& System);
+        LUMINA_API TVector<FFileSystem>* GetFileSystems(const FName& Alias);
     }
     
     template<CFileSystem T, typename... TArgs>
@@ -86,16 +95,16 @@ namespace Lumina::FileSystem
     LUMINA_API bool IsDirectory(FStringView Path);
     LUMINA_API bool IsLuaAsset(FStringView Path);
     LUMINA_API bool IsLuminaAsset(FStringView Path);
-    LUMINA_API FStringView Parent(FStringView Path);
+    LUMINA_API FStringView Parent(FStringView Path, bool bRemoveTrailingSlash = false);
     
     LUMINA_API bool ReadFile(TVector<uint8>& Result, FStringView Path);
     LUMINA_API bool ReadFile(FString& OutString, FStringView Path);
     LUMINA_API bool WriteFile(FStringView Path, FStringView Data);
     LUMINA_API bool WriteFile(FStringView Path, TSpan<const uint8> Data);
     
-    LUMINA_API bool HasExtension(FStringView Path, FStringView Ext);
+    LUMINA_API bool Exists(FStringView Path);
+    LUMINA_API bool CreateFile(FStringView Path);
     
-    void DirectoryIterator(FStringView Path, const TFunctionRef<void(FStringView Path)>& Func);
-    void ForEachFileSystem(const TFunctionRef<void(FFileSystem&)>& Func);
+    LUMINA_API bool HasExtension(FStringView Path, FStringView Ext);
     
 }

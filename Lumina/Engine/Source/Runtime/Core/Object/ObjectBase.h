@@ -227,5 +227,5 @@ namespace Lumina
     LUMINA_API void CObjectForceRegistration(CObjectBase* Object);
 
     
-    void ProcessNewlyLoadedCObjects();
+    LUMINA_API void ProcessNewlyLoadedCObjects();
 }

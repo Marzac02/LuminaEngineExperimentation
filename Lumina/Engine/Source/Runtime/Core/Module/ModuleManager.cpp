@@ -10,7 +10,7 @@
 
 namespace Lumina
 {
-    IModuleInterface* FModuleManager::LoadModule(const FString& ModuleName)
+    IModuleInterface* FModuleManager::LoadModule(FStringView ModuleName)
     {
         void* ModuleHandle = Platform::GetDLLHandle(StringUtils::ToWideString(ModuleName).c_str());
 
@@ -100,10 +100,9 @@ namespace Lumina
         }
     }
 
-    FModuleInfo* FModuleManager::GetOrCreateModuleInfo(const FString& ModuleName)
+    FModuleInfo* FModuleManager::GetOrCreateModuleInfo(const FName& ModuleName)
     {
-        FName ModuleFName = FName(ModuleName);
-        auto it = ModuleHashMap.find(ModuleFName);
+        auto it = ModuleHashMap.find(ModuleName);
 
         if (it != ModuleHashMap.end())
         {
@@ -111,11 +110,11 @@ namespace Lumina
         }
 
         FModuleInfo NewInfo;
-        NewInfo.ModuleName = ModuleFName;
+        NewInfo.ModuleName = ModuleName;
 
-        ModuleHashMap.emplace(ModuleFName, Move(NewInfo));
+        ModuleHashMap.emplace(ModuleName, Move(NewInfo));
 
-        return &ModuleHashMap[ModuleFName];
+        return &ModuleHashMap[ModuleName];
     }
 
 }
