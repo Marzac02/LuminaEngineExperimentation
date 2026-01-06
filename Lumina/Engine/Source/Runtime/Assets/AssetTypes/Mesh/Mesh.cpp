@@ -118,7 +118,6 @@ namespace Lumina
         CommandList->WriteBuffer(MeshResources->MeshBuffers.VertexBuffer, MeshResources->Vertices.data(), 0, MeshResources->Vertices.size() * sizeof(FVertex));
         CommandList->SetPermanentBufferState(MeshResources->MeshBuffers.VertexBuffer, EResourceStates::VertexBuffer);
         
-
         FRHIBufferDesc IndexBufferDesc;
         IndexBufferDesc.Size = sizeof(uint32) * MeshResources->Indices.size();
         IndexBufferDesc.Usage.SetMultipleFlags(BUF_IndexBuffer);
