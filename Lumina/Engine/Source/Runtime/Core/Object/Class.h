@@ -25,7 +25,7 @@ namespace Lumina
     {
     public:
 
-        DECLARE_CLASS(Lumina, CField, CObject, "/Script", LUMINA_API)
+        DECLARE_CLASS(Lumina, CField, CObject, "/Script/Engine", LUMINA_API)
         DEFINE_CLASS_FACTORY(CField)
         
         CField() = default;
@@ -63,7 +63,7 @@ namespace Lumina
     {
     public:
         
-        DECLARE_CLASS(Lumina, CEnum, CField, "/Script", LUMINA_API)
+        DECLARE_CLASS(Lumina, CEnum, CField, "/Script/Engine", LUMINA_API)
         DEFINE_CLASS_FACTORY(CEnum)
 
         CEnum() = default;
@@ -89,7 +89,7 @@ namespace Lumina
     class CStruct : public CField
     {
 
-        DECLARE_CLASS(Lumina, CStruct, CField, "/Script", LUMINA_API)
+        DECLARE_CLASS(Lumina, CStruct, CField, "/Script/Engine", LUMINA_API)
         DEFINE_CLASS_FACTORY(CStruct)
 
     public:
@@ -171,7 +171,7 @@ namespace Lumina
     {
     public:
 
-        DECLARE_CLASS(Lumina, CClass, CStruct, "/Script", LUMINA_API)
+        DECLARE_CLASS(Lumina, CClass, CStruct, "/Script/Engine", LUMINA_API)
         DEFINE_CLASS_FACTORY(CClass)
 
         using FactoryFunctionType = CObject*(*)(void*);

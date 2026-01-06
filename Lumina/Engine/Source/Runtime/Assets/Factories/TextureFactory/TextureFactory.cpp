@@ -151,6 +151,8 @@ namespace Lumina
         CPackage* NewPackage = NewTexture->GetPackage();
         CPackage::SavePackage(NewPackage, NewPackage->GetPackagePath());
         FAssetRegistry::Get().AssetCreated(NewTexture);
+        
+        NewTexture->ConditionalBeginDestroy();
     }
     
 }

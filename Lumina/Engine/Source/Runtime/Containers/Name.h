@@ -16,7 +16,6 @@ PRAGMA_ENABLE_ALL_WARNINGS
 
 namespace Lumina
 {
-    // Pre-allocated string storage pool - grows but never shrinks
     class FStringPool
     {
     public:
@@ -39,69 +38,28 @@ namespace Lumina
 
     class FNameTable
     {
+    public:
+        
+        FNameTable();
+        
+        uint64 GetOrCreateID(const char* Str);
+        uint64 GetOrCreateID(const char* Str, size_t Length);
+        
+        const char* GetString(uint64 ID) const;
+        size_t GetMemoryUsage() const;
+        
     private:
-
+        
+        size_t GetStringPoolUsage() const;
+        
+    private:
+        
         FMutex Mutex;
         eastl::hash_map<uint64, const char*> HashToString;
         FStringPool Pool;
         
         static constexpr size_t INITIAL_CAPACITY = 16384;
         
-    public:
-        
-        FNameTable()
-        {
-            HashToString.reserve(INITIAL_CAPACITY);
-            HashToString.insert_or_assign(0, "NAME_None");
-        }
-        
-        uint64 GetOrCreateID(const char* Str)
-        {
-            if (!Str || !Str[0])
-            {
-                return 0;
-            }
-
-            const uint64 ID = Hash::XXHash::GetHash64(Str);
-
-            FScopeLock Lock(Mutex);
-            
-            auto It = HashToString.find(ID);
-            if ((It != HashToString.end()))
-            {
-                return ID;
-            }
-            
-            const size_t Length = strlen(Str);
-            const char* PermanentStr = Pool.AllocateString(Str, Length);
-            
-            HashToString.insert_or_assign(ID, PermanentStr);
-            
-            return ID;
-        }
-        
-        const char* GetString(uint64 ID) const
-        {
-            auto It = HashToString.find(ID);
-            return (It != HashToString.end()) ? It->second : nullptr;
-        }
-        
-        size_t GetMemoryUsage() const
-        {
-            return HashToString.size() * (sizeof(uint64) + sizeof(char*)) + GetStringPoolUsage();
-        }
-        
-    private:
-        
-        size_t GetStringPoolUsage() const
-        {
-            size_t Total = 0;
-            for (FStringPool::Chunk* Chunk = Pool.Head; Chunk; Chunk = Chunk->Next)
-            {
-                Total += Chunk->Used;
-            }
-            return Total;
-        }
     };
 
     extern LUMINA_API FNameTable* GNameTable;
@@ -122,18 +80,15 @@ namespace Lumina
         
         FName(EName) {}
         
-        FName(const char* Str)
-        {
-            ID = GNameTable->GetOrCreateID(Str);
-            View = GNameTable->GetString(ID);
-        }
-        
+        FName(const char* Str);
+        FName(const char* Str, size_t Length);
+
         FName(const TCHAR* Str) : FName(StringUtils::FromWideString(Str)) {}
-        FName(const FString& Str) : FName(Str.c_str()) {}
-        FName(const FWString& Str) : FName(Str.c_str()) {}
-        FName(const FFixedString& Str) : FName(Str.c_str()) {}
+        FName(const FString& Str) : FName(Str.data(), Str.length()) {}
+        FName(const FWString& Str) : FName(StringUtils::FromWideString(Str)) {}
+        FName(const FFixedString& Str) : FName(Str.data(), Str.length()) {}
         FName(const FFixedWString& Str) : FName(Str.c_str()) {}
-        FName(FStringView Str) : FName(Str.data()) {}
+        FName(FStringView Str) : FName(Str.data(), Str.length()) {}
 
         explicit FName(uint64 InID)
             : ID(InID) 

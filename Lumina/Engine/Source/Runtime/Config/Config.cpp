@@ -40,13 +40,46 @@ namespace Lumina
     {
     }
 
-    void CConfigRegistry::LoadConfigInDirectory(FStringView Directory)
+    void CConfigRegistry::LoadEngineConfig()
     {
-        FFixedString Path;
-        Path.append(Directory.begin(), Directory.end()).append("/Base.json");
-        if (!FileSystem::Exists(Path))
+        FFixedString ConfigPath = "/Engine/Config";
+        
+        FFixedString BasePath = ConfigPath + "/Base.json";
+        if (!FileSystem::Exists(BasePath))
         {
-            SaveConfig(GetMutableDefault<CConfig_Base>(), Path);
+            SaveConfig(GetMutableDefault<CConfig_Base>(), BasePath);
+        }
+    }
+
+    void CConfigRegistry::LoadProjectConfig()
+    {
+        constexpr FStringView ConfigTypes[] = 
+        {
+            "Game",
+            "Engine",
+            "Input",
+            "Editor",
+            "Graphics",
+        };
+        
+        for (const FStringView& ConfigType : ConfigTypes)
+        {
+            FFixedString ConfigPath = ResolvePath("{PROJECT}/Config/Default{TYPE}.json", ConfigType);
+        
+            if (!FileSystem::Exists(ConfigPath))
+            {
+                if (ConfigType == "Game")
+                {
+                    //SaveConfig(GameConfig, ConfigPath);
+                }
+            }
+            else
+            {
+                if (ConfigType == "Game")
+                {
+                    
+                }
+            }
         }
     }
 
@@ -69,6 +102,34 @@ namespace Lumina
                     .assign("Config/")
                     .append_convert(ConfigName)
                     .append(".json");
+    }
+
+    FFixedString CConfigRegistry::ResolvePath(FStringView PathTemplate, FStringView ConfigType)
+    {
+        FFixedString Result(PathTemplate.begin(), PathTemplate.end());
+    
+        size_t EnginePos = Result.find("{ENGINE}");
+        if (EnginePos != FFixedString::npos)
+        {
+            Result.replace(EnginePos, 8, "/Engine");
+        }
+    
+        size_t ProjectPos = Result.find("{PROJECT}");
+        if (ProjectPos != FFixedString::npos)
+        {
+            Result.replace(ProjectPos, 9, "/Game");
+        }
+    
+        if (!ConfigType.empty())
+        {
+            size_t TypePos = Result.find("{TYPE}");
+            if (TypePos != FFixedString::npos)
+            {
+                Result.replace(TypePos, 6, FFixedString(ConfigType.begin(), ConfigType.end()));
+            }
+        }
+    
+        return Result;
     }
 
     void CConfigRegistry::LoadConfig(CConfig* Config)

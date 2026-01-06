@@ -47,18 +47,18 @@ namespace Lumina::Hash
 
         //-------------------------------------------------------------------------
 
-        LUMINA_API uint64 GetHash64( void const* pData, SIZE_T size );
+        LUMINA_API uint64 GetHash64(void const* Data, SIZE_T Size);
 
-        LUMINA_API FORCEINLINE uint64 GetHash64( const FString& string )
+        LUMINA_API FORCEINLINE uint64 GetHash64(const FString& String)
         {
-            return GetHash64( string.c_str(), string.length() );
+            return GetHash64(String.c_str(), String.length());
         }
 
         LUMINA_API FORCEINLINE uint64 GetHash64(const char* String)
         {
             return GetHash64(String, strlen(String));
         }
-
+        
         LUMINA_API FORCEINLINE uint64 GetHash64(const Blob& data)
         {
             return GetHash64(data.data(), data.size());

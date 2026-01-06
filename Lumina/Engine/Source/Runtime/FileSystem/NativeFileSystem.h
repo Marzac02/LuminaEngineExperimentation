@@ -2,13 +2,17 @@
 #include "Containers/Name.h"
 #include "Containers/String.h"
 #include "Containers/Array.h"
+#include "Containers/Function.h"
+#include "Core/Functional/FunctionRef.h"
 
 namespace Lumina::FileSystem
 {
+    struct FFileInfo;
+
     class LUMINA_API FNativeFileSystem
     {
     public:
-        FNativeFileSystem(const FName& InAliasPath, FStringView InBasePath) noexcept;
+        FNativeFileSystem(const FFixedString& InAliasPath, FStringView InBasePath) noexcept;
         
         FFixedString ResolveVirtualPath(FStringView Path) const;
         
@@ -19,13 +23,19 @@ namespace Lumina::FileSystem
         bool WriteFile(FStringView Path, TSpan<const uint8> Data);
         
         bool Exists(FStringView Path) const;
-        
+        bool IsDirectory(FStringView Path) const;
+
         bool CreateDir(FStringView Path) const;
         
         bool Remove(FStringView Path) const;
         bool RemoveAll(FStringView Path) const;
         
         bool Rename(FStringView Old, FStringView New) const;
+        
+        void DirectoryIterator(FStringView Path, const TFunction<void(const FFileInfo&)>& Callback) const;
+        void RecursiveDirectoryIterator(FStringView Path, const TFunction<void(const FFileInfo&)>& Callback) const;
+
+        
     
         FStringView GetAliasPath() const { return AliasPath; }
         FStringView GetBasePath() const { return BasePath; }

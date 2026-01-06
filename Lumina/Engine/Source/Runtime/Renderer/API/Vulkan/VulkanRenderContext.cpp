@@ -467,8 +467,6 @@ namespace Lumina
     
     FVulkanRenderContext::FVulkanRenderContext()
         : CurrentFrameIndex(0)
-        , VulkanInstance(nullptr)
-        , ShaderCompiler(nullptr)
     {
     }
 
@@ -476,7 +474,8 @@ namespace Lumina
     {
         LUMINA_PROFILE_SCOPE();
         AssertMsg(glfwVulkanSupported(), "Vulkan Is Not Supported!");
-        AssertMsg(volkInitialize() == VK_SUCCESS, "Volk failed to initialize");
+        VkResult VolkInitResult = volkInitialize();
+        AssertMsg(VolkInitResult == VK_SUCCESS, "Volk failed to initialize");
         
         Description = Desc;
         GVulkanAllocationCallbacks.pfnAllocation    = VulkanAlloc;

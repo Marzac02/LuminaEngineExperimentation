@@ -1,9 +1,10 @@
 ﻿#pragma once
 
+#include "FileInfo.h"
+#include "NativeFileSystem.h"
+#include "Containers/Function.h"
 #include "Containers/Name.h"
 #include "Containers/String.h"
-#include "NativeFileSystem.h"
-#include "Core/Functional/FunctionRef.h"
 #include "Core/Templates/LuminaTemplate.h"
 #include "Core/Templates/SameAs.h"
 #include "Core/Variant/Variant.h"
@@ -11,20 +12,23 @@
 namespace Lumina::FileSystem
 {
     template<typename T>
-    concept CFileSystem = requires(T FS, TVector<uint8>& OutBytes, FString& OutStr, 
-                                   FStringView Path, TSpan<const uint8> Data)
+    concept CFileSystem = requires(T FS,    TVector<uint8>& OutBytes, FString& OutStr, 
+                                            FStringView Path, TSpan<const uint8> Data,
+                                            const TFunction<void(const FFileInfo&)>& Callback)
     {
-        { FS.ReadFile(OutBytes, Path) }         -> Concept::TSameAs<bool>;
-        { FS.ReadFile(OutStr, Path) }           -> Concept::TSameAs<bool>;
-        { FS.WriteFile(Path, Path) }            -> Concept::TSameAs<bool>;
-        { FS.WriteFile(Path, Data) }            -> Concept::TSameAs<bool>;
-        { FS.Exists(Path) }                     -> Concept::TSameAs<bool>;
-        { FS.CreateDir(Path) }                  -> Concept::TSameAs<bool>;
-        { FS.Remove(Path) }                     -> Concept::TSameAs<bool>;
-        { FS.RemoveAll(Path) }                  -> Concept::TSameAs<bool>;
-        { FS.Rename(Path, Path) }               -> Concept::TSameAs<bool>;
-        { FS.GetAliasPath() }                   -> std::convertible_to<FStringView>;
-        { FS.GetBasePath() }                    -> std::convertible_to<FStringView>;
+        { FS.ReadFile(OutBytes, Path) }                         -> Concept::TSameAs<bool>;
+        { FS.ReadFile(OutStr, Path) }                           -> Concept::TSameAs<bool>;
+        { FS.WriteFile(Path, Path) }                            -> Concept::TSameAs<bool>;
+        { FS.WriteFile(Path, Data) }                            -> Concept::TSameAs<bool>;
+        { FS.Exists(Path) }                                     -> Concept::TSameAs<bool>;
+        { FS.CreateDir(Path) }                                  -> Concept::TSameAs<bool>;
+        { FS.Remove(Path) }                                     -> Concept::TSameAs<bool>;
+        { FS.RemoveAll(Path) }                                  -> Concept::TSameAs<bool>;
+        { FS.Rename(Path, Path) }                               -> Concept::TSameAs<bool>;
+        { FS.DirectoryIterator(Path, Callback) }                -> Concept::TSameAs<void>;
+        { FS.RecursiveDirectoryIterator(Path, Callback) }       -> Concept::TSameAs<void>;
+        { FS.GetAliasPath() }                                   -> std::convertible_to<FStringView>;
+        { FS.GetBasePath() }                                    -> std::convertible_to<FStringView>;
     };
     
     class LUMINA_API FFileSystem
@@ -41,10 +45,14 @@ namespace Lumina::FileSystem
         bool WriteFile(FStringView Path, FStringView Data);
         bool WriteFile(FStringView Path, TSpan<const uint8> Data);
         bool Exists(FStringView Path) const;
+        bool IsDirectory(FStringView Path) const;
         bool CreateDir(FStringView Path) const;
         bool Remove(FStringView Path) const;
         bool RemoveAll(FStringView Path) const;
         bool Rename(FStringView Old, FStringView New) const;
+        void DirectoryIterator(FStringView Path, const TFunction<void(const FFileInfo&)>& Callback) const;
+        void RecursiveDirectoryIterator(FStringView Path, const TFunction<void(const FFileInfo&)>& Callback) const;
+
         
         FStringView GetAliasPath() const;
         FStringView GetBasePath() const;
@@ -56,11 +64,8 @@ namespace Lumina::FileSystem
         ////
         
         template<CFileSystem T, typename... TArgs>
-        requires(eastl::is_nothrow_constructible_v<T, FName, TArgs...>)
-        friend T& Mount(const FName& Alias, TArgs&&... Args);
-        
-        template<CFileSystem T>
-        friend T* GetFileSystem(const FName& Alias);
+        requires(eastl::is_nothrow_constructible_v<T, FFixedString, TArgs...>)
+        friend T& Mount(const FFixedString& Alias, TArgs&&... Args);
     };
     
     static void Initialize();
@@ -68,13 +73,13 @@ namespace Lumina::FileSystem
     
     namespace Detail
     {
-        LUMINA_API FFileSystem& AddFileSystemImpl(const FName& Alias, FFileSystem&& System);
-        LUMINA_API TVector<FFileSystem>* GetFileSystems(const FName& Alias);
+        LUMINA_API FFileSystem& AddFileSystemImpl(const FFixedString& Alias, FFileSystem&& System);
+        LUMINA_API TVector<FFileSystem>* GetFileSystems(const FFixedString& Alias);
     }
     
     template<CFileSystem T, typename... TArgs>
-    requires(eastl::is_nothrow_constructible_v<T, FName, TArgs...>)
-    T& Mount(const FName& Alias, TArgs&&... Args)
+    requires(eastl::is_nothrow_constructible_v<T, FFixedString, TArgs...>)
+    T& Mount(const FFixedString& Alias, TArgs&&... Args)
     {
         T TypeT(Alias, Forward<TArgs>(Args)...);
         FFileSystem FS(TypeT);
@@ -83,7 +88,12 @@ namespace Lumina::FileSystem
         return eastl::get<T>(Result.Storage);
     }
     
-    
+    LUMINA_API void DirectoryIterator(FStringView Path, const TFunction<void(const FFileInfo&)>& Callback);
+    LUMINA_API void RecursiveDirectoryIterator(FStringView Path, const TFunction<void(const FFileInfo&)>& Callback);
+
+    LUMINA_API FStringView RemoveExtension(FStringView Path);
+    LUMINA_API bool Rename(FStringView Old, FStringView New);
+    LUMINA_API FFixedString MakeUniqueFilePath(FStringView BasePath);
     LUMINA_API FStringView Extension(FStringView Path);
     LUMINA_API FStringView FileName(FStringView Path, bool bRemoveExtension = false);
     LUMINA_API bool Remove(FStringView Path);

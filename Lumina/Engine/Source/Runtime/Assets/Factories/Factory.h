@@ -58,15 +58,14 @@ namespace Lumina
         
         virtual bool IsExtensionSupported(FStringView Ext) { return false; }
         
-        static bool ShowImportDialogue(CFactory* Factory, const FFixedString& RawPath, const FFixedString& DestinationPath);
         static bool ShowCreationDialogue(CFactory* Factory, FStringView Path);
 
         virtual bool HasImportDialogue() const { return false; }
         virtual bool HasCreationDialogue() const { return false; }
+        virtual bool DrawImportDialogue(const FFixedString& RawPath, const FFixedString& DestinationPath, eastl::any& ImportSettings, bool& bShouldClose) { return true; }
         
     protected:
         
-        virtual bool DrawImportDialogue(const FFixedString& RawPath, const FFixedString& DestinationPath, eastl::any& ImportSettings, bool& bShouldClose, bool& bShouldReimport) { return true; }
         virtual bool DrawCreationDialogue(FStringView Path, bool& bShouldClose) { return true; }
         
     };

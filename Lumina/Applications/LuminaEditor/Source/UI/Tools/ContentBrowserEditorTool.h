@@ -34,8 +34,8 @@ namespace Lumina
 
         struct FPendingRename
         {
-            FString OldName;
-            FString NewName;
+            FFixedString OldName;
+            FFixedString NewName;
         };
 
         struct FPendingDestroy
@@ -52,9 +52,9 @@ namespace Lumina
         {
         public:
             
-            FContentBrowserTileViewItem(FTileViewItem* InParent, const FFixedString& InPath)
+            FContentBrowserTileViewItem(FTileViewItem* InParent, const FileSystem::FFileInfo& InInfo)
                 : FTileViewItem(InParent)
-                , Path(InPath)
+                , FileInfo(InInfo)
             {
             }
 
@@ -68,56 +68,26 @@ namespace Lumina
 
             void DrawTooltip() const override
             {
-                ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(50, 200, 50, 255));
-                ImGuiX::TextUnformatted(FileSystem::FileName(Path));
-                ImGui::PopStyleColor();
-
-                if (IsAsset())
-                {
-                    if (const FAssetData* Asset = FAssetQuery().WithPath(Path).ExecuteFirst())
-                    {
-						ImGuiX::Text(LE_ICON_FILE " Asset Type: {0}", Asset->AssetClass);
-                    }
-                }
-                else if (IsLuaScript())
-                {
-                    ImGui::Text(LE_ICON_SCRIPT_TEXT " Lua Script");
-                }
-                else
-                {
-                    ImGui::TextUnformatted(LE_ICON_FOLDER " Directory");
-                }
-                
-                ImGui::Separator();
-
-                ImGui::Text(LE_ICON_FOLDER " %s", Path.c_str());
-
-                if (!IsDirectory())
-                {
-                    if (std::filesystem::exists(Path.c_str()))
-                    {
-                        uint64 Size = std::filesystem::file_size(Path.c_str());
-                        ImGuiX::Text(LE_ICON_FILE_CODE " Size: {0}", ImGuiX::FormatSize(Size).c_str());
-                    }
-                }
             }
             
-            bool HasContextMenu() override { return true; }
+            NODISCARD bool HasContextMenu() override { return true; }
 
             NODISCARD FStringView GetName() const override
             {
-                return FileSystem::FileName(Path);
+                return FileSystem::FileName(FileInfo.PathSource, true);
             }
             
-            void SetPath(FStringView NewPath) { Path = FFixedString{NewPath.begin(), NewPath.end()}; }
-            NODISCARD const FFixedString& GetPath() const { return Path; }
-            NODISCARD bool IsAsset() const { return FileSystem::IsLuminaAsset(Path); }
-            NODISCARD bool IsDirectory() const { return !IsAsset() && !IsLuaScript(); }
-            NODISCARD bool IsLuaScript() const { return FileSystem::IsLuaAsset(Path); }
-            NODISCARD FStringView GetExtension() const { return FileSystem::Extension(Path); }
+            NODISCARD const FileSystem::FFileInfo& GetFileInfo() const { return FileInfo; }
+            NODISCARD FStringView GetPathSource() const { return FileInfo.PathSource; }
+            NODISCARD FStringView GetVirtualPath() const { return FileInfo.VirtualPath; }
+            NODISCARD bool IsAsset() const { return FileInfo.IsLAsset(); }
+            NODISCARD bool IsDirectory() const { return FileInfo.IsDirectory(); }
+            NODISCARD bool IsLuaScript() const { return FileInfo.IsLua(); }
+            NODISCARD FString GetExtension() const { return FileInfo.GetExt(); }
             
         private:
-            FFixedString                 Path;
+            
+            FileSystem::FFileInfo FileInfo;
         };
 
         LUMINA_SINGLETON_EDITOR_TOOL(FContentBrowserEditorTool)

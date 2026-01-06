@@ -2,12 +2,11 @@
 
 
 #include "Core/DisableAllWarnings.h"
-#include "Platform/Platform.h"
 #include "Platform/GenericPlatform.h"
+#include "Platform/Platform.h"
 
 PRAGMA_DISABLE_ALL_WARNINGS
 #ifndef REFLECTION_PARSER
-#include "spdlog/fmt/fmt.h"
 #endif
 #include "EASTL/fixed_string.h"
 #include "EASTL/string.h"

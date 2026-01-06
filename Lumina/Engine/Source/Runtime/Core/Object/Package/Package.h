@@ -93,7 +93,7 @@ namespace Lumina
         int64 ExportTableOffset;
 
         /** Number of entries in the export table */
-        uint32 ExportCount;
+        int32 ExportCount;
 
         /** Byte offset from file start to the raw object data block */
         int64 ObjectDataOffset;
@@ -279,7 +279,6 @@ namespace Lumina
         /** Returns the thumbnail data for this package */
         LUMINA_API NODISCARD TSharedPtr<FPackageThumbnail> GetPackageThumbnail() const { return PackageThumbnail; }
 
-        LUMINA_API NODISCARD FString GetPackageFilename() const;
         LUMINA_API NODISCARD FFixedString GetPackagePath() const;
         
         LUMINA_API void MarkDirty() { bDirty = true; }

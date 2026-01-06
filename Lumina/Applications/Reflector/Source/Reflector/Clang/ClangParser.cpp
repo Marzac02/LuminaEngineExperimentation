@@ -9,7 +9,7 @@
 namespace Lumina::Reflection
 {
 
-    static const char* const GIncludePaths[] =
+    static const char* GIncludePaths[] =
     {
         "/Lumina/Engine/",
         "/Lumina/Engine/Source",
@@ -49,8 +49,6 @@ namespace Lumina::Reflection
 
     bool FClangParser::Parse(const eastl::string& SolutionPath, eastl::vector<eastl::shared_ptr<FReflectedHeader>>& Headers, eastl::shared_ptr<FReflectedProject>& Project)
     {
-        namespace fs = std::filesystem;
-        
         if (Project->TranslationUnit == nullptr)
         {
             auto start = std::chrono::high_resolution_clock::now();

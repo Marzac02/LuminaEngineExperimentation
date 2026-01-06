@@ -11,13 +11,6 @@ namespace Lumina::Paths
     
     /** Gets the directory where the Lumina engine is installed. */
     LUMINA_API FString GetEngineDirectory();
-    
-    /** 
-     * Returns the filename from the given path.
-     * @param InPath The full path.
-     * @param bRemoveExtension If true, removes the file extension from the result.
-     */
-    LUMINA_API FString FileName(const FString& InPath, bool bRemoveExtension = false);
 
     LUMINA_API FString GetExtension(const FString& InPath);
     
@@ -101,29 +94,34 @@ namespace Lumina::Paths
         requires(T s) { { s.data() } -> std::convertible_to<const T::value_type*>; }
     );
     
-   template <typename... Paths>
-   NODISCARD FFixedString Combine(Paths&&... InPaths)
+    template <typename... Paths>
+    NODISCARD FFixedString Combine(Paths&&... InPaths)
     {
         FFixedString Result;
-    
+
         auto AppendPath = [&Result, bFirst = true](FStringView Path) mutable
         {
             if (Path.empty())
             {
                 return;
             }
-        
-            if (!bFirst && !Result.empty())
+    
+            if (!bFirst && !Result.empty() && Result.back() != '/')
             {
                 Result += '/';
             }
+    
+            if (!bFirst && !Path.empty() && Path.front() == '/')
+            {
+                Path = Path.substr(1);
+            }
         
-            Result += Path.data();
+            Result.append(Path.data(), Path.length());
             bFirst = false;
         };
-    
+
         (AppendPath(Forward<Paths>(InPaths)), ...);
-    
+
         return Result;
     }
     

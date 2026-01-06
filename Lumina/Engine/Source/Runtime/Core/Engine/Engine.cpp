@@ -19,6 +19,7 @@
 #include "Renderer/RHIGlobals.h"
 #include "Scripting/Lua/Scripting.h"
 #include "TaskSystem/TaskSystem.h"
+#include "TaskSystem/ThreadedCallback.h"
 #include "Tools/UI/DevelopmentToolUI.h"
 #include "World/WorldManager.h"
 
@@ -30,8 +31,10 @@ namespace Lumina
     static FRHIViewportRef EngineViewport;
 
     
-    bool FEngine::Init(FApplication* App)
+    bool FEngine::Init()
     {
+        LUMINA_PROFILE_SCOPE();
+        
         //-------------------------------------------------------------------------
         // Initialize core engine state.
         //-------------------------------------------------------------------------
@@ -39,13 +42,11 @@ namespace Lumina
         FileSystem::Mount<FileSystem::FNativeFileSystem>("/Engine", Paths::GetEngineDirectory());
         
         CConfigRegistry::Get().Initialize();
-        CConfigRegistry::Get().LoadConfigInDirectory("/Engine/Config");
+        CConfigRegistry::Get().LoadEngineConfig();
         
-        LUMINA_PROFILE_SCOPE();
         FCoreDelegates::OnPreEngineInit.BroadcastAndClear();
         
         GEngine = this;
-        Application = App;
         
         FConsoleRegistry::Get().LoadFromConfig();
         
@@ -65,7 +66,7 @@ namespace Lumina
         #if WITH_DEVELOPMENT_TOOLS
         DeveloperToolUI = CreateDevelopmentTools();
         DeveloperToolUI->Initialize(UpdateContext);
-        Application->GetEventProcessor().RegisterEventHandler(DeveloperToolUI);
+        GApp->GetEventProcessor().RegisterEventHandler(DeveloperToolUI);
         #endif
         
         FCoreDelegates::OnPostEngineInit.BroadcastAndClear();
@@ -120,11 +121,15 @@ namespace Lumina
         
         if (!Windowing::GetPrimaryWindowHandle()->IsWindowMinimized())
         {
+            
+            
             // Frame Start
             //-------------------------------------------------------------------
             {
                 LUMINA_PROFILE_SECTION_COLORED("FrameStart", tracy::Color::Red);
                 UpdateContext.UpdateStage = EUpdateStage::FrameStart;
+                
+                MainThread::ProcessQueue();
                 
                 RenderManager->FrameStart(UpdateContext);
 
@@ -242,9 +247,9 @@ namespace Lumina
     #if WITH_DEVELOPMENT_TOOLS
     void FEngine::DrawDevelopmentTools()
     {
-        if (Application->HasAnyFlags(EApplicationFlags::DevelopmentTools))
+        if (GApp->HasAnyFlags(EApplicationFlags::DevelopmentTools))
         {
-            Application->RenderDeveloperTools(UpdateContext);
+            GApp->RenderDeveloperTools(UpdateContext);
         }
     }
     #endif

@@ -1,7 +1,7 @@
 #pragma once
 
-#include "Core/Math/Transform.h"
 #include <glm/glm.hpp>
+#include "Core/Math/Transform.h"
 #include "TransformComponent.generated.h"
 
 namespace Lumina

@@ -12,8 +12,9 @@ namespace Lumina
 	class LUMINA_API FAssetManager final
 	{
 	public:
-
-		FAssetManager();
+		FAssetManager() = default;
+		LE_NO_COPYMOVE(FAssetManager);
+		
 
 		static FAssetManager& Get();
 		
@@ -33,7 +34,7 @@ namespace Lumina
 	private:
 
 		FMutex								RequestMutex;
-		THashSet<TSharedPtr<FAssetRequest>>	ActiveRequests;
+		TVector<TSharedPtr<FAssetRequest>>	ActiveRequests;
 		
 	};
 	

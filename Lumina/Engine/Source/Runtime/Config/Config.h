@@ -7,6 +7,8 @@
 
 namespace Lumina
 {
+    
+    
     class CConfig;
     
     REFLECT()
@@ -22,15 +24,24 @@ namespace Lumina
         void RegisterConfig(CConfig* Config);
         void OnDestroy() override;
         
-        void LoadConfigInDirectory(FStringView Directory);
+        void LoadEngineConfig();
+        void LoadProjectConfig();
         void SaveConfigs();
         
         FFixedString GetConfigFilePath(CConfig* Config) const;
         
     private:
         
+        FFixedString ResolvePath(FStringView PathTemplate, FStringView ConfigType);
+        
         void LoadConfig(CConfig* Config);
         void SaveConfig(CConfig* Config, FStringView Path);
+        
+        template<typename T>
+        void LoadConfig()
+        {
+            LoadConfig(GetMutableDefault<T>());
+        }
         
         
     private:

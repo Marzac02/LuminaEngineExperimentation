@@ -131,7 +131,7 @@ namespace Lumina
     	
         //VulkanRenderContext->SetVulkanObjectName("ImGui Descriptor Pool", VK_OBJECT_TYPE_DESCRIPTOR_POOL, reinterpret_cast<uint64>(DescriptorPool));
     	
-        Assert(ImGui_ImplGlfw_InitForVulkan(Windowing::GetPrimaryWindowHandle()->GetWindow(), true))
+        ImGui_ImplGlfw_InitForVulkan(Windowing::GetPrimaryWindowHandle()->GetWindow(), true);
 
 		VkFormat Format = VK_FORMAT_R8G8B8A8_UNORM;
 		
@@ -156,7 +156,8 @@ namespace Lumina
         InitInfo.UseDynamicRendering			= true;
         InitInfo.MSAASamples					= VK_SAMPLE_COUNT_1_BIT;
 		
-        Assert(ImGui_ImplVulkan_Init(&InitInfo))
+        bool bInitImGui = ImGui_ImplVulkan_Init(&InitInfo);
+		LUM_ASSERT(bInitImGui)
 
 
 		FName SquareTexturePath		= Paths::GetEngineResourceDirectory() + "/Textures/WhiteSquareTexture.png";

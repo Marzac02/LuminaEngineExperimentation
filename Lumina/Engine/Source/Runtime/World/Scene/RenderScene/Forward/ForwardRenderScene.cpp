@@ -23,9 +23,10 @@ namespace Lumina
 
     FForwardRenderScene::FForwardRenderScene(CWorld* InWorld)
         : World(InWorld)
-        , LightData(), SceneGlobalData()
+        , LightData()
+        , SceneGlobalData()
         , ShadowAtlas(FShadowAtlasConfig())
-        , DebugVisualizationMode()
+        , DebugVisualizationMode(ERenderSceneDebugFlags::None)
         , ShadowCascades()
         , DepthMeshPass()
         , OpaqueMeshPass()
@@ -38,15 +39,12 @@ namespace Lumina
     {
         LOG_TRACE("Initializing Forward Render Scene");
         
-        DebugVisualizationMode = ERenderSceneDebugFlags::None;
         SceneViewport = GRenderContext->CreateViewport(Windowing::GetPrimaryWindowHandle()->GetExtent(), "Forward Renderer Viewport");
 
         InitBuffers();
         InitFrameResources();
 
         SwapchainResizedHandle = FRenderManager::OnSwapchainResized.AddMember(this, &FForwardRenderScene::SwapchainResized); 
-
-        Memory::Memzero(&LightData, sizeof(FSceneLightData));
         
     }
 
@@ -86,7 +84,7 @@ namespace Lumina
         EnvironmentPass(RenderGraph);
         BasePass(RenderGraph);
         TransparentPass(RenderGraph);
-        BatchedLineDraw(RenderGraph);
+        //BatchedLineDraw(RenderGraph);
         ToneMappingPass(RenderGraph);
         DebugDrawPass(RenderGraph);
     }
@@ -785,7 +783,7 @@ namespace Lumina
 
     void FForwardRenderScene::ClusterBuildPass(FRenderGraph& RenderGraph)
     {
-		if (LightData.NumLights == 0)
+		if (LightData.NumLights == 0 || DrawCommands.empty())
         {
             return;
         }
@@ -857,7 +855,7 @@ namespace Lumina
 
     void FForwardRenderScene::PointShadowPass(FRenderGraph& RenderGraph)
     {
-        if (PackedShadows[(uint32)ELightType::Point].empty())
+        if (PackedShadows[(uint32)ELightType::Point].empty() || DrawCommands.empty())
         {
             return;
         }
@@ -962,7 +960,7 @@ namespace Lumina
 
     void FForwardRenderScene::SpotShadowPass(FRenderGraph& RenderGraph)
     {
-        if (PackedShadows[(uint32)ELightType::Spot].empty())
+        if (PackedShadows[(uint32)ELightType::Spot].empty() || DrawCommands.empty())
         {
             return;
         }
@@ -1068,7 +1066,7 @@ namespace Lumina
 
     void FForwardRenderScene::DirectionalShowPass(FRenderGraph& RenderGraph)
     {
-        if (!LightData.bHasSun)
+        if (!LightData.bHasSun || DrawCommands.empty())
         {
             return;
         }
@@ -1136,7 +1134,7 @@ namespace Lumina
 
     void FForwardRenderScene::BasePass(FRenderGraph& RenderGraph)
     {
-        if (DrawCommands.empty() || !CVarRenderBasePass)
+        if (DrawCommands.empty())
         {
             return;
         }

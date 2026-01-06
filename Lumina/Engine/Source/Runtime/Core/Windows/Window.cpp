@@ -245,13 +245,13 @@ namespace Lumina
 		{
 		case GLFW_PRESS:
 			{
-				FApplication::Get().GetEventProcessor().Dispatch<FMouseButtonPressedEvent>(static_cast<EMouseCode>(Button),xpos, ypos);
+				GApp->GetEventProcessor().Dispatch<FMouseButtonPressedEvent>(static_cast<EMouseCode>(Button),xpos, ypos);
 			}
 			break;
 
 		case GLFW_RELEASE:
 			{
-				FApplication::Get().GetEventProcessor().Dispatch<FMouseButtonReleasedEvent>(static_cast<EMouseCode>(Button), xpos, ypos);
+				GApp->GetEventProcessor().Dispatch<FMouseButtonReleasedEvent>(static_cast<EMouseCode>(Button), xpos, ypos);
 			}
 			break;
 		}
@@ -267,7 +267,7 @@ namespace Lumina
 			WindowHandle->LastMouseY = ypos;
 			WindowHandle->bFirstMouseUpdate = false;
 
-			FApplication::Get().GetEventProcessor().Dispatch<FMouseMovedEvent>(xpos, ypos, 0.0, 0.0);
+			GApp->GetEventProcessor().Dispatch<FMouseMovedEvent>(xpos, ypos, 0.0, 0.0);
 			return;
 		}
 
@@ -277,7 +277,7 @@ namespace Lumina
 		WindowHandle->LastMouseX = xpos;
 		WindowHandle->LastMouseY = ypos;
 
-		FApplication::Get().GetEventProcessor().Dispatch<FMouseMovedEvent>(xpos, ypos, DeltaX, DeltaY);
+		GApp->GetEventProcessor().Dispatch<FMouseMovedEvent>(xpos, ypos, DeltaX, DeltaY);
 	}
 
 	void FWindow::KeyCallback(GLFWwindow* window, int Key, int Scancode, int Action, int Mods)
@@ -291,17 +291,17 @@ namespace Lumina
 		{
 		case GLFW_RELEASE:
 			{
-				FApplication::Get().GetEventProcessor().Dispatch<FKeyReleasedEvent>(static_cast<EKeyCode>(Key), Ctrl, Shift, Alt, Super);
+				GApp->GetEventProcessor().Dispatch<FKeyReleasedEvent>(static_cast<EKeyCode>(Key), Ctrl, Shift, Alt, Super);
 			}
 			break;
 		case GLFW_PRESS:
 			{
-				FApplication::Get().GetEventProcessor().Dispatch<FKeyPressedEvent>(static_cast<EKeyCode>(Key), Ctrl, Shift, Alt, Super);
+				GApp->GetEventProcessor().Dispatch<FKeyPressedEvent>(static_cast<EKeyCode>(Key), Ctrl, Shift, Alt, Super);
 			}
 			break;
 		case GLFW_REPEAT:
 			{
-				FApplication::Get().GetEventProcessor().Dispatch<FKeyPressedEvent>(static_cast<EKeyCode>(Key), Ctrl, Shift, Alt, Super, /* Repeat */ true);
+				GApp->GetEventProcessor().Dispatch<FKeyPressedEvent>(static_cast<EKeyCode>(Key), Ctrl, Shift, Alt, Super, /* Repeat */ true);
 			}
 			break;
 		}
@@ -313,7 +313,7 @@ namespace Lumina
 		WindowHandle->Specs.Extent.x = width;
 		WindowHandle->Specs.Extent.y = height;
 		
-		FApplication::Get().GetEventProcessor().Dispatch<FWindowResizeEvent>(width, height);
+		GApp->GetEventProcessor().Dispatch<FWindowResizeEvent>(width, height);
 		
 		OnWindowResized.Broadcast(WindowHandle, WindowHandle->Specs.Extent);
 	}
@@ -330,7 +330,7 @@ namespace Lumina
 			StringPaths.emplace_back(Paths[i]);
 		}
 		
-		FApplication::Get().GetEventProcessor().Dispatch<FFileDropEvent>(StringPaths, static_cast<float>(xpos), static_cast<float>(ypos));
+		GApp->GetEventProcessor().Dispatch<FFileDropEvent>(StringPaths, static_cast<float>(xpos), static_cast<float>(ypos));
 	}
 
 	void FWindow::WindowCloseCallback(GLFWwindow* window)

@@ -3,41 +3,52 @@
 
 #include <ranges>
 
+#include "Containers/Function.h"
 #include "Core/Templates/LuminaTemplate.h"
 #include "Paths/Paths.h"
 
 
 namespace Lumina::FileSystem
 {
-    static THashMap<FName, TVector<FFileSystem>> FileSystemStorage;
+    static THashMap<FFixedString, TVector<FFileSystem>> FileSystemStorage;
     
     
     namespace Detail
     {
-        template<typename TFunc>
+        template<typename TFunc, typename TFileSystemType = void>
         auto VisitFileSystems(FStringView Path, TFunc&& Func) -> decltype(Func(eastl::declval<FFileSystem&>()))
         {
+            constexpr bool bIsVoid = eastl::is_same_v<decltype(Func(eastl::declval<FFileSystem&>())), void>;
+
             for (auto& [Alias, FileSystems] : FileSystemStorage)
             {
-                if (!Path.starts_with(Alias.c_str()))
+                if (!Path.starts_with(Alias))
                 {
                     continue;
                 }
     
                 for (FFileSystem& FileSystem : std::ranges::reverse_view(FileSystems))
                 {
-                    if (auto Result = Func(FileSystem))
+                    if constexpr (bIsVoid)
                     {
-                        return Result;
+                        Func(FileSystem);
+                    }
+                    else
+                    {
+                        if (auto Result = Func(FileSystem))
+                        {
+                            return Result;
+                        }   
                     }
                 }
             }
             
-            return {};
+            if constexpr (!bIsVoid)
+            {
+                return {};
+            }
         }
     }
-    
-    
     
     bool FFileSystem::ReadFile(TVector<uint8>& Result, FStringView Path)
     {
@@ -64,6 +75,11 @@ namespace Lumina::FileSystem
         return eastl::visit([&](const auto& fs) { return fs.Exists(Path); }, Storage);
     }
 
+    bool FFileSystem::IsDirectory(FStringView Path) const
+    {
+        return eastl::visit([&](const auto& fs) { return fs.IsDirectory(Path); }, Storage);
+    }
+
     bool FFileSystem::CreateDir(FStringView Path) const
     {
         return eastl::visit([&](const auto& fs) { return fs.CreateDir(Path); }, Storage);
@@ -84,6 +100,16 @@ namespace Lumina::FileSystem
         return eastl::visit([&](const auto& fs) { return fs.Rename(Old, New); }, Storage);
     }
 
+    void FFileSystem::DirectoryIterator(FStringView Path, const TFunction<void(const FFileInfo&)>& Callback) const
+    {
+        eastl::visit([&](const auto& fs) { fs.DirectoryIterator(Path, Callback); }, Storage);
+    }
+
+    void FFileSystem::RecursiveDirectoryIterator(FStringView Path, const TFunction<void(const FFileInfo&)>& Callback) const
+    {
+        eastl::visit([&](const auto& fs) { fs.RecursiveDirectoryIterator(Path, Callback); }, Storage);
+    }
+
     FStringView FFileSystem::GetAliasPath() const
     {
         return eastl::visit([](const auto& fs) { return fs.GetAliasPath(); }, Storage);
@@ -93,7 +119,7 @@ namespace Lumina::FileSystem
     {
         return eastl::visit([](const auto& fs) { return fs.GetBasePath(); }, Storage);
     }
-
+    
     FStringView Extension(FStringView Path)
     {
         size_t Dot = Path.find_last_of('.');
@@ -148,12 +174,7 @@ namespace Lumina::FileSystem
     {
         bool VisitResult = Detail::VisitFileSystems(Path, [&](FFileSystem& FS)
         {
-            if (FS.CreateDir(Path))
-            {
-                return true;
-            }
-            
-            return false;
+            return FS.CreateDir(Path);
         });
         
         return VisitResult;
@@ -173,7 +194,12 @@ namespace Lumina::FileSystem
 
     bool IsDirectory(FStringView Path)
     {
-        return std::filesystem::is_directory(Path.data());
+        bool VisitResult = Detail::VisitFileSystems(Path, [&](FFileSystem& FS)
+        {
+            return FS.IsDirectory(Path);
+        });
+        
+        return VisitResult;
     }
 
     bool IsLuaAsset(FStringView Path)
@@ -237,11 +263,7 @@ namespace Lumina::FileSystem
     {
         bool VisitResult = Detail::VisitFileSystems(Path, [&](FFileSystem& FS)
         {
-            if (FS.WriteFile(Path, Data))
-            {
-                return true;
-            }
-            return false;
+            return FS.WriteFile(Path, Data);
         });
         
         return VisitResult;
@@ -251,11 +273,7 @@ namespace Lumina::FileSystem
     {
         bool VisitResult = Detail::VisitFileSystems(Path, [&](FFileSystem& FS)
         {
-            if (FS.WriteFile(Path, Data))
-            {
-                return true;
-            }
-            return false;
+            return FS.WriteFile(Path, Data);
         });
         
         return VisitResult;
@@ -265,9 +283,49 @@ namespace Lumina::FileSystem
     {
         bool Result = Detail::VisitFileSystems(Path, [&](FFileSystem& FS)
         {
-            if (FS.Exists(Path))
+            return FS.Exists(Path);
+        });
+        
+        return Result;
+    }
+    
+    void DirectoryIterator(FStringView Path, const TFunction<void(const FFileInfo&)>& Callback)
+    {
+        Detail::VisitFileSystems(Path, [&](const FFileSystem& FS)
+        {
+            FS.DirectoryIterator(Path, Callback);
+        });
+    }
+
+    void RecursiveDirectoryIterator(FStringView Path, const TFunction<void(const FFileInfo&)>& Callback)
+    {
+        Detail::VisitFileSystems(Path, [&](const FFileSystem& FS)
+        {
+            FS.RecursiveDirectoryIterator(Path, Callback);
+        });
+    }
+
+    FStringView RemoveExtension(FStringView Path)
+    {
+        size_t Dot = Path.find_last_of(".");
+        if (Dot != FString::npos)
+        {
+            return Path.substr(0, Dot);
+        }
+
+        return Path;
+    }
+
+    bool Rename(FStringView Old, FStringView New)
+    {
+        bool Result = Detail::VisitFileSystems(Old, [&](FFileSystem& FS)
+        {
+            if (FS.Exists(Old))
             {
-                return true;
+                if (FS.Rename(Old, New))
+                {
+                    return true;
+                }
             }
             
             return false;
@@ -276,19 +334,36 @@ namespace Lumina::FileSystem
         return Result;
     }
 
+    FFixedString MakeUniqueFilePath(FStringView BasePath)
+    {
+        FFixedString ReturnPath(BasePath.begin(), BasePath.end());
+        
+        int32 Counter = 0;
+        while (Exists(BasePath))
+        {
+            ReturnPath.assign(BasePath.begin(), BasePath.end()).append("_").append_convert(eastl::to_string(Counter));
+            Counter++;
+        }
+        
+        return ReturnPath;
+    }
+
     bool CreateFile(FStringView Path)
     {
         return std::filesystem::create_directory(Path.data());
     }
 
-    FFileSystem& Detail::AddFileSystemImpl(const FName& Alias, FFileSystem&& System)
+    FFileSystem& Detail::AddFileSystemImpl(const FFixedString& Alias, FFileSystem&& System)
     {
-        return FileSystemStorage[Alias].emplace_back(Move(System));
+        FFixedString Normalized = Paths::Normalize(Alias);
+        return FileSystemStorage[Normalized].emplace_back(Move(System));
     }
 
-    TVector<FFileSystem>* Detail::GetFileSystems(const FName& Alias)
+    TVector<FFileSystem>* Detail::GetFileSystems(const FFixedString& Alias)
     {
-        auto It = FileSystemStorage.find(Alias);
+        FFixedString Normalized = Paths::Normalize(Alias);
+
+        auto It = FileSystemStorage.find(Normalized);
         if (It == FileSystemStorage.end())
         {
             return nullptr;

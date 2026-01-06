@@ -11,6 +11,7 @@
 
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
+#include "FileSystem/FileSystem.h"
 
 namespace Lumina::Import::Textures
 {
@@ -165,7 +166,7 @@ namespace Lumina::Import::Textures
         ImageDescription.Extent = Result.Dimensions;
         ImageDescription.Flags.SetFlag(EImageCreateFlags::ShaderResource);
         ImageDescription.NumMips = 1;
-        ImageDescription.DebugName = Paths::FileName(RawFilePath, true);
+        ImageDescription.DebugName = FileSystem::FileName(RawFilePath, true);
         ImageDescription.InitialState = EResourceStates::ShaderResource;
         ImageDescription.bKeepInitialState = true;
         

@@ -41,23 +41,6 @@ namespace Lumina::Paths
         return CachedDirectories[EngineDirectoryName];
     }
 
-    FString FileName(const FString& InPath, bool bRemoveExtension)
-    {
-        size_t LastSlash = InPath.find_last_of("/\\");
-        FString FilePart = (LastSlash != FString::npos) ? InPath.substr(LastSlash + 1) : InPath;
-
-        if (bRemoveExtension)
-        {
-            size_t DotPos = FilePart.find_last_of('.');
-            if (DotPos != FString::npos)
-            {
-                return FilePart.substr(0, DotPos);
-            }
-        }
-
-        return FilePart;
-    }
-
     FString GetExtension(const FString& InPath)
     {
         size_t Dot = InPath.find_last_of('.');

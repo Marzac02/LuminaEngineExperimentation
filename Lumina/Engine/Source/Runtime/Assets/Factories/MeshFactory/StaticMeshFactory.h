@@ -1,6 +1,5 @@
 #pragma once
 
-#include "meshoptimizer.h"
 #include "Assets/Factories/Factory.h"
 #include "Assets/AssetTypes/Mesh/StaticMesh/StaticMesh.h"
 #include "Tools/Import/ImportHelpers.h"
@@ -24,7 +23,7 @@ namespace Lumina
         bool IsExtensionSupported(FStringView Ext) override { return Ext == ".gltf" || Ext == ".glb" || Ext == ".obj"; }
 
         bool HasImportDialogue() const override { return true; }
-        bool DrawImportDialogue(const FFixedString& RawPath, const FFixedString& DestinationPath, eastl::any& ImportSettings, bool& bShouldClose, bool& bShouldReimport) override;
+        bool DrawImportDialogue(const FFixedString& RawPath, const FFixedString& DestinationPath, eastl::any& ImportSettings, bool& bShouldClose) override;
         void TryImport(const FFixedString& RawPath, const FFixedString& DestinationPath, const eastl::any& ImportSettings) override;
         
     };

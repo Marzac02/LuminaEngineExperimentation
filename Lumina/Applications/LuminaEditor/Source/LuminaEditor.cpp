@@ -11,7 +11,7 @@
 
 namespace Lumina
 {
-    bool FEditorEngine::Init(FApplication* App)
+    bool FEditorEngine::Init()
     {
         InitializeCObjectSystem();
         
@@ -26,7 +26,7 @@ namespace Lumina
             LOG_INFO("No project passed in via command-line");
         }
         
-        bool bSuccess = FEngine::Init(App);
+        bool bSuccess = FEngine::Init();
         
         if (!ProjectPath.empty())
         {
@@ -141,7 +141,7 @@ namespace Lumina
     
     bool LuminaEditor::Initialize(int argc, char** argv)
     {
-        GEngine->Init(this);
+        GEngine->Init();
         
         return true;
     }

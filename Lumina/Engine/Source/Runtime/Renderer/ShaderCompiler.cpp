@@ -5,6 +5,7 @@
 #include "Core/Serialization/MemoryArchiver.h"
 #include "Core/Threading/Thread.h"
 #include "Core/Utils/Defer.h"
+#include "FileSystem/FileSystem.h"
 #include "Memory/Memory.h"
 #include "Paths/Paths.h"
 #include "Platform/Filesystem/FileHelper.h"
@@ -202,7 +203,7 @@ namespace Lumina
                 auto CompileStart = std::chrono::high_resolution_clock::now();
 
                 const FString& Path = Paths[i];
-                FString Filename = Paths::FileName(Path);
+                FStringView Filename = FileSystem::FileName(Path);
                 const FShaderCompileOptions& Opt = Options[i];
                 
                 for (const FString& Macro : Opt.MacroDefinitions)

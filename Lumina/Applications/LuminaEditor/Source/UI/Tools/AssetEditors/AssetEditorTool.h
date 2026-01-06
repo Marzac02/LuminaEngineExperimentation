@@ -1,5 +1,6 @@
 ﻿#pragma once
 
+#include "Core/Object/Cast.h"
 #include "Core/Object/Class.h"
 #include "Core/Object/Object.h"
 #include "Core/Object/ObjectHandleTyped.h"
@@ -39,6 +40,12 @@ namespace Lumina
         
     protected:
 
+        template<Concept::IsACObject T>
+        T* GetAsset()
+        {
+            return Cast<T>(Asset);
+        }
+        
         virtual bool ShouldGenerateThumbnailOnLoad() const { return false; }
         virtual void GenerateThumbnailOnLoad();
 

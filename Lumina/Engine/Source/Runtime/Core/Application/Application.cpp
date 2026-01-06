@@ -5,19 +5,20 @@
 #include "Core/Utils/CommandLineParser.h"
 #include "Core/Windows/Window.h"
 #include "Core/Windows/WindowTypes.h"
+#include "FileSystem/FileSystem.h"
 #include "Input/InputProcessor.h"
 #include "Paths/Paths.h"
 
 namespace Lumina
 {
-    FApplication* FApplication::Instance = nullptr;
+    LUMINA_API FApplication* GApp;
     FCommandLineParser FApplication::CommandLine;
 
     FApplication::FApplication(const FString& InApplicationName, uint32 AppFlags)
     {
         ApplicationName = InApplicationName;
         ApplicationFlags = AppFlags;
-        Instance = this;
+        GApp = this;
     }
 
     int32 FApplication::Run(int argc, char** argv)
@@ -96,7 +97,7 @@ namespace Lumina
 
     void FApplication::RequestExit()
     {
-        Instance->bExitRequested = true;
+        GApp->bExitRequested = true;
     }
     
     void FApplication::PreInitStartup()

@@ -71,6 +71,9 @@ namespace Lumina
 		void AssetDeleted(const FGuid& GUID);
 		void AssetRenamed(FStringView OldPath, FStringView NewPath);
 		void AssetSaved(CObject* Asset);
+	    
+	    FAssetData* GetAssetByGUID(const FGuid& GUID) const;
+	    FAssetData* GetAssetByPath(FStringView Path) const;
 
 		FAssetRegistryUpdatedDelegate& GetOnAssetRegistryUpdated() { return OnAssetRegistryUpdated; }
 		

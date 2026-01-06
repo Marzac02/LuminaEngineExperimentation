@@ -1,7 +1,6 @@
 ﻿#include "EditorUI.h"
 
 #include "Core/Application/Application.h"
-#include "imgui.h"
 #include "Assets/AssetRegistry/AssetRegistry.h"
 #include "Core/Object/Class.h"
 #include "Core/Object/Object.h"
@@ -75,23 +74,23 @@ namespace Lumina
     void FEditorUI::Initialize(const FUpdateContext& UpdateContext)
     {
         PropertyCustomizationRegistry = Memory::New<FPropertyCustomizationRegistry>();
-        PropertyCustomizationRegistry->RegisterPropertyCustomization(TBaseStructure<glm::vec2>::Get()->GetName(), []()
+        PropertyCustomizationRegistry->RegisterPropertyCustomization(TBaseStructure<glm::vec2>::Get()->GetName(), []
         {
             return FVec2PropertyCustomization::MakeInstance();
         });
-        PropertyCustomizationRegistry->RegisterPropertyCustomization(TBaseStructure<glm::vec3>::Get()->GetName(), []()
+        PropertyCustomizationRegistry->RegisterPropertyCustomization(TBaseStructure<glm::vec3>::Get()->GetName(), []
         {
             return FVec3PropertyCustomization::MakeInstance();
         });
-        PropertyCustomizationRegistry->RegisterPropertyCustomization(TBaseStructure<glm::vec4>::Get()->GetName(), []()
+        PropertyCustomizationRegistry->RegisterPropertyCustomization(TBaseStructure<glm::vec4>::Get()->GetName(), []
         {
             return FVec4PropertyCustomization::MakeInstance();
         });
-        PropertyCustomizationRegistry->RegisterPropertyCustomization(TBaseStructure<glm::quat>::Get()->GetName(), []()
+        PropertyCustomizationRegistry->RegisterPropertyCustomization(TBaseStructure<glm::quat>::Get()->GetName(), []
         {
             return FVec3PropertyCustomization::MakeInstance();
         });
-        PropertyCustomizationRegistry->RegisterPropertyCustomization(TBaseStructure<FTransform>::Get()->GetName(), []()
+        PropertyCustomizationRegistry->RegisterPropertyCustomization(TBaseStructure<FTransform>::Get()->GetName(), []
         {
             return FTransformPropertyCustomization::MakeInstance();
         });
@@ -1758,7 +1757,7 @@ namespace Lumina
         TVector<ESaveState> SaveStates;
         SaveStates.resize(DirtyPackages.size(), ESaveState::Idle);
         
-        ModalManager.CreateDialogue("Save Modified Packages", ImVec2(450, 600), [&, Packages = Move(DirtyPackages), PackageSelection, SaveStates] mutable
+        ModalManager.CreateDialogue("Save Modified Packages", ImVec2(450, 600), [&, Packages = Move(DirtyPackages), PackageSelection, SaveStates] () mutable
         {
             bool bShouldClose = false;
             
@@ -2272,7 +2271,7 @@ namespace Lumina
 
     void FEditorUI::OpenProjectDialog()
     {
-        ModalManager.CreateDialogue("Open Project", ImVec2(1000, 650), [this] -> bool
+        ModalManager.CreateDialogue("Open Project", ImVec2(1000, 650), [this] () -> bool
         {
             bool bShouldClose = false;
 
@@ -2428,7 +2427,7 @@ namespace Lumina
 
     void FEditorUI::NewProjectDialog()
     {
-        ModalManager.CreateDialogue("New Project", ImVec2(900, 600), [this] -> bool
+        ModalManager.CreateDialogue("New Project", ImVec2(900, 600), [this] () -> bool
         {
             ImGui::TextColored(ImVec4(0.7f, 0.7f, 0.7f, 1.0f), LE_ICON_FOLDER_PLUS " Create a new Lumina project");
             ImGui::Separator();
@@ -2488,7 +2487,7 @@ namespace Lumina
 
     void FEditorUI::ProjectSettingsDialog()
     {
-        ModalManager.CreateDialogue("Project Settings", ImVec2(1000, 700), [this] -> bool
+        ModalManager.CreateDialogue("Project Settings", ImVec2(1000, 700), [this] () -> bool
         {
             ImGui::BeginChild("SettingsCategories", ImVec2(200, 0), true);
             {
@@ -2548,7 +2547,7 @@ namespace Lumina
 
     void FEditorUI::AssetRegistryDialog()
     {
-        ModalManager.CreateDialogue("Asset Registry", ImVec2(1400, 800), [this] -> bool
+        ModalManager.CreateDialogue("Asset Registry", ImVec2(1400, 800), [this] () -> bool
         {
             return false;
         }, false);

@@ -5,7 +5,6 @@
 
 #include "Assets/AssetRegistry/AssetRegistry.h"
 #include "Core/Engine/Engine.h"
-#include "Core/Object/Cast.h"
 #include "Core/Object/Class.h"
 #include "Core/Object/ObjectIterator.h"
 #include "Core/Object/Archive/ObjectReferenceReplacerArchive.h"
@@ -49,8 +48,8 @@ namespace Lumina
 
     bool CPackage::Rename(const FName& NewName, CPackage* NewPackage)
     {
-		FString FileName = Paths::FileName(NewName.ToString(), true);
-		FString OldFileName = Paths::FileName(GetName().ToString(), true);
+		FStringView FileName = FileSystem::FileName(NewName.ToString(), true);
+		FStringView OldFileName = FileSystem::FileName(GetName().ToString(), true);
         bool bFileNameDirty = FileName != OldFileName;
      
         if (bFileNameDirty)
@@ -90,14 +89,10 @@ namespace Lumina
 
     CPackage* CPackage::CreatePackage(FStringView Path)
     {
-        CPackage* Package = FindObject<CPackage>(Path);
-        if (Package)
-        {
-            LOG_WARN("Attempted to create a package that already existed {}", Path);
-            return Package;
-        }
-        
-        Package = NewObject<CPackage>(nullptr, Path);
+        FStringView ObjectName = SanitizeObjectName(Path);
+        LUM_ASSERT(FindObject<CPackage>(ObjectName) == nullptr)
+
+        CPackage* Package = NewObject<CPackage>(nullptr, ObjectName);
         Package->AddToRoot();
 
         Package->PackageThumbnail = MakeSharedPtr<FPackageThumbnail>();
@@ -209,20 +204,24 @@ namespace Lumina
 
     CPackage* CPackage::FindPackageByPath(FStringView Path)
     {
-        CPackage* Package = FindObject<CPackage>(FName(Path.data()));
-        return Package;
+        FStringView ObjectName = SanitizeObjectName(Path);
+        return FindObject<CPackage>(ObjectName);
     }
 
     void CPackage::RenamePackage(FStringView OldPath, FStringView NewPath)
     {
-        if (CPackage* Package = FindObject<CPackage>(OldPath))
+        FStringView OldObjectName = SanitizeObjectName(OldPath);
+        
+        if (CPackage* Package = FindObject<CPackage>(OldObjectName))
         {
-            LUM_ASSERT(Package->Rename(NewPath, nullptr))
+            FStringView NewObjectName = SanitizeObjectName(NewPath);
+
+            LUM_ASSERT(Package->Rename(NewObjectName, nullptr))
             return;
         }
 
-		FName NewFileName = FileSystem::FileName(NewPath);
-		FName OldFileName = FileSystem::FileName(OldPath);
+		FName NewFileName = FileSystem::FileName(NewPath, true);
+		FName OldFileName = FileSystem::FileName(OldPath, true);
         bool bFileNameDirty = NewFileName != OldFileName;
         if (!bFileNameDirty)
         {
@@ -246,27 +245,29 @@ namespace Lumina
         TVector<FObjectExport> Exports;
         Reader << Exports;
 
-        for (FObjectExport& Export : Exports)
+        FObjectExport* Export = eastl::find_if(Exports.begin(), Exports.end(), [&](const FObjectExport& E)
         {
-            if (Export.ObjectName == OldFileName)
-            {
-                Export.ObjectName = NewFileName;
-                break;
-            }
+            return Export->ObjectName == NewFileName;
+        });
+        
+        if (Export)
+        {
+            Export->ObjectName = NewFileName;
+
+            FMemoryWriter Writer(FileBlob);
+            Writer.Seek(Header.ExportTableOffset);
+            Writer << Exports;
+
+            FileSystem::WriteFile(NewPath, FileBlob);
         }
-
-        FMemoryWriter Writer(FileBlob);
-        Writer.Seek(Header.ExportTableOffset);
-        Writer << Exports;
-
-        FileSystem::WriteFile(NewPath, FileBlob);
 	}
 
     CPackage* CPackage::LoadPackage(FStringView Path)
     {
         LUMINA_PROFILE_SCOPE();
 
-        FName ObjectName = FName(Path.data());
+        FStringView ObjectName = SanitizeObjectName(Path);
+        
         CPackage* Package = FindObject<CPackage>(ObjectName);
         if (Package)
         {
@@ -318,13 +319,9 @@ namespace Lumina
     {
         LUMINA_PROFILE_SCOPE();
 
-        if (Package == nullptr)
-        {
-            LOG_ERROR("Cannot save a null package! {}", Path);
-            return false;
-        }
+        LUM_ASSERT(Package != nullptr)
 
-        Package->FullyLoad();
+        (void)Package->FullyLoad();
         
         Package->ExportTable.clear();
         Package->ImportTable.clear();
@@ -346,8 +343,8 @@ namespace Lumina
         Package->WriteImports(Writer, Header, SaveContext);
         Package->WriteExports(Writer, Header, SaveContext);
         
-        Header.ImportCount = static_cast<uint32>(Package->ImportTable.size());
-        Header.ExportCount = static_cast<uint32>(Package->ExportTable.size());
+        Header.ImportCount = static_cast<int32>(Package->ImportTable.size());
+        Header.ExportCount = static_cast<int32>(Package->ExportTable.size());
 
         Header.ThumbnailDataOffset = Writer.Tell();
         if (!Package->PackageThumbnail)
@@ -654,11 +651,6 @@ namespace Lumina
         return nullptr;
     }
 
-    FString CPackage::GetPackageFilename() const
-    {
-        return Paths::FileName(GetName().c_str(), true);
-    }
-    
     FFixedString CPackage::GetPackagePath() const
     {
         FFixedString Path(GetName().c_str(), GetName().Length());

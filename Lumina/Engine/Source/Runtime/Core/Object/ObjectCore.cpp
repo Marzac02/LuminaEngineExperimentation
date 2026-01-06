@@ -60,7 +60,7 @@ namespace Lumina
     {
         LUMINA_PROFILE_SCOPE();
         
-        if (const FAssetData* Data = FAssetQuery().WithGuid(GUID).ExecuteFirst())
+        if (const FAssetData* Data = FAssetRegistry::Get().GetAssetByGUID(GUID))
         {
             return FAssetManager::Get().LoadAssetSynchronous(Data->Path, GUID);
         }
@@ -70,12 +70,23 @@ namespace Lumina
 
     CObject* StaticLoadObject(const FString& PathName)
     {
-        if (const FAssetData* Data = FAssetQuery().WithPath(PathName.begin(), PathName.end()).ExecuteFirst())
+        if (const FAssetData* Data = FAssetRegistry::Get().GetAssetByPath(PathName))
         {
             return StaticLoadObject(Data->AssetGUID);
         }
         
         return nullptr;
+    }
+
+    FStringView SanitizeObjectName(FStringView Name)
+    {
+        size_t ExtPos = Name.find_last_of(".");
+        if (ExtPos != FString::npos)
+        {
+            return Name.substr(0, ExtPos);
+        }
+        
+        return Name;
     }
 
     bool IsValid(const CObjectBase* Obj)

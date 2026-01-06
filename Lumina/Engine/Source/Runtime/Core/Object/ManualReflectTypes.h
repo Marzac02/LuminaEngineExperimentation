@@ -1,6 +1,5 @@
 ﻿#pragma once
 
-#include "ObjectMacros.h"
 
 
 #ifndef REFLECTION_PARSER
@@ -13,6 +12,8 @@
 
 
 #ifdef REFLECTION_PARSER
+
+#include "ObjectMacros.h"
 
 namespace glm
 {
@@ -68,7 +69,7 @@ namespace glm
         PROPERTY(Editable)
         float z;
 
-        PROPERTY()
+        PROPERTY(Editable)
         float w;
     };
 }

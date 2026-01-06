@@ -37,8 +37,9 @@ namespace Lumina
     
     CObject* CFactory::TryCreateNew(FStringView Path)
     {
-        CPackage* Package = CPackage::CreatePackage(Path);
-        FStringView FileName = FileSystem::FileName(Path);
+        FStringView SafePath = SanitizeObjectName(Path);
+        CPackage* Package = CPackage::CreatePackage(SafePath);
+        FStringView FileName = FileSystem::FileName(Path, true);
 
         CObject* New = CreateNew(FileName, Package);
         Package->ExportTable.emplace_back(New);
@@ -52,26 +53,7 @@ namespace Lumina
     {
         TryImport(ImportFile, DestinationPath, ImportSettings);
     }
-
-    bool CFactory::ShowImportDialogue(CFactory* Factory, const FFixedString& RawPath, const FFixedString& DestinationPath)
-    {
-        bool bShouldClose = false;
-        bool bShouldReimport = true;
-        
-        eastl::any ImportSettings;
-        if (Factory->DrawImportDialogue(RawPath, DestinationPath, ImportSettings, bShouldClose, bShouldReimport))
-        {
-            Task::AsyncTask(1, 1, [Factory, RawPath, DestinationPath, ImportSettings = Move(ImportSettings)](uint32, uint32, uint32)
-            {
-                Factory->Import(RawPath, DestinationPath, ImportSettings);
-            });
-            
-            return true;
-        }
-
-        return bShouldClose;
-    }
-
+    
     bool CFactory::ShowCreationDialogue(CFactory* Factory, FStringView Path)
     {
         bool bShouldClose = false;
@@ -79,8 +61,13 @@ namespace Lumina
         {
             Task::AsyncTask(1, 1, [Factory, Path = Move(Path)](uint32, uint32, uint32)
             {
-                Factory->TryCreateNew(Path);
-                CPackage* Package = CPackage::FindPackageByPath(Path);
+                CObject* NewAsset = Factory->TryCreateNew(Path);
+                if (NewAsset == nullptr)
+                {
+                    return;
+                }
+                
+                CPackage* Package = NewAsset->GetPackage();
                 CPackage::SavePackage(Package, Path);
             });
             

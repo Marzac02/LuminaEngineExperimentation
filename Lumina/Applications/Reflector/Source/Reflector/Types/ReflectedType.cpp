@@ -409,7 +409,15 @@ namespace Lumina::Reflection
         eastl::string LowerProject = Project;
         LowerProject.make_lower();
         
-        eastl::string PackageName = "/Script";
+        eastl::string PackageName = "/Script/";
+        if (LowerProject == "lumina")
+        {
+            PackageName += "Engine";
+        }
+        else
+        {
+            PackageName += Project;
+        }
         
 
         if (!Namespace.empty())

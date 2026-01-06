@@ -4,11 +4,10 @@
 #include "Assets/AssetTypes/Material/Material.h"
 #include "Assets/AssetTypes/Mesh/StaticMesh/StaticMesh.h"
 #include "Assets/Factories/TextureFactory/TextureFactory.h"
-#include "Core/Object/Cast.h"
 #include "Core/Object/Package/Package.h"
+#include "Core/Utils/Defer.h"
 #include "FileSystem/FileSystem.h"
 #include "Paths/Paths.h"
-
 #include "TaskSystem/TaskSystem.h"
 #include "Tools/Import/ImportHelpers.h"
 #include "Tools/UI/ImGui/ImGuiDesignIcons.h"
@@ -22,22 +21,30 @@ namespace Lumina
         return NewObject<CStaticMesh>(Package, Name);
     }
 
-    bool CStaticMeshFactory::DrawImportDialogue(const FFixedString& RawPath, const FFixedString& DestinationPath, eastl::any& ImportSettings, bool& bShouldClose, bool& bShouldReimport)
+    bool CStaticMeshFactory::DrawImportDialogue(const FFixedString& RawPath, const FFixedString& DestinationPath, eastl::any& ImportSettings, bool& bShouldClose)
     {
-        static Import::Mesh::FMeshImportOptions Options;
+        using namespace Import::Mesh;
         
-        TSharedPtr<Import::Mesh::FMeshImportData> ImportedData;
+        static FMeshImportOptions Options;
+        
+        TSharedPtr<FMeshImportData> ImportedData;
+        
+        if (ImportSettings.has_value())
+        {
+            ImportedData = eastl::any_cast<TSharedPtr<FMeshImportData>>(ImportSettings);
+        }
         
         bool bShouldImport = false;
-        if (bShouldReimport)
+        auto Reimport = [&]()
         {
-            ImportedData = MakeSharedPtr<Import::Mesh::FMeshImportData>();
+            ImportedData = MakeSharedPtr<FMeshImportData>();
+            ImportSettings = ImportedData;
             
             FName FileExtension = FileSystem::Extension(RawPath);
             
             if (FileExtension == ".obj")
             {
-                TExpected<Import::Mesh::FMeshImportData, FString> Expected = Import::Mesh::OBJ::ImportOBJ(Options, RawPath);
+                TExpected<FMeshImportData, FString> Expected = OBJ::ImportOBJ(Options, RawPath);
                 if (!Expected)
                 {
                     LOG_ERROR("Encountered problem importing GLTF: {0}", Expected.Error());
@@ -49,7 +56,7 @@ namespace Lumina
             }
             else if (FileExtension == ".gltf" || FileExtension == ".glb")
             {
-                TExpected<Import::Mesh::FMeshImportData, FString> Expected = Import::Mesh::GLTF::ImportGLTF(Options, RawPath);
+                TExpected<FMeshImportData, FString> Expected = GLTF::ImportGLTF(Options, RawPath);
                 if (!Expected)
                 {
                     LOG_ERROR("Encountered problem importing GLTF: {0}", Expected.Error());
@@ -59,8 +66,13 @@ namespace Lumina
                 
                 *ImportedData = Move(Expected.Value());
             }
-            bShouldReimport = false;
+        };
+        
+        if (ImGui::IsWindowAppearing())
+        {
+            Reimport();
         }
+        
         
         ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(20, 20));
         ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(12, 8));
@@ -96,7 +108,7 @@ namespace Lumina
                 ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(8, 4));
                 if (ImGui::Checkbox(("##" + FString(Label)).c_str(), &Option))
                 {
-                    bShouldReimport = true;
+                    Reimport();
                 }
                 ImGui::PopStyleVar();
             };
@@ -119,7 +131,7 @@ namespace Lumina
                 ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(8, 4));
                 if (ImGui::Checkbox("##ImportTextures", &Options.bImportTextures))
                 {
-                    bShouldReimport = true;
+                    Reimport();
                 }
                 ImGui::PopStyleVar();
             }
@@ -143,7 +155,7 @@ namespace Lumina
             ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(8, 4));
             if (ImGui::DragFloat("##ImportScale", &Options.Scale, 0.01f, 0.01f, 100.0f, "%.2f"))
             {
-                bShouldReimport = true;
+                Reimport();
             }
             ImGui::PopStyleVar();
             ImGui::PopItemWidth();
@@ -227,11 +239,10 @@ namespace Lumina
                 ImGui::PopStyleColor();
                 ImGui::Spacing();
     
-                if (ImGui::BeginChild("ImportTexturesChild", ImVec2(0, 200), true))
+                if (ImGui::BeginChild("ImportTexturesChild", ImVec2(0, 300), true))
                 {
                     ImGui::PushStyleVar(ImGuiStyleVar_CellPadding, ImVec2(8, 8));
-                    if (ImGui::BeginTable("ImportTextures", 2, 
-                        ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg | ImGuiTableFlags_Resizable))
+                    if (ImGui::BeginTable("ImportTextures", 2, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg | ImGuiTableFlags_Resizable))
                     {
                         ImGui::TableSetupColumn("Preview", ImGuiTableColumnFlags_WidthFixed, 150.0f);
                         ImGui::TableSetupColumn("Path", ImGuiTableColumnFlags_WidthStretch);
@@ -240,40 +251,52 @@ namespace Lumina
                         ImGui::TableHeadersRow();
                         ImGui::PopStyleColor();
     
-                        for (const Import::Mesh::FMeshImportImage& Image : ImportedData->Textures)
-                        {
-                            FString ImagePath = Paths::Parent(RawPath) + "/" + Image.RelativePath;
-                            if (!Paths::Exists(ImagePath))
-                            {
-                                continue;
-                            }
+                        ImGuiListClipper Clipper;
+                        Clipper.Begin(((int)ImportedData->Textures.size()));
                         
-                            ImGui::TableNextRow();
-                            ImGui::TableSetColumnIndex(0);
+                        TVector<FMeshImportImage> TextureVector;
+                        TextureVector.assign(ImportedData->Textures.begin(), ImportedData->Textures.end());
+                        
+                        while (Clipper.Step())
+                        {
+                            for (int i = Clipper.DisplayStart; i < Clipper.DisplayEnd; i++)
+                            {
+                                const FMeshImportImage& Image = TextureVector[i];
+    
+                                FString ImagePath = Paths::Parent(RawPath) + "/" + Image.RelativePath;
+                                if (!Paths::Exists(ImagePath))
+                                {
+                                    continue;
+                                }
+                        
+                                ImGui::TableNextRow();
+                                ImGui::TableSetColumnIndex(0);
                             
-                            ImVec2 imageSize(128.0f, 128.0f);
-                            ImVec2 cursorPos = ImGui::GetCursorScreenPos();
-                            ImGui::GetWindowDrawList()->AddRect(
-                                cursorPos, 
-                                ImVec2(cursorPos.x + imageSize.x + 4, cursorPos.y + imageSize.y + 4),
-                                IM_COL32(100, 100, 100, 255), 2.0f);
+                                ImVec2 ImageSize(128.0f, 128.0f);
+                                ImVec2 CursorPos = ImGui::GetCursorScreenPos();
+                                ImGui::GetWindowDrawList()->AddRect(
+                                    CursorPos, 
+                                    ImVec2(CursorPos.x + ImageSize.x + 4, CursorPos.y + ImageSize.y + 4),
+                                    IM_COL32(100, 100, 100, 255), 2.0f);
                             
-                            ImGui::SetCursorScreenPos(ImVec2(cursorPos.x + 2, cursorPos.y + 2));
+                                ImGui::SetCursorScreenPos(ImVec2(CursorPos.x + 2, CursorPos.y + 2));
 
-                            ImGui::Image(ImGuiX::ToImTextureRef(ImagePath), imageSize);
+                                ImGui::Image(ImGuiX::ToImTextureRef(ImagePath), ImageSize);
 
-                            ImGui::TableSetColumnIndex(1);
-                            ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.9f, 0.9f, 0.9f, 1.0f));
-                            ImGuiX::TextWrapped("{0}", Paths::FileName(ImagePath));
-                            ImGui::PopStyleColor();
-                            ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.7f, 0.7f, 0.7f, 1.0f));
-                            ImGuiX::TextWrapped("{0}", ImagePath);
-                            ImGui::PopStyleColor();
+                                ImGui::TableSetColumnIndex(1);
+                                ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.9f, 0.9f, 0.9f, 1.0f));
+                                ImGuiX::TextWrapped("{0}", FileSystem::FileName(ImagePath));
+                                ImGui::PopStyleColor();
+                                ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.7f, 0.7f, 0.7f, 1.0f));
+                                ImGuiX::TextWrapped("{0}", ImagePath);
+                                ImGui::PopStyleColor();
+                            }
                         }
+                        
                         ImGui::EndTable();
+                        ImGui::PopStyleVar();
+                        ImGui::EndChild();
                     }
-                    ImGui::PopStyleVar();
-                    ImGui::EndChild();
                 }
             }
         }
@@ -299,6 +322,8 @@ namespace Lumina
         
         if (ImGui::Button("Import", ImVec2(buttonWidth, 0)))
         {
+            ImportSettings = Move(ImportedData);
+
             bShouldImport = true;
             bShouldClose = true;
         }
@@ -323,11 +348,6 @@ namespace Lumina
         
         ImGui::PopStyleVar(2);
         
-        if (bShouldReimport)
-        {
-            ImportSettings = Move(ImportedData);
-        }
-        
         return bShouldImport;
     }
     
@@ -337,18 +357,8 @@ namespace Lumina
         
         using namespace Import::Mesh;
 
-        TSharedPtr<FMeshImportData> ImportData;
-        
-        try
-        {
-             ImportData = eastl::any_cast<TSharedPtr<FMeshImportData>>(ImportSettings);
-        }
-        catch (std::bad_any_cast& E)
-        {
-            LOG_ERROR("Import Error: {0}", E.what());
-            return;
-        }
-        
+        TSharedPtr<FMeshImportData> ImportData = eastl::any_cast<TSharedPtr<FMeshImportData>>(ImportSettings);
+
         if (ImportData == nullptr)
         {
             return;
@@ -357,8 +367,7 @@ namespace Lumina
         for (TUniquePtr<FMeshResource>& MeshResource : ImportData->Resources)
         {
             size_t LastSlashPos = DestinationPath.find_last_of('/');
-            FFixedString QualifiedPath = DestinationPath.substr(0, LastSlashPos + 1)
-                .append_convert(MeshResource->Name.ToString());
+            FFixedString QualifiedPath = DestinationPath.substr(0, LastSlashPos + 1).append_convert(MeshResource->Name.ToString());
             
             if (Counter)
             {
@@ -372,26 +381,29 @@ namespace Lumina
 
             if (!ImportData->Textures.empty())
             {
-                TVector<Import::Mesh::FMeshImportImage> Images(ImportData->Textures.begin(), ImportData->Textures.end());
+                TVector<FMeshImportImage> Images(ImportData->Textures.begin(), ImportData->Textures.end());
                 uint32 WorkSize = (uint32)Images.size();
                 Task::ParallelFor(WorkSize, [&](uint32 Index)
                 {
-                    const Import::Mesh::FMeshImportImage& Texture = Images[Index];
+                    const FMeshImportImage& Texture = Images[Index];
                 
                     CTextureFactory* TextureFactory = CTextureFactory::StaticClass()->GetDefaultObject<CTextureFactory>();
                 
-                    FString ParentPath = Paths::Parent(RawPath);
-                    FString TexturePath = ParentPath + "/" + Texture.RelativePath;
-                    FString TextureFileName = Paths::FileName(TexturePath, true);
-                                         
-                    FString DestinationParent = Paths::Parent(QualifiedPath);
-                    FString TextureDestination = DestinationParent + "/" + TextureFileName;
+                    FStringView ParentPath = FileSystem::Parent(RawPath, true);
+                    FFixedString TexturePath;
+                    TexturePath.append_convert(ParentPath.data(), ParentPath.length()).append("/").append_convert(Texture.RelativePath);
+                    FStringView TextureFileName = FileSystem::FileName(TexturePath, true);
+                    
+                    FStringView DestinationParent = FileSystem::Parent(QualifiedPath, true);
+                    
+                    FFixedString TextureDestination;
+                    TextureDestination.append_convert(DestinationParent.data(), DestinationParent.length()).append("/").append_convert(TextureFileName.data(), TextureFileName.length());
                     CPackage::AddPackageExt(TextureDestination);
 
-                    //if (!FindObject<CPackage>(Paths::ConvertToVirtualPath(TextureDestination)))
-                    //{
-                    //    TextureFactory->Import(TexturePath, TextureDestination);
-                    //}
+                    if (!FindObject<CPackage>(TextureDestination))
+                    {
+                        TextureFactory->Import(TexturePath, TextureDestination);
+                    }
                 });
             }
 
@@ -409,6 +421,8 @@ namespace Lumina
             CPackage* NewPackage = NewMesh->GetPackage();
             CPackage::SavePackage(NewPackage, NewPackage->GetPackagePath());
             FAssetRegistry::Get().AssetCreated(NewMesh);
+            
+            NewMesh->ConditionalBeginDestroy();
             
             Counter++;
         }

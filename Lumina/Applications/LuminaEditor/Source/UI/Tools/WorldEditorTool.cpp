@@ -2,14 +2,17 @@
 #include "EditorToolContext.h"
 #include "Assets/AssetRegistry/AssetRegistry.h"
 #include "Core/Console/ConsoleVariable.h"
+#include "Core/Object/Class.h"
 #include "Core/Object/ObjectIterator.h"
 #include "Core/Object/Package/Package.h"
 #include "EASTL/sort.h"
 #include "glm/gtc/type_ptr.hpp"
 #include "glm/gtx/matrix_decompose.hpp"
+#include "Memory/SmartPtr.h"
 #include "Paths/Paths.h"
 #include "Tools/ComponentVisualizers/ComponentVisualizer.h"
 #include "Tools/Dialogs/Dialogs.h"
+#include "Tools/UI/ImGui/ImGuiFonts.h"
 #include "Tools/UI/ImGui/ImGuiX.h"
 #include "World/WorldManager.h"
 #include "World/Entity/EntityUtils.h"
@@ -649,7 +652,7 @@ namespace Lumina
         
         TUniquePtr<FTagModalState> State = MakeUniquePtr<FTagModalState>();
         
-        ToolContext->PushModal("Add Tag", ImVec2(400.0f, 180.0f), [this, Entity, State = Move(State)] -> bool
+        ToolContext->PushModal("Add Tag", ImVec2(400.0f, 180.0f), [this, Entity, State = Move(State)] () -> bool
         {
             bool bTagAdded = false;
     
@@ -757,7 +760,7 @@ namespace Lumina
     void FWorldEditorTool::PushAddComponentModal(entt::entity Entity)
     {
         TUniquePtr<ImGuiTextFilter> Filter = MakeUniquePtr<ImGuiTextFilter>();
-        ToolContext->PushModal("Add Component", ImVec2(650.0f, 500.0f), [this, Entity, Filter = Move(Filter)] -> bool
+        ToolContext->PushModal("Add Component", ImVec2(650.0f, 500.0f), [this, Entity, Filter = Move(Filter)] () -> bool
         {
             bool bComponentAdded = false;
     
@@ -924,7 +927,7 @@ namespace Lumina
 
     void FWorldEditorTool::PushRenameEntityModal(entt::entity Entity)
     {
-        ToolContext->PushModal("Rename Entity", ImVec2(600.0f, 350.0f), [this, Entity] -> bool
+        ToolContext->PushModal("Rename Entity", ImVec2(600.0f, 350.0f), [this, Entity] () -> bool
         {
             FName& Name = World->GetEntityRegistry().get<SNameComponent>(Entity).Name;
             FString CopyName = Name.ToString();

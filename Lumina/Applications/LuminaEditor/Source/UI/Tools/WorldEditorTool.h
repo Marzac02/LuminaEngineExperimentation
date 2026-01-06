@@ -1,17 +1,17 @@
-﻿    #pragma once
+﻿#pragma once
 
 #define USE_IMGUI_API
+#include <imgui.h>
 #include "EditorTool.h"
 #include "Core/Delegates/Delegate.h"
-#include "Tools/UI/ImGui/ImGuiFonts.h"
-#include <imgui.h>
+#include "Core/Object/Class.h"
 #include "Tools/UI/ImGui/ImGuizmo.h"
 #include "Tools/UI/ImGui/Widgets/TreeListView.h"
 #include "UI/Properties/PropertyTable.h"
 #include "World/Entity/Components/NameComponent.h"
 #include "World/Entity/Systems/EntitySystem.h"
 
-namespace Lumina
+    namespace Lumina
 {
     DECLARE_MULTICAST_DELEGATE(FOnGamePreview);
     

@@ -5,6 +5,7 @@
 #include "Renderer/MeshData.h"
 #include <tinyobjloader/tiny_obj_loader.h>
 
+#include "FileSystem/FileSystem.h"
 #include "Paths/Paths.h"
 
 
@@ -39,7 +40,7 @@ namespace Lumina::Import::Mesh::OBJ
         FMeshImportData ImportData;
         
         TUniquePtr<FMeshResource> MeshResource = MakeUniquePtr<FMeshResource>();
-        MeshResource->Name = Paths::FileName(FilePath.data(), true);
+        MeshResource->Name = FileSystem::FileName(FilePath, true);
 
         if (ImportOptions.bImportTextures)
         {

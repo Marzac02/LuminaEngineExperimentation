@@ -1,7 +1,6 @@
 ﻿#pragma once
 
-#include <ThirdParty/imgui/imgui.h>
-
+#include <imgui/imgui.h>
 #include "Events/EventProcessor.h"
 #include "Tools/EditorToolContext.h"
 #include "Tools/EditorToolModal.h"

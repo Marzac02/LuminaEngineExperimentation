@@ -6,12 +6,6 @@
 
 namespace Lumina
 {
-    FAssetManager::FAssetManager()
-    {
-        
-    }
-
-
     FAssetManager& FAssetManager::Get()
     {
         static FAssetManager Instance;
@@ -83,9 +77,7 @@ namespace Lumina
 
         bAlreadyInQueue = false;
         TSharedPtr<FAssetRequest> NewRequest = MakeSharedPtr<FAssetRequest>(InAssetPath, GUID);
-        ActiveRequests.emplace(NewRequest);
-        return NewRequest;
-        
+        return ActiveRequests.emplace_back(NewRequest);
     }
 
     void FAssetManager::SubmitAssetRequest(const TSharedPtr<FAssetRequest>& Request)
@@ -108,6 +100,7 @@ namespace Lumina
             void ExecuteRange(enki::TaskSetPartition range, uint32_t threadnum) override
             {
                 Request->Process();
+                
                 Manager->NotifyAssetRequestCompleted(Request);
             }
         };

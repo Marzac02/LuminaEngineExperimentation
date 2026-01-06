@@ -275,7 +275,7 @@ namespace Lumina::ImGuiX::Notifications
                         ImGui::Separator();
                     }
 
-                    ImGui::Text( pMessage ); // Render content text
+                    ImGui::Text(pMessage); // Render content text
                 }
 
                 ImGui::PopTextWrapPos();

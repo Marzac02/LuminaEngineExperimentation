@@ -89,7 +89,11 @@ inline LONG WINAPI ExceptionHandler(EXCEPTION_POINTERS* exceptionInfo)
     __debugbreak(); \
     std::unreachable(); \
 
+#if defined(LUMINA_DEBUG)
 #define LUM_ENABLE_ASSERTS 1
+#else
+#define LUM_ENABLE_ASSERTS 0
+#endif
 
 #if LUM_ENABLE_ASSERTS
 // Macro for assertion, triggering a breakpoint if the condition fails
@@ -129,9 +133,9 @@ do {                                                    \
     }                                                   \
 } while (false)
 #else
-#define Assert(...) __VA_ARGS__;
-#define AssertMsg(...) __VA_ARGS__;
-#define EnsureMsg(...) __VA_ARGS__;
+#define Assert(...) 
+#define AssertMsg(...) 
+#define EnsureMsg(...) 
 #endif
 
 

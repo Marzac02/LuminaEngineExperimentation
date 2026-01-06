@@ -9,6 +9,7 @@
 #include <glm/glm.hpp>
 
 #include "ImportHelpers.h"
+#include "FileSystem/FileSystem.h"
 #include "Memory/Memory.h"
 #include "Paths/Paths.h"
 #include "Renderer/MeshData.h"
@@ -77,16 +78,36 @@ namespace Lumina::Import::Mesh::GLTF
         
         const fastgltf::Asset& Asset = ExpectedAsset.Value();
         
-        FString Name = Paths::FileName(FilePath.data(), true);
+        FStringView Name = FileSystem::FileName(FilePath, true);
         
         FMeshImportData ImportData;
-        //ImportData.Resources.reserve(Asset.meshes.size());
+        ImportData.Resources.reserve(Asset.meshes.size());
 
+        THashSet<FString> SeenMeshes;
         for (const fastgltf::Mesh& Mesh : Asset.meshes)
         {
+            auto It = SeenMeshes.find(Mesh.name.c_str());
+            if (It != SeenMeshes.end())
+            {
+                continue;
+            }
+            
+            SeenMeshes.emplace(Mesh.name.c_str());
+            
             TUniquePtr<FMeshResource> NewResource = MakeUniquePtr<FMeshResource>();
             NewResource->GeometrySurfaces.reserve(Mesh.primitives.size());
-            NewResource->Name = Mesh.name.empty() ? FName(Name + "_" + eastl::to_string(ImportData.Resources.size())) : Mesh.name.c_str();
+            
+            FFixedString MeshName;
+            if (Mesh.name.empty())
+            {
+                MeshName.append(Name.begin(), Name.end()).append_convert(eastl::to_string(ImportData.Resources.size()));
+            }
+            else
+            {
+                MeshName.append_convert(Mesh.name);
+            }
+            
+            NewResource->Name = MeshName;
 
             SIZE_T IndexCount = 0;
 
@@ -115,7 +136,19 @@ namespace Lumina::Import::Mesh::GLTF
             {
                 FGeometrySurface NewSurface;
                 NewSurface.StartIndex = (uint32)IndexCount;
-                NewSurface.ID = Mesh.name.empty() ? FName(Name + "_" + eastl::to_string(NewResource->GetNumSurfaces())) : Mesh.name.c_str();
+                
+                FFixedString PrimitiveName;
+                if (Mesh.name.empty())
+                {
+                    PrimitiveName.append(Name.begin(), Name.end()).append_convert(eastl::to_string(NewResource->GetNumSurfaces()));
+                }
+                else
+                {
+                    PrimitiveName.append_convert(Mesh.name);
+                }
+            
+                
+                NewSurface.ID = PrimitiveName;
                 
                 if (Primitive.materialIndex.has_value())
                 {

@@ -2,8 +2,6 @@
 #include "Core/Object/Package/Package.h"
 #include "Core/Object/Package/Thumbnail/PackageThumbnail.h"
 #include "FileSystem/FileSystem.h"
-#include "Paths/Paths.h"
-#include "Platform/Filesystem/FileHelper.h"
 #include "Renderer/RenderContext.h"
 #include "Renderer/RHIGlobals.h"
 #include "Tools/UI/ImGui/ImGuiX.h"

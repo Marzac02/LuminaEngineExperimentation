@@ -27,10 +27,8 @@ namespace Lumina
 	public:
 
 		FApplication(const FString& InApplicationName = "Unnamed Application", uint32 AppFlags = 0);
-		virtual ~FApplication() = default;
-
-		static FApplication& Get() { return *Instance; }
-
+		LE_NO_COPYMOVE(FApplication);
+		
 		int32 Run(int argc, char** argv);
 
 		virtual bool Initialize(int argc, char** argv) = 0;
@@ -63,13 +61,12 @@ namespace Lumina
 
 		FEventProcessor				EventProcessor;
 		
-		bool bExitRequested			= false;
 		
 		FWindow*					MainWindow = nullptr;
 		
 		FString ApplicationName =	"Unnamed Application";
 		
-		static FApplication*		Instance;
+		bool bExitRequested			= false;
 		
 		uint32						ApplicationFlags = 0;
 
@@ -77,6 +74,9 @@ namespace Lumina
 
 		static FCommandLineParser	CommandLine;
 	};
+	
+	LUMINA_API extern FApplication* GApp;
+
 
 	/* Implemented by client */
 	static FApplication* CreateApplication(int argc, char** argv);

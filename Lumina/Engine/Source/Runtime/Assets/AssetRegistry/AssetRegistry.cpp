@@ -23,20 +23,29 @@ namespace Lumina
     void FAssetRegistry::RunInitialDiscovery()
     {
         LUMINA_PROFILE_SCOPE();
+        namespace FS = FileSystem;
 
+        
         ClearAssets();
         
         TFixedVector<FFixedString, 256> PackagePaths;
-        //FileSystem::ForEachFileSystem([&](FileSystem::FFileSystem& FS)
-        //{
-        //    FileSystem::DirectoryIterator(FS.GetBasePath(), [&](FStringView Path)
-        //    {
-        //        if (FileSystem::IsLuminaAsset(Path))
-        //        {
-        //            PackagePaths.emplace_back(FFixedString{Path.begin(), Path.end()});
-        //        }
-        //    });
-        //});
+        
+        auto Callback = [&](const FS::FFileInfo& File)
+        {
+            if (File.IsDirectory())
+            {
+                return;
+            }
+            
+            if (File.IsLAsset())
+            {
+                PackagePaths.emplace_back(File.VirtualPath);
+            }
+        };
+        
+        FS::RecursiveDirectoryIterator("/Engine/Resources/Content", Callback);
+        FS::RecursiveDirectoryIterator("/Game/Content", Callback);
+
         
         uint32 NumPackages = (uint32)PackagePaths.size();
         Task::AsyncTask(NumPackages, NumPackages, [this, PackagePaths = std::move(PackagePaths)] (uint32 Start, uint32 End, uint32)
@@ -62,7 +71,6 @@ namespace Lumina
     void FAssetRegistry::AssetCreated(CObject* Asset)
     {
         FFixedString FilePath = Asset->GetPackage()->GetPackagePath();
-        CPackage::AddPackageExt(FilePath);
         
         TSharedPtr<FAssetData> AssetData = MakeSharedPtr<FAssetData>();
         AssetData->AssetClass   = Asset->GetClass()->GetName();
@@ -111,22 +119,42 @@ namespace Lumina
         
         GetOnAssetRegistryUpdated().Broadcast();
     }
+
+    FAssetData* FAssetRegistry::GetAssetByGUID(const FGuid& GUID) const
+    {
+        auto It = eastl::find_if(Assets.begin(), Assets.end(), [&](const auto& Data)
+        {
+            return Data->AssetGUID == GUID;
+        });
+        
+        return It == Assets.end() ? nullptr : It->get();
+    }
+
+    FAssetData* FAssetRegistry::GetAssetByPath(FStringView Path) const
+    {
+        auto It = eastl::find_if(Assets.begin(), Assets.end(), [&](const auto& Data)
+        {
+            return Data->Path == Path;
+        });
+        
+        return It == Assets.end() ? nullptr : It->get();
+    }
     
+
     void FAssetRegistry::ProcessPackagePath(FStringView Path)
     {
-        TVector<uint8> PackageBlob;
-        if (!FileHelper::LoadFileToArray(PackageBlob, Path))
+        TVector<uint8> Data;
+        if (!FileSystem::ReadFile(Data, Path))
         {
             LOG_ERROR("Failed to load package file at path {}", Path);
 
             return;
         }
 
-        FName PackageFileName = Paths::FileName(Path.data(), true);
-
-
+        FName PackageFileName = FileSystem::FileName(Path, true);
+        
         FPackageHeader Header;
-        FMemoryReader Reader(PackageBlob);
+        FMemoryReader Reader(Data);
         Reader << Header;
 
         Reader.Seek(Header.ExportTableOffset);
@@ -134,22 +162,17 @@ namespace Lumina
         TVector<FObjectExport> Exports;
         Reader << Exports;
 
-        TOptional<FObjectExport> Export;
-        for (const FObjectExport& E : Exports)
+        FObjectExport* Export = eastl::find_if(Exports.begin(), Exports.end(), [&](const FObjectExport& E)
         {
-           if (E.ObjectName == PackageFileName)
-           {
-               Export = E;
-               break;
-           }
-        }
+            return E.ObjectName == PackageFileName; 
+        });
 
-        if (!Export.has_value())
+        if (Export == Exports.end())
         {
-            LOG_ERROR("No primary asset found in package");
+            LOG_ERROR("Failed to find asset in package file: {0}", Path);
             return;
         }
-
+        
         TSharedPtr<FAssetData> AssetData = MakeSharedPtr<FAssetData>();
         AssetData->AssetClass   = Export->ClassName;
         AssetData->AssetGUID    = Export->ObjectGUID;

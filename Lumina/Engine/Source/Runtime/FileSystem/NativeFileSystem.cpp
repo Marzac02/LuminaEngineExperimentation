@@ -2,12 +2,15 @@
 #include "NativeFileSystem.h"
 #include <fstream>
 
+#include "FileInfo.h"
+#include "Paths/Paths.h"
+
 
 namespace Lumina::FileSystem
 {
-    FNativeFileSystem::FNativeFileSystem(const FName& InAliasPath, FStringView InBasePath) noexcept
-        : AliasPath(InAliasPath.c_str())
-        , BasePath(InBasePath.begin(), InBasePath.end())
+    FNativeFileSystem::FNativeFileSystem(const FFixedString& InAliasPath, FStringView InBasePath) noexcept
+        : AliasPath(Paths::Normalize(InAliasPath))
+        , BasePath(Paths::Normalize(InBasePath))
     {
     }
 
@@ -127,6 +130,11 @@ namespace Lumina::FileSystem
         return std::filesystem::exists(ResolveVirtualPath(Path).c_str());
     }
 
+    bool FNativeFileSystem::IsDirectory(FStringView Path) const
+    {
+        return std::filesystem::is_directory(ResolveVirtualPath(Path).c_str());
+    }
+
     bool FNativeFileSystem::CreateDir(FStringView Path) const
     {
         return std::filesystem::create_directory(ResolveVirtualPath(Path).c_str());
@@ -144,7 +152,146 @@ namespace Lumina::FileSystem
 
     bool FNativeFileSystem::Rename(FStringView Old, FStringView New) const
     {
-        std::filesystem::rename(ResolveVirtualPath(Old).c_str(), ResolveVirtualPath(New).c_str());
+        FFixedString OldResolvedPath = ResolveVirtualPath(Old);
+        FFixedString NewResolvedPath = ResolveVirtualPath(New);
+        
+        std::error_code EC;
+        std::filesystem::rename(OldResolvedPath.c_str(), NewResolvedPath.c_str(), EC);
+        
+        if (EC)
+        {
+            LOG_ERROR("File System Error! - Failed to rename: {0}", EC.message());
+            return false;
+        }
+        
         return true;
+    }
+
+    void FNativeFileSystem::DirectoryIterator(FStringView Path, const TFunction<void(const FFileInfo&)>& Callback) const
+    {
+        FFixedString ResolvedPath = ResolveVirtualPath(Path);
+        
+        for (auto& Itr : std::filesystem::directory_iterator(ResolvedPath.c_str()))
+        {
+            std::string FilePath        = Itr.path().generic_string();
+            std::string RelativeStr     = FilePath.substr(BasePath.size());
+            FFixedString VirtualPath    { RelativeStr.data(), RelativeStr.size() };
+            
+            VirtualPath.insert(0, AliasPath);
+
+            auto FileTime           = std::filesystem::last_write_time(Itr);
+            auto SysTime            = std::chrono::clock_cast<std::chrono::system_clock>(FileTime);
+            int64 LastModifyTime    = std::chrono::duration_cast<std::chrono::nanoseconds>(SysTime.time_since_epoch()).count();
+            bool bHidden            = Itr.path().filename().generic_string().starts_with(".");
+            
+
+            EFileFlags Flags = EFileFlags::None;
+            
+            if (Itr.path().extension() == ".lua")
+            {
+                Flags |= EFileFlags::LuaFile;
+            }
+            
+            if (Itr.path().extension() == ".lasset")
+            {
+                Flags |= EFileFlags::LAssetFile;
+            }
+            
+            if (bHidden)
+            {
+                Flags |= EFileFlags::Hidden;
+            }
+            
+            if (Itr.is_directory())
+            {
+                Flags |= EFileFlags::Directory;
+            }
+            
+            if (Itr.is_symlink())
+            {
+                Flags |= EFileFlags::Symlink;
+            }
+            
+            auto Perms = Itr.status().permissions();
+            if ((Perms & std::filesystem::perms::owner_write) == std::filesystem::perms::none)
+            {
+                Flags |= EFileFlags::ReadOnly;
+            }
+            
+            FFileInfo FileInfo
+            {
+                .Name               = Itr.path().filename().generic_string().c_str(),
+                .VirtualPath        = FFixedString{VirtualPath.data(),VirtualPath.size()},
+                .PathSource         = FFixedString{FilePath.data(), FilePath.size()},
+                .LastModifyTime     = LastModifyTime,
+                .Flags              = Flags
+            };
+            
+            Callback(Move(FileInfo));
+        }
+    }
+
+    void FNativeFileSystem::RecursiveDirectoryIterator(FStringView Path, const TFunction<void(const FFileInfo&)>& Callback) const
+    {
+        FFixedString BaseResolvedPath = ResolveVirtualPath(Path);
+        
+        for (auto& Itr : std::filesystem::recursive_directory_iterator(BaseResolvedPath.c_str()))
+        {
+            std::string FilePath        = Itr.path().generic_string();
+            std::string RelativeStr     = FilePath.substr(BasePath.size());
+            FFixedString VirtualPath    { RelativeStr.data(), RelativeStr.size() };
+            
+            VirtualPath.insert(0, AliasPath);
+
+            auto FileTime           = std::filesystem::last_write_time(Itr);
+            auto SysTime            = std::chrono::clock_cast<std::chrono::system_clock>(FileTime);
+            int64 LastModifyTime    = std::chrono::duration_cast<std::chrono::nanoseconds>(SysTime.time_since_epoch()).count();
+            bool bHidden            = Itr.path().filename().generic_string().starts_with(".");
+            
+
+            EFileFlags Flags = EFileFlags::None;
+            
+            if (Itr.path().extension() == ".lua")
+            {
+                Flags |= EFileFlags::LuaFile;
+            }
+            
+            if (Itr.path().extension() == ".lasset")
+            {
+                Flags |= EFileFlags::LAssetFile;
+            }
+            
+            if (bHidden)
+            {
+                Flags |= EFileFlags::Hidden;
+            }
+            
+            if (Itr.is_directory())
+            {
+                Flags |= EFileFlags::Directory;
+            }
+            
+            if (Itr.is_symlink())
+            {
+                Flags |= EFileFlags::Symlink;
+            }
+            
+            auto Perms = Itr.status().permissions();
+            if ((Perms & std::filesystem::perms::owner_write) == std::filesystem::perms::none)
+            {
+                Flags |= EFileFlags::ReadOnly;
+            }
+            
+            FFileInfo FileInfo
+            {
+                .Name               = Itr.path().filename().generic_string().c_str(),
+                .VirtualPath        = FFixedString{VirtualPath.data(),VirtualPath.size()},
+                .PathSource         = FFixedString{FilePath.data(), FilePath.size()},
+                .LastModifyTime     = LastModifyTime,
+                .Flags              = Flags
+            };
+            
+            Callback(Move(FileInfo));
+        }
     }
 }

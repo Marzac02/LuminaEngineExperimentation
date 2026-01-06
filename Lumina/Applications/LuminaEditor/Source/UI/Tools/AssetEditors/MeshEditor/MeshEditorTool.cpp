@@ -183,7 +183,7 @@ namespace Lumina
 
         MeshEntity = World->ConstructEntity("MeshEntity");
         World->GetEntityRegistry().emplace<SStaticMeshComponent>(MeshEntity).StaticMesh = StaticMesh;
-        World->GetEntityRegistry().get<STransformComponent>(MeshEntity).SetLocation(glm::vec3(0.0f, 0.0f, (-StaticMesh->GetAABB().MaxScale())));
+        World->GetEntityRegistry().get<STransformComponent>(MeshEntity).SetLocation(glm::vec3(0.0f, 0.0f, 3.0));
         World->GetEntityRegistry().emplace_or_replace<FNeedsTransformUpdate>(MeshEntity);
 
         //FocusViewportToEntity(MeshEntity);

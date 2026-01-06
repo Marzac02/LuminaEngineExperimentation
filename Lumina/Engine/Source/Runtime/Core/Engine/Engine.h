@@ -5,6 +5,7 @@
 #include "Module/API.h"
 #include "Subsystems/Subsystem.h"
 #include <entt/entt.hpp>
+#include "Core/Object/ManualReflectTypes.h" // DO NOT REMOVE.
 
 
 namespace Lumina
@@ -29,7 +30,7 @@ namespace Lumina
         FEngine() = default;
         virtual ~FEngine() = default;
 
-        LUMINA_API virtual bool Init(FApplication* App);
+        LUMINA_API virtual bool Init();
         LUMINA_API virtual bool Shutdown();
         LUMINA_API bool Update(bool bApplicationWantsExit);
         LUMINA_API virtual void OnUpdateStage(const FUpdateContext& Context) { }
@@ -66,7 +67,6 @@ namespace Lumina
     protected:
         
         FUpdateContext          UpdateContext;
-        FApplication*           Application =           nullptr;
 
         #if WITH_DEVELOPMENT_TOOLS
         IDevelopmentToolUI*     DeveloperToolUI =       nullptr;

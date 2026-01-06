@@ -32,7 +32,7 @@ namespace Lumina
 
         friend CObject* StaticAllocateObject();
 
-        DECLARE_CLASS(Lumina, CObject, CObject, "/Script", LUMINA_API)
+        DECLARE_CLASS(Lumina, CObject, CObject, "/Script/Engine", LUMINA_API)
         DEFINE_CLASS_FACTORY(CObject)
 
         CObject() = default;

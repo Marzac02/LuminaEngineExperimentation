@@ -17,6 +17,7 @@
 #include "Platform/Process/PlatformProcess.h"
 #include "Scripting/Lua/Scripting.h"
 #include "TaskSystem/TaskSystem.h"
+#include "TaskSystem/ThreadedCallback.h"
 #include "Tools/Dialogs/Dialogs.h"
 #include "Tools/Import/ImportHelpers.h"
 #include "Tools/UI/ImGui/ImGuiFonts.h"
@@ -122,7 +123,7 @@ namespace Lumina
                     return;
                 }
 
-                HandleContentBrowserDragDrop(TypedDroppedItem->GetPath(), SourceItem->GetPath());
+                HandleContentBrowserDragDrop(TypedDroppedItem->GetVirtualPath(), SourceItem->GetVirtualPath());
             }
         };
 
@@ -185,21 +186,23 @@ namespace Lumina
         ContentBrowserTileViewContext.ItemSelectedFunction = [this] (FTileViewItem* Item)
         {
             FContentBrowserTileViewItem* ContentItem = static_cast<FContentBrowserTileViewItem*>(Item);
+            FFixedString Path {ContentItem->GetVirtualPath().data(), ContentItem->GetVirtualPath().size()};
+            
             if (ContentItem->IsDirectory())
             {
-                SelectedPath = ContentItem->GetPath();
+                SelectedPath = Move(Path);
                 RefreshContentBrowser();
             }
             else if (ContentItem->IsAsset())
             {
-                if (const FAssetData* Asset = FAssetQuery().WithPath(ContentItem->GetPath()).ExecuteFirst())
+                if (const FAssetData* Asset = FAssetRegistry::Get().GetAssetByPath(Path))
                 {
                     ToolContext->OpenAssetEditor(Asset->AssetGUID);
                 }
             }
             else if (ContentItem->IsLuaScript())
             {
-                ToolContext->OpenScriptEditor(ContentItem->GetPath());
+                ToolContext->OpenScriptEditor(ContentItem->GetPathSource());
             }
         };
         
@@ -233,36 +236,36 @@ namespace Lumina
 
         ContentBrowserTileViewContext.RebuildTreeFunction = [this] (FTileViewWidget* Tree)
         {
-            if (Paths::Exists(SelectedPath))
+            namespace FS = FileSystem;
+            
+            TVector<FS::FFileInfo> SortedPaths;
+            
+            FS::DirectoryIterator(SelectedPath, [&](const FS::FFileInfo& FileInfo)
             {
-                TFixedVector<FFixedString, 8> DirectoryPaths;
-                TFixedVector<FFixedString, 6> FilePaths;
+                if (!FileInfo.IsDirectory())
+                {
+                    if (!FileInfo.IsLAsset() && !FileInfo.IsLua())
+                    {
+                        return;
+                    }
+                }
 
-                //FileSystem::DirectoryIterator(SelectedPath, [&](FStringView Path)
-                //{
-                //    if (FileSystem::IsDirectory(Path))
-                //    {
-                //        DirectoryPaths.emplace_back(FFixedString{Path.begin(), Path.end()});
-                //    }
-                //    else if (FileSystem::IsLuaAsset(Path) || FileSystem::IsLuminaAsset(Path))
-                //    {
-                //        FilePaths.emplace_back(FFixedString{Path.begin(), Path.end()});
-                //    }
-                //});
-
-
-                eastl::sort(DirectoryPaths.begin(), DirectoryPaths.end());
-                eastl::sort(FilePaths.begin(), FilePaths.end());
+                SortedPaths.emplace_back(FileInfo);
+            });
+            
+            eastl::sort(SortedPaths.begin(), SortedPaths.end(), [&](const FS::FFileInfo& LHS, const FS::FFileInfo& RHS)
+            {
+                if (LHS.IsDirectory() != RHS.IsDirectory())
+                {
+                    return LHS.IsDirectory();
+                }
                 
-                for (const FFixedString& Directory : DirectoryPaths)
-                {
-                    ContentBrowserTileView.AddItemToTree<FContentBrowserTileViewItem>(nullptr, Directory);
-                }
-
-                for (const FFixedString& FilePath : FilePaths)
-                {
-                    ContentBrowserTileView.AddItemToTree<FContentBrowserTileViewItem>(nullptr, FilePath);
-                }
+                return LHS.Name < RHS.Name;
+            });
+            
+            for (const FS::FFileInfo& Info : SortedPaths)
+            {
+                ContentBrowserTileView.AddItemToTree<FContentBrowserTileViewItem>(nullptr, Info);
             }
         };
 
@@ -299,56 +302,54 @@ namespace Lumina
                 uintptr_t ValuePtr = *static_cast<uintptr_t*>(Payload->Data);
                 auto* SourceItem = reinterpret_cast<FContentBrowserTileViewItem*>(ValuePtr);
                 
-                HandleContentBrowserDragDrop(Data.Path, SourceItem->GetPath());
+                HandleContentBrowserDragDrop(Data.Path, SourceItem->GetVirtualPath());
             }
         };
         
         DirectoryContext.RebuildTreeFunction = [this](FTreeListView& Tree)
         {
-            //FileSystem::ForEachFileSystem([&](FileSystem::FFileSystem& FS)
-            //{
-            //    TFunction<void(entt::entity, const FFixedString&)> AddChildrenRecursive;
-            //
-            //    AddChildrenRecursive = [&](entt::entity ParentItem, const FFixedString& CurrentPath)
-            //    {
-            //        std::error_code ec;
-            //        for (auto& Entry : std::filesystem::directory_iterator(CurrentPath.c_str(), ec))
-            //        {
-            //            if (ec || !Entry.is_directory())
-            //            {
-            //                continue;
-            //            }
-            //
-            //            FFixedString Path = Entry.path().generic_string().c_str();
-            //            FFixedString FileName = Entry.path().filename().string().c_str();
-            //            
-            //            FFixedString DisplayName;
-            //            DisplayName.append(LE_ICON_FOLDER).append(" ").append(FileName);
-            //
-            //            entt::entity ItemEntity = Tree.CreateNode(ParentItem, DisplayName, Hash::GetHash64(Path));
-            //            Tree.EmplaceUserData<FContentBrowserListViewItemData>(ItemEntity).Path = Path;
-            //
-            //            if (Entry.path() == SelectedPath.c_str())
-            //            {
-            //                FTreeNodeState& State = Tree.Get<FTreeNodeState>(ItemEntity);
-            //                State.bSelected = true;
-            //            }
-            //
-            //            AddChildrenRecursive(ItemEntity, Path);
-            //        }
-            //    };
-            //
-            //    FFixedString Name;
-            //    Name.append(LE_ICON_FOLDER).append(" ").append(FS.GetAliasPath().begin(), FS.GetAliasPath().end());
-            //    
-            //    FFixedString BasePath;
-            //    BasePath.assign(FS.GetBasePath().begin(), FS.GetBasePath().end());
-            //    
-            //    entt::entity RootItem = Tree.CreateNode(entt::null, Name);
-            //    Tree.EmplaceUserData<FContentBrowserListViewItemData>(RootItem).Path = BasePath;
-            //
-            //    AddChildrenRecursive(RootItem, BasePath);
-            //});
+            
+            TFunction<void(entt::entity, FStringView)> AddChildrenRecursive;
+            
+            AddChildrenRecursive = [&](entt::entity ParentItem, FStringView CurrentPath)
+            {
+                FileSystem::DirectoryIterator(CurrentPath, [&](const FileSystem::FFileInfo& Info)
+                {
+                    if (!Info.IsDirectory())
+                    {
+                        return;
+                    }
+                    
+                    FFixedString DisplayName;
+                    DisplayName.append(LE_ICON_FOLDER).append(" ").append(Info.Name.begin(), Info.Name.end());
+            
+                    entt::entity ItemEntity = Tree.CreateNode(ParentItem, DisplayName, Hash::GetHash64(Info.PathSource));
+                    Tree.EmplaceUserData<FContentBrowserListViewItemData>(ItemEntity).Path.assign(Info.Name.begin(), Info.Name.end());
+                    
+                    if (Info.VirtualPath == SelectedPath)
+                    {
+                        FTreeNodeState& State = Tree.Get<FTreeNodeState>(ItemEntity);
+                        State.bSelected = true;
+                    }
+            
+                    AddChildrenRecursive(ItemEntity, Info.VirtualPath); 
+                    
+                });
+            };
+            
+            
+            FFixedString Name;
+            Name.assign(LE_ICON_FOLDER).append(" Game");
+            entt::entity RootItem = Tree.CreateNode(entt::null, Name);
+            Tree.EmplaceUserData<FContentBrowserListViewItemData>(RootItem).Path = "/Game";
+            
+            AddChildrenRecursive(RootItem, "/Game");
+            
+            Name.assign(LE_ICON_FOLDER).append(" Engine");
+            RootItem = Tree.CreateNode(entt::null, Name);
+            Tree.EmplaceUserData<FContentBrowserListViewItemData>(RootItem).Path = "/Engine/Resources/Content";
+            
+            AddChildrenRecursive(RootItem, "/Engine/Resources/Content");
         };
 
         DirectoryContext.ItemSelectedFunction = [this] (FTreeListView& Tree, entt::entity Item)
@@ -385,100 +386,65 @@ namespace Lumina
         
         ActionRegistry.ProcessAllOf<FPendingDestroy>([&] (const FPendingDestroy& Destroy)
         {
-            try
+            if (FileSystem::IsDirectory(Destroy.PendingDestroy))
             {
-                if (FileSystem::IsDirectory(Destroy.PendingDestroy))
+                FileSystem::RemoveAll(Destroy.PendingDestroy);
+                ImGuiX::Notifications::NotifySuccess("Deleted Directory {0}", Destroy.PendingDestroy);
+            }
+            else
+            {
+                if (const FAssetData* Data = FAssetQuery().WithPath(Destroy.PendingDestroy).ExecuteFirst())
                 {
-                    FileSystem::RemoveAll(Destroy.PendingDestroy);
-                    ImGuiX::Notifications::NotifySuccess("Deleted Directory {0}", Destroy.PendingDestroy);
-                }
-                else
-                {
-                    if (const FAssetData* Data = FAssetQuery().WithPath(Destroy.PendingDestroy).ExecuteFirst())
+                    if (CObject* AliveObject = FindObject<CObject>(Data->AssetGUID))
                     {
-                        if (CObject* AliveObject = FindObject<CObject>(Data->AssetGUID))
-                        {
-                            ToolContext->OnDestroyAsset(AliveObject);
-                        }
-                    }
-
-                    if (CPackage::DestroyPackage(Destroy.PendingDestroy))
-                    {
-                        ImGuiX::Notifications::NotifySuccess("Deleted Asset {0}", Destroy.PendingDestroy);
-
+                        ToolContext->OnDestroyAsset(AliveObject);
                     }
                 }
 
-                bWroteSomething = true;
+                if (CPackage::DestroyPackage(Destroy.PendingDestroy))
+                {
+                    ImGuiX::Notifications::NotifySuccess("Deleted Asset {0}", Destroy.PendingDestroy);
+
+                }
             }
-            catch (const std::filesystem::filesystem_error& e)
-            {
-                LOG_ERROR("Failed to delete file: {0}", e.what());
-                ImGuiX::Notifications::NotifyError("Deletion failed: {0}", e.what());
-            }
+
+            bWroteSomething = true;
 		});
         
         ActionRegistry.ProcessAllOf<FPendingRename>([&](FPendingRename& Rename)
         {
-            try
+            FileSystem::Rename(Rename.OldName, Rename.NewName);
+            
+            FStringView Extension = FileSystem::Extension(Rename.OldName);
+            
+            if (Extension == ".lasset")
             {
-                std::filesystem::rename(Rename.OldName.c_str(), Rename.NewName.c_str());
-
-                FString Extension = Paths::GetExtension(Rename.OldName);
-
-                // Lua will update itself via the directory watcher.
-
-                if (Extension == ".lasset")
+                CPackage::RenamePackage(Rename.OldName, Rename.NewName);
+                FAssetRegistry::Get().AssetRenamed(Rename.OldName, Rename.NewName);
+            }
+            else if (Extension.empty())
+            {
+                FileSystem::RecursiveDirectoryIterator(Rename.NewName, [&](const FileSystem::FFileInfo& FileInfo)
                 {
-                    // Rename the underlying asset's package.
-                    //FString OldObjectName = Paths::ConvertToVirtualPath(Rename.OldName);
-                    //FString NewObjectName = Paths::ConvertToVirtualPath(Rename.NewName);
-
-                    //CPackage::RenamePackage(OldObjectName, NewObjectName);
-                    //FAssetRegistry::Get().AssetRenamed(Rename.OldName, Rename.NewName);
-                }
-                else if (Extension.empty())
-                {
-                    for (const std::filesystem::directory_entry& Directory : std::filesystem::recursive_directory_iterator(Rename.NewName.c_str()))
+                    if (FileInfo.IsDirectory())
                     {
-                        if (Directory.is_directory())
-                        {
-                            continue;
-                        }
-
-
-                        if (Directory.path().extension() == ".lasset")
-                        {
-                            FString CurrentPath = Directory.path().string().c_str();
-
-                            //FString CurrentVirtualPath = Paths::ConvertToVirtualPath(CurrentPath);
-                            //
-                            //FString OldDirVirtual = Paths::ConvertToVirtualPath(Rename.OldName);
-                            //FString NewDirVirtual = Paths::ConvertToVirtualPath(Rename.NewName);
-                            //
-                            //FString OldObjectName = CurrentVirtualPath;
-                            //if (CurrentVirtualPath.find(NewDirVirtual) == 0)
-                            //{
-                            //    OldObjectName = OldDirVirtual + CurrentVirtualPath.substr(NewDirVirtual.length());
-                            //}
-                            //
-                            //CPackage::RenamePackage(OldObjectName, CurrentVirtualPath);
-                            //
-                            //FString OldObjectFilePath = Paths::ResolveVirtualPath(OldObjectName) += ".lasset";
-                            //Paths::NormalizePath(CurrentPath);
-                            //FAssetRegistry::Get().AssetRenamed(OldObjectFilePath, CurrentPath);
-                        }
+                        return;
                     }
-                }
-
-                ImGuiX::Notifications::NotifySuccess("Rename Success");
-                bWroteSomething = true;
-
+                    
+                    FFixedString CurrentPath = FileInfo.VirtualPath;
+                    FFixedString OldObjectName(Rename.OldName.begin(), Rename.OldName.end());
+                    if (Rename.OldName.find(Rename.NewName.c_str()) == FString::npos)
+                    {
+                        OldObjectName.assign_convert(Rename.OldName) + (CurrentPath.substr(0, Rename.NewName.length()));
+                    }
+                    
+                    CPackage::RenamePackage(OldObjectName, CurrentPath);
+                    FAssetRegistry::Get().AssetRenamed(OldObjectName, CurrentPath);
+                });
             }
-            catch (std::filesystem::filesystem_error& Error)
-            {
-                LOG_ERROR("Failed to process rename: {0}", Error.what());
-            }
+            
+            ImGuiX::Notifications::NotifySuccess("Rename Success");
+            bWroteSomething = true;
         });
 
 
@@ -521,10 +487,12 @@ namespace Lumina
     void FContentBrowserEditorTool::HandleContentBrowserDragDrop(FStringView DropPath, FStringView PayloadPath)
     {
         size_t Pos = PayloadPath.find_last_of('/');
-        FString DirName = (Pos != FString::npos) ? FString(PayloadPath.substr(Pos + 1)) : FString(PayloadPath);
-        FString DestPath = FString(DropPath) + "/" + DirName;
+        FStringView DirName = (Pos != FString::npos) ? PayloadPath.substr(Pos + 1) : PayloadPath;
+        
+        FFixedString OldName(PayloadPath.data(), PayloadPath.length());
+        FFixedString NewName = Paths::Combine(DropPath, DirName);
 
-        ActionRegistry.EnqueueAction<FPendingRename>(FPendingRename{ FString(PayloadPath), DestPath });
+        ActionRegistry.EnqueueAction<FPendingRename>(FPendingRename{ OldName, NewName });
     }
 
     void FContentBrowserEditorTool::OpenDeletionWarningPopup(const FContentBrowserTileViewItem* Item, const TFunction<void(EYesNo)>& Callback)
@@ -532,7 +500,7 @@ namespace Lumina
         if (Dialogs::Confirmation("Confirm Deletion", "Are you sure you want to delete \"{0}\"?\n""\nThis action cannot be undone.", Item->GetName()))
         {
             Callback(EYesNo::Yes);
-            ActionRegistry.EnqueueAction<FPendingDestroy>(FPendingDestroy{ Item->GetPath() });
+            ActionRegistry.EnqueueAction<FPendingDestroy>(FPendingDestroy{ FFixedString(Item->GetVirtualPath().data(), Item->GetVirtualPath().size()) });
         }
 
         Callback(EYesNo::No);
@@ -592,29 +560,49 @@ namespace Lumina
                 continue;
             }
             
-            FStringView NoExtFileName = FileSystem::FileName(Path);
-            FFixedString PathString = Paths::Combine(SelectedPath, NoExtFileName);
+            
+            FStringView FileName = FileSystem::FileName(Path);
+            FFixedString DestinationPath = Paths::Combine(SelectedPath, FileName);
+            DestinationPath = FileSystem::MakeUniqueFilePath(DestinationPath);
             
             if (Factory->HasImportDialogue())
             {
-                ToolContext->PushModal("Import", {700, 800}, [this, Factory, 
-                    Path = Move(Path), PathString = Move(PathString)]
+                struct FModelState
                 {
-                    bool bShouldClose = CFactory::ShowImportDialogue(Factory, Path, PathString);
-                    if (bShouldClose)
+                    eastl::any ImportSettings;
+                    bool bShouldClose = false;
+                } State;
+                
+                auto SharedState = MakeSharedPtr<FModelState>();
+                
+                ToolContext->PushModal("Import", {700, 800}, [this, Factory, Path = Move(Path), DestinationPath = Move(DestinationPath), SharedState] () mutable
+                {
+                    if (Factory->DrawImportDialogue(Path, DestinationPath, SharedState->ImportSettings, SharedState->bShouldClose))
                     {
-                        ImGuiX::Notifications::NotifySuccess("Successfully Imported: \"{0}\"", PathString.c_str());
+                        Task::AsyncTask(1, 1, [Factory, Path, DestinationPath, ImportSettings = Move(SharedState->ImportSettings)](uint32, uint32, uint32)
+                        {
+                            Factory->Import(Path, DestinationPath, ImportSettings);
+                            
+                            MainThread::Enqueue([Path = Move(Path)] ()
+                            {
+                                ImGuiX::Notifications::NotifySuccess("Successfully Imported: \"{0}\"", Path);
+                            });
+                        });
                     }
-            
-                    return bShouldClose;
+                    
+                    return SharedState->bShouldClose;
                 });
             }
             else
             {
-                Task::AsyncTask(1, 1, [this, Factory, Path, PathString] (uint32, uint32, uint32)
+                Task::AsyncTask(1, 1, [this, Factory, Path = Move(Path), PathString = Move(DestinationPath)] (uint32, uint32, uint32)
                 {
                     Factory->Import(Path, PathString);
-                    ImGuiX::Notifications::NotifySuccess("Successfully Imported: \"{0}\"", PathString.c_str());
+                    
+                    MainThread::Enqueue([Path = Move(Path)] ()
+                    {
+                        ImGuiX::Notifications::NotifySuccess("Successfully Imported: \"{0}\"", Path);
+                    });            
                 });
             }
         }
@@ -622,7 +610,7 @@ namespace Lumina
 
     void FContentBrowserEditorTool::PushRenameModal(FContentBrowserTileViewItem* ContentItem)
     {
-        ToolContext->PushModal("Rename", ImVec2(480.0f, 320.0f), [this, ContentItem, RenameState = MakeUniquePtr<FRenameModalState<>>()] -> bool
+        ToolContext->PushModal("Rename", ImVec2(480.0f, 300.0f), [this, ContentItem, RenameState = MakeUniquePtr<FRenameModalState<>>()]
         {
             RenameState->Initialize(ContentItem->GetName());
             
@@ -682,16 +670,17 @@ namespace Lumina
                 }
                 else
                 {
-                    //FStringView Extension = ContentItem->GetExtension();
-                    //FString PathNoExt = Paths::RemoveExtension(ContentItem->GetPath());
-                    //FString TestPath = PathNoExt + "/" + RenameState->CStr() + Extension;
-                    //
-                    //if (std::filesystem::exists(TestPath.c_str()))
-                    //{
-                    //    ValidationMessage = std::format("Path already exists: {}", TestPath.c_str()).c_str();
-                    //    bHasError = true;
-                    //    bIsValid = false;
-                    //}
+                    FStringView Extension = ContentItem->GetExtension();
+                    FStringView PathNoExt = FileSystem::RemoveExtension(ContentItem->GetVirtualPath());
+                    FFixedString TestPath = Paths::Combine(PathNoExt, RenameState->CStr());
+                    TestPath.append_convert(Extension.data(), Extension.length());
+                    
+                    if (FileSystem::Exists(TestPath))
+                    {
+                        ValidationMessage = std::format("Path already exists: {}", TestPath.c_str()).c_str();
+                        bHasError = true;
+                        bIsValid = false;
+                    }
                 }
             }
             
@@ -719,10 +708,11 @@ namespace Lumina
             
             if (bSubmitted && bIsValid)
             {
-                //FString Extension = ContentItem->GetExtension();
-                //FString ParentPath = Paths::Parent(ContentItem->GetPath());
-                //FString NewPath = ParentPath + "/" + RenameState->CStr() + Extension;
-                //ActionRegistry.EnqueueAction<FPendingRename>(FPendingRename{ ContentItem->GetPath(), NewPath });
+                FStringView PathNoExt = FileSystem::RemoveExtension(ContentItem->GetVirtualPath());
+                FFixedString TestPath = Paths::Combine(FileSystem::Parent(PathNoExt), RenameState->CStr());
+                TestPath.append_convert(ContentItem->GetExtension());
+                
+                ActionRegistry.EnqueueAction<FPendingRename>(FPendingRename{ FFixedString(ContentItem->GetVirtualPath().data(), ContentItem->GetVirtualPath().length()), TestPath });
                 return true;
             }
             
@@ -752,10 +742,14 @@ namespace Lumina
             {
                 if (bIsValid)
                 {
-                    //FString Extension = ContentItem->GetExtension();
-                    //FString ParentPath = Paths::Parent(ContentItem->GetPath());
-                    //FString NewPath = ParentPath + "/" + RenameState->CStr() + Extension;
-                    //ActionRegistry.EnqueueAction<FPendingRename>(FPendingRename{ ContentItem->GetPath(), NewPath });
+                    ImGui::PopStyleColor(3);
+                    ImGui::PopStyleVar();
+
+                    FStringView PathNoExt = FileSystem::RemoveExtension(ContentItem->GetVirtualPath());
+                    FFixedString TestPath = Paths::Combine(FileSystem::Parent(PathNoExt), RenameState->CStr());
+                    TestPath.append_convert(ContentItem->GetExtension());
+                
+                    ActionRegistry.EnqueueAction<FPendingRename>(FPendingRename{ FFixedString(ContentItem->GetVirtualPath().data(), ContentItem->GetVirtualPath().length()), TestPath });
                     return true;
                 }
             }
@@ -781,6 +775,9 @@ namespace Lumina
             
             if (ImGui::Button(LE_ICON_CANCEL " Cancel", ImVec2(ButtonWidth, ButtonHeight)))
             {
+                ImGui::PopStyleColor(3);
+                ImGui::PopStyleVar();
+                
                 return true;
             }
             
@@ -917,14 +914,14 @@ namespace Lumina
         
         if (ImGui::MenuItem(LE_ICON_FOLDER " Show in Explorer", nullptr, false))
         {
-            const FFixedString& ParentPath = ContentItem->GetPath();
-            FStringView Parent = FileSystem::Parent(ParentPath);
+            FStringView VirtualPath = ContentItem->GetVirtualPath();
+            FStringView Parent = FileSystem::Parent(VirtualPath);
             Platform::LaunchURL(StringUtils::ToWideString(Parent).c_str());
         }
 
         if (ImGui::MenuItem(LE_ICON_CONTENT_COPY " Copy Path", nullptr, false))
         {
-            ImGui::SetClipboardText(ContentItem->GetPath().c_str());
+            ImGui::SetClipboardText(ContentItem->GetVirtualPath().data());
             ImGuiX::Notifications::NotifyInfo("Path copied to clipboard");
         }
 
@@ -951,13 +948,13 @@ namespace Lumina
         
         if (ImGui::MenuItem(LE_ICON_FOLDER " Show in Explorer", nullptr, false))
         {
-            FStringView Parent = Paths::Parent(ContentItem->GetPath());
+            FStringView Parent = Paths::Parent(ContentItem->GetVirtualPath());
             Platform::LaunchURL(StringUtils::ToWideString(Parent).c_str());
         }
         
         if (ImGui::MenuItem(LE_ICON_CONTENT_COPY " Copy Path", nullptr, false))
         {
-            ImGui::SetClipboardText(ContentItem->GetPath().c_str());
+            ImGui::SetClipboardText(ContentItem->GetVirtualPath().data());
             ImGuiX::Notifications::NotifyInfo("Path copied to clipboard");
         }
         
@@ -984,13 +981,13 @@ namespace Lumina
         
         if (ImGui::MenuItem(LE_ICON_FOLDER " Show in Explorer", nullptr, false))
         {
-            FStringView Parent = Paths::Parent(ContentItem->GetPath());
+            FStringView Parent = Paths::Parent(ContentItem->GetVirtualPath());
             Platform::LaunchURL(StringUtils::ToWideString(Parent).c_str());
         }
         
         if (ImGui::MenuItem(LE_ICON_CONTENT_COPY " Copy Path", nullptr, false))
         {
-            ImGui::SetClipboardText(ContentItem->GetPath().c_str());
+            ImGui::SetClipboardText(ContentItem->GetVirtualPath().data());
             ImGuiX::Notifications::NotifyInfo("Path copied to clipboard");
         }
         
@@ -1009,7 +1006,8 @@ namespace Lumina
         {
             if (ImGui::MenuItem(LE_ICON_FOLDER_OPEN " Open", "Double-Click"))
             {
-                if (const FAssetData* Data = FAssetQuery().WithPath(ContentItem->GetPath()).ExecuteFirst())
+                FFixedString Path(ContentItem->GetVirtualPath().data(), ContentItem->GetVirtualPath().size());
+                if (const FAssetData* Data = FAssetRegistry::Get().GetAssetByPath(Path))
                 {
                     ToolContext->OpenAssetEditor(Data->AssetGUID);
                 }
@@ -1066,6 +1064,9 @@ namespace Lumina
                 if (ImGui::MenuItem(DisplayName.c_str()))
                 {
                     FFixedString Path = Paths::Combine(SelectedPath, Factory->GetDefaultAssetCreationName());
+                    CPackage::AddPackageExt(Path);
+                    Path = FileSystem::MakeUniqueFilePath(Path);
+                    
                     if (Factory->HasCreationDialogue())
                     {
                         ToolContext->PushModal("Create New", {500, 500}, [this, Factory, Path = Move(Path)]
@@ -1083,8 +1084,7 @@ namespace Lumina
                     {
                         if (CObject* Object = Factory->TryCreateNew(Path))
                         {
-                            CPackage* Package = CPackage::FindPackageByPath(Path);
-                            CPackage::SavePackage(Package, Path);
+                            CPackage::SavePackage(Object->GetPackage(), Path);
                             FAssetRegistry::Get().AssetCreated(Object);
 
                             ImGuiX::Notifications::NotifySuccess("Successfully Created: \"{0}\"", Path);
