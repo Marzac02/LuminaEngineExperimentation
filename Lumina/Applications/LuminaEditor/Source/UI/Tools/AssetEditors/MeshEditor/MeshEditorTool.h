@@ -27,6 +27,9 @@ namespace Lumina
         void InitializeDockingLayout(ImGuiID InDockspaceID, const ImVec2& InDockspaceSize) const override;
 
         bool bShowAABB = false;
+        bool bShowWireframe = false;
+        bool bShowNormals = false;
+        bool bShowTangents = false;
         
         ImGuizmo::OPERATION GuizmoOp = ImGuizmo::TRANSLATE;
         entt::entity DirectionalLightEntity = entt::null;

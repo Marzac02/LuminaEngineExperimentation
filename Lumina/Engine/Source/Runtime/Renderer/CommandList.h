@@ -174,7 +174,7 @@ namespace Lumina
          * @param Offset Byte offset in the destination buffer
          * @param Size Number of bytes to write
          */
-        virtual void WriteBuffer(FRHIBuffer* RESTRICT Buffer, const void* RESTRICT Data, SIZE_T Offset, SIZE_T Size) = 0;
+        virtual void WriteBuffer(FRHIBuffer* RESTRICT Buffer, const void* RESTRICT Data, SIZE_T Size, SIZE_T Offset = 0) = 0;
         
         /**
          * Fills an entire buffer with a repeated 32-bit value
@@ -402,9 +402,9 @@ namespace Lumina
          * @param Size Size in bytes (defaults to sizeof(T))
          */
         template<typename T>
-        void WriteBuffer(FRHIBuffer* RESTRICT Buffer, const T* RESTRICT Data, SIZE_T Offset = 0, SIZE_T Size = sizeof(T))
+        void WriteBuffer(FRHIBuffer* RESTRICT Buffer, const T* RESTRICT Data, SIZE_T Size = sizeof(T), SIZE_T Offset = 0)
         {
-            WriteBuffer(Buffer, (const void*)Data, Offset, Size);
+            WriteBuffer(Buffer, (const void*)Data, Size, Offset);
         }
     };
 }

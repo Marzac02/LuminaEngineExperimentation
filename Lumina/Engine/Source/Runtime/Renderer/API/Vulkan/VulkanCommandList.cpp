@@ -5,7 +5,6 @@
 #include "VulkanMacros.h"
 #include "VulkanRenderContext.h"
 #include "VulkanResources.h"
-#include "VulkanSwapchain.h"
 #include "Core/Profiler/Profile.h"
 #include "Memory/Memcpy.h"
 #include "Renderer/RHIGlobals.h"
@@ -13,6 +12,11 @@
 
 namespace Lumina
 {
+    
+    namespace Limits
+    {
+        constexpr size_t vkCmdUpdateBufferLimit = 65536;
+    }
 
     static FVulkanImage::ESubresourceViewType GetTextureViewType(EFormat BindingFormat, EFormat TextureFormat)
     {
@@ -562,16 +566,16 @@ namespace Lumina
         }
         CommitBarriers();
         
-        VkBufferCopy copyRegion = {};
-        copyRegion.size         = CopySize;
-        copyRegion.srcOffset    = SrcOffset;
-        copyRegion.dstOffset    = DstOffset;
+        VkBufferCopy CopyRegion = {};
+        CopyRegion.size         = CopySize;
+        CopyRegion.srcOffset    = SrcOffset;
+        CopyRegion.dstOffset    = DstOffset;
 
         FVulkanBuffer* VkSource = static_cast<FVulkanBuffer*>(Source);
         FVulkanBuffer* VkDestination = static_cast<FVulkanBuffer*>(Destination);
 
         CommandListStats.NumCopies++;
-        vkCmdCopyBuffer(CurrentCommandBuffer->CommandBuffer, VkSource->GetBuffer(), VkDestination->GetBuffer(), 1, &copyRegion);
+        vkCmdCopyBuffer(CurrentCommandBuffer->CommandBuffer, VkSource->GetBuffer(), VkDestination->GetBuffer(), 1, &CopyRegion);
     }
 
     void FVulkanCommandList::WriteDynamicBuffer(FRHIBuffer* RESTRICT Buffer, const void* RESTRICT Data, SIZE_T Size)
@@ -673,7 +677,7 @@ namespace Lumina
         PendingState.AddPendingState(EPendingCommandState::DynamicBufferWrites);
     }
     
-    void FVulkanCommandList::WriteBuffer(FRHIBuffer* RESTRICT Buffer, const void* RESTRICT Data, SIZE_T Offset, SIZE_T Size)
+    void FVulkanCommandList::WriteBuffer(FRHIBuffer* RESTRICT Buffer, const void* RESTRICT Data, SIZE_T Size, SIZE_T Offset)
     {
         LUMINA_PROFILE_SCOPE();
         
@@ -683,15 +687,10 @@ namespace Lumina
             return;
         }
         
-        if (Size > Buffer->GetSize())
-        {
-            LOG_ERROR("Buffer: \"{}\" has size: [{}], but tried to write [{}]", Buffer->GetDescription().DebugName, Buffer->GetSize(), Size);
-            return;    
-        }
+        LUM_ASSERT(Size <= Buffer->GetSize())
 
         CommandListStats.NumBufferWrites++;
         
-        constexpr size_t vkCmdUpdateBufferLimit = 65536;
         CurrentCommandBuffer->AddReferencedResource(Buffer);
         
         if (Buffer->GetDescription().Usage.IsFlagSet(BUF_Dynamic))
@@ -705,7 +704,7 @@ namespace Lumina
         // Per Vulkan spec, vkCmdUpdateBuffer requires that the data size is smaller than or equal to 64 kB,
         // and that the offset and data size are a multiple of 4. We can't change the offset, but data size
         // is rounded up later.
-        if (Size <= vkCmdUpdateBufferLimit && (Offset & 3) == 0)
+        if (Size <= Limits::vkCmdUpdateBufferLimit && (Offset & 3) == 0)
         {
             if (PendingState.IsInState(EPendingCommandState::AutomaticBarriers))
             {
@@ -721,27 +720,21 @@ namespace Lumina
         }
         else
         {
-            if(Buffer->GetDescription().Usage.IsFlagCleared(EBufferUsageFlags::CPUWritable))
-            {
-                //@TODO Investigate - problems with buffers in here getting incomplete data.
-                LUMINA_PROFILE_SECTION("VkCopyBuffer");
+            LUM_ASSERT(Buffer->GetDescription().Usage.IsFlagCleared(EBufferUsageFlags::CPUWritable))
+            //@TODO Investigate - problems with buffers in here getting incomplete data.
+            LUMINA_PROFILE_SECTION("VkCopyBuffer");
 
-                FRHIBuffer* UploadBuffer;
-                uint64 UploadOffset;
-                void* UploadCPUVA;
-                if (UploadManager->SuballocateBuffer(Size, UploadBuffer, UploadOffset, UploadCPUVA, MakeVersion(CurrentCommandBuffer->RecordingID, Info.CommandQueue, false)))
-                {
-                    Memory::Memcpy(UploadCPUVA, Data, Size);
-                    CopyBuffer(UploadBuffer, UploadOffset, Buffer, Offset, Size);
-                }
-                else
-                {
-                    LOG_ERROR("Failed to suballocate buffer");
-                }
+            FRHIBuffer* UploadBuffer;
+            uint64 UploadOffset;
+            void* UploadCPUVA;
+            if (UploadManager->SuballocateBuffer(Size, UploadBuffer, UploadOffset, UploadCPUVA, MakeVersion(CurrentCommandBuffer->RecordingID, Info.CommandQueue, false)))
+            {
+                Memory::Memcpy(UploadCPUVA, Data, Size);
+                CopyBuffer(UploadBuffer, UploadOffset, Buffer, Offset, Size);
             }
             else
             {
-                LOG_ERROR("Using UploadToBuffer on a mappable buffer is invalid.");
+                LOG_ERROR("Failed to suballocate buffer");
             }
         }
     }

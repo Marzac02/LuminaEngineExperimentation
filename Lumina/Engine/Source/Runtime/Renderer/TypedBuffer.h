@@ -83,7 +83,7 @@ namespace Lumina
 
         void UpdateBuffer(ICommandList* CommandList, const TVertexLayout* VertexData, uint32 NumVertices)
         {
-            CommandList->WriteBuffer(GetReference(), VertexData, 0, NumVertices);
+            CommandList->WriteBuffer(GetReference(), VertexData, NumVertices);
         }
     };
 }

@@ -1,8 +1,14 @@
 #pragma once
 
-template <typename T>
-struct TCanBulkSerialize
-{
-	static constexpr bool Value = std::is_trivially_constructible_v<T> && std::is_standard_layout_v<T>;
-};
+#include <EASTL/type_traits.h>
 
+namespace Lumina
+{
+	template <typename T>
+	struct TCanBulkSerialize : eastl::false_type { };
+	
+	template<typename T>
+	requires(eastl::is_trivially_copyable_v<T>)
+	struct TCanBulkSerialize<T> : eastl::true_type { };
+	
+}

@@ -1,16 +1,13 @@
 ﻿#pragma once
 
-#include "Platform/GenericPlatform.h"
-#include "Platform/Platform.h"
-
 namespace Lumina::Memory
 {
-	FORCEINLINE void Memcpy(void* RESTRICT Destination, void* RESTRICT Source, uint64 SrcSize)
+	FORCEINLINE void Memcpy(void* Destination, void* Source, size_t SrcSize)
 	{
 		std::memcpy(Destination, Source, SrcSize);
 	}
     
-	FORCEINLINE void Memcpy(void* RESTRICT Destination, const void* RESTRICT Source, uint64 SrcSize)
+	FORCEINLINE void Memcpy(void* Destination, const void* Source, size_t SrcSize)
 	{
 		std::memcpy(Destination, Source, SrcSize);
 	}

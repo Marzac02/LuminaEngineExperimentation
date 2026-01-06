@@ -10,6 +10,7 @@
 #include "world/entity/components/environmentcomponent.h"
 #include "World/Entity/Components/LightComponent.h"
 #include "World/Entity/Components/StaticMeshComponent.h"
+#include "world/entity/components/velocitycomponent.h"
 #include "World/Scene/RenderScene/SceneRenderTypes.h"
 
 
@@ -102,6 +103,170 @@ namespace Lumina
     
             ImGui::Spacing();
             ImGui::Spacing();
+            
+                 ImGui::Spacing();
+                ImGui::Spacing();
+                
+                ImGuiX::Font::PushFont(ImGuiX::Font::EFont::Large);
+                ImGui::SeparatorText("Geometry Data");
+                ImGuiX::Font::PopFont();
+                
+                ImGui::Spacing();
+                
+                if (ImGui::BeginTabBar("##GeometryTabs"))
+                {
+                    // Vertices Tab
+                    if (ImGui::BeginTabItem("Vertices"))
+                    {
+                        ImGui::Text("Total Vertices: %zu", Resource.Vertices.size());
+                        ImGui::Spacing();
+                        
+                        if (ImGui::BeginTable("##Vertices", 5, 
+                            ImGuiTableFlags_Borders | 
+                            ImGuiTableFlags_RowBg | 
+                            ImGuiTableFlags_ScrollY | 
+                            ImGuiTableFlags_SizingFixedFit,
+                            ImVec2(0, 400)))
+                        {
+                            ImGui::TableSetupColumn("Index", ImGuiTableColumnFlags_WidthFixed, 50.0f);
+                            ImGui::TableSetupColumn("Position", ImGuiTableColumnFlags_WidthFixed, 250.0f);
+                            ImGui::TableSetupColumn("Normal", ImGuiTableColumnFlags_WidthFixed, 250.0f);
+                            ImGui::TableSetupColumn("UV", ImGuiTableColumnFlags_WidthFixed, 150.0f);
+                            ImGui::TableSetupColumn("Color", ImGuiTableColumnFlags_WidthFixed, 250.0f);
+                            ImGui::TableHeadersRow();
+                            
+                            ImGuiListClipper clipper;
+                            clipper.Begin(static_cast<int>(Resource.Vertices.size()));
+                            
+                            while (clipper.Step())
+                            {
+                                for (int i = clipper.DisplayStart; i < clipper.DisplayEnd; i++)
+                                {
+                                    const FVertex& Vertex = Resource.Vertices[i];
+                                    
+                                    ImGui::TableNextRow();
+                                    ImGui::TableSetColumnIndex(0);
+                                    ImGui::Text("%d", i);
+                                    
+                                    ImGui::TableSetColumnIndex(1);
+                                    ImGui::Text("%.3f, %.3f, %.3f", Vertex.Position.x, Vertex.Position.y, Vertex.Position.z);
+                                    
+                                    glm::vec3 Normal = UnpackNormal(Vertex.Normal);
+                                    
+                                    ImGui::TableSetColumnIndex(2);
+                                    ImGui::Text("%.3f, %.3f, %.3f", Normal.x, Normal.y, Normal.z);
+                                    
+                                    ImGui::TableSetColumnIndex(3);
+                                    ImGui::Text("%.3hu, %.3hu", Vertex.UV.x, Vertex.UV.y);
+                                    
+                                    glm::vec4 Color = UnpackColor(Vertex.Color);
+                                    
+                                    ImGui::TableSetColumnIndex(4);
+                                    ImGui::Text("%i, %i, %i", Color.x, Color.y, Color.z);  
+                                }
+                            }
+                            
+                            ImGui::EndTable();
+                        }
+                        
+                        ImGui::EndTabItem();
+                    }
+                    
+                    if (ImGui::BeginTabItem("Indices"))
+                    {
+                        ImGui::Text("Total Indices: %zu (Triangles: %zu)", 
+                            Resource.Indices.size(), Resource.Indices.size() / 3);
+                        ImGui::Spacing();
+                        
+                        static bool bShowAsTriangles = true;
+                        ImGui::Checkbox("Show as Triangles", &bShowAsTriangles);
+                        ImGui::Spacing();
+                        
+                        if (bShowAsTriangles)
+                        {
+                            if (ImGui::BeginTable("##Triangles", 4,
+                                ImGuiTableFlags_Borders | 
+                                ImGuiTableFlags_RowBg | 
+                                ImGuiTableFlags_ScrollY | 
+                                ImGuiTableFlags_SizingFixedFit,
+                                ImVec2(0, 400)))
+                            {
+                                ImGui::TableSetupColumn("Triangle", ImGuiTableColumnFlags_WidthFixed, 80.0f);
+                                ImGui::TableSetupColumn("Index 0", ImGuiTableColumnFlags_WidthFixed, 80.0f);
+                                ImGui::TableSetupColumn("Index 1", ImGuiTableColumnFlags_WidthFixed, 80.0f);
+                                ImGui::TableSetupColumn("Index 2", ImGuiTableColumnFlags_WidthFixed, 80.0f);
+                                ImGui::TableHeadersRow();
+                                
+                                const int triangleCount = static_cast<int>(Resource.Indices.size() / 3);
+                                ImGuiListClipper clipper;
+                                clipper.Begin(triangleCount);
+                                
+                                while (clipper.Step())
+                                {
+                                    for (int tri = clipper.DisplayStart; tri < clipper.DisplayEnd; tri++)
+                                    {
+                                        const int baseIdx = tri * 3;
+                                        
+                                        ImGui::TableNextRow();
+                                        ImGui::TableSetColumnIndex(0);
+                                        ImGui::Text("%d", tri);
+                                        
+                                        ImGui::TableSetColumnIndex(1);
+                                        ImGui::Text("%u", Resource.Indices[baseIdx + 0]);
+                                        
+                                        ImGui::TableSetColumnIndex(2);
+                                        ImGui::Text("%u", Resource.Indices[baseIdx + 1]);
+                                        
+                                        ImGui::TableSetColumnIndex(3);
+                                        ImGui::Text("%u", Resource.Indices[baseIdx + 2]);
+                                    }
+                                }
+                                
+                                ImGui::EndTable();
+                            }
+                        }
+                        else
+                        {
+                            // Show raw index list
+                            if (ImGui::BeginTable("##IndicesList", 2,
+                                ImGuiTableFlags_Borders | 
+                                ImGuiTableFlags_RowBg | 
+                                ImGuiTableFlags_ScrollY | 
+                                ImGuiTableFlags_SizingFixedFit,
+                                ImVec2(0, 400)))
+                            {
+                                ImGui::TableSetupColumn("Index", ImGuiTableColumnFlags_WidthFixed, 80.0f);
+                                ImGui::TableSetupColumn("Value", ImGuiTableColumnFlags_WidthFixed, 80.0f);
+                                ImGui::TableHeadersRow();
+                                
+                                ImGuiListClipper clipper;
+                                clipper.Begin(static_cast<int>(Resource.Indices.size()));
+                                
+                                while (clipper.Step())
+                                {
+                                    for (int i = clipper.DisplayStart; i < clipper.DisplayEnd; i++)
+                                    {
+                                        ImGui::TableNextRow();
+                                        ImGui::TableSetColumnIndex(0);
+                                        ImGui::Text("%d", i);
+                                        
+                                        ImGui::TableSetColumnIndex(1);
+                                        ImGui::Text("%u", Resource.Indices[i]);
+                                    }
+                                }
+                                
+                                ImGui::EndTable();
+                            }
+                        }
+                        
+                        ImGui::EndTabItem();
+                    }
+                    
+                    ImGui::EndTabBar();
+                }
+                
+                ImGui::Spacing();
+                ImGui::Spacing();
     
             ImGuiX::Font::PushFont(ImGuiX::Font::EFont::Large);
             ImGui::SeparatorText("Geometry Surfaces");
@@ -180,13 +345,16 @@ namespace Lumina
         World->GetEntityRegistry().emplace<SEnvironmentComponent>(DirectionalLightEntity);
         
         CStaticMesh* StaticMesh = Cast<CStaticMesh>(Asset.Get());
+        
+        World->GetEntityRegistry().get<SVelocityComponent>(EditorEntity).Speed = 5.0f;
+
 
         MeshEntity = World->ConstructEntity("MeshEntity");
         World->GetEntityRegistry().emplace<SStaticMeshComponent>(MeshEntity).StaticMesh = StaticMesh;
-        World->GetEntityRegistry().get<STransformComponent>(MeshEntity).SetLocation(glm::vec3(0.0f, 0.0f, 3.0));
+        World->GetEntityRegistry().get<STransformComponent>(MeshEntity).SetLocation(glm::vec3(0.0f, 0.0f, -5.0));
         World->GetEntityRegistry().emplace_or_replace<FNeedsTransformUpdate>(MeshEntity);
 
-        //FocusViewportToEntity(MeshEntity);
+        FocusViewportToEntity(MeshEntity);
     }
 
     void FMeshEditorTool::Update(const FUpdateContext& UpdateContext)
@@ -242,7 +410,12 @@ namespace Lumina
 
         if (ImGui::BeginMenu(LE_ICON_DEBUG_STEP_INTO " Mesh Debug"))
         {
-            ImGui::MenuItem(LE_ICON_BOX " Show AABB", nullptr, &bShowAABB);
+            ImGui::Checkbox(LE_ICON_CUBE_OUTLINE " Show AABB", &bShowAABB);
+            
+            if (ImGui::Button(LE_ICON_RELOAD " Reload Mesh Buffers"))
+            {
+                Cast<CStaticMesh>(Asset.Get())->PostLoad();
+            }
 
             ImGui::EndMenu();
         }

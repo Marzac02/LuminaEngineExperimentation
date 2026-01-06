@@ -22,6 +22,47 @@ namespace Lumina
         return (a << 24) | (b << 16) | (g << 8) | r;
     }
     
+    inline glm::vec3 UnpackNormal(uint32 packed)
+    {
+        int x = (packed >> 0) & 0x3FF;
+        int y = (packed >> 10) & 0x3FF;
+        int z = (packed >> 20) & 0x3FF;
+    
+        if (x & 0x200)
+        {
+            x |= 0xFFFFFC00;
+        }
+        if (y & 0x200)
+        {
+            y |= 0xFFFFFC00;
+        }
+        if (z & 0x200)
+        {
+            z |= 0xFFFFFC00;
+        }
+
+        return glm::vec3(
+            (float)x / 511.0f,
+            (float)y / 511.0f,
+            (float)z / 511.0f
+        );
+    }
+
+    inline glm::vec4 UnpackColor(uint32 packed)
+    {
+        uint8 r = (packed >> 0) & 0xFF;
+        uint8 g = (packed >> 8) & 0xFF;
+        uint8 b = (packed >> 16) & 0xFF;
+        uint8 a = (packed >> 24) & 0xFF;
+    
+        return glm::vec4(
+            (float)r / 255.0f,
+            (float)g / 255.0f,
+            (float)b / 255.0f,
+            (float)a / 255.0f
+        );
+    }
+    
     struct FVertex
     {
         glm::vec3       Position;
@@ -48,12 +89,7 @@ namespace Lumina
     };
 
     static_assert(offsetof(FVertex, Position) == 0, "Required FVertex::Position to be the first member.");
-    static_assert(std::is_trivially_copyable_v<FVertex>, "FVertex must be trivially copyable.");
-    
-    template<>
-    struct TCanBulkSerialize<FVertex> { static constexpr bool Value = true; };
+    static_assert(TCanBulkSerialize<FVertex>::value);
+    static_assert(TCanBulkSerialize<FSimpleElementVertex>::value);
 
-    template<>
-    struct TCanBulkSerialize<FSimpleElementVertex> { static constexpr bool Value = true; };
-    
 }

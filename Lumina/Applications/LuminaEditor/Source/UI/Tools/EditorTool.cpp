@@ -94,8 +94,8 @@ namespace Lumina
         World->GetEntityRegistry().emplace<FHideInSceneOutliner>(EditorEntity);
         World->GetEntityRegistry().emplace<FEditorComponent>(EditorEntity);
         World->GetEntityRegistry().emplace<SVelocityComponent>(EditorEntity).Speed = 50.0f;
-        World->GetEntityRegistry().get<STransformComponent>(EditorEntity).SetLocation(glm::vec3(0.0f, 0.0f, 2.5f));
-        
+        World->GetEntityRegistry().get<STransformComponent>(EditorEntity).SetLocation(glm::vec3(0.0f, 0.0f, -2.5f));
+
         World->SetActiveCamera(EditorEntity);
     }
 

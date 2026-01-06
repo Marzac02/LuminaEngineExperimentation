@@ -58,7 +58,7 @@ namespace Lumina
         void ClearImageFloat(FRHIImage* Image, FTextureSubresourceSet Subresource, const FColor& Color) override;
         void ClearImageUInt(FRHIImage* Image, FTextureSubresourceSet Subresource, uint32 Color) override;
 
-        void WriteBuffer(FRHIBuffer* Buffer, const void* Data, SIZE_T Offset, SIZE_T Size) override;
+        void WriteBuffer(FRHIBuffer* Buffer, const void* Data, SIZE_T Size, SIZE_T Offset = 0) override;
         void FillBuffer(FRHIBuffer* Buffer, uint32 Value) override;
         void CopyBuffer(FRHIBuffer* Source, uint64 SrcOffset, FRHIBuffer* Destination, uint64 DstOffset, uint64 CopySize) override;
 

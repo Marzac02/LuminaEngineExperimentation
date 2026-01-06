@@ -68,6 +68,8 @@ namespace Lumina
 
         void RetireCommandBuffers();
         
+        uint64 GetCompletedInstance() const;
+        
         /** Submission must happen from a single thread at a time */
         uint64 Submit(ICommandList* const* CommandLists, uint32 NumCommandLists);
         void SignalSemaphore(VkSemaphore SemaphoreToSignal) const;

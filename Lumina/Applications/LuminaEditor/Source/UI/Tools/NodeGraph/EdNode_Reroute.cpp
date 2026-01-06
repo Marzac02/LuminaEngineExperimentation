@@ -1,5 +1,4 @@
 ﻿#include "EdNode_Reroute.h"
-
 #include "Core/Object/Cast.h"
 #include "Material/MaterialInput.h"
 #include "Material/MaterialOutput.h"

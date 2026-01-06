@@ -71,7 +71,7 @@ namespace Lumina
          * @return 
          */
         bool SuballocateBuffer(uint64 Size, FRHIBuffer*& Buffer, uint64& Offset, void*& CpuVA, uint64 CurrentVersion, uint32 Alignment = 256);
-        void SubmitChunks(uint64 CurrentVersion, uint64 submittedVersion);
+        void SubmitChunks(uint64 CurrentVersion, uint64 SubmittedVersion);
         
     private:
         
@@ -173,7 +173,6 @@ namespace Lumina
         
         VmaAllocation                       Allocation = nullptr;
         VkBuffer                            Buffer = VK_NULL_HANDLE;
-        void*                               MaybeMappedMemory = nullptr;  
 
         uint64                              LastUseCommandListID = 0;
         

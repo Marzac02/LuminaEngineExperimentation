@@ -1,8 +1,7 @@
 #pragma once
 
-#include "Object.h"
 #include "Class.h"
-
+#include "Object.h"
 
 namespace Lumina
 {
@@ -42,5 +41,6 @@ namespace Lumina
         }
         
         LUM_ASSERT(0)
+        return nullptr;
     }
 }

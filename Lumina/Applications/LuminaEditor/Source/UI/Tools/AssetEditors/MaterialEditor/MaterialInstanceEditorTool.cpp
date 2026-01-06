@@ -90,7 +90,7 @@ namespace Lumina
                                 ImGui::PushID(&Param);
                                 if (ImGui::DragFloat("##Scalar", ValuePtr, 0.1f))
                                 {
-                                    CommandList->WriteBuffer(Instance->UniformBuffer, &Instance->MaterialUniforms, 0, sizeof(FMaterialUniforms));
+                                    CommandList->WriteBuffer(Instance->UniformBuffer, &Instance->MaterialUniforms, sizeof(FMaterialUniforms));
                                 }
                                 ImGui::PopID();
                                 break;
@@ -102,7 +102,7 @@ namespace Lumina
                                 ImGui::PushID(&Param);
                                 if (ImGui::ColorEdit4("##Vector", glm::value_ptr(Vec), ImGuiColorEditFlags_Float))
                                 {
-                                    CommandList->WriteBuffer(Instance->UniformBuffer, &Instance->MaterialUniforms, 0, sizeof(FMaterialUniforms));
+                                    CommandList->WriteBuffer(Instance->UniformBuffer, &Instance->MaterialUniforms, sizeof(FMaterialUniforms));
                                 }
                                 ImGui::PopID();
                                 break;

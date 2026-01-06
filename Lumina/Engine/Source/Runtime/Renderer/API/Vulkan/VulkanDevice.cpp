@@ -82,11 +82,7 @@ namespace Lumina
 
         LUMINA_PROFILE_SCOPE();
     
-        if (CreateInfo->extent.depth == 0)
-        {
-            LOG_WARN("Trying to allocate image with 0 depth. No allocation done");
-            return VK_NULL_HANDLE;
-        }
+        LUM_ASSERT(CreateInfo->extent.depth != 0)
     
         VmaAllocationCreateInfo Info = {};
         Info.usage = VMA_MEMORY_USAGE_AUTO;

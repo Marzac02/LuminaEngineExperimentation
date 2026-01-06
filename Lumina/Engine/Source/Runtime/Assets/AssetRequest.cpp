@@ -1,6 +1,5 @@
 #include "pch.h"
 #include "AssetRequest.h"
-#include "Core/Object/Cast.h"
 #include "Core/Object/Package/Package.h"
 #include "Paths/Paths.h"
 #include "Platform/Filesystem/FileHelper.h"
@@ -17,15 +16,6 @@ namespace Lumina
         }
         
         PendingObject = Package->LoadObject(RequestedGUID);
-        if (PendingObject != nullptr)
-        {
-            if (PendingObject->HasAnyFlag(OF_NeedsPostLoad))
-            {
-                PendingObject->PostLoad();
-                PendingObject->ClearFlags(OF_NeedsPostLoad);
-            }
-        }
-    
         return true;
     }
 }

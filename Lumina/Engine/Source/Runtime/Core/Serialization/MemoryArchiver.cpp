@@ -1,2 +1,113 @@
 #include "pch.h"
 #include "MemoryArchiver.h"
+
+namespace Lumina
+{
+    FMemoryReader::FMemoryReader(const TVector<uint8>& InBytes, bool bIsPersistent)
+        : Bytes    (InBytes)
+        , LimitSize(INT64_MAX)
+    {
+        this->SetFlag(EArchiverFlags::Reading);
+    }
+
+    int64 FMemoryReader::TotalSize()
+    {
+        return std::min((int64)Bytes.size(), LimitSize);   
+    }
+
+
+    void FMemoryReader::SetLimitSize(int64 NewLimitSize)
+    {
+        LimitSize = NewLimitSize;
+    }
+
+    void FMemoryReader::Serialize(void* V, int64 Size)
+    {
+        if ((Size) && !HasError())
+        {
+            if (Size <= 0)
+            {
+                SetHasError(true);
+                return;
+            }
+                
+            // Only serialize if we have the requested amount of data
+            if (Offset + Size <= TotalSize())
+            {
+                Memory::Memcpy(V, &Bytes[static_cast<int32>(Offset)], Size);
+                Offset += Size;
+            }
+            else
+            {
+                SetHasError(true);
+                LOG_ERROR("Archiver does not have enough size! Requested: {} - Total: {}", Offset + Size, TotalSize());
+            }
+        } 
+    }
+
+    FBufferReader::FBufferReader(void* InData, int64 InSize, bool bFreeAfterClose)
+        : ReaderData(InData)
+        , ReaderPos(0)
+        , ReaderSize(InSize)
+        , bFreeOnClose(bFreeAfterClose)
+    {
+        SetFlag(EArchiverFlags::Reading);
+    }
+
+    FBufferReader::~FBufferReader()
+    {
+        if (bFreeOnClose && ReaderData)
+        {
+            Memory::Free(ReaderData);
+            ReaderData = nullptr;
+        }
+    }
+
+    int64 FBufferReader::Tell()
+    {
+        return ReaderPos;
+    }
+
+    int64 FBufferReader::TotalSize()
+    {
+        return ReaderSize;
+    }
+
+    void FBufferReader::Seek(int64 InPos)
+    {
+        Assert(InPos >= 0)
+        Assert(InPos <= ReaderSize)
+        ReaderPos = InPos;
+    }
+
+    void FBufferReader::Serialize(void* Data, int64 Size)
+    {
+        Assert(ReaderPos >= 0)
+        Assert(ReaderPos + Size <= ReaderSize)
+        Memory::Memcpy(Data, static_cast<uint8*>(ReaderData) + ReaderPos, Size);
+        ReaderPos += Size;
+    }
+    
+    
+    FMemoryWriter::FMemoryWriter(TVector<uint8>& InBytes, bool bSetOffset)
+        :Bytes(InBytes)
+    {
+        this->SetFlag(EArchiverFlags::Writing);
+    }
+
+    void FMemoryWriter::Serialize(void* Data, int64 Size)
+    {
+        const int64 NumBytesToAdd = Offset + Size - static_cast<int64>(Bytes.size());
+        if (NumBytesToAdd > 0)
+        {
+            const int64 NewArrayCount = static_cast<int64>(Bytes.size()) + NumBytesToAdd;
+                
+            Bytes.resize(NewArrayCount);
+        }
+
+        Assert((Offset + Size) <= (int64)Bytes.size())
+        
+        Memory::Memcpy(&Bytes[Offset], Data, Size);
+        Offset += Size;
+    }
+}

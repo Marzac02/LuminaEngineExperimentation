@@ -280,6 +280,14 @@ namespace Lumina
 
     }
 
+    uint64 FQueue::GetCompletedInstance() const
+    {
+        uint64 CompletedInstance;
+        VK_CHECK(vkGetSemaphoreCounterValue(Device->GetDevice(), TimelineSemaphore, &CompletedInstance));
+        
+        return CompletedInstance;
+    }
+
     uint64 FQueue::Submit(ICommandList* const* CommandLists, uint32 NumCommandLists)
     {
         LUMINA_PROFILE_SCOPE();
@@ -846,7 +854,7 @@ namespace Lumina
         return Image;
     }
 
-    void* FVulkanRenderContext::MapStagingTexture(FRHIStagingImage* Image, const FTextureSlice& slice, ERHIAccess Access, size_t* OutRowPitch)
+    void* FVulkanRenderContext::MapStagingTexture(FRHIStagingImage* RESTRICT Image, const FTextureSlice& slice, ERHIAccess Access, size_t* RESTRICT OutRowPitch)
     {
         FVulkanStagingImage* VulkanStagingImage = static_cast<FVulkanStagingImage*>(Image);
 
@@ -1209,16 +1217,16 @@ namespace Lumina
         //... Vulkan CPU buffers are persistently mapped.
     }
 
-    FRHIBufferRef FVulkanRenderContext::CreateBuffer(const FRHIBufferDesc& Description)
+    FRHIBufferRef FVulkanRenderContext::CreateBuffer(const FRHIBufferDesc& Desc)
     {
-        return MakeRefCount<FVulkanBuffer>(VulkanDevice, Description);
+        return MakeRefCount<FVulkanBuffer>(VulkanDevice, Desc);
     }
 
-    FRHIBufferRef FVulkanRenderContext::CreateBuffer(ICommandList* CommandList, const void* InitialData, const FRHIBufferDesc& Description)
+    FRHIBufferRef FVulkanRenderContext::CreateBuffer(ICommandList* RESTRICT CommandList, const void* RESTRICT InitialData, const FRHIBufferDesc& Desc)
     {
-        auto Buffer = MakeRefCount<FVulkanBuffer>(VulkanDevice, Description);
+        auto Buffer = MakeRefCount<FVulkanBuffer>(VulkanDevice, Desc);
         CommandList->BeginTrackingBufferState(Buffer, EResourceStates::CopyDest);
-        CommandList->WriteBuffer(Buffer, InitialData, 0, Description.Size);
+        CommandList->WriteBuffer(Buffer, InitialData, Desc.Size);
         return Buffer;
     }
 

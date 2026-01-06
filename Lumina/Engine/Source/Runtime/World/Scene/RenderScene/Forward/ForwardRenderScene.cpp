@@ -577,10 +577,10 @@ namespace Lumina
                 
                 CmdList.DisableAutomaticBarriers();
                 CmdList.WriteBuffer(SceneDataBuffer, &SceneGlobalData);
-                CmdList.WriteBuffer(InstanceDataBuffer, InstanceData.data(), 0, InstanceDataSize);
-                CmdList.WriteBuffer(IndirectDrawBuffer, IndirectDrawArguments.data(), 0, IndirectArgsSize);
-                CmdList.WriteBuffer(SimpleVertexBuffer, SimpleVertices.data(), 0, SimpleVertexSize);
-                CmdList.WriteBuffer(LightDataBuffer, &LightData, 0, LightUploadSize);
+                CmdList.WriteBuffer(InstanceDataBuffer, InstanceData.data(), InstanceDataSize);
+                CmdList.WriteBuffer(IndirectDrawBuffer, IndirectDrawArguments.data(), IndirectArgsSize);
+                CmdList.WriteBuffer(SimpleVertexBuffer, SimpleVertices.data(), SimpleVertexSize);
+                CmdList.WriteBuffer(LightDataBuffer, &LightData, LightUploadSize);
                 CmdList.EnableAutomaticBarriers();
             });
         }
@@ -634,7 +634,7 @@ namespace Lumina
             CullData.PyramidWidth   = (float)DepthPyramid->GetSizeX();
             CullData.PyramidHeight  = (float)DepthPyramid->GetSizeY();
 
-            CmdList.WriteBuffer(CullDataBuffer, &CullData, 0, sizeof(FCullData));
+            CmdList.WriteBuffer(CullDataBuffer, &CullData);
             
             FComputeState State;
             State.SetPipeline(Pipeline);

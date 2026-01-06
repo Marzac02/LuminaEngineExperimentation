@@ -137,7 +137,7 @@ namespace Lumina
             FRHICommandListRef CommandList = GRenderContext->CreateCommandList(FCommandListInfo::Graphics());
             CommandList->Open();
             
-            CommandList->WriteBuffer(UniformBuffer, &MaterialUniforms, 0, sizeof(FMaterialUniforms));
+            CommandList->WriteBuffer(UniformBuffer, &MaterialUniforms);
 
             CommandList->Close();
             

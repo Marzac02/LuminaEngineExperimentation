@@ -249,9 +249,9 @@ namespace Lumina
                 LOG_ERROR("Archiver is corrupted, attempted to serialize {} array elements. Max is: {}", SerializeNum, GetMaxSerializeSize());
                 return *this;
             }
-
+            
             // If we don't need to perform per-item serialization, just read it in bulk
-            if constexpr (sizeof(ValueType) == 1 || TCanBulkSerialize<ValueType>::Value)
+            if constexpr (sizeof(ValueType) == 1 || TCanBulkSerialize<ValueType>::value)
             {
                 if (IsReading())
                 {

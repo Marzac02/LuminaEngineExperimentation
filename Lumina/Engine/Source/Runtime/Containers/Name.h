@@ -4,6 +4,7 @@
 #include "Core/DisableAllWarnings.h"
 #include "Core/LuminaMacros.h"
 #include "Core/Math/Hash/Hash.h"
+#include "Core/Templates/CanBulkSerialize.h"
 #include "Core/Threading/Thread.h"
 
 enum class EName : uint32;
@@ -76,8 +77,8 @@ namespace Lumina
         static void Shutdown();
 
     public:
-        FName() = default;
         
+        FName() = default;
         FName(EName) {}
         
         FName(const char* Str);
@@ -90,10 +91,7 @@ namespace Lumina
         FName(const FFixedWString& Str) : FName(Str.c_str()) {}
         FName(FStringView Str) : FName(Str.data(), Str.length()) {}
 
-        explicit FName(uint64 InID)
-            : ID(InID) 
-        {
-        }
+        explicit FName(uint64 InID) : ID(InID) {}
 
         bool IsNone() const { return ID == 0; }
         uint64 GetID() const { return ID; }
@@ -182,6 +180,9 @@ namespace Lumina
         FStringView View;
         uint64 ID = 0;
     };
+    
+    template<>
+    struct TCanBulkSerialize<FName> : eastl::false_type {};
     
 }
 

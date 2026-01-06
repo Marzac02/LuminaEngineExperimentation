@@ -452,7 +452,7 @@ namespace Lumina
 
             Chunk->Buffer       = Context->CreateBuffer(Desc);
             Chunk->MappedMemory = Chunk->Buffer.As<FVulkanBuffer>()->GetMappedMemory();
-            Chunk->BufferSize   = Size;
+            Chunk->BufferSize   = Chunk->Buffer->GetSize();
         }
 
         return Chunk;
@@ -491,13 +491,12 @@ namespace Lumina
 
         ECommandQueue queue = VersionGetQueue(CurrentVersion);
         FQueue* Queue = Context->GetQueue(queue);
-        uint64 completedInstance;
-        VK_CHECK(vkGetSemaphoreCounterValue(Device->GetDevice(), Queue->TimelineSemaphore, &completedInstance));
+        uint64 CompletedInstance = Queue->GetCompletedInstance();
 
         for (auto It = ChunkPool.begin(), ItEnd = ChunkPool.end(); It != ItEnd; ++It)
         {
             TSharedPtr<FBufferChunk>& Chunk = *It;
-            if (VersionGetSubmitted(Chunk->Version) && VersionGetInstance(Chunk->Version) <= completedInstance)
+            if (VersionGetSubmitted(Chunk->Version) && VersionGetInstance(Chunk->Version) <= CompletedInstance)
             {
                 Chunk->Version = 0;
             }
@@ -538,19 +537,19 @@ namespace Lumina
         return true;
     }
 
-    void FUploadManager::SubmitChunks(uint64 CurrentVersion, uint64 submittedVersion)
+    void FUploadManager::SubmitChunks(uint64 CurrentVersion, uint64 SubmittedVersion)
     {
         if (CurrentChunk)
         {
             ChunkPool.push_back(CurrentChunk);
-            CurrentChunk = nullptr;
+            CurrentChunk.reset();
         }
-
+        
         for (const TSharedPtr<FBufferChunk>& Chunk : ChunkPool)
         {
             if (Chunk->Version == CurrentVersion)
             {
-                Chunk->Version = submittedVersion;
+                Chunk->Version = SubmittedVersion;
             }
         }
     }

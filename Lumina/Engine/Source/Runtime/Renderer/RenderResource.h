@@ -198,17 +198,17 @@ namespace Lumina
 		return Result;
 	}
 
-	constexpr uint64_t VersionGetInstance(uint64_t version)
+	constexpr uint64_t VersionGetInstance(uint64 version)
 	{
 		return version & GVersionIDMask;
 	}
 
-	constexpr ECommandQueue VersionGetQueue(uint64_t version)
+	constexpr ECommandQueue VersionGetQueue(uint64 version)
 	{
 		return ECommandQueue((version >> GVersionQueueShift) & GVersionQueueMask);
 	}
 
-	constexpr bool VersionGetSubmitted(uint64_t version)
+	constexpr bool VersionGetSubmitted(uint64 version)
 	{
 		return (version & GVersionSubmittedFlag) != 0;
 	}

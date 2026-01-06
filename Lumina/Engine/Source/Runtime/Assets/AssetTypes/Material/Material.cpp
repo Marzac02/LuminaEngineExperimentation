@@ -64,7 +64,7 @@ namespace Lumina
         
             Memory::Memzero(&MaterialUniforms, sizeof(FMaterialUniforms));
         
-            CommandList->WriteBuffer(UniformBuffer, &MaterialUniforms, 0, sizeof(FMaterialUniforms));
+            CommandList->WriteBuffer(UniformBuffer, &MaterialUniforms);
 
             FBindingSetDesc SetDesc;
             SetDesc.AddItem(FBindingSetItem::BufferCBV(0, UniformBuffer));

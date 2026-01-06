@@ -74,9 +74,6 @@ namespace Lumina
         // Helper for parsing
         static bool TryParseInternal(FStringView str, ByteArray& outBytes);
     };
-    
-    template<> struct TCanBulkSerialize<FGuid> { static constexpr bool Value = true; };
-    
 }
 
 
