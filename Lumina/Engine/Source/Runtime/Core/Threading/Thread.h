@@ -16,7 +16,7 @@ namespace Lumina
     using FScopeLock            = std::scoped_lock<FMutex>;
     using FReadScopeLock        = std::shared_lock<FSharedMutex>;
     using FWriteScopeLock       = std::unique_lock<FSharedMutex>;
-    using FRecursiveScopeLock   = std::lock_guard<FRecursiveMutex>;
+    using FRecursiveScopeLock   = std::scoped_lock<FRecursiveMutex>;
 
     namespace Threading
     {

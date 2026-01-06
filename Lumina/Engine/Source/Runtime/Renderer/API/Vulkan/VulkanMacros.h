@@ -46,7 +46,7 @@ namespace Lumina::Vulkan
 
 // Macro to check Vulkan function results and log errors if necessary
 
-#ifndef LUMINA_SHIPPING
+#ifdef LUMINA_DEBUG
 #define VK_CHECK(x)                                                                     \
 do {                                                                                    \
     VkResult result = (x);                                                              \

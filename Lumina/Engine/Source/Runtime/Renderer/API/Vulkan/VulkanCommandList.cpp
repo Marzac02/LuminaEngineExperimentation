@@ -723,6 +723,7 @@ namespace Lumina
         {
             if(Buffer->GetDescription().Usage.IsFlagCleared(EBufferUsageFlags::CPUWritable))
             {
+                //@TODO Investigate - problems with buffers in here getting incomplete data.
                 LUMINA_PROFILE_SECTION("VkCopyBuffer");
 
                 FRHIBuffer* UploadBuffer;

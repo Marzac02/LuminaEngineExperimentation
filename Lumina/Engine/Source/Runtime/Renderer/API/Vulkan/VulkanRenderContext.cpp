@@ -261,19 +261,23 @@ namespace Lumina
         auto Submissions = Move(CommandBuffersInFlight);
         uint64 LastFinish = UpdateLastFinishID();
         
+        TFixedVector<TRefCountPtr<FTrackedCommandBuffer>, 4> ToEnqueue;
         for (const TRefCountPtr<FTrackedCommandBuffer>& Submission : Submissions)
         {
             if (Submission->SubmissionID <= LastFinish)
             {
                 Submission->ClearReferencedResources();
                 Submission->SubmissionID = 0;
-                LUM_ASSERT(CommandBufferPool.enqueue(Submission))
+                ToEnqueue.emplace_back(Move(Submission));
             }
             else
             {
-                CommandBuffersInFlight.push_back(Submission);
+                CommandBuffersInFlight.emplace_back(Move(Submission));
             }
         }
+        
+        CommandBufferPool.enqueue_bulk(ToEnqueue.begin(), ToEnqueue.size());
+
     }
 
     uint64 FQueue::Submit(ICommandList* const* CommandLists, uint32 NumCommandLists)
