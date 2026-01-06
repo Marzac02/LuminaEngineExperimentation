@@ -1,8 +1,9 @@
 ﻿#pragma once
 
 #include <volk/volk.h>
-#include "VulkanMemoryAllocator/vk_mem_alloc.h"
+#include "vk_mem_alloc.h"
 #include "Containers/Array.h"
+#include "Core/LuminaMacros.h"
 #include "Core/Threading/Thread.h"
 #include "Memory/Memory.h"
 
@@ -31,41 +32,25 @@ namespace Lumina
         FVulkanMemoryAllocator(FVulkanRenderContext* InCxt, VkInstance Instance, VkPhysicalDevice PhysicalDevice, VkDevice Device);
         ~FVulkanMemoryAllocator();
         
-        void ClearAllAllocations();
-
-        void DefragmentBuffers();
         void GetMemoryBudget(VmaBudget* OutBudgets);
         void LogMemoryStats();
-
-        void CreateCommonPools();
-        void CreateBufferPool(VkBufferUsageFlags Usage, VmaAllocationCreateFlags Flags, VkDeviceSize BlockSize);
         
-        VmaAllocation AllocateBuffer(const VkBufferCreateInfo* CreateInfo, VmaAllocationCreateFlags Flags, VkBuffer* vkBuffer, const char* AllocationName);
-        VmaAllocation AllocateImage(VkImageCreateInfo* CreateInfo, VmaAllocationCreateFlags Flags, VkImage* vkImage, const char* AllocationName);
-
-        VmaAllocation GetAllocation(VkBuffer Buffer);
-        VmaAllocation GetAllocation(VkImage Image);
+        VmaAllocation AllocateBuffer(const VkBufferCreateInfo* CreateInfo, VmaAllocationCreateFlags Flags, VkBuffer* vkBuffer, const char* AllocationName) const;
+        VmaAllocation AllocateImage(const VkImageCreateInfo* CreateInfo, VmaAllocationCreateFlags Flags, VkImage* vkImage, const char* AllocationName) const;
 
         VmaAllocator GetVMA() const { return Allocator; }
 
-        void DestroyBuffer(VkBuffer Buffer);
-        void DestroyImage(VkImage Image);
+        void DestroyBuffer(VkBuffer Buffer, VmaAllocation Allocation) const;
+        void DestroyImage(VkImage Image, VmaAllocation Allocation) const;
 
         /** All buffers created with VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT will have their memory persistently mapped *
          * https://gpuopen-librariesandsdks.github.io/VulkanMemoryAllocator/html/memory_mapping.html
          * */
-        void* GetMappedMemory(FVulkanBuffer* Buffer);
+        void* GetMappedMemory(const FVulkanBuffer* Buffer) const;
 
     
     private:
         
-        THashMap<uint64, PoolConfig> BufferPools;
-        THashMap<uint64, PoolConfig> ImagePools;
-        THashMap<VkBuffer, TPair<VmaAllocation, VmaAllocationInfo>> AllocatedBuffers;
-        THashMap<VkImage, TPair<VmaAllocation, VmaAllocationInfo>> AllocatedImages;
-        
-        FMutex ImageAllocationMutex;
-        FMutex BufferAllocationMutex;
         VmaAllocator Allocator = nullptr;
         FVulkanRenderContext* RenderContext = nullptr;
     };
@@ -78,7 +63,6 @@ namespace Lumina
             : PhysicalDevice(InPhysicalDevice)
             , Device(InDevice)
         {
-            // Core properties
             vkGetPhysicalDeviceMemoryProperties(PhysicalDevice, &PhysicalDeviceMemoryProperties);
             vkGetPhysicalDeviceProperties(PhysicalDevice, &PhysicalDeviceProperties);
 
@@ -106,6 +90,7 @@ namespace Lumina
             vkDestroyDevice(Device, nullptr);
         }
         
+        LE_NO_COPYMOVE(FVulkanDevice);
 
         FVulkanMemoryAllocator* GetAllocator() const { return Allocator; }
         VkPhysicalDevice GetPhysicalDevice() const { return PhysicalDevice; }

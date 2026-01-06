@@ -7,7 +7,10 @@
 #include "Core/DisableAllWarnings.h"
 #include "EASTL/fixed_hash_set.h"
 #include "EASTL/fixed_list.h"
+#include "EASTL/fixed_slist.h"
+#include "EASTL/intrusive_list.h"
 #include "EASTL/priority_queue.h"
+#include "EASTL/slist.h"
 #include "EASTL/vector_map.h"
 #include "EASTL/bonus/fixed_ring_buffer.h"
 #include "EASTL/bonus/fixed_tuple_vector.h"
@@ -105,9 +108,20 @@ namespace Lumina
     
     template <typename T>
     using TList = eastl::list<T>;
+    
+    template <typename T>
+    using TSList = eastl::slist<T>;
+    
+    using FIntrusiveListNode = eastl::intrusive_list_node;
 
+    template<typename T>
+    using TIntrusiveList = eastl::intrusive_list<T>;
+    
     template<typename T, SIZE_T S>
     using TFixedList = eastl::fixed_list<T, S>;
+    
+    template<typename T, SIZE_T S>
+    using TFixedSList = eastl::fixed_slist<T, S>;
     
     template <typename T>
     using TSet = eastl::set<T>;

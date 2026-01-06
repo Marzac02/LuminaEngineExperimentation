@@ -55,23 +55,39 @@ namespace Lumina
     {
     public:
         
+        
         FUploadManager(FVulkanRenderContext* Ctx, uint64 InDefaultChunkSize, uint64 InMemoryLimit, bool bInIsScratchBuffer);
-
-        TSharedPtr<FBufferChunk> CreateChunk(uint64 Size);
-
-        bool SuballocateBuffer(uint64 Size, FRHIBuffer** Buffer, uint64* Offset, void** CpuVA, uint64 CurrentVersion, uint32 Alignment = 256);
+        ~FUploadManager() = default;
+        LE_NO_COPYMOVE(FUploadManager);
+        
+        /**
+         * 
+         * @param Size Size of the buffer to suballocate
+         * @param Buffer Out buffer 
+         * @param Offset Offset into the buffer
+         * @param CpuVA CPU Virtual Address
+         * @param CurrentVersion Version tracking
+         * @param Alignment Alignment
+         * @return 
+         */
+        bool SuballocateBuffer(uint64 Size, FRHIBuffer*& Buffer, uint64& Offset, void*& CpuVA, uint64 CurrentVersion, uint32 Alignment = 256);
         void SubmitChunks(uint64 CurrentVersion, uint64 submittedVersion);
+        
+    private:
+        
+        TSharedPtr<FBufferChunk> CreateChunk(uint64 Size) const;
 
     private:
         
-        FVulkanRenderContext* Context;
-        uint64 DefaultChunkSize = 0;
-        uint64 MemoryLimit = 0;
-        uint64 AllocatedMemory = 0;
-        bool bIsScratchBuffer = false;
-
-        TFixedList<TSharedPtr<FBufferChunk>, 4>    ChunkPool;
-        TSharedPtr<FBufferChunk>                   CurrentChunk;
+        TFixedList<TSharedPtr<FBufferChunk>, 4>     ChunkPool;
+        TSharedPtr<FBufferChunk>                    CurrentChunk;
+        
+        FVulkanRenderContext*                       Context;
+        uint64                                      DefaultChunkSize = 0;
+        uint64                                      MemoryLimit = 0;
+        uint64                                      AllocatedMemory = 0;
+        bool                                        bIsScratchBuffer = false;
+        
     };
     
     class FVulkanEventQuery : public IEventQuery
@@ -133,6 +149,7 @@ namespace Lumina
         
         FVulkanBuffer(FVulkanDevice* InDevice, const FRHIBufferDesc& InDescription);
         ~FVulkanBuffer() override;
+        LE_NO_COPYMOVE(FVulkanBuffer);
 
         void* GetAPIResourceImpl(EAPIResourceType Type) override
         {
@@ -153,15 +170,18 @@ namespace Lumina
         TBitFlags<EBufferUsageFlags> GetUsage() const override { return Description.Usage; }
 
     private:
-
-        FRHIBufferDesc                      Description;
-        ECommandQueue                       LastUseQueue = ECommandQueue::Graphics;
-        uint64                              LastUseCommandListID = 0;
-
-        TFixedVector<FBufferVersionItem, 4> VersionTracking;
-        uint32                              VersionSearchStart = 0;
+        
         VmaAllocation                       Allocation = nullptr;
         VkBuffer                            Buffer = VK_NULL_HANDLE;
+        void*                               MaybeMappedMemory = nullptr;  
+
+        uint64                              LastUseCommandListID = 0;
+        
+        FRHIBufferDesc                      Description;
+        TFixedVector<FBufferVersionItem, 4> VersionTracking;
+
+        uint32                              VersionSearchStart = 0;
+        ECommandQueue                       LastUseQueue = ECommandQueue::Graphics;
 
     };
 
@@ -218,12 +238,12 @@ namespace Lumina
     {
     public:
 
-        enum EInternal
+        enum EInternal : uint8
         {
             ExternallyManaged
         };
 
-        enum class ESubresourceViewType
+        enum class ESubresourceViewType : uint8
         {
             AllAspects,
             DepthOnly,
@@ -231,7 +251,7 @@ namespace Lumina
         };
 
         using FSubresourceViewKey = TTuple<FTextureSubresourceSet, ESubresourceViewType, EImageDimension, EFormat, VkImageUsageFlags>;
-
+        
         struct Hash
         {
             std::size_t operator()(const FSubresourceViewKey& TupleKey) const noexcept
@@ -252,10 +272,14 @@ namespace Lumina
                 return Hash;
             }
         };
+        
+        using SubresourceMap = THashMap<FSubresourceViewKey, FTextureSubresourceView, Hash>;
+        
 
         FVulkanImage(FVulkanDevice* InDevice, const FRHIImageDesc& InDescription);
         FVulkanImage(FVulkanDevice* InDevice, const FRHIImageDesc& InDescription, VkImage RawImage, EInternal);
         ~FVulkanImage() override;
+        LE_NO_COPYMOVE(FVulkanImage);
 
         void* GetAPIResourceImpl(EAPIResourceType Type) override;
 
@@ -279,14 +303,17 @@ namespace Lumina
 
     private:
         
-        THashMap<FSubresourceViewKey, FTextureSubresourceView, Hash> SubresourceViews;
+        FRHIImageDesc           Description;
+        SubresourceMap          SubresourceViews;
+        FMutex                  SubresourceMutex;           
 
-        FRHIImageDesc               Description;
-        FMutex                      SubresourceMutex;                      
-        bool                        bImageManagedExternal = false;  // Mostly for swapchain.
-        VkImageAspectFlags          FullAspectMask =        VK_IMAGE_ASPECT_NONE;
-        VkImageAspectFlags          PartialAspectMask =     VK_IMAGE_ASPECT_NONE;
-        VkImage                     Image =                 VK_NULL_HANDLE;
+        VkImage                 Image                   = VK_NULL_HANDLE;
+        VmaAllocation           Allocation              = VK_NULL_HANDLE;
+        
+        VkImageAspectFlags      FullAspectMask          = VK_IMAGE_ASPECT_NONE;
+        VkImageAspectFlags      PartialAspectMask       = VK_IMAGE_ASPECT_NONE;
+        
+        bool                    bImageManagedExternal   = false;
     };
 
     class FVulkanStagingImage : public FRHIStagingImage, public IDeviceChild

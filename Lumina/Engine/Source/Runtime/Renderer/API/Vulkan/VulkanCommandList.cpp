@@ -333,7 +333,7 @@ namespace Lumina
         FRHIBuffer* UploadBuffer;
         uint64 UploadOffset;
         void* UploadCPUVA;
-        if (!UploadManager->SuballocateBuffer(DeviceMemSize, &UploadBuffer, &UploadOffset, &UploadCPUVA, MakeVersion(CurrentCommandBuffer->RecordingID, Info.CommandQueue, false)))
+        if (!UploadManager->SuballocateBuffer(DeviceMemSize, UploadBuffer, UploadOffset, UploadCPUVA, MakeVersion(CurrentCommandBuffer->RecordingID, Info.CommandQueue, false)))
         {
             LOG_ERROR("Failed to suballocate buffer for size: %llu", DeviceMemSize);
             return;
@@ -728,10 +728,10 @@ namespace Lumina
 
                 FRHIBuffer* UploadBuffer;
                 uint64 UploadOffset;
-                void* RESTRICT UploadCPU;
-                if (UploadManager->SuballocateBuffer(Size, &UploadBuffer, &UploadOffset, &UploadCPU, MakeVersion(CurrentCommandBuffer->RecordingID, Info.CommandQueue, false)))
+                void* UploadCPUVA;
+                if (UploadManager->SuballocateBuffer(Size, UploadBuffer, UploadOffset, UploadCPUVA, MakeVersion(CurrentCommandBuffer->RecordingID, Info.CommandQueue, false)))
                 {
-                    Memory::Memcpy(UploadCPU, Data, Size);
+                    Memory::Memcpy(UploadCPUVA, Data, Size);
                     CopyBuffer(UploadBuffer, UploadOffset, Buffer, Offset, Size);
                 }
                 else

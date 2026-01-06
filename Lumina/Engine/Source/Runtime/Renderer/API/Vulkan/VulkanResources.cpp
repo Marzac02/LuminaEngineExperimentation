@@ -1,9 +1,9 @@
 #include "pch.h"
 #include "VulkanResources.h"
-
 #include "Renderer/RenderResource.h"
 #include "VulkanCommandList.h"
 #include "VulkanMacros.h"
+#include "vk_mem_alloc.h"
 #include "VulkanRenderContext.h"
 #include "Core/Engine/Engine.h"
 #include "Core/Templates/Align.h"
@@ -416,7 +416,7 @@ namespace Lumina
         Assert(Format < EFormat::COUNT)
         Assert(FormatMap[uint32(Format)].Format == Format)
 
-        return FormatMap[uint32(Format)].vkFormat;
+        return FormatMap[static_cast<uint32>(Format)].vkFormat;
     }
 
     FUploadManager::FUploadManager(FVulkanRenderContext* Ctx, uint64 InDefaultChunkSize, uint64 InMemoryLimit, bool bInIsScratchBuffer)
@@ -429,7 +429,7 @@ namespace Lumina
         
     }
 
-    TSharedPtr<FBufferChunk> FUploadManager::CreateChunk(uint64 Size)
+    TSharedPtr<FBufferChunk> FUploadManager::CreateChunk(uint64 Size) const
     {
         TSharedPtr<FBufferChunk> Chunk = MakeSharedPtr<FBufferChunk>();
         
@@ -450,37 +450,37 @@ namespace Lumina
             Desc.Usage.SetFlag(EBufferUsageFlags::CPUWritable);
             Desc.DebugName = FString("UploadChunk [ " + eastl::to_string(Size) + " ]");
 
-            Chunk->Buffer = Context->CreateBuffer(Desc);
+            Chunk->Buffer       = Context->CreateBuffer(Desc);
             Chunk->MappedMemory = Chunk->Buffer.As<FVulkanBuffer>()->GetMappedMemory();
-            Chunk->BufferSize = Size;
+            Chunk->BufferSize   = Size;
         }
 
         return Chunk;
     }
 
-    bool FUploadManager::SuballocateBuffer(uint64 Size, FRHIBuffer** Buffer, uint64* Offset, void** CpuVA, uint64 CurrentVersion, uint32 Alignment)
+    bool FUploadManager::SuballocateBuffer(uint64 Size, FRHIBuffer*& Buffer, uint64& Offset, void*& CpuVA, uint64 CurrentVersion, uint32 Alignment)
     {
-        LUM_ASSERT(Buffer)
         LUM_ASSERT(Size)
         LUMINA_PROFILE_SCOPE();
 
         TSharedPtr<FBufferChunk> ChunkToRetire = nullptr;
-
+        
         if (CurrentChunk)
         {
-            uint64 alignedOffset = Align<uint64>(CurrentChunk->WritePointer, Alignment);
-            uint64 endOfDataInChunk = alignedOffset + Size;
+            uint64 Aligned = Align<uint64>(CurrentChunk->WritePointer, Alignment);
+            LUM_ASSERT(Aligned % Alignment == 0)
+            
+            uint64 EndOfDataInChunk = Aligned + Size;
 
-            if (endOfDataInChunk <= CurrentChunk->BufferSize)
+            if (EndOfDataInChunk <= CurrentChunk->BufferSize)
             {
-                CurrentChunk->WritePointer = endOfDataInChunk;
+                CurrentChunk->WritePointer = EndOfDataInChunk;
 
-                *Buffer = CurrentChunk->Buffer.GetReference();
-                *Offset = alignedOffset;
-                if (CpuVA && CurrentChunk->MappedMemory)
-                {
-                    *CpuVA = (char*)CurrentChunk->MappedMemory + alignedOffset;
-                }
+                Buffer = CurrentChunk->Buffer.GetReference();
+                Offset = Aligned;
+
+                LUM_ASSERT(CurrentChunk->MappedMemory)
+                CpuVA = (char*)CurrentChunk->MappedMemory + Aligned;
 
                 return true;
             }
@@ -494,10 +494,9 @@ namespace Lumina
         uint64 completedInstance;
         VK_CHECK(vkGetSemaphoreCounterValue(Device->GetDevice(), Queue->TimelineSemaphore, &completedInstance));
 
-        for (auto it = ChunkPool.begin(); it != ChunkPool.end(); ++it)
+        for (auto It = ChunkPool.begin(), ItEnd = ChunkPool.end(); It != ItEnd; ++It)
         {
-            TSharedPtr<FBufferChunk> Chunk = *it; // Must be copied.
-
+            TSharedPtr<FBufferChunk>& Chunk = *It;
             if (VersionGetSubmitted(Chunk->Version) && VersionGetInstance(Chunk->Version) <= completedInstance)
             {
                 Chunk->Version = 0;
@@ -505,8 +504,8 @@ namespace Lumina
 
             if (Chunk->Version == 0 && Chunk->BufferSize >= Size)
             {
-                ChunkPool.erase(it);
                 CurrentChunk = Chunk;
+                ChunkPool.remove(Chunk);
                 break;
             }
         }
@@ -528,18 +527,15 @@ namespace Lumina
             CurrentChunk = CreateChunk(SizeToAllocate);
         }
 
-        CurrentChunk->Version = CurrentVersion;
-        CurrentChunk->WritePointer = Size;
+        CurrentChunk->Version       = CurrentVersion;
+        CurrentChunk->WritePointer  = Size;
 
-        *Buffer = CurrentChunk->Buffer;
-        *Offset = 0;
-        if (CpuVA)
-        {
-            *CpuVA = CurrentChunk->MappedMemory;
-        }
+        Buffer = CurrentChunk->Buffer;
+        Offset = 0;
+        
+        CpuVA = CurrentChunk->MappedMemory;
 
-        bool bValidBuffer = *Buffer != nullptr;
-        return bValidBuffer;
+        return true;
     }
 
     void FUploadManager::SubmitChunks(uint64 CurrentVersion, uint64 submittedVersion)
@@ -653,19 +649,18 @@ namespace Lumina
         BufferCreateInfo.flags = 0;
         
         Allocation = Device->GetAllocator()->AllocateBuffer(&BufferCreateInfo, VmaFlags, &Buffer, Description.DebugName.c_str());
+        
         static_cast<FVulkanRenderContext*>(GRenderContext)->SetVulkanObjectName(Description.DebugName, VK_OBJECT_TYPE_BUFFER, (uintptr_t)Buffer);
     }
 
     FVulkanBuffer::~FVulkanBuffer()
     {
-        Device->GetAllocator()->DestroyBuffer(Buffer);
+        Device->GetAllocator()->DestroyBuffer(Buffer, Allocation);
     }
 
     void* FVulkanBuffer::GetMappedMemory() const
     {
-        VmaAllocationInfo Info;
-        vmaGetAllocationInfo(Device->GetAllocator()->GetVMA(), Allocation, &Info);
-        return Info.pMappedData;
+        return Device->GetAllocator()->GetMappedMemory(this);
     }
 
     FVulkanSampler::FVulkanSampler(FVulkanDevice* InDevice, const FSamplerDesc& InDesc)
@@ -783,7 +778,7 @@ namespace Lumina
         ImageCreateInfo.usage               = UsageFlags;
         ImageCreateInfo.sharingMode         = VK_SHARING_MODE_EXCLUSIVE;
     
-        Device->GetAllocator()->AllocateImage(&ImageCreateInfo, AllocationFlags, &Image, InDescription.DebugName.c_str());
+        Allocation = Device->GetAllocator()->AllocateImage(&ImageCreateInfo, AllocationFlags, &Image, InDescription.DebugName.c_str());
         static_cast<FVulkanRenderContext*>(GRenderContext)->SetVulkanObjectName(InDescription.DebugName, VK_OBJECT_TYPE_IMAGE, (uintptr_t)Image);
     }
 
@@ -792,8 +787,8 @@ namespace Lumina
         : IDeviceChild(InDevice)
         , FTextureStateExtension(Description)
         , Description(InDescription)
-        , bImageManagedExternal(true)
         , Image(RawImage)
+        , bImageManagedExternal(true)
     {
         FullAspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
         PartialAspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
@@ -812,7 +807,7 @@ namespace Lumina
 
         if (!bImageManagedExternal)
         {
-            Device->GetAllocator()->DestroyImage(Image);
+            Device->GetAllocator()->DestroyImage(Image, Allocation);
         }
     }
 

@@ -181,11 +181,6 @@ static constexpr ERHIResourceType Type = ERHIResourceType::TypeValue; \
 static constexpr ERHIResourceType GetStaticResourceType() { return ERHIResourceType::TypeValue; } \
 virtual ERHIResourceType GetResourceType() const override { return ERHIResourceType:: TypeValue; }
 
-/**
- * Base class for all render resources. Reference counted and destroyed externally by the implementation.
- *
- */
-
 namespace Lumina
 {
 	constexpr uint64 GVersionSubmittedFlag = 0x8000000000000000;
@@ -193,7 +188,7 @@ namespace Lumina
 	constexpr uint32 GVersionQueueMask = 0x7;
 	constexpr uint64 GVersionIDMask = 0x0FFFFFFFFFFFFFFF;
 
-	constexpr uint64_t MakeVersion(uint64 ID, ECommandQueue Queue, bool Submitted)
+	constexpr uint64 MakeVersion(uint64 ID, ECommandQueue Queue, bool Submitted)
 	{
 		uint64 Result = (ID & GVersionIDMask) | (uint64(Queue) << GVersionQueueShift);
 		if (Submitted)
