@@ -19,7 +19,6 @@
 namespace Lumina
 {
     static TConsoleVar CVarShadowCascadeLambda("Rendering.Shadows.CascadeLambda", 0.95f, "Changes the lambda of the cascade selection");
-    static TConsoleVar CVarRenderBasePass("Rendering.Passes.BasePass", true, "Toggles rendering of the base pass");
 
     FForwardRenderScene::FForwardRenderScene(CWorld* InWorld)
         : World(InWorld)
@@ -84,7 +83,7 @@ namespace Lumina
         EnvironmentPass(RenderGraph);
         BasePass(RenderGraph);
         TransparentPass(RenderGraph);
-        //BatchedLineDraw(RenderGraph);
+        BatchedLineDraw(RenderGraph);
         ToneMappingPass(RenderGraph);
         DebugDrawPass(RenderGraph);
     }
@@ -908,11 +907,9 @@ namespace Lumina
             const TVector<FLightShadow>& PointShadows = PackedShadows[(uint32)ELightType::Point];
             
 
-            for (size_t Shadow = 0; Shadow < PointShadows.size(); Shadow++)
+            for (const FLightShadow& LightShadow : PointShadows)
             {
                 LUMINA_PROFILE_SECTION_COLORED("Process Point Light", tracy::Color::DeepPink2);
-
-                const FLightShadow& LightShadow = PointShadows[Shadow];
                 
                 const FShadowTile& Tile = ShadowAtlas.GetTile(LightShadow.ShadowMapIndex);
                 uint32 TilePixelX       = static_cast<uint32>(Tile.UVOffset.x * GShadowAtlasResolution);
@@ -940,10 +937,8 @@ namespace Lumina
 
                 GraphicsState.SetViewportState(FViewportState(Viewport, Scissor));
                 
-                for (SIZE_T CurrentDraw = 0; CurrentDraw < DrawCommands.size(); ++CurrentDraw)
+                for (const FMeshDrawCommand& Batch : DrawCommands)
                 {
-                    const FMeshDrawCommand& Batch = DrawCommands[CurrentDraw];
-
                     GraphicsState.SetVertexBuffer({ Batch.VertexBuffer });
                     GraphicsState.SetIndexBuffer({ Batch.IndexBuffer });
                     
@@ -993,11 +988,10 @@ namespace Lumina
             
             const TVector<FLightShadow>& SpotShadows = PackedShadows[(uint32)ELightType::Spot];
 
-            for (int i = 0; i < (int)SpotShadows.size(); ++i)
+            for (const FLightShadow& Shadow : SpotShadows)
             {
                 LUMINA_PROFILE_SECTION_COLORED("Process Spot Light", tracy::Color::DeepPink);
 
-                const FLightShadow& Shadow = SpotShadows[i];
                 const FShadowTile& Tile = ShadowAtlas.GetTile(Shadow.ShadowMapIndex);
                 uint32 TilePixelX = static_cast<uint32>(Tile.UVOffset.x * GShadowAtlasResolution);
                 uint32 TilePixelY = static_cast<uint32>(Tile.UVOffset.y * GShadowAtlasResolution);
@@ -1046,10 +1040,8 @@ namespace Lumina
                     .SetIndirectParams(IndirectDrawBuffer);                    
                 
                 
-                for (SIZE_T CurrentDraw = 0; CurrentDraw < DrawCommands.size(); ++CurrentDraw)
+                for (const FMeshDrawCommand& Batch : DrawCommands)
                 {
-                    const FMeshDrawCommand& Batch = DrawCommands[CurrentDraw];
-        
                     GraphicsState.SetVertexBuffer({Batch.VertexBuffer});
                     GraphicsState.SetIndexBuffer({Batch.IndexBuffer});
                     CmdList.SetGraphicsState(GraphicsState);
@@ -1108,10 +1100,8 @@ namespace Lumina
         
                 FRHIGraphicsPipelineRef Pipeline = GRenderContext->CreateGraphicsPipeline(Desc, RenderPass);
                 
-                for (SIZE_T CurrentDraw = 0; CurrentDraw < DrawCommands.size(); ++CurrentDraw)
+                for (const FMeshDrawCommand& Batch : DrawCommands)
                 {
-                    const FMeshDrawCommand& Batch = DrawCommands[CurrentDraw];
-        
                     FGraphicsState GraphicsState; GraphicsState
                         .SetRenderPass(RenderPass)
                         .SetViewportState(MakeViewportStateFromImage(CascadedShadowMap))
@@ -1177,9 +1167,8 @@ namespace Lumina
             RenderState.SetRasterState(RasterState);
             RenderState.SetDepthStencilState(DepthState);
             
-            for (SIZE_T CurrentDraw = 0; CurrentDraw < DrawCommands.size(); ++CurrentDraw)
+                for (const FMeshDrawCommand& Batch : DrawCommands)
             {
-                const FMeshDrawCommand& Batch = DrawCommands[CurrentDraw];
                 CMaterialInterface* Mat = Batch.Material;
         
                 FGraphicsPipelineDesc Desc; Desc
