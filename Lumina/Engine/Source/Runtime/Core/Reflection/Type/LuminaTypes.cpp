@@ -38,11 +38,12 @@ namespace Lumina
 
     FString FProperty::MakeDisplayNameFromName(EPropertyTypeFlags TypeFlags, const FName& InName)
     {
-        FString Raw = InName.ToString();
-
+        FFixedString Raw = InName.c_str();
+        FStringView View(Raw.begin(), Raw.length());
+        
         if (TypeFlags == EPropertyTypeFlags::Bool)
         {
-            if (StringUtils::StartsWith(Raw, "b") && isupper(Raw[1]))
+            if (View.starts_with('b') && std::isupper(Raw[1]))
             {
                 Raw.erase(0, 1);
             }
@@ -51,7 +52,7 @@ namespace Lumina
         FString Display;
         for (size_t i = 0; i < Raw.size(); ++i)
         {
-            if (i > 0 && isupper(Raw[i]) && !isspace(Raw[i - 1]) && !isupper(Raw[i - 1]))
+            if (i > 0 && std::isupper(Raw[i]) && !std::isspace(Raw[i - 1]) && !std::isupper(Raw[i - 1]))
             {
                 Display += ' ';
             }
@@ -60,7 +61,7 @@ namespace Lumina
 
         if (!Display.empty())
         {
-            Display[0] = toupper(Display[0]);
+            Display[0] = eastl::CharToUpper(Display[0]);
         }
 
         return Display;

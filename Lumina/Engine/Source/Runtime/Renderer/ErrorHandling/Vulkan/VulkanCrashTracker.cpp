@@ -3,7 +3,7 @@
 
 namespace Lumina::RHI
 {
-    
+#if defined(WITH_AFTERMATH)
     inline FString AftermathErrorMessage(GFSDK_Aftermath_Result result)
     {
         switch (result)
@@ -36,6 +36,7 @@ namespace Lumina::RHI
         exit(1);                                                                                        \
     }                                                                                                   \
 }()
+#endif
 #endif
     
     FVulkanCrashTracker::~FVulkanCrashTracker()
@@ -179,7 +180,7 @@ namespace Lumina::RHI
     void FVulkanCrashTracker::ShaderDebugInfoCallback(const void* ShaderDebugInfo, uint32 shaderDebugInfoSize, void* UserData)
     {
     }
-
+#if defined(WITH_AFTERMATH)
     void FVulkanCrashTracker::CrashDumpDescriptionCallback(PFN_GFSDK_Aftermath_AddGpuCrashDumpDescription addDescription, void* UserData)
     {
     }
@@ -187,4 +188,5 @@ namespace Lumina::RHI
     void FVulkanCrashTracker::ResolveMarkerCallback(const void* MarkerData, uint32 MarkerDataSize, void* UserData, PFN_GFSDK_Aftermath_ResolveMarker ResolveMarker)
     {
     }
+#endif
 }

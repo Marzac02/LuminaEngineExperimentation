@@ -2,6 +2,7 @@
 
 #include "Containers/Array.h"
 #include "Containers/Name.h"
+#include "Core/Templates/LuminaTemplate.h"
 #include "Core/Templates/Optional.h"
 
 namespace Lumina
@@ -21,90 +22,96 @@ namespace Lumina
         {
             for (int i = 1; i < argc; ++i)
             {
-                FString arg = argv[i];
+                FStringView Arg(argv[i], strlen(argv[i]));
     
-                if (StringUtils::StartsWith(arg, "--"))
+                if (Arg.starts_with("--"))
                 {
-                    FString key = NormalizeKey(arg.substr(2));
-                    FString value;
+                    FFixedString Key = Normalize(Arg.substr(2));
+                    FFixedString Value;
     
-                    size_t eq = key.find('=');
-                    if (eq != FString::npos)
+                    size_t Equals = Key.find('=');
+                    if (Equals != FString::npos)
                     {
-                        value = key.substr(eq + 1);
-                        key = key.substr(0, eq);
+                        Value   = Key.substr(Equals + 1, 0);
+                        Key     = Key.substr(0, Equals);
                     }
-                    else if (i + 1 < argc && StringUtils::StartsWith(FString(argv[i + 1]), "--") == false)
+                    else if (i + 1 < argc)
                     {
-                        value = argv[++i];
+                        FStringView NextArg(argv[i + 1]);
+                        if (NextArg.starts_with("--") == false)
+                        {
+                            Value = argv[++i];
+                        }
                     }
     
-                    Args[key] = value;
+                    Args[Key] = Normalize(Value);
                 }
-                else if (StringUtils::StartsWith(arg, "-") && arg.size() > 1)
+                else if (Arg.starts_with('-') && Arg.size() > 1)
                 {
-                    for (size_t j = 1; j < arg.size(); ++j)
+                    for (size_t j = 1; j < Arg.size(); ++j)
                     {
-                        FString key(1, arg[j]);
-                        Args[NormalizeKey(key)] = "true";
+                        FFixedString Key(1, Arg[j]);
+                        Args[Normalize(Key)] = "true";
                     }
                 }
                 else
                 {
-                    PositionalArgs.push_back(arg);
+                    PositionalArgs.emplace_back(FFixedString(Arg.begin(), Arg.end()));
                 }
             }
         }
     
         NODISCARD bool Has(const FString& name) const
         {
-            return Args.find(NormalizeKey(name)) != Args.end();
+            return Args.find(Normalize(name)) != Args.end();
         }
     
-        NODISCARD TOptional<FString> Get(const FString& Name) const
+        NODISCARD TOptional<FFixedString> Get(const FString& Name) const
         {
-            auto it = Args.find(NormalizeKey(Name));
-            return it != Args.end() ? it->second : TOptional<FString>();
+            auto it = Args.find(Normalize(Name));
+            return it != Args.end() ? TOptional(it->second) : eastl::nullopt;
         }
     
         NODISCARD TOptional<int> GetInt(const FString& name) const
         {
-            auto it = Args.find(NormalizeKey(name));
-            return it != Args.end() ? std::stoi(it->second.c_str()) : TOptional<int>();
+            auto it = Args.find(Normalize(name));
+            return it != Args.end() ? TOptional(std::stoi(it->second.c_str())) : eastl::nullopt;
         }
     
         NODISCARD TOptional<bool> GetBool(const FString& name) const
         {
-            auto it = Args.find(NormalizeKey(name));
+            auto it = Args.find(Normalize(name));
             if (it == Args.end())
             {
-                return TOptional<bool>();
+                return eastl::nullopt;
             }
     
-            FString val = StringUtils::ToLower(it->second);
-            return val.empty() || val == "1" || val == "true" || val == "yes";
+            const FFixedString& Val = it->second;
+            return Val.empty() || Val == "1" || Val == "true" || Val == "yes";
         }
     
-        const TVector<FString>& GetPositionalArgs() const
+        const TVector<FFixedString>& GetPositionalArgs() const
         {
             return PositionalArgs;
         }
 
-        const THashMap<FName, FString>& GetAll() const
+        const THashMap<FName, FFixedString>& GetAll() const
         {
             return Args;
         }
     
     private:
     
-        static FString NormalizeKey(const FString& raw)
+        static FFixedString Normalize(FStringView Raw)
         {
-            return StringUtils::ToLower(raw);
+            FFixedString String(Raw.begin(), Raw.end());
+            String.make_lower();
+            return Move(String);
         }
     
     private:
-        THashMap<FName, FString> Args;
-        TVector<FString> PositionalArgs;
+        THashMap<FName, FFixedString>   Args;
+        TVector<FFixedString>           PositionalArgs;
     };
 
 }

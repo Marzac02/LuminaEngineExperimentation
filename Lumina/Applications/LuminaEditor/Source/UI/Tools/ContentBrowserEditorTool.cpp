@@ -499,11 +499,17 @@ namespace Lumina
     {
         if (Dialogs::Confirmation("Confirm Deletion", "Are you sure you want to delete \"{0}\"?\n""\nThis action cannot be undone.", Item->GetName()))
         {
-            Callback(EYesNo::Yes);
+            if (Callback)
+            {
+                Callback(EYesNo::Yes);
+            }
             ActionRegistry.EnqueueAction<FPendingDestroy>(FPendingDestroy{ FFixedString(Item->GetVirtualPath().data(), Item->GetVirtualPath().size()) });
         }
 
-        Callback(EYesNo::No);
+        if (Callback)
+        {
+            Callback(EYesNo::No);
+        }
     }
 
     void FContentBrowserEditorTool::OnProjectLoaded()

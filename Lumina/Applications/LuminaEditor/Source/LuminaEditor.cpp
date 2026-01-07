@@ -15,7 +15,7 @@ namespace Lumina
     {
         InitializeCObjectSystem();
         
-        TOptional<FString> MaybeProject = FApplication::CommandLine.Get("project");
+        TOptional<FFixedString> MaybeProject = FApplication::CommandLine.Get("project");
         
         if (MaybeProject.has_value())
         {
