@@ -100,44 +100,49 @@ namespace Lumina::ImGuiX
     
     namespace Notifications
     {
+        enum class EType
+        {
+            None,
+            Success,
+            Warning,
+            Error,
+            Info,
+        };
 
-        LUMINA_API void NotifyInfoInternal(const FString& Msg);
-        LUMINA_API void NotifySuccessInternal(const FString& Msg);
-        LUMINA_API void NotifyWarningInternal(const FString& Msg);
-        LUMINA_API void NotifyErrorInternal(const FString& Msg);
+
+        LUMINA_API void NotifyInternal(EType Type, FStringView Msg);
         
         template <typename... TArgs>
         void NotifyInfo(std::format_string<TArgs...> fmt, TArgs&&... Args)
         {
-            std::string Msg = std::format(fmt, std::forward<TArgs>(Args)...);
-            NotifyInfoInternal(Msg.c_str());
+            FFixedString MessageStr;
+            std::format_to(std::back_inserter(MessageStr), fmt, Forward<TArgs>(Args)...);
+            NotifyInternal(EType::Info, MessageStr);
         }
 
         template <typename... TArgs>
         void NotifySuccess(std::format_string<TArgs...> fmt, TArgs&&... Args)
         {
-            std::string Msg = std::format(fmt, Forward<TArgs>(Args)...);
-            NotifySuccessInternal(Msg.c_str());
+            FFixedString MessageStr;
+            std::format_to(std::back_inserter(MessageStr), fmt, Forward<TArgs>(Args)...);
+            NotifyInternal(EType::Success, MessageStr);
         }
 
         template <typename... TArgs>
         void NotifyWarning(std::format_string<TArgs...> fmt, TArgs&&... Args)
         {
-            std::string Msg = std::format(fmt, Forward<TArgs>(Args)...);
-            NotifyWarningInternal(Msg.c_str());
+            FFixedString MessageStr;
+            std::format_to(std::back_inserter(MessageStr), fmt, Forward<TArgs>(Args)...);
+            NotifyInternal(EType::Warning, MessageStr);
         }
 
         template <typename... TArgs>
         void NotifyError(std::format_string<TArgs...> fmt, TArgs&&... Args)
         {
-            std::string Msg = std::format(fmt, Forward<TArgs>(Args)...);
-            NotifyErrorInternal(Msg.c_str());
+            FFixedString MessageStr;
+            std::format_to(std::back_inserter(MessageStr), fmt, Forward<TArgs>(Args)...);
+            NotifyInternal(EType::Error, MessageStr);
         }
-    }
-
-    namespace MessageBoxes
-    {
-        LUMINA_API bool ShowMessageBox(const char* Title, const char* Format, ...);
     }
     
     struct LUMINA_API ApplicationTitleBar

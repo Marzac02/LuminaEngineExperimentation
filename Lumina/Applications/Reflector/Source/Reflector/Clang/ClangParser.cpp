@@ -16,6 +16,7 @@ namespace Lumina::Reflection
         "/Lumina/Engine/ThirdParty/",
         "/Lumina/Engine/Source/Runtime",
 
+        // GLM can't be added to this list for manual reflect types.
         "/Lumina/Engine/ThirdParty/spdlog/include",
         "/Lumina/Engine/ThirdParty/GLFW/include",
         "/Lumina/Engine/ThirdParty/imgui",
@@ -106,6 +107,11 @@ namespace Lumina::Reflection
                 }
             }
         
+            eastl::string ManualReflectPath;
+			ManualReflectPath.append(LuminaDirectory).append("/Lumina/Engine/Source/Runtime/Core/Object/ManualReflectTypes.h");
+			clangArgs.emplace_back("-include");
+            clangArgs.emplace_back(ManualReflectPath.c_str());
+
             clangArgs.emplace_back("-x");
             clangArgs.emplace_back("c++");
             clangArgs.emplace_back("-std=c++23");

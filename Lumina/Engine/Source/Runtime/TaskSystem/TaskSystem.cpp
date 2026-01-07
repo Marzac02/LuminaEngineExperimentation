@@ -77,16 +77,19 @@ namespace Lumina
         GTaskSystem = nullptr;
     }
 
-    void FTaskSystem::ScheduleLambda(uint32 Num, uint32 MinRange, TaskSetFunction&& Function, ETaskPriority Priority)
+    FTaskHandle FTaskSystem::ScheduleLambda(uint32 Num, uint32 MinRange, TaskSetFunction&& Function, ETaskPriority Priority)
     {
         if (Num == 0)
         {
             LOG_WARN("Task Size of [0] passed to task system.");
-            return;
+            return nullptr;
         }
-            
-        FLambdaTask* Task = Memory::New<FLambdaTask>(Priority, Num, std::max(1u, MinRange), Move(Function));
+        
+        FTaskHandle TaskHandle = MakeSharedPtr<FTaskCompletion>();
+        FLambdaTask* Task = Memory::New<FLambdaTask>(TaskHandle, Priority, Num, std::max(1u, MinRange), Move(Function));
         ScheduleTask(Task);
+        
+        return TaskHandle;
     }
 
     void FTaskSystem::ScheduleTask(ITaskSet* pTask)
@@ -119,8 +122,8 @@ namespace Lumina
         Scheduler.WaitforAll(); 
     }
 
-    void Task::AsyncTask(uint32 Num, uint32 MinRange, TaskSetFunction&& Function, ETaskPriority Priority)
+    FTaskHandle Task::AsyncTask(uint32 Num, uint32 MinRange, TaskSetFunction&& Function, ETaskPriority Priority)
     {
-        GTaskSystem->ScheduleLambda(Num, MinRange, Move(Function), Priority);
+        return GTaskSystem->ScheduleLambda(Num, MinRange, Move(Function), Priority);
     }
 }

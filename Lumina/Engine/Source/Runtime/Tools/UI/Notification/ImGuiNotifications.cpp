@@ -10,177 +10,144 @@
 
 namespace Lumina::ImGuiX::Notifications
 {
-
-     class LUMINA_API FNotification
-     {
-         constexpr static float DefaultLifetime = 3.0f;
-         constexpr static float DefaultFadeTime = 1.0f;
-
-     public:
-
-         enum class EType
-         {
-             None,
-             Success,
-             Warning,
-             Error,
-             Info,
-         };
-
-         enum class EPhase
-         {
-             FadeIn,
-             Wait,
-             FadeOut,
-             Expired,
-         };
-
-         enum class EPosition
-         {
-             TopLeft,
-             TopCenter,
-             TopRight,
-             BottomLeft,
-             BottomCenter,
-             BottomRight,
-             Center,
-         };
-
-     public:
-
-         FNotification(EType type, FString Message)
-             : Type(type)
-             , Message(Move(Message))
-         {
-             CreationTime = glfwGetTime();
-         }
-
-         EType GetType() const { return Type; }
-
-         EPhase GetPhase() const
-         {
-             float const elapsedTime = glfwGetTime() - CreationTime;
-
-             if ( elapsedTime > DefaultFadeTime + Lifetime + DefaultFadeTime )
-             {
-                 return EPhase::Expired;
-             }
-             else if ( elapsedTime > DefaultFadeTime + Lifetime )
-             {
-                 return EPhase::FadeOut;
-             }
-             else if ( elapsedTime > DefaultFadeTime )
-             {
-                 return EPhase::Wait;
-             }
-             else
-             {
-                 return EPhase::FadeIn;
-             }
-         }
-
-         float GetFadePercentage() const
-         {
-             EPhase const phase = GetPhase();
-             float const elapsedTime = glfwGetTime() - CreationTime;
-
-             if ( phase == EPhase::FadeIn )
-             {
-                 return elapsedTime / DefaultFadeTime;
-             }
-             else if ( phase == EPhase::FadeOut )
-             {
-                 return ( 1.f - ( ( elapsedTime - DefaultFadeTime - Lifetime) / DefaultFadeTime ) );
-             }
-
-             return 1.f;
-         }
-
-         ImVec4 GetColor( float opacity = 1.0f ) const
-         {
-             switch (Type)
-             {
-             case EType::Success:
-                 return { 0, 255, 0, opacity }; // Green
-
-             case EType::Warning:
-                 return { 255, 255, 0, opacity }; // Yellow
-
-             case EType::Error:
-                 return { 255, 0, 0, opacity }; // Error
-
-             case EType::Info:
-                 return { 0, 157, 255, opacity }; // Blue
-
-             default:
-                 break;
-             }
-
-             //-------------------------------------------------------------------------
-
-             return ImVec4(1.0f, 1.0f, 1.0f, 1.0f);
-         }
-
-         char const* GetIcon() const
-         {
-             switch (Type)
-             {
-             case EType::Success:
-                 return LE_ICON_CHECK_CIRCLE;
-
-             case EType::Warning:
-                 return LE_ICON_ALERT;
-
-             case EType::Error:
-                 return LE_ICON_CLOSE_CIRCLE;
-
-             case EType::Info:
-                 return LE_ICON_INFORMATION;
-
-             default:
-                 break;
-             }
-
-             //-------------------------------------------------------------------------
-
-             return nullptr;
-         }
-
-         char const* GetTitle() const
-         {
-             switch (Type)
-             {
-             case EType::Success:
-                 return "Success";
-
-             case EType::Warning:
-                 return "Warning";
-
-             case EType::Error:
-                 return "Error";
-
-             case EType::Info:
-                 return "Info";
-
-             default:
-                 break;
-             }
-
-             //-------------------------------------------------------------------------
-
-             return nullptr;
-         };
-
-         char const* GetMessage() const { return Message.c_str(); }
-         
-     private:
-
-         EType                     Type = EType::None;
-         FString                   Message;
-         float                     Lifetime = DefaultLifetime;
-         double                    CreationTime = -1.0f;
-     };
     
+    class LUMINA_API FNotification
+    {
+        constexpr static float DefaultLifetime = 3.0f;
+        constexpr static float DefaultFadeTime = 1.0f;
+
+    public:
+        
+        enum class EPhase
+        {
+            FadeIn,
+            Wait,
+            FadeOut,
+            Expired,
+        };
+
+        enum class EPosition
+        {
+            TopLeft,
+            TopCenter,
+            TopRight,
+            BottomLeft,
+            BottomCenter,
+            BottomRight,
+            Center,
+        };
+
+    public:
+
+        FNotification(EType InType, FFixedString&& Message)
+            : Message(Move(Message))
+            , Type(InType)
+        {
+            CreationTime = glfwGetTime();
+        }
+
+        NODISCARD EType GetType() const { return Type; }
+
+        NODISCARD EPhase GetPhase() const
+        {
+            const float ElapsedTime = static_cast<float>(glfwGetTime() - CreationTime);
+
+            if (ElapsedTime > DefaultFadeTime + Lifetime + DefaultFadeTime)
+            {
+                return EPhase::Expired;
+            }
+            
+            if (ElapsedTime > DefaultFadeTime + Lifetime)
+            {
+                return EPhase::FadeOut;
+            }
+            
+            if (ElapsedTime > DefaultFadeTime)
+            {
+                return EPhase::Wait;
+            }
+
+            return EPhase::FadeIn;
+        }
+
+        NODISCARD float GetFadePercentage() const
+        {
+            const EPhase Phase = GetPhase();
+            float const ElapsedTime = static_cast<float>(glfwGetTime() - CreationTime);
+
+            if (Phase == EPhase::FadeIn)
+            {
+                return ElapsedTime / DefaultFadeTime;
+            }
+            
+            
+            if (Phase == EPhase::FadeOut)
+            {
+                return (1.0f - ((ElapsedTime - DefaultFadeTime - Lifetime) / DefaultFadeTime));
+            }
+
+            return 1.0f;
+        }
+
+        NODISCARD ImVec4 GetColor( float opacity = 1.0f ) const
+        {
+            switch (Type)
+            {
+                case EType::Success:    return { 0, 255, 0, opacity }; // Green
+                case EType::Warning:    return { 255, 255, 0, opacity }; // Yellow
+                case EType::Error:      return { 255, 0, 0, opacity }; // Error
+                case EType::Info:       return { 0, 157, 255, opacity }; // Blue
+                default:                break;
+            }
+
+            //-------------------------------------------------------------------------
+
+            return { 1.0f, 1.0f, 1.0f, 1.0f };
+        }
+
+        FStringView GetIcon() const
+        {
+            switch (Type)
+            {
+                case EType::Success:    return LE_ICON_CHECK_CIRCLE;
+                case EType::Warning:    return LE_ICON_ALERT;
+                case EType::Error:      return LE_ICON_CLOSE_CIRCLE;
+                case EType::Info:       return LE_ICON_INFORMATION;
+                default:                break;
+            }
+
+            //-------------------------------------------------------------------------
+
+            return {};
+        }
+
+        FStringView GetTitle() const
+        {
+            switch (Type)
+            {
+                case EType::Success:    return "Success";
+                case EType::Warning:    return "Warning";
+                case EType::Error:      return "Error";
+                case EType::Info:       return "Info";
+                default:                break;
+            }
+
+            //-------------------------------------------------------------------------
+
+            return {};
+        }
+
+        FStringView GetMessageContent() const { return Message; }
+        
+    private:
+
+        FFixedString    Message;
+        double          CreationTime = -1.0f;
+        float           Lifetime = DefaultLifetime;
+        EType           Type = EType::None;
+    };
+    
+    static FMutex NotificationMutex;
     static TFixedVector<FNotification, 10> GNotifications;
     
     void Initialize()
@@ -193,96 +160,89 @@ namespace Lumina::ImGuiX::Notifications
 
     void Render()
     {
-        constexpr static float paddingX = 20.0f; // Bottom-left X padding
-        constexpr static float paddingY = 20.0f; // Bottom-left Y padding
-        constexpr static float paddingNotificationY = 10.0f; // Padding Y between each message
+        constexpr static float PaddingX = 20.0f; // Bottom-left X padding
+        constexpr static float PaddingY = 20.0f; // Bottom-left Y padding
+        constexpr static float PaddingNotificationY = 10.0f; // Padding Y between each message
+        
+        const ImGuiViewport* MainViewport = ImGui::GetMainViewport();
+        const ImVec2 ViewportSize = MainViewport->Size;
+        
+        FScopeLock Lock(NotificationMutex);
 
-         //-------------------------------------------------------------------------
-
-        ImGuiViewport const* pViewport = ImGui::GetMainViewport();
-        ImVec2 const viewportSize = pViewport->Size;
-
-        float notificationStartPosY = 0.f;
-        for ( auto i = 0; i < GNotifications.size(); i++ )
+        float NotificationStartPosY = 0.0f;
+        for (size_t i = 0; i < GNotifications.size(); i++)
         {
-            FNotification* pNotification = &GNotifications[i];
+            const FNotification& Notification = GNotifications[i];
 
-            // Remove notification if expired
-            //-------------------------------------------------------------------------
-
-            if (pNotification->GetPhase() == FNotification::EPhase::Expired)
+            if (Notification.GetPhase() == FNotification::EPhase::Expired)
             {
-                GNotifications.erase(GNotifications.begin() + i );
+                GNotifications.erase(GNotifications.begin() + i);
                 i--;
                 continue;
             }
+            
+            FStringView Icon        = Notification.GetIcon();
+            FStringView Title       = Notification.GetTitle();
+            FStringView Message     = Notification.GetMessageContent();
+            const float Opacity     = Notification.GetFadePercentage();
+            const ImVec4 TextColor  = Notification.GetColor(Opacity);
 
-            // Preparation
-            //-------------------------------------------------------------------------
-
-            // Get icon, title and other data
-            char const* pIcon = pNotification->GetIcon();
-            char const* pTitle = pNotification->GetTitle();
-            char const* pMessage = pNotification->GetMessage();
-            float const opacity = pNotification->GetFadePercentage(); // Get opacity based of the current phase
-            ImVec4 const textColor = pNotification->GetColor( opacity );
-
-            // Generate new unique name for this notification
-            FFixedString windowName(FFixedString::CtorSprintf(), "##Notification%d", i);
-
-            // Draw Notification
-            //-------------------------------------------------------------------------
-
-            ImGui::SetNextWindowBgAlpha( opacity );
-            ImGui::SetNextWindowPos( pViewport->Pos + ImVec2( viewportSize.x - paddingX, viewportSize.y - paddingY - notificationStartPosY ), ImGuiCond_Always, ImVec2(1.0f, 1.0f)) ;
-            ImGui::PushStyleVar( ImGuiStyleVar_WindowBorderSize, 1 );
-            ImGui::PushStyleColor( ImGuiCol_Border, textColor );
-            if (ImGui::Begin(windowName.c_str(), nullptr, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoInputs | ImGuiWindowFlags_NoNav | ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoFocusOnAppearing))
+            FFixedString WindowName(FFixedString::CtorSprintf(), "##Notification%d", i);
+            
+            ImGuiWindowFlags Flags = 
+                ImGuiWindowFlags_AlwaysAutoResize |
+                ImGuiWindowFlags_NoDecoration |
+                ImGuiWindowFlags_NoInputs | 
+                ImGuiWindowFlags_NoNav | 
+                ImGuiWindowFlags_NoBringToFrontOnFocus |
+                ImGuiWindowFlags_NoFocusOnAppearing;
+            
+            ImGui::SetNextWindowBgAlpha(Opacity);
+            ImGui::SetNextWindowPos(MainViewport->Pos + ImVec2(ViewportSize.x - PaddingX, ViewportSize.y - PaddingY - NotificationStartPosY), ImGuiCond_Always, ImVec2(1.0f, 1.0f));
+            ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 1);
+            ImGui::PushStyleColor(ImGuiCol_Border, TextColor);
+            if (ImGui::Begin(WindowName.c_str(), nullptr, Flags))
             {
-                ImGui::PushTextWrapPos( viewportSize.x / 3.f ); // We want to support multi-line text, this will wrap the text after 1/3 of the screen width
+                ImGui::PushTextWrapPos(ViewportSize.x / 3.0f);
 
-                bool drawSeparator = false;
+                bool DrawSeparator = false;
 
-                // If an icon is set
-                if ( pIcon != nullptr )
+                if (!Icon.empty())
                 {
-                    ImGui::TextColored( textColor, pIcon );
-                    drawSeparator = true;
+                    ImGui::TextColored(TextColor, "%s", Icon.data());
+                    DrawSeparator = true;
                 }
 
-                if ( pTitle != nullptr )
+                if (!Title.empty())
                 {
-                    if ( pIcon != nullptr )
+                    if (!Icon.empty())
                     {
                         ImGui::SameLine();
                     }
 
-                    ImGui::Text( pTitle ); // Render default title text (Success -> "Success", etc...)
-                    drawSeparator = true;
+                    ImGui::TextUnformatted(Title.begin(), Title.end());
+                    DrawSeparator = true;
                 }
 
-                // In case ANYTHING was rendered in the top, we want to add a small padding so the text (or icon) looks centered vertically
-                if ( drawSeparator && pMessage != nullptr )
+                if (DrawSeparator && !Message.empty())
                 {
-                    ImGui::SetCursorPosY( ImGui::GetCursorPosY() + 5.f ); // Must be a better way to do this!!!!
+                    ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 5.0f);
                 }
 
-                // If a content is set
-                if ( pMessage != nullptr )
+                if (!Message.empty())
                 {
-                    if ( drawSeparator )
+                    if (DrawSeparator)
                     {
                         ImGui::Separator();
                     }
 
-                    ImGui::Text(pMessage); // Render content text
+                    ImGui::TextUnformatted(Message.begin(), Message.end());
                 }
 
                 ImGui::PopTextWrapPos();
             }
 
-            // Save height for next notifications
-            notificationStartPosY += ImGui::GetWindowHeight() + paddingNotificationY;
+            NotificationStartPosY += ImGui::GetWindowHeight() + PaddingNotificationY;
 
             ImGui::End();
             ImGui::PopStyleVar();
@@ -290,24 +250,12 @@ namespace Lumina::ImGuiX::Notifications
         }
     }
 
-    LUMINA_API void NotifyInfoInternal(const FString& Msg)
+    void NotifyInternal(EType Type, FStringView Msg)
     {
-        GNotifications.emplace_back(FNotification::EType::Info, Move(Msg));
-    }
-
-    LUMINA_API void NotifySuccessInternal(const FString& Msg)
-    {
-        GNotifications.emplace_back(FNotification::EType::Success, Move(Msg));
-    }
-
-    LUMINA_API void NotifyWarningInternal(const FString& Msg)
-    {
-        GNotifications.emplace_back(FNotification::EType::Warning, Move(Msg));
-    }
-
-    LUMINA_API void NotifyErrorInternal(const FString& Msg)
-    {
-        GNotifications.emplace_back(FNotification::EType::Error, Move(Msg));
+        FScopeLock Lock(NotificationMutex);
+        
+        FFixedString MessageContent(Msg.begin(), Msg.end());
+        GNotifications.emplace_back(Type, Move(MessageContent));
     }
     
 }

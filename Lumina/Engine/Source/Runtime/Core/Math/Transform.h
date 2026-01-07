@@ -1,19 +1,27 @@
 #pragma once
+
 #include <format>
-#include "Platform/Platform.h"
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/quaternion.hpp>
 #include <glm/gtx/matrix_decompose.hpp>
+#include "Core/Object/ObjectMacros.h"
+#include "Transform.generated.h"
 
 namespace Lumina
 {
-    class FTransform
+    REFLECT()
+    struct LUMINA_API FTransform
     {
-    public:
+        GENERATED_BODY()
     
+		PROPERTY(Script, Editable)
         glm::vec3 Location;
+
+        PROPERTY(Script, Editable)
         glm::quat Rotation;
+
+        PROPERTY(Script, Editable)
         glm::vec3 Scale;
         
         FTransform()

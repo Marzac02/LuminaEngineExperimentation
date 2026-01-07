@@ -59,7 +59,7 @@ namespace Lumina
 
     CClass* CClass::GetSuperClass() const
     {
-        return (CClass*)GetSuperStruct();
+        return static_cast<CClass*>(GetSuperStruct());
     }
 
     CObject* CClass::GetDefaultObject() const
@@ -96,13 +96,11 @@ namespace Lumina
         ClassDefaultObject->PostCreateCDO();
         
         return ClassDefaultObject;
-        
     }
-
-
+    
     static CStruct* StaticGetBaseStructureInternal(const FName& Name)
     {
-        CStruct* Result = (CStruct*)FindObjectImpl(Name, CStruct::StaticClass());
+        CStruct* Result = static_cast<CStruct*>(FindObjectImpl(Name, CStruct::StaticClass()));
         return Result;
     }
 
@@ -127,12 +125,6 @@ namespace Lumina
     CStruct* TBaseStructure<glm::quat>::Get()
     {
         static CStruct* Struct = StaticGetBaseStructureInternal("quat");
-        return Struct;   
-    }
-
-    CStruct* TBaseStructure<FTransform>::Get()
-    {
-        static CStruct* Struct = StaticGetBaseStructureInternal("FTransform");
         return Struct;   
     }
 }

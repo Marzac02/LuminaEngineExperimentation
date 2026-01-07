@@ -3,6 +3,8 @@
 #include "TaskScheduler.h"
 #include "Containers/Function.h"
 #include "Core/Templates/LuminaTemplate.h"
+#include "Core/Threading/Atomic.h"
+#include "Memory/SmartPtr.h"
 #include "Platform/GenericPlatform.h"
 
 namespace Lumina
@@ -12,6 +14,25 @@ namespace Lumina
     using ICompletableTask =    enki::ICompletable;
     using TaskSetPartition =    enki::TaskSetPartition;
     using TaskFunction =        enki::TaskSetFunction;
+    
+    struct FTaskCompletion
+    {
+        FTaskCompletion() = default;
+            
+        TAtomic<bool> bCompleted{false};
+    
+        bool IsCompleted() const { return bCompleted.load(eastl::memory_order_acquire); }
+    
+        void Wait() const
+        {
+            while (!bCompleted.load(eastl::memory_order_acquire))
+            {
+                Threading::ThreadYield();
+            }
+        }
+    };
+
+    using FTaskHandle = TSharedPtr<FTaskCompletion>;
 
     enum class ETaskPriority
     {
@@ -28,18 +49,21 @@ namespace Lumina
         // the dependency task is complete.
         void OnDependenciesComplete(enki::TaskScheduler* pTaskScheduler_, uint32_t threadNum_ ) override;
     };
-
+    
+    
     typedef TMoveOnlyFunction<void(uint32 Start, uint32 End, uint32 Thread)> TaskSetFunction;
     class FLambdaTask : public ITaskSet
     {
     public:
-
+        
         FLambdaTask(const FLambdaTask&) = delete;
         FLambdaTask& operator=(const FLambdaTask&) = delete;
+        ~FLambdaTask() override = default;
 
-        FLambdaTask(ETaskPriority Priority, uint32 SetSize, uint32 MinRange, TaskSetFunction&& TaskFunctor)
+        FLambdaTask(const FTaskHandle& InHandle, ETaskPriority Priority, uint32 SetSize, uint32 MinRange, TaskSetFunction&& TaskFunctor)
         {
-            m_Priority = (enki::TaskPriority)Priority;
+            TaskHandle = InHandle;
+            m_Priority = static_cast<enki::TaskPriority>(Priority);
             m_SetSize = SetSize;
             m_MinRange = MinRange;
             Function = Move(TaskFunctor);
@@ -53,16 +77,8 @@ namespace Lumina
 
             Function(range_.start, range_.end, threadnum_);
         }
-
-        void Reset(ETaskPriority Priority, uint32 SetSize, uint32 MinRange, TaskSetFunction&& TaskFunctor)
-        {
-            m_Priority = (enki::TaskPriority)Priority;
-            m_SetSize = SetSize;
-            m_MinRange = MinRange;
-            Function = Move(TaskFunctor);
-        }
-
         
+        TWeakPtr<FTaskCompletion>   TaskHandle;
         TaskSetFunction             Function;
         FCompletionActionDelete     TaskRecycle;
     };

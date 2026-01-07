@@ -26,38 +26,40 @@ namespace Lumina
     {
         LUMINA_PROFILE_SCOPE();
         
-        TFixedVector<FLambdaTask, 1> AsyncTasks;
+        TFixedVector<FTaskHandle, 1> TaskHandles;
         TFixedVector<ICommandList*, 1> AllCommandLists;
         
+        FMutex TaskHandlesMutex;
 		FMutex CommandListMutex;
 
         FRHICommandListRef CommandList = GRenderContext->CreateCommandList(FCommandListInfo::Graphics());
         AllCommandLists.push_back(CommandList);
         CommandList->Open();
         
-        for (size_t PassIndex = 0; PassIndex < PassGroups.size(); ++PassIndex)
+        
+        for (TVector<FRenderGraphPass*>& Passes : PassGroups)
         {
-            TVector<FRGPassHandle>& Passes = PassGroups[PassIndex];
-            for (int i = 0; i < Passes.size(); ++i)
+            for (FRenderGraphPass* Pass : Passes)
             {
-                FRGPassHandle Pass = Passes[i];
-                
                 // The user has promised us this pass can now run at any time without issues, so we dispatch it and keep going.
                 if (Pass->GetDescriptor()->HasAnyFlag(ERGExecutionFlags::Async))
                 {
-                    Task::AsyncTask(1, 1, [&AllCommandLists, &CommandListMutex, Pass](uint32, uint32, uint32)
+                    auto Task = Task::AsyncTask(1, 1, [&AllCommandLists, &CommandListMutex, Pass](uint32, uint32, uint32)
                     {
                         FRHICommandListRef LocalCommandList = GRenderContext->CreateCommandList(FCommandListInfo::Graphics());
                     
                         {
                             FScopeLock Lock(CommandListMutex);
-                            AllCommandLists.push_back(LocalCommandList);
+                            AllCommandLists.emplace_back(LocalCommandList);
                         }
             
                         LocalCommandList->Open();
                         Pass->Execute(*LocalCommandList);
                         LocalCommandList->Close();
                     });
+                    
+                    FScopeLock Lock(TaskHandlesMutex);
+                    TaskHandles.emplace_back(Task);
                 }
                 else // Run the pass serially.
                 {
@@ -67,8 +69,11 @@ namespace Lumina
         }
 
         CommandList->Close();
-        
-        GTaskSystem->WaitForAll();
+
+        for (const FTaskHandle& Task : TaskHandles)
+        {
+            Task->Wait();
+        }
         
         GRenderContext->ExecuteCommandLists(AllCommandLists.data(), (uint32)AllCommandLists.size(), ECommandQueue::Graphics);   
     }

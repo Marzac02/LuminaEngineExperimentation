@@ -5,7 +5,6 @@
 #include "Module/API.h"
 #include "Subsystems/Subsystem.h"
 #include <entt/entt.hpp>
-#include "Core/Object/ManualReflectTypes.h" // DO NOT REMOVE.
 
 
 namespace Lumina

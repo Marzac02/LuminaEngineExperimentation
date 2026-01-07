@@ -10,8 +10,8 @@
 
 namespace Lumina
 {
-    class FTransform;
     class FProperty;
+    struct FTransform;
 }
 
 namespace Lumina
@@ -268,11 +268,4 @@ namespace Lumina
     {
         static LUMINA_API CStruct* Get(); 
     };
-
-    template<> struct TBaseStructure<FTransform> 
-    {
-        static LUMINA_API CStruct* Get(); 
-    };
-
-    
 }

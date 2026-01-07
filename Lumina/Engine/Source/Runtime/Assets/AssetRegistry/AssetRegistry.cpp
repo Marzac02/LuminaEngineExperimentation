@@ -6,6 +6,7 @@
 #include "Paths/Paths.h"
 #include "Platform/Filesystem/FileHelper.h"
 #include "TaskSystem/TaskSystem.h"
+#include "Tools/UI/ImGui/ImGuiX.h"
 
 namespace Lumina
 {
@@ -24,7 +25,6 @@ namespace Lumina
     {
         LUMINA_PROFILE_SCOPE();
         namespace FS = FileSystem;
-
         
         ClearAssets();
         
@@ -65,6 +65,7 @@ namespace Lumina
 
     void FAssetRegistry::OnInitialDiscoveryCompleted()
     {
+        ImGuiX::Notifications::NotifySuccess("Asset Registry Finished Initial Discovery: Num [{}]", Assets.size());
         LOG_INFO("Asset Registry Finished Initial Discovery: Num [{}]", Assets.size());
     }
 

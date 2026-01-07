@@ -19,16 +19,13 @@ namespace Lumina
             uint32 End;
             uint32 Thread;
         };
-        
     }
 
     class FTaskSystem
     {
-        friend struct CompletionActionDelete;
+        friend struct FCompletionActionDelete;
         
     public:
-
-        inline static uint64 GTaskID = 0;
         
         bool IsBusy() const { return Scheduler.GetIsShutdownRequested(); }
         uint32_t GetNumWorkers() const { return NumWorkers; }
@@ -58,7 +55,7 @@ namespace Lumina
          * @param Priority 
          * @return The task you can wait on, but should not be saved as it will be cleaned up automatically.
          */
-        LUMINA_API void ScheduleLambda(uint32 Num, uint32 MinRange, TaskSetFunction&& Function, ETaskPriority Priority = ETaskPriority::Medium);
+        LUMINA_API FTaskHandle ScheduleLambda(uint32 Num, uint32 MinRange, TaskSetFunction&& Function, ETaskPriority Priority = ETaskPriority::Medium);
         
         
         template<typename TFunc>
@@ -104,7 +101,7 @@ namespace Lumina
                 return;
             }
             
-            Task.m_Priority = (enki::TaskPriority)Priority;
+            Task.m_Priority = static_cast<enki::TaskPriority>(Priority);
             ScheduleTask(&Task);
             WaitForTask(&Task, Priority);
         }
@@ -172,7 +169,7 @@ namespace Lumina
                 return;
             }
             
-            Task.m_Priority = (enki::TaskPriority)Priority;
+            Task.m_Priority = static_cast<enki::TaskPriority>(Priority);
             ScheduleTask(&Task);
             WaitForTask(&Task, Priority);
         }
@@ -189,22 +186,13 @@ namespace Lumina
     
     private:
 
-        struct FTaskSlot
-        {
-            FLambdaTask* Task = nullptr;
-            uint32 Generation = 0;
-        };
-
-        TConcurrentQueue<uint32>        FreeList;
-        TVector<FTaskSlot>              ActiveTasks;
-        enki::TaskScheduler             Scheduler;
-        uint32                          NumWorkers = 0;
+        enki::TaskScheduler                 Scheduler;
+        uint32                              NumWorkers = 0;
     };
-
-
+    
     namespace Task
     {
-        LUMINA_API void AsyncTask(uint32 Num, uint32 MinRange, TaskSetFunction&& Function, ETaskPriority Priority = ETaskPriority::Medium);
+        LUMINA_API FTaskHandle AsyncTask(uint32 Num, uint32 MinRange, TaskSetFunction&& Function, ETaskPriority Priority = ETaskPriority::Medium);
 
         template<typename TIndex, typename TFunc>
         requires(eastl::is_integral_v<TIndex>)
