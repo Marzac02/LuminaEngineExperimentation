@@ -14,6 +14,11 @@ namespace Lumina
 
         friend class FEngine;
         
+        FORCEINLINE void MarkFrameStart(double InStart)
+        {
+            FrameStart = InStart;
+        }
+        
         FORCEINLINE void MarkFrameEnd(double InTime)
         {
             DeltaTime = InTime - LastFrameTime;
@@ -22,6 +27,7 @@ namespace Lumina
             Time = InTime;
         }
         
+        FORCEINLINE double GetFrameStartTime() const { return FrameStart; }
         FORCEINLINE double GetTime() const { return Time; }
         FORCEINLINE float GetFPS() const { return 1.0f / (float)DeltaTime; }
         FORCEINLINE double GetDeltaTime() const { return DeltaTime; }
@@ -37,6 +43,7 @@ namespace Lumina
     protected:
 
         double              Time = 0;
+        double              FrameStart = 0;
         double              DeltaTime = 60.0f;
         double              LastFrameTime = 0.0;
         float               FrameRateLimit = 144.0f;

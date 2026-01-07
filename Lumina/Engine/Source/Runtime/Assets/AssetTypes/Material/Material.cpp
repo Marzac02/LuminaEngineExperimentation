@@ -3,12 +3,14 @@
 
 #include "Assets/AssetTypes/Textures/Texture.h"
 #include "Core/Engine/Engine.h"
+#include "Core/Templates/AsBytes.h"
 #include "Paths/Paths.h"
 #include "Platform/Filesystem/FileHelper.h"
 #include "Renderer/RenderContext.h"
 #include "Renderer/RHIGlobals.h"
 
 #include "Renderer/ShaderCompiler.h"
+#include "Types/Byte.h"
 
 namespace Lumina
 {
@@ -63,8 +65,9 @@ namespace Lumina
             UniformBuffer = GRenderContext->CreateBuffer(BufferDesc);
         
             Memory::Memzero(&MaterialUniforms, sizeof(FMaterialUniforms));
+            TSpan<const Byte> Bytes = AsBytes(MaterialUniforms);
         
-            CommandList->WriteBuffer(UniformBuffer, &MaterialUniforms);
+            CommandList->WriteBuffer(UniformBuffer, Bytes.data(), Bytes.size_bytes());
 
             FBindingSetDesc SetDesc;
             SetDesc.AddItem(FBindingSetItem::BufferCBV(0, UniformBuffer));

@@ -3,6 +3,7 @@
 #include "Material.h"
 #include "Assets/AssetTypes/Textures/Texture.h"
 #include "Core/Engine/Engine.h"
+#include "Core/Templates/AsBytes.h"
 #include "Renderer/RenderContext.h"
 #include "Renderer/RenderManager.h"
 #include "Renderer/RHIGlobals.h"
@@ -10,6 +11,8 @@
 
 namespace Lumina
 {
+    enum class Byte : uint8;
+
     CMaterialInstance::CMaterialInstance()
     {
         Memory::Memzero(&MaterialUniforms, sizeof(FMaterialUniforms));
@@ -137,7 +140,9 @@ namespace Lumina
             FRHICommandListRef CommandList = GRenderContext->CreateCommandList(FCommandListInfo::Graphics());
             CommandList->Open();
             
-            CommandList->WriteBuffer(UniformBuffer, &MaterialUniforms);
+            TSpan<const Byte> Bytes = AsBytes(MaterialUniforms);
+
+            CommandList->WriteBuffer(UniformBuffer, Bytes.data(), Bytes.size_bytes());
 
             CommandList->Close();
             

@@ -2,6 +2,7 @@
 #include "ForwardRenderScene.h"
 #include "Assets/AssetTypes/Material/Material.h"
 #include "Core/Console/ConsoleVariable.h"
+#include "Core/Templates/AsBytes.h"
 #include "Core/Windows/Window.h"
 #include "Memory/Memcpy.h"
 #include "Renderer/RendererUtils.h"
@@ -576,7 +577,7 @@ namespace Lumina
                 CmdList.CommitBarriers();
                 
                 CmdList.DisableAutomaticBarriers();
-                CmdList.WriteBuffer(SceneDataBuffer, &SceneGlobalData);
+                CmdList.WriteBuffer(SceneDataBuffer, &SceneGlobalData, sizeof(FSceneGlobalData));
                 CmdList.WriteBuffer(InstanceDataBuffer, InstanceData.data(), InstanceDataSize);
                 CmdList.WriteBuffer(IndirectDrawBuffer, IndirectDrawArguments.data(), IndirectArgsSize);
                 CmdList.WriteBuffer(SimpleVertexBuffer, SimpleVertices.data(), SimpleVertexSize);
@@ -634,7 +635,9 @@ namespace Lumina
             CullData.PyramidWidth   = (float)DepthPyramid->GetSizeX();
             CullData.PyramidHeight  = (float)DepthPyramid->GetSizeY();
 
-            CmdList.WriteBuffer(CullDataBuffer, &CullData);
+            TSpan<const Byte> Bytes = AsBytes(CullData);
+            
+            CmdList.WriteBuffer(CullDataBuffer, Bytes.data(), Bytes.size_bytes());
             
             FComputeState State;
             State.SetPipeline(Pipeline);
@@ -767,7 +770,8 @@ namespace Lumina
                 
 
                 glm::vec2 Data = glm::vec2(LevelWidth,LevelHeight);
-                CmdList.SetPushConstants(&Data, sizeof(glm::vec2));
+                TSpan<const Byte> Bytes = AsBytes(Data);
+                CmdList.SetPushConstants(Bytes.data(), Bytes.size_bytes());
 
                 uint32 GroupsX = RenderUtils::GetGroupCount(LevelWidth, 32);
                 uint32 GroupsY = RenderUtils::GetGroupCount(LevelHeight, 32);

@@ -29,6 +29,11 @@ namespace Lumina
 
     // We put this here so we don't need to include render resources in engine.h
     static FRHIViewportRef EngineViewport;
+    
+    static TConsoleVar CVarMaxFrameRate(
+        "Core.MaxFPS", 
+        144,
+        "Changes the maximum frame-rate of your engine");
 
     
     bool FEngine::Init()
@@ -118,6 +123,8 @@ namespace Lumina
 
         bEngineReadyToClose = true;
         bCloseRequested = bApplicationWantsExit;
+        
+        UpdateContext.MarkFrameStart(glfwGetTime());
         
         if (!Windowing::GetPrimaryWindowHandle()->IsWindowMinimized())
         {
@@ -236,6 +243,28 @@ namespace Lumina
         
         UpdateContext.MarkFrameEnd(glfwGetTime());
 
+        
+        // Frame-Rate Limiting
+        //-------------------------------------------------------------------
+        int32 MaxFrameRate = CVarMaxFrameRate.GetValue();
+        if (MaxFrameRate > 0)
+        {
+            LUMINA_PROFILE_SECTION_COLORED("Frame-Rate-Limiter", tracy::Color::Gray);
+            const double TargetFrameTime    = 1.0 / static_cast<double>(MaxFrameRate);
+            const double CurrentTime        = UpdateContext.GetTime();
+            const double FrameTime          = CurrentTime - UpdateContext.GetFrameStartTime();
+            const double TimeToWait         = TargetFrameTime - FrameTime;
+        
+            if (TimeToWait > 0.0)
+            {
+                constexpr double SleepThreshold = 0.001;
+                if (TimeToWait > SleepThreshold)
+                {
+                    std::this_thread::sleep_for(std::chrono::duration<double>(TimeToWait - SleepThreshold));
+                }
+            }
+        }
+        
         if (bApplicationWantsExit)
         {
             return !bEngineReadyToClose;
