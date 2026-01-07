@@ -2,7 +2,6 @@
 
 #include <volk/volk.h>
 #include "vk_mem_alloc.h"
-#include "Containers/Array.h"
 #include "Core/LuminaMacros.h"
 #include "Core/Threading/Thread.h"
 #include "Memory/Memory.h"

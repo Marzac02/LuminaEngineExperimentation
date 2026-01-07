@@ -185,7 +185,7 @@ namespace Lumina
         }
     }
 
-    void FTileViewWidget::SetSelection(FTileViewItem* Item, FTileViewContext Context)
+    void FTileViewWidget::SetSelection(FTileViewItem* Item, const FTileViewContext& Context)
     {
         bool bWasSelected = Item->bSelected;
         

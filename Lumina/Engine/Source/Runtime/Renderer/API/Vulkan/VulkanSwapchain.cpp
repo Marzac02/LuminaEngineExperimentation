@@ -210,7 +210,7 @@ namespace Lumina
 
     	AcquireSemaphoreIndex = (AcquireSemaphoreIndex + 1) % AcquireSemaphores.size();
     	
-    	if ((Result == VK_SUCCESS || Result == VK_SUBOPTIMAL_KHR))
+    	if ((Result == VK_SUCCESS || Result == VK_SUBOPTIMAL_KHR || bNeedsResize))
     	{
     		Context->GetQueue(ECommandQueue::Graphics)->AddWaitSemaphore(Semaphore, 0, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT);
     	}

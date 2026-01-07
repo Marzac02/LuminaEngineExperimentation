@@ -18,7 +18,7 @@ namespace Lumina::Scripting
 {
     static TUniquePtr<FScriptingContext> GScriptingContext;
     
-    int SolExceptionHandler(lua_State* L, sol::optional<const std::exception&> MaybeException, sol::string_view Desc) 
+    static int SolExceptionHandler(lua_State* L, sol::optional<const std::exception&> MaybeException, sol::string_view Desc) 
     {
         // L is the lua state, which you can wrap in a state_view if necessary
         // maybe_exception will contain exception, if it exists
@@ -44,7 +44,7 @@ namespace Lumina::Scripting
         return sol::stack::push(L, Desc);
     }
     
-    inline void SolPanicHandler(sol::optional<std::string> MaybeMsg) 
+    static void SolPanicHandler(sol::optional<std::string> MaybeMsg) 
     {
         LOG_ERROR("Lua is in a panic state and will now abort() the application");
         if (MaybeMsg) 
@@ -53,6 +53,46 @@ namespace Lumina::Scripting
         }
         // When this function exits, Lua will exhibit default behavior and abort()
     }
+    
+    static void Lua_Print(sol::this_state S, const sol::variadic_args& Args)
+    {
+        sol::state_view View(S);
+        sol::protected_function ToString = View[sol::meta_function::to_string];
+        FFixedString Output;
+        for (size_t i = 0; i < Args.size(); ++i)
+        {
+            sol::object Obj = Args[i];
+                
+            sol::protected_function_result Result = ToString(Obj);
+                
+            if (Result.valid())
+            {
+                if (sol::optional<const char*> str = Result)
+                {
+                    Output += *str;
+                }
+                else
+                {
+                    Output += "[tostring error]";
+                }
+            }
+            else
+            {
+                sol::error err = Result;
+                Output += "[error: ";
+                Output += err.what();
+                Output += "]";
+            }
+                
+            if (i < Args.size() - 1)
+            {
+                Output += "\t";
+            }
+        }
+            
+        LOG_INFO("[Lua] {}", Output);
+    }
+    
     void Initialize()
     {
         GScriptingContext = MakeUniquePtr<FScriptingContext>();
@@ -157,8 +197,46 @@ namespace Lumina::Scripting
 
     void FScriptingContext::RegisterCoreTypes()
     {
-        State.set_function("print", &FScriptingContext::Lua_Print);
+        State.set_function("print", [&](sol::this_state s, const sol::variadic_args& args)
+        {
+            sol::state_view lua(s);
+            sol::protected_function LuaStringFunc = lua["tostring"];
+    
+            FFixedString Output;
+    
+            for (size_t i = 0; i < args.size(); ++i)
+            {
+                sol::object Obj = args[i];
         
+                sol::protected_function_result Result = LuaStringFunc(Obj);
+        
+                if (Result.valid())
+                {
+                    if (sol::optional<const char*> str = Result)
+                    {
+                        Output += *str;
+                    }
+                    else
+                    {
+                        Output += "[tostring error]";
+                    }
+                }
+                else
+                {
+                    sol::error err = Result;
+                    Output += "[error: ";
+                    Output += err.what();
+                    Output += "]";
+                }
+        
+                if (i < args.size() - 1)
+                {
+                    Output += "\t";
+                }
+            }
+    
+            LOG_INFO("[Lua] {}", Output);
+        });        
         State.create_named_table("Logger")
             .set_function("Info",       &FScriptingContext::Lua_Info)
             .set_function("Warning",    &FScriptingContext::Lua_Warning)
@@ -591,44 +669,6 @@ namespace Lumina::Scripting
             "RightSuper",   EKeyCode::RightSuper,
             "Menu",         EKeyCode::Menu
         );
-    }
-
-    void FScriptingContext::Lua_Print(const sol::variadic_args& Args)
-    {
-        sol::protected_function ToString = State[sol::meta_function::to_string];
-        FFixedString Output;
-        for (size_t i = 0; i < Args.size(); ++i)
-        {
-            sol::object Obj = Args[i];
-                
-            sol::protected_function_result Result = ToString(Obj);
-                
-            if (Result.valid())
-            {
-                if (sol::optional<const char*> str = Result)
-                {
-                    Output += *str;
-                }
-                else
-                {
-                    Output += "[tostring error]";
-                }
-            }
-            else
-            {
-                sol::error err = Result;
-                Output += "[error: ";
-                Output += err.what();
-                Output += "]";
-            }
-                
-            if (i < Args.size() - 1)
-            {
-                Output += "\t";
-            }
-        }
-            
-        LOG_INFO("[Lua] {}", Output);
     }
 
     void FScriptingContext::Lua_Info(const sol::variadic_args& Args)

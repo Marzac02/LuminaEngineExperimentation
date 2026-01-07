@@ -23,13 +23,7 @@ namespace Lumina
     
         bool IsCompleted() const { return bCompleted.load(eastl::memory_order_acquire); }
     
-        void Wait() const
-        {
-            while (!bCompleted.load(eastl::memory_order_acquire))
-            {
-                Threading::ThreadYield();
-            }
-        }
+        void Wait() const;
     };
 
     using FTaskHandle = TSharedPtr<FTaskCompletion>;

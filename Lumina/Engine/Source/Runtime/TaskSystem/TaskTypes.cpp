@@ -6,6 +6,14 @@
 
 namespace Lumina
 {
+    void FTaskCompletion::Wait() const
+    {
+        LUMINA_PROFILE_SCOPE();
+        while (!bCompleted.load(eastl::memory_order_acquire))
+        {
+            Threading::ThreadYield();
+        }
+    }
     void FCompletionActionDelete::OnDependenciesComplete(enki::TaskScheduler* pTaskScheduler_, uint32_t threadNum_)
     {
         ICompletable::OnDependenciesComplete(pTaskScheduler_, threadNum_);

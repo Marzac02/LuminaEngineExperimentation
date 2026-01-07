@@ -1,25 +1,29 @@
 ﻿#pragma once
 
+
 #include "VulkanDevice.h"
+#include <tracy/TracyVulkan.hpp>
 #include "Memory/RefCounted.h"
 #include "Renderer/RenderResource.h"
-#include <tracy/TracyVulkan.hpp>
+
 
 namespace Lumina
 {
+    class FVulkanDevice;
     class FQueue;
 
-    class FTrackedCommandBuffer : public FRefCounted, public IDeviceChild
+    class FTrackedCommandBuffer : public IRefCounted, public IDeviceChild
     {
     public:
 
         FTrackedCommandBuffer(FVulkanDevice* InDevice, VkCommandBuffer InBuffer, VkCommandPool InPool, FQueue* InQueue);
-
         ~FTrackedCommandBuffer() override;
+        LE_NO_COPY(FTrackedCommandBuffer);
+        LE_DEFAULT_MOVE(FTrackedCommandBuffer);
 
-        void AddReferencedResource(const TRefCountPtr<IRHIResource>& InResource);
+        void AddReferencedResource(IRHIResource* InResource);
 
-        void AddStagingResource(const TRefCountPtr<FRHIBuffer>& InResource);
+        void AddStagingResource(FRHIBuffer* InResource);
         
         void ClearReferencedResources();
 
@@ -34,8 +38,8 @@ namespace Lumina
         
         
         /** Keep alive any resources that this current command buffer uses */
-        TFixedVector<TRefCountPtr<IRHIResource>, 100>       ReferencedResources;
-        TFixedVector<TRefCountPtr<FRHIBuffer>, 50>          ReferencedStagingResources;
+        TFixedVector<FRHIResourceRef, 100>       ReferencedResources;
+        TFixedVector<FRHIBufferRef, 50>          ReferencedStagingResources;
 
     };
 }

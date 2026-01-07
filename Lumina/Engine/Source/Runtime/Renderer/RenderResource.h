@@ -479,9 +479,10 @@ namespace Lumina
 		virtual bool IsUniformBuffer() const = 0;
 		virtual bool IsVertexBuffer() const = 0;
 		virtual bool IsIndexBuffer() const = 0;
+		virtual bool IsStagingBuffer() const = 0;
 		virtual uint64 GetSize() const = 0;
 		virtual uint32 GetStride() const = 0;
-		virtual TBitFlags<EBufferUsageFlags> GetUsage() const = 0;
+		virtual const TBitFlags<EBufferUsageFlags>& GetUsage() const = 0;
 		
 	};
 

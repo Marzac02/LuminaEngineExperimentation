@@ -158,7 +158,7 @@ namespace Lumina
                 8.0f
             );
             
-            bool clicked = ImGui::ImageButton("##", ImTexture, Size, ImVec2(0, 0), ImVec2(1, 1), ImVec4(0, 0, 0, 0), TintColor);
+            ImGui::ImageButton("##", ImTexture, Size, ImVec2(0, 0), ImVec2(1, 1), ImVec4(0, 0, 0, 0), TintColor);
         
             if (ImGui::IsItemHovered())
             {
@@ -180,7 +180,7 @@ namespace Lumina
                 return true;
             }
         
-            return clicked;
+            return false;
         };
         
         ContentBrowserTileViewContext.ItemSelectedFunction = [this] (FTileViewItem* Item)

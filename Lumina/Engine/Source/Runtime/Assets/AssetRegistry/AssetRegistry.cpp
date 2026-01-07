@@ -123,6 +123,8 @@ namespace Lumina
 
     FAssetData* FAssetRegistry::GetAssetByGUID(const FGuid& GUID) const
     {
+        FScopeLock Lock(AssetsMutex);
+
         auto It = eastl::find_if(Assets.begin(), Assets.end(), [&](const auto& Data)
         {
             return Data->AssetGUID == GUID;
@@ -133,6 +135,8 @@ namespace Lumina
 
     FAssetData* FAssetRegistry::GetAssetByPath(FStringView Path) const
     {
+        FScopeLock Lock(AssetsMutex);
+
         auto It = eastl::find_if(Assets.begin(), Assets.end(), [&](const auto& Data)
         {
             return Data->Path == Path;

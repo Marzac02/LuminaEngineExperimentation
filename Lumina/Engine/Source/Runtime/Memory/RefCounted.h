@@ -20,15 +20,15 @@ namespace Lumina
 		virtual uint32 GetRefCount() const = 0;
 	};
 
-	/** Intrusive Smart Pointer Implementation */
-	class LUMINA_API FRefCounted
+	/** Atomic ref counting - intrusive Smart Pointer Implementation */
+	class LUMINA_API IRefCounted
 	{
 	public:
 
-		FRefCounted() = default;
-		virtual ~FRefCounted() { Assert(RefCount == 0) }
-		FRefCounted(const FRefCounted&) = delete;
-		FRefCounted& operator = (const FRefCounted&) = delete;
+		IRefCounted() = default;
+		virtual ~IRefCounted() = default;
+		IRefCounted(const IRefCounted&) = delete;
+		IRefCounted& operator = (const IRefCounted&) = delete;
 
 		uint32 AddRef() const
 		{
@@ -61,9 +61,10 @@ namespace Lumina
 
 
 	template<typename T>
-	concept ValidRefCountPtr = requires(T t)
+	concept TRefCounter = requires(T t)
 	{
 		{ t.Release() } -> std::same_as<uint32>;
+		{ t.AddRef() }	-> std::same_as<uint32>;
 	};
 	
 	/**
@@ -153,9 +154,9 @@ namespace Lumina
 		}
 
 		template<typename... Args>
-		static TRefCountPtr<ReferencedType> Create(Args&&... args)
+		static TRefCountPtr Create(Args&&... args)
 		{
-			return TRefCountPtr<ReferencedType>(Memory::New<ReferencedType>(Forward<Args>(args)...));
+			return TRefCountPtr(Memory::New<ReferencedType>(Forward<Args>(args)...));
 		}
 		
 		template<typename T>

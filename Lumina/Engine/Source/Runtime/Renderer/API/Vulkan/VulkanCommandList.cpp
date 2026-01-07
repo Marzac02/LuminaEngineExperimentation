@@ -536,12 +536,15 @@ namespace Lumina
     {
         LUMINA_PROFILE_SCOPE();
         
-        Assert(Source)
-        Assert(Destination)
-        Assert(DstOffset + CopySize <= Destination->GetDescription().Size)
-        Assert(SrcOffset + CopySize <= Source->GetDescription().Size)
+        LUM_ASSERT(Source)
+        LUM_ASSERT(Destination)
+        LUM_ASSERT(DstOffset + CopySize <= Destination->GetDescription().Size)
+        LUM_ASSERT(SrcOffset + CopySize <= Source->GetDescription().Size)
+        
+        bool bStagingDestination    = Destination->IsStagingBuffer();
+        bool bStagingSource         = Source->IsStagingBuffer();
 
-        if (Destination->GetDescription().Usage.IsFlagSet(EBufferUsageFlags::CPUWritable))
+        if (bStagingDestination)
         {
             CurrentCommandBuffer->AddStagingResource(Destination);
         }
@@ -550,7 +553,7 @@ namespace Lumina
             CurrentCommandBuffer->AddReferencedResource(Destination);
         }
 
-        if (Source->GetDescription().Usage.IsFlagSet(EBufferUsageFlags::CPUWritable))
+        if (bStagingSource)
         {
             CurrentCommandBuffer->AddStagingResource(Source);
         }
@@ -584,7 +587,7 @@ namespace Lumina
 
         FVulkanBuffer* VulkanBuffer = static_cast<FVulkanBuffer*>(Buffer);
 
-        auto GetQueueFinishID = [this] (ECommandQueue Queue)-> uint64
+        auto GetQueueFinishID = [&] (ECommandQueue Queue)-> uint64
         {
             return RenderContext->GetQueue(Queue)->LastFinishedID;
         };
@@ -598,7 +601,7 @@ namespace Lumina
             Write.bInitialized = true;
         }
 
-        TArray<uint64, uint32(ECommandQueue::Num)> QueueCompletionValues =
+        TArray<uint64, static_cast<uint32>(ECommandQueue::Num)> QueueCompletionValues =
         {
             GetQueueFinishID(ECommandQueue::Graphics),
             GetQueueFinishID(ECommandQueue::Compute),
@@ -630,12 +633,12 @@ namespace Lumina
                 }
 
                 bool bSubmitted = (OriginalVersionInfo & GVersionSubmittedFlag) != 0;
-                uint32 QueueIndex = uint32(OriginalVersionInfo >> GVersionQueueShift) & GVersionQueueMask;
+                uint32 QueueIndex = static_cast<uint32>(OriginalVersionInfo >> GVersionQueueShift) & GVersionQueueMask;
                 uint64 ID = OriginalVersionInfo & GVersionIDMask;
 
                 if (bSubmitted)
                 {
-                    if (QueueIndex >= uint32(ECommandQueue::Num))
+                    if (QueueIndex >= static_cast<uint32>(ECommandQueue::Num))
                     {
                         bFound = true;
                         break;
@@ -655,7 +658,7 @@ namespace Lumina
                 return;
             }
 
-            uint64 NewVersionInfo = (uint64(Info.CommandQueue) << GVersionQueueShift) | (CurrentCommandBuffer->RecordingID);
+            uint64 NewVersionInfo = (static_cast<uint64>(Info.CommandQueue) << GVersionQueueShift) | (CurrentCommandBuffer->RecordingID);
 
             if (VulkanBuffer->VersionTracking[Version].compare_exchange_strong(OriginalVersionInfo, NewVersionInfo))
             {
@@ -669,10 +672,9 @@ namespace Lumina
         Write.MinVersion = Math::Min<int64>(Version, Write.MinVersion);
         Write.MaxVersion = Math::Max<int64>(Version, Write.MaxVersion);
 
-        void* HostData = (uint8*)VulkanBuffer->GetMappedMemory() + Version * VulkanBuffer->GetDescription().Size;
+        void* HostData = (uint8*)VulkanBuffer->GetMappedMemory() + (Version * VulkanBuffer->GetDescription().Size);
         
-        void* SourceData = const_cast<void*>(Data);
-        Memory::Memcpy(HostData, SourceData, Size);
+        Memory::Memcpy(HostData, Data, Size);
 
         PendingState.AddPendingState(EPendingCommandState::DynamicBufferWrites);
     }
@@ -720,8 +722,7 @@ namespace Lumina
         }
         else
         {
-            LUM_ASSERT(Buffer->GetDescription().Usage.IsFlagCleared(EBufferUsageFlags::CPUWritable))
-            //@TODO Investigate - problems with buffers in here getting incomplete data.
+            LUM_ASSERT(Buffer->GetUsage().IsFlagCleared(EBufferUsageFlags::CPUWritable))
             LUMINA_PROFILE_SECTION("VkCopyBuffer");
 
             FRHIBuffer* UploadBuffer;

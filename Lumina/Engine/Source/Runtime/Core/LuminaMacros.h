@@ -66,6 +66,10 @@ enum class EName : uint32
 #define LE_NO_COPYMOVE(X) \
     LE_NO_COPY(X); \
     LE_NO_MOVE(X) \
+    
+#define LE_DEFAULT_MOVE(X) \
+    X(X&&) = default; \
+    X& operator = (X&&) = default \
 
 #define ENUM_CLASS_FLAGS(Enum) \
 inline           Enum& operator|=(Enum& Lhs, Enum Rhs) { return Lhs = (Enum)((__underlying_type(Enum))Lhs | (__underlying_type(Enum))Rhs); } \

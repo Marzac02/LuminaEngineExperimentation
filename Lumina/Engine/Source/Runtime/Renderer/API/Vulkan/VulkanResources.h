@@ -165,9 +165,10 @@ namespace Lumina
         bool IsUniformBuffer() const override { return Description.Usage.IsFlagSet(EBufferUsageFlags::UniformBuffer); }
         bool IsVertexBuffer() const override { return Description.Usage.IsFlagSet(EBufferUsageFlags::VertexBuffer); }
         bool IsIndexBuffer() const override { return Description.Usage.IsFlagSet(EBufferUsageFlags::IndexBuffer); }
+        bool IsStagingBuffer() const override { return Description.Usage.IsFlagSet(EBufferUsageFlags::StagingBuffer); }
         uint64 GetSize() const override { return Description.Size; }
         uint32 GetStride() const override { return Description.Stride; }
-        TBitFlags<EBufferUsageFlags> GetUsage() const override { return Description.Usage; }
+        const TBitFlags<EBufferUsageFlags>& GetUsage() const override { return Description.Usage; }
 
     private:
         

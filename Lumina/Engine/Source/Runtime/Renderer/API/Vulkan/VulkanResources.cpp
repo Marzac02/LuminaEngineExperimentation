@@ -18,8 +18,7 @@ namespace Lumina
         VkFormat vkFormat;
     };
     
-
-    static const std::array<FormatMapping, size_t(EFormat::COUNT)> FormatMap = { {
+    static const TArray<FormatMapping, static_cast<size_t>(EFormat::COUNT)> FormatMap = { {
         { EFormat::UNKNOWN,           VK_FORMAT_UNDEFINED                },
         { EFormat::R8_UINT,           VK_FORMAT_R8_UINT                  },
         { EFormat::R8_SINT,           VK_FORMAT_R8_SINT                  },
@@ -138,7 +137,7 @@ namespace Lumina
         LUMINA_NO_ENTRY()
     }
 
-    VkBufferUsageFlags ToVkBufferUsage(TBitFlags<EBufferUsageFlags> Usage) 
+    VkBufferUsageFlags ToVkBufferUsage(const TBitFlags<EBufferUsageFlags>& Usage) 
     {
         VkBufferUsageFlags result = VK_NO_FLAGS;
 
@@ -188,7 +187,7 @@ namespace Lumina
         return result;
     }
 
-    constexpr VkPrimitiveTopology ToVkPrimitiveTopology(EPrimitiveType PrimType)
+    static constexpr VkPrimitiveTopology ToVkPrimitiveTopology(EPrimitiveType PrimType)
     {
         switch (PrimType)
         {
@@ -205,7 +204,7 @@ namespace Lumina
         }
     }
 
-    constexpr VkBlendFactor ToVkBlendFactor(EBlendFactor factor)
+    static constexpr VkBlendFactor ToVkBlendFactor(EBlendFactor factor)
     {
         switch (factor)
         {
@@ -230,7 +229,7 @@ namespace Lumina
         }
     }
     
-    constexpr VkPolygonMode ToVkPolygonMode(ERasterFillMode FillMode)
+    static constexpr VkPolygonMode ToVkPolygonMode(ERasterFillMode FillMode)
     {
         switch (FillMode)
         {
@@ -240,7 +239,7 @@ namespace Lumina
         }
     }
 
-    constexpr VkCullModeFlags ToVkCullModeFlags(ERasterCullMode CullMode)
+    static constexpr VkCullModeFlags ToVkCullModeFlags(ERasterCullMode CullMode)
     {
         switch (CullMode)
         {
@@ -251,7 +250,7 @@ namespace Lumina
         }
     }
 
-    constexpr VkCompareOp ToVkCompareOp(EComparisonFunc Func)
+    static constexpr VkCompareOp ToVkCompareOp(EComparisonFunc Func)
     {
         switch (Func)
         {
@@ -267,7 +266,7 @@ namespace Lumina
         }
     }
 
-    constexpr VkStencilOp ToVkStencilOp(EStencilOp Op)
+    static constexpr VkStencilOp ToVkStencilOp(EStencilOp Op)
     {
         switch (Op)
         {
@@ -283,7 +282,7 @@ namespace Lumina
         }
     }
 
-    VkShaderStageFlags ToVkStageFlags(TBitFlags<ERHIShaderType> Type)
+    static VkShaderStageFlags ToVkStageFlags(const TBitFlags<ERHIShaderType>& Type)
     {
         VkShaderStageFlags Flags = 0;
         if (Type.IsFlagSet(ERHIShaderType::Vertex))
@@ -370,7 +369,7 @@ namespace Lumina
     }
 
 
-    VkBorderColor PickSamplerBorderColor(const FSamplerDesc& d)
+    static VkBorderColor PickSamplerBorderColor(const FSamplerDesc& d)
     {
         if (d.BorderColor.R == 0.f && d.BorderColor.G == 0.f && d.BorderColor.B == 0.f)
         {
@@ -447,7 +446,7 @@ namespace Lumina
         {
             FRHIBufferDesc Desc;
             Desc.Size = Size;
-            Desc.Usage.SetFlag(EBufferUsageFlags::CPUWritable);
+            Desc.Usage.SetMultipleFlags(EBufferUsageFlags::CPUWritable, EBufferUsageFlags::StagingBuffer);
             Desc.DebugName = FString("UploadChunk [ " + eastl::to_string(Size) + " ]");
 
             Chunk->Buffer       = Context->CreateBuffer(Desc);

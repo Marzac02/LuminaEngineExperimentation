@@ -152,7 +152,7 @@ namespace Lumina::Import::Mesh::GLTF
                 
                 if (Primitive.materialIndex.has_value())
                 {
-                    NewSurface.MaterialIndex = (int64)Primitive.materialIndex.value();
+                    NewSurface.MaterialIndex = (int16)Primitive.materialIndex.value();
                 }
                 
                 SIZE_T InitialVert = NewResource->Vertices.size();

@@ -33,14 +33,14 @@ namespace Lumina
         CommandPool = VK_NULL_HANDLE;
     }
 
-    void FTrackedCommandBuffer::AddReferencedResource(const TRefCountPtr<IRHIResource>& InResource)
+    void FTrackedCommandBuffer::AddReferencedResource(IRHIResource* InResource)
     {
-        ReferencedResources.push_back(InResource);
+        ReferencedResources.emplace_back(InResource);
     }
 
-    void FTrackedCommandBuffer::AddStagingResource(const TRefCountPtr<FRHIBuffer>& InResource)
+    void FTrackedCommandBuffer::AddStagingResource(FRHIBuffer* InResource)
     {
-        ReferencedStagingResources.push_back(InResource);
+        ReferencedStagingResources.emplace_back(InResource);
     }
 
     void FTrackedCommandBuffer::ClearReferencedResources()

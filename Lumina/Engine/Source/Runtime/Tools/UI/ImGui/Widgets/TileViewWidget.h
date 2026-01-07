@@ -105,7 +105,7 @@ namespace Lumina
         
         void DrawItem(FTileViewItem* ItemToDraw, const FTileViewContext& Context, ImVec2 DrawSize);
 
-        void SetSelection(FTileViewItem* Item, FTileViewContext Context);
+        void SetSelection(FTileViewItem* Item, const FTileViewContext& Context);
         void ClearSelection();
     
 

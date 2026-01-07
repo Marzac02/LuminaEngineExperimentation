@@ -165,7 +165,7 @@ namespace Lumina
         }
 
         virtual void SerializeBool(bool& D);
-    
+        
         virtual FArchive& operator<<(FString& str)
         {
             if (IsReading())

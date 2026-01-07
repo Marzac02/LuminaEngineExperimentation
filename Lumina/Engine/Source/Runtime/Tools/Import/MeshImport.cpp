@@ -1,5 +1,6 @@
 ﻿#include "PCH.h"
 #include "ImportHelpers.h"
+#include "Core/Templates/AsBytes.h"
 #include "Renderer/MeshData.h"
 
 namespace Lumina::Import::Mesh
@@ -23,13 +24,18 @@ namespace Lumina::Import::Mesh
     void GenerateShadowBuffers(FMeshResource& MeshResource)
     {
         MeshResource.ShadowIndices = TVector<uint32>(MeshResource.Indices.size());
+        
         meshopt_generateShadowIndexBuffer(MeshResource.ShadowIndices.data(), MeshResource.Indices.data(), MeshResource.Indices.size(), &MeshResource.Vertices[0].Position, MeshResource.Vertices.size(), sizeof(glm::vec4), sizeof(FVertex));
         meshopt_optimizeVertexCache(MeshResource.ShadowIndices.data(), MeshResource.ShadowIndices.data(), MeshResource.ShadowIndices.size(), MeshResource.Vertices.size());
     }
 
     void AnalyzeMeshStatistics(FMeshResource& MeshResource, FMeshStatistics& OutMeshStats)
     {
-        OutMeshStats.VertexFetchStatics.push_back(meshopt_analyzeVertexFetch(MeshResource.Indices.data(), MeshResource.Indices.size(), MeshResource.Vertices.size(), sizeof(FVertex)));
-        OutMeshStats.OverdrawStatics.push_back(meshopt_analyzeOverdraw(MeshResource.Indices.data(), MeshResource.Indices.size(), reinterpret_cast<float*>(MeshResource.Vertices.data()), MeshResource.Vertices.size(), sizeof(FVertex)));
+        TSpan<Byte> IndexBytes = AsBytes(MeshResource.Indices);
+        TSpan<Byte> VertexBytes = AsBytes(MeshResource.Vertices);
+
+        
+        OutMeshStats.VertexFetchStatics.emplace_back(meshopt_analyzeVertexFetch(IndexBytes.data(), IndexBytes.size(), VertexBytes.size(), sizeof(FVertex)));
+        OutMeshStats.OverdrawStatics.emplace_back(meshopt_analyzeOverdraw(IndexBytes.data(), IndexBytes.size(), reinterpret_cast<float*>(VertexBytes.data()), VertexBytes.size(), sizeof(FVertex)));
     }
 }
