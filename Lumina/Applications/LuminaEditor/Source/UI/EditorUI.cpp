@@ -103,7 +103,7 @@ namespace Lumina
         EditorWindowClass.ParentViewportId              = 0; // Top level window
         EditorWindowClass.DockingAlwaysTabBar           = true;
 
-        CWorld* TemporaryWorld = NewObject<CWorld>(OF_Transient);
+        CWorld* TemporaryWorld = NewObject<CWorld>(nullptr, "Transient World", FGuid::New(), OF_Transient);
         WorldEditorTool = CreateTool<FWorldEditorTool>(this, TemporaryWorld);
         
         (void)WorldEditorTool->GetOnPreviewStartRequestedDelegate().AddLambda([this]

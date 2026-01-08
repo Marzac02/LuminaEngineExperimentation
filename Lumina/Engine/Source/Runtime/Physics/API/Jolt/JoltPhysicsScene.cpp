@@ -829,6 +829,11 @@ namespace Lumina::Physics
         JPH::BodyInterface& BodyInterface = JoltSystem->GetBodyInterface();
         JPH::BodyID BodyID(RigidBodyComponent.BodyID);
         
+        if (BodyID.IsInvalid() || BodyInterface.IsAdded(BodyID))
+        {
+            return;
+        }
+        
         BodyInterface.RemoveBody(BodyID);
         BodyInterface.DestroyBody(BodyID);
     }
