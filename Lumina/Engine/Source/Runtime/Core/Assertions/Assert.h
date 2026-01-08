@@ -80,7 +80,7 @@ namespace Lumina::Assert
 #ifdef LE_DEBUG
 #define LUMINA_ASSUME(Expr, ...)        LUMINA_ASSERT_INVOKE(Expr,      Assume,         __VA_ARGS__)
 #else
-#if defined(_MSC_VER)
+#ifdef _MSC_VER
 #define LUMINA_ASSUME(Condition, ...) __assume(Condition)
 #elif defined(__clang__)
 #define LUMINA_ASSUME(Condition, ...) __builtin_assume(Condition)
