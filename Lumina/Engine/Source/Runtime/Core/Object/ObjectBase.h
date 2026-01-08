@@ -127,8 +127,8 @@ namespace Lumina
             const CClass* ThisClass = GetClass();
 
             // Stop compiler from doing un-necessary branching for nullptr checks.
-            LUMINA_ASSUME(SomeBase);
-            LUMINA_ASSUME(ThisClass);
+            ASSUME(SomeBase);
+            ASSUME(ThisClass);
 
             return IsAHelper(ThisClass, SomeBase);
             

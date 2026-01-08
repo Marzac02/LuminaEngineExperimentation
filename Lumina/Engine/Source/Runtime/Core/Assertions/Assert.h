@@ -75,19 +75,19 @@ namespace Lumina::Assert
 #define LUMINA_DEBUG_ASSERT(...)        ((void)0)
 #endif
     
-#define LUMINA_ASSERT(Expr, ...)        LUMINA_ASSERT_INVOKE(Expr,      Assert,         __VA_ARGS__)
-    
+#define LUMINA_ASSERT(Expr, ...)        LUMINA_ASSERT_INVOKE(Expr,      DebugAssert,    __VA_ARGS__)
+
 #ifdef LE_DEBUG
 #define LUMINA_ASSUME(Expr, ...)        LUMINA_ASSERT_INVOKE(Expr,      Assume,         __VA_ARGS__)
 #else
 #if defined(_MSC_VER)
-#define ASSUME(Condition, ...) __assume(Condition)
+#define LUMINA_ASSUME(Condition, ...) __assume(Condition)
 #elif defined(__clang__)
-#define ASSUME(Condition, ...) __builtin_assume(Condition)
+#define LUMINA_ASSUME(Condition, ...) __builtin_assume(Condition)
 #elif defined(__GNUC__)
-#define ASSUME(Condition, ...) do { if (!(Condition)) __builtin_unreachable(); } while(0)
+#define LUMINA_ASSUME(Condition, ...) do { if (!(Condition)) __builtin_unreachable(); } while(0)
 #else
-#define ASSUME(Condition, ...) ((void)0)
+#define LUMINA_ASSUME(Condition, ...) ((void)0)
 #endif
 #endif
     
