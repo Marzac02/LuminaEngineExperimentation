@@ -29,6 +29,6 @@ namespace Lumina
 
     void FEnumProperty::SerializeItem(IStructuredArchive::FSlot Slot, void* Value, void const* Defaults)
     {
-        LUMINA_NO_ENTRY()
+        UNREACHABLE();
     }
 }

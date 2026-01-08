@@ -8,7 +8,7 @@ namespace Lumina
 {
     LUMINA_API void AllocateStaticClass(const TCHAR* Package, const TCHAR* Name, CClass** OutClass, uint32 Size, uint32 Alignment, CClass* (*SuperClassFn)(), CClass::FactoryFunctionType FactoryFunc)
     {
-        Assert(*OutClass == nullptr)
+        DEBUG_ASSERT(*OutClass == nullptr);
         
         CPackage* PackageObject = nullptr;
 
@@ -53,7 +53,7 @@ namespace Lumina
 
     CObject* CClass::EmplaceInstance(void* Memory) const
     {
-        LUM_ASSERT(FactoryFunction)
+        DEBUG_ASSERT(FactoryFunction);
         return FactoryFunction(Memory);
     }
 
@@ -75,7 +75,7 @@ namespace Lumina
 
     CObject* CClass::CreateDefaultObject()
     {
-        Assert(ClassDefaultObject == nullptr)
+        DEBUG_ASSERT(ClassDefaultObject == nullptr);
         
         Link();
         

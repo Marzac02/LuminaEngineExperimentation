@@ -28,7 +28,7 @@ namespace Lumina
         void LoadProjectConfig();
         void SaveConfigs();
         
-        FFixedString GetConfigFilePath(CConfig* Config) const;
+        FFixedString GetConfigFilePath(const CConfig* Config) const;
         
     private:
         

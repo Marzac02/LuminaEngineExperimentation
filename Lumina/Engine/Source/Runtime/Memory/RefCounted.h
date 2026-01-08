@@ -255,7 +255,7 @@ namespace Lumina
 			if (Reference)
 			{
 				Result = Reference->GetRefCount();
-				Assert(Result > 0) // you should never have a zero ref count if there is a live ref counted pointer (*this is live)
+				DEBUG_ASSERT(Result > 0); // you should never have a zero ref count if there is a live ref counted pointer (*this is live)
 			}
 			return Result;
 		}

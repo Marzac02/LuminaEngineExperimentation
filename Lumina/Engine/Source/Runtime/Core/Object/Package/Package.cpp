@@ -61,7 +61,7 @@ namespace Lumina
                     Export.ObjectName = FileName;
                     if (CObject* Object = Export.Object.Get())
                     {
-                        LUM_ASSERT(Object->GetName() == OldFileName)
+                        ASSERT(Object->GetName() == OldFileName);
                         Object->Rename(FileName, nullptr);
                         break;
                     }
@@ -90,7 +90,7 @@ namespace Lumina
     CPackage* CPackage::CreatePackage(FStringView Path)
     {
         FStringView ObjectName = SanitizeObjectName(Path);
-        LUM_ASSERT(FindObject<CPackage>(ObjectName) == nullptr)
+        ASSERT(FindObject<CPackage>(ObjectName) == nullptr);
 
         CPackage* Package = NewObject<CPackage>(nullptr, ObjectName);
         Package->AddToRoot();
@@ -164,7 +164,7 @@ namespace Lumina
     
     bool CPackage::DestroyPackage(CPackage* PackageToDestroy)
     {
-        LUM_ASSERT(PackageToDestroy->FullyLoad())
+        ASSERT(PackageToDestroy->FullyLoad());
 
         TVector<CObject*> ExportObjects;
         ExportObjects.reserve(20);
@@ -216,7 +216,7 @@ namespace Lumina
         {
             FStringView NewObjectName = SanitizeObjectName(NewPath);
 
-            LUM_ASSERT(Package->Rename(NewObjectName, nullptr))
+            ASSERT(Package->Rename(NewObjectName, nullptr));
             return;
         }
 
@@ -319,7 +319,7 @@ namespace Lumina
     {
         LUMINA_PROFILE_SCOPE();
 
-        LUM_ASSERT(Package != nullptr)
+        ASSERT(Package != nullptr);
 
         (void)Package->FullyLoad();
         
@@ -440,7 +440,7 @@ namespace Lumina
 
         for (FObjectExport& Export : ExportTable)
         {
-            LUM_ASSERT(Export.Object.Get() != nullptr)
+            ASSERT(Export.Object.Get() != nullptr);
             
             Export.Offset = Ar.Tell();
             

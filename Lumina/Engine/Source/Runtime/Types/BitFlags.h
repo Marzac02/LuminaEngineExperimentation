@@ -35,7 +35,7 @@ namespace Lumina
 
         FORCEINLINE bool IsFlagSet( uint8_t flag ) const
         {
-            Assert(flag < MaxFlags)
+            DEBUG_ASSERT(flag < MaxFlags);
             return (Flags & GetFlagMask(flag)) > 0;
         }
 
@@ -60,7 +60,7 @@ namespace Lumina
 
         FORCEINLINE void SetFlag(uint8 flag, bool value)
         {
-            Assert(flag < MaxFlags)
+            DEBUG_ASSERT(flag < MaxFlags);
             value ? SetFlag(flag) : ClearFlag(flag);
         }
 
@@ -80,7 +80,7 @@ namespace Lumina
 
         FORCEINLINE bool IsFlagCleared(uint8 flag) const
         {
-            Assert(flag < MaxFlags)
+            DEBUG_ASSERT(flag < MaxFlags);
             return (Flags & GetFlagMask(flag)) == 0;
         }
 
@@ -93,7 +93,7 @@ namespace Lumina
 
         FORCEINLINE void ClearFlag(uint8 flag)
         {
-            Assert(flag < MaxFlags)
+            DEBUG_ASSERT(flag < MaxFlags);
             Flags &= ~GetFlagMask(flag);
         }
 
@@ -112,7 +112,7 @@ namespace Lumina
 
         FORCEINLINE void FlipFlag(uint8 flag)
         {
-            Assert(flag >= 0 && flag < MaxFlags)
+            DEBUG_ASSERT(flag >= 0 && flag < MaxFlags);
             Flags ^= GetFlagMask( flag );
         }
 
@@ -133,14 +133,14 @@ namespace Lumina
 
         FORCEINLINE FBitFlags& operator | ( uint8_t flag )
         {
-            Assert( flag < MaxFlags )
+            DEBUG_ASSERT(flag < MaxFlags);
             Flags |= GetFlagMask( flag );
             return *this;
         }
 
         FORCEINLINE FBitFlags& operator & ( uint8_t flag )
         {
-            Assert(flag < MaxFlags)
+            DEBUG_ASSERT(flag < MaxFlags);
             Flags &= GetFlagMask(flag);
             return *this;
         }
@@ -167,7 +167,7 @@ namespace Lumina
         explicit TBitFlags(T value) 
             : FBitFlags(static_cast<uint32>(value))
         {
-            Assert((uint32) value < MaxFlags)
+            DEBUG_ASSERT((uint32) value < MaxFlags);
         }
 
         TBitFlags(uint32 i)
@@ -216,14 +216,14 @@ namespace Lumina
 
         FORCEINLINE TBitFlags& operator| ( T flag )
         {
-            Assert((uint8) flag < MaxFlags)
+            DEBUG_ASSERT((uint8) flag < MaxFlags);
             Flags |= GetFlagMask(flag);
             return *this;
         }
 
         FORCEINLINE TBitFlags& operator& ( T flag )
         {
-            Assert((uint8) flag < MaxFlags)
+            DEBUG_ASSERT((uint8) flag < MaxFlags);
             Flags &= GetFlagMask(flag);
             return *this;
         }

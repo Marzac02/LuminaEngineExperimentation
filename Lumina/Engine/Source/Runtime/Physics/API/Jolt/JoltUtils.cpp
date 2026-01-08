@@ -128,6 +128,6 @@ namespace Lumina::JoltUtils
             case EBodyType::Kinematic: return JPH::EMotionType::Kinematic;
         }
         
-        LUMINA_NO_ENTRY()
+        UNREACHABLE();
     }
 }

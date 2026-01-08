@@ -34,6 +34,6 @@ namespace Lumina
     public:
         
         void PostCreateCDO() override;
-        virtual entt::entity ProcessScript(FName Name, const sol::table& ScriptTable, entt::registry& ScriptRegistry) const LUMINA_PURE_VIRTUAL()
+        virtual entt::entity ProcessScript(FName Name, const sol::table& ScriptTable, entt::registry& ScriptRegistry) const { return entt::null; }
     };
 }

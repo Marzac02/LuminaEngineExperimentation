@@ -30,7 +30,7 @@ namespace Lumina
 
     void CConfigRegistry::RegisterConfig(CConfig* Config)
     {
-        LUM_ASSERT(Config)
+        DEBUG_ASSERT(Config);
 
         Configs.emplace_back(Config);
         LoadConfig(Config);
@@ -88,9 +88,9 @@ namespace Lumina
         
     }
 
-    FFixedString CConfigRegistry::GetConfigFilePath(CConfig* Config) const
+    FFixedString CConfigRegistry::GetConfigFilePath(const CConfig* Config) const
     {
-        LUM_ASSERT(Config)
+        DEBUG_ASSERT(Config);
 
         FString ConfigName = Config->GetConfigName();
         if (ConfigName.empty())
@@ -134,7 +134,7 @@ namespace Lumina
 
     void CConfigRegistry::LoadConfig(CConfig* Config)
     {
-        LUM_ASSERT(Config)
+        DEBUG_ASSERT(Config);
         
         FString ConfigName = Config->GetConfigName();
         FFixedString DefaultPath = GetConfigFilePath(Config);
@@ -160,7 +160,7 @@ namespace Lumina
 
     void CConfigRegistry::SaveConfig(CConfig* Config, FStringView Path)
     {
-        LUM_ASSERT(Config)
+        DEBUG_ASSERT(Config);
 
         FFixedString Header = "// Lumina Engine Configuration File\n";
         

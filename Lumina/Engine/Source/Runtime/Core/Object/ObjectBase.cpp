@@ -100,7 +100,7 @@ namespace Lumina
         }
         else
         {
-            Assert(!GFirstPendingRegistrant)
+            ASSERT(!GFirstPendingRegistrant);
             GFirstPendingRegistrant = PendingRegistrant;
         }
 
@@ -109,7 +109,7 @@ namespace Lumina
 
     void CObjectBase::FinishRegister(CClass* InClass, const TCHAR* InName)
     {
-        Assert(ClassPrivate == nullptr)
+        ASSERT(ClassPrivate == nullptr);
         ClassPrivate = InClass;
 
         AddObject();

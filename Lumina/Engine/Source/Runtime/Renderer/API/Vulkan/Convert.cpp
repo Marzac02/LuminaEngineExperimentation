@@ -17,8 +17,8 @@ namespace Lumina::Vk
             // It's safe to cast VkAccessFlags2 -> VkAccessFlags and VkPipelineStageFlags2 -> VkPipelineStageFlags (as long as the enum exist in both versions!),
             // synchronization2 spec says: "The new flags are identical to the old values within the 32-bit range, with new stages and bits beyond that."
             // The below stages are exclusive to synchronization2
-            LUM_ASSERT((StageFlags & VK_PIPELINE_STAGE_2_MICROMAP_BUILD_BIT_EXT) != VK_PIPELINE_STAGE_2_MICROMAP_BUILD_BIT_EXT)
-            LUM_ASSERT((AccessMask & VK_ACCESS_2_MICROMAP_WRITE_BIT_EXT) != VK_ACCESS_2_MICROMAP_WRITE_BIT_EXT)
+            DEBUG_ASSERT((StageFlags & VK_PIPELINE_STAGE_2_MICROMAP_BUILD_BIT_EXT) != VK_PIPELINE_STAGE_2_MICROMAP_BUILD_BIT_EXT);
+            DEBUG_ASSERT((AccessMask & VK_ACCESS_2_MICROMAP_WRITE_BIT_EXT) != VK_ACCESS_2_MICROMAP_WRITE_BIT_EXT);
             return FResourceStateMapping(State, static_cast<VkPipelineStageFlags>(StageFlags), static_cast<VkAccessFlags>(AccessMask), ImageLayout);
         }
 
@@ -141,8 +141,8 @@ namespace Lumina::Vk
             {
                 const FResourceStateMappingInternal& Mapping = GResourceStateMap[BitIndex];
 
-                Assert(uint32(Mapping.State) == Bit)
-                Assert(Result.ImageLayout == VK_IMAGE_LAYOUT_UNDEFINED || Mapping.ImageLayout == VK_IMAGE_LAYOUT_UNDEFINED || Result.ImageLayout == Mapping.ImageLayout)
+                DEBUG_ASSERT(uint32(Mapping.State) == Bit);
+                DEBUG_ASSERT(Result.ImageLayout == VK_IMAGE_LAYOUT_UNDEFINED || Mapping.ImageLayout == VK_IMAGE_LAYOUT_UNDEFINED || Result.ImageLayout == Mapping.ImageLayout);
 
                 Result.State = EResourceStates(Result.State | Mapping.State);
                 Result.AccessMask |= Mapping.AccessMask;
@@ -158,7 +158,7 @@ namespace Lumina::Vk
             BitIndex++;
         }
 
-        Assert(Result.State == state)
+        DEBUG_ASSERT(Result.State == state);
 
         return Result;
     }

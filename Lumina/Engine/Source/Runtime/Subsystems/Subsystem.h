@@ -28,7 +28,7 @@ namespace Lumina
         
         ~FSubsystemManager()
         {
-            Assert(SubsystemLookup.empty())
+            ASSERT(SubsystemLookup.empty());
         }
 
         template<typename T, typename... Args>
@@ -36,7 +36,7 @@ namespace Lumina
         T* AddSubsystem(Args&&... args)
         {
             size_t TypeHash = typeid(T).hash_code();
-            Assert(SubsystemLookup.find(TypeHash) == SubsystemLookup.end())
+            ASSERT(SubsystemLookup.find(TypeHash) == SubsystemLookup.end());
 
             T* pSubsystem = Memory::New<T>(std::forward<Args>(args)...);
             

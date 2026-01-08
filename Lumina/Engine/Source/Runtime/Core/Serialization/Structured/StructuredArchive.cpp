@@ -214,7 +214,7 @@ namespace Lumina
 
     FArchiveSlot IStructuredArchive::Open()
     {
-        Assert(RootElementID == 0);
+        ASSERT(RootElementID == 0);
 
         RootElementID = IDGenerator.Generate();
         CurrentScope.emplace_back(RootElementID, StructuredArchive::EElementType::Root);
@@ -237,7 +237,7 @@ namespace Lumina
 
     void IStructuredArchive::SetScope(FSlotPosition Slot)
     {
-        Assert(Slot.Depth < CurrentScope.size() && CurrentScope[Slot.Depth].ID == Slot.ID);
+        ASSERT(Slot.Depth < CurrentScope.size() && CurrentScope[Slot.Depth].ID == Slot.ID);
 
         CurrentScope.erase(CurrentScope.begin() + Slot.Depth + 1, CurrentScope.end());
         CurrentSlotID = Slot.ID;
@@ -326,7 +326,7 @@ namespace Lumina
         {
             FName ReadFieldName;
             InnerAr << ReadFieldName;
-            Assert(ReadFieldName == FieldName)
+            ASSERT(ReadFieldName == FieldName);
         }
 
         StructuredArchive::FSlotID NewSlotID = IDGenerator.Generate();
@@ -346,7 +346,7 @@ namespace Lumina
         
         if (IsLoading())
         {
-            Assert(NumElements >= 0)
+            ASSERT(NumElements >= 0);
         }
     }
 
@@ -393,7 +393,7 @@ namespace Lumina
         
         if (IsLoading())
         {
-            Assert(NumElements >= 0)
+            ASSERT(NumElements >= 0);
         }
     }
 

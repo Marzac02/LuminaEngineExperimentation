@@ -6,6 +6,16 @@
 
 namespace Lumina
 {
+    static void CustomAssert(const char* pMessage)
+    {
+        if (pMessage && strstr(pMessage, "Memory leak detected"))
+        {
+            return;
+        }
+        
+        PANIC("{}", pMessage);
+    }
+    
     void Memory::Initialize()
     {
         LUMINA_PROFILE_SCOPE();

@@ -90,7 +90,7 @@ namespace Lumina
         FScopeLock Lock(AssetsMutex);
 
         auto It = Assets.find_as(GUID, FGuidHash(), FAssetDataGuidEqual());
-        LUM_ASSERT(It != Assets.end())
+        ASSERT(It != Assets.end());
 
         Assets.erase(It);
         
@@ -106,7 +106,7 @@ namespace Lumina
             return Asset->Path == OldPath;
         });
 
-        LUM_ASSERT(It != Assets.end())
+        ASSERT(It != Assets.end());
 
         const TSharedPtr<FAssetData>& Data = *It;
         Data->Path.assign_convert(NewPath);
@@ -211,7 +211,7 @@ namespace Lumina
 
         const CClass* A = FindObject<CClass>(ClassName);
         const CClass* B = FindObject<CClass>(Asset.AssetClass);
-        LUM_ASSERT(A && B)
+        ASSERT(A && B);
         
         return B->IsChildOf(A);
     }

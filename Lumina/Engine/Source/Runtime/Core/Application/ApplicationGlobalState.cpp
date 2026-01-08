@@ -15,7 +15,7 @@ namespace Lumina
     
     FApplicationGlobalState::FApplicationGlobalState(char const* MainThreadName)
     {
-        Assert(!bGlobalStateInitialize)
+        ASSERT(!bGlobalStateInitialize);
         
         Memory::Initialize();
         Threading::Initialize(MainThreadName == nullptr ? "Main Thread" : MainThreadName);
@@ -27,7 +27,7 @@ namespace Lumina
 
     FApplicationGlobalState::~FApplicationGlobalState()
     {
-        Assert(bGlobalStateInitialize)
+        ASSERT(bGlobalStateInitialize);
         bGlobalStateInitialize = false;
 
         Logging::Shutdown();

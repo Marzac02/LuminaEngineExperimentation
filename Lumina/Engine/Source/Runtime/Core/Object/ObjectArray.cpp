@@ -8,8 +8,8 @@ namespace Lumina
 {
     void FChunkedFixedCObjectArray::Initialize(int32 InMaxElements)
     {
-        LUM_ASSERT(Objects == nullptr && "Already initialized!")
-        LUM_ASSERT(InMaxElements > 0)
+        DEBUG_ASSERT(Objects == nullptr && "Already initialized!");
+        DEBUG_ASSERT(InMaxElements > 0);
     
         MaxElements = InMaxElements;
         MaxChunks = (InMaxElements + NumElementsPerChunk - 1) / NumElementsPerChunk;
@@ -98,7 +98,7 @@ namespace Lumina
 
     void FCObjectArray::AllocateObjectPool(int32 InMaxCObjects)
     {
-        LUM_ASSERT(!bInitialized && "Object pool already allocated!")
+        DEBUG_ASSERT(!bInitialized && "Object pool already allocated!");
 
         const int32 MaxObjects = Math::Min(1000, InMaxCObjects);
         
@@ -125,8 +125,8 @@ namespace Lumina
 
     FObjectHandle FCObjectArray::AllocateObject(CObjectBase* Object)
     {
-        LUM_ASSERT(bInitialized && "Object pool not initialized!")
-        LUM_ASSERT(Object != nullptr)
+        DEBUG_ASSERT(bInitialized && "Object pool not initialized!");
+        DEBUG_ASSERT(Object != nullptr);
             
         int32 Index;
         int32 Generation;
@@ -138,8 +138,8 @@ namespace Lumina
             FreeIndices.pop_back();
     
             FCObjectEntry* Item = ChunkedArray.GetItem(Index);
-            LUM_ASSERT(Item != nullptr)
-            LUM_ASSERT(Item->GetObj() == nullptr)
+            DEBUG_ASSERT(Item != nullptr);
+            DEBUG_ASSERT(Item->GetObj() == nullptr);
     
             // Increment generation for reused slot
             Item->IncrementGeneration();
@@ -152,13 +152,10 @@ namespace Lumina
             // Allocate new slot
             Index = ChunkedArray.GetNumElements();
     
-            if (Index >= ChunkedArray.GetMaxElements())
-            {
-                LUM_ASSERT(false && "Object pool capacity exceeded!")
-            }
+            ASSERT(Index <= ChunkedArray.GetMaxElements(), "Object pool capacity exceeded!");
     
             FCObjectEntry* Item = ChunkedArray.GetItem(Index);
-            LUM_ASSERT(Item != nullptr)
+            DEBUG_ASSERT(Item != nullptr);
     
             Generation = 1;
             Item->Generation.store(Generation, eastl::memory_order_release);
@@ -173,11 +170,11 @@ namespace Lumina
 
     void FCObjectArray::DeallocateObject(int32 Index)
     {
-        LUM_ASSERT(bInitialized && "Object pool not initialized!")
+        DEBUG_ASSERT(bInitialized && "Object pool not initialized!");
             
         FCObjectEntry* Item = ChunkedArray.GetItem(Index);
-        LUM_ASSERT(Item != nullptr)
-        LUM_ASSERT(Item->GetObj() != nullptr)
+        DEBUG_ASSERT(Item != nullptr);
+        DEBUG_ASSERT(Item->GetObj() != nullptr);
     
         Item->SetObj(nullptr);
     

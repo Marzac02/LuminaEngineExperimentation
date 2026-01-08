@@ -45,7 +45,7 @@ namespace Lumina::Physics
             case EBodyType::Dynamic:    return JPH::EMotionType::Dynamic;
         }
 
-        LUMINA_NO_ENTRY()
+        UNREACHABLE();
     }
 
     constexpr JPH::ObjectLayer ToJoltObjectType(EBodyType BodyType)

@@ -25,7 +25,7 @@ namespace Lumina
     {
         if (DescriptorIndex >= 0)
         {
-            Assert(!Manager.expired())
+            ASSERT(!Manager.expired());
             if (auto LockedManager = Manager.lock())
             {
                 return LockedManager->GetDescriptorTable()->GetFirstDescriptorIndexInHeap() + DescriptorIndex;

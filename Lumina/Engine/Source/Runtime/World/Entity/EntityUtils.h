@@ -42,7 +42,8 @@ namespace Lumina::ECS::Utils
             case sol::type::string:     return GetTypeID(Obj.template as<const char*>());
         }
 
-        LUMINA_NO_ENTRY()
+        UNREACHABLE();
+        return entt::id_type{};
     }
     
     NODISCARD LUMINA_API THashSet<entt::id_type> CollectTypes(const sol::variadic_args& Args);

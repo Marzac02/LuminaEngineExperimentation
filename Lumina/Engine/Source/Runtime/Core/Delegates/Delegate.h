@@ -60,7 +60,7 @@ namespace Lumina
         template<typename... TCallArgs>
         R Execute(TCallArgs&&... Args) const
         {
-            LUM_ASSERT(Func)
+            ASSERT(Func);
 
             if constexpr (eastl::is_void_v<R>)
             {

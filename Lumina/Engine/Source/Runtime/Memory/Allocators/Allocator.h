@@ -69,7 +69,7 @@ namespace Lumina
             SIZE_T CurrentPtr = reinterpret_cast<SIZE_T>(Base + Offset);
             SIZE_T AlignedPtr = (CurrentPtr + Alignment - 1) & ~(Alignment - 1);
             SIZE_T NextOffset = AlignedPtr - reinterpret_cast<SIZE_T>(Base) + Size;
-            LUM_ASSERT(NextOffset < Capacity)
+            ASSERT(NextOffset < Capacity);
             
             void* Result = Base + (AlignedPtr - reinterpret_cast<SIZE_T>(Base));
             Offset = NextOffset;
@@ -147,10 +147,7 @@ namespace Lumina
          
         void* Allocate(SIZE_T Size, SIZE_T Alignment) override 
         {
-            if (Size > GetUsableBlockSize())
-            {
-                LUM_ASSERT(false)
-            }
+            ASSERT(Size < GetUsableBlockSize());
     
             SIZE_T CurrentPtr = reinterpret_cast<SIZE_T>(CurrentBlock->GetData() + CurrentOffset); 
             SIZE_T AlignedPtr = (CurrentPtr + Alignment - 1) & ~(Alignment - 1); 
@@ -168,7 +165,7 @@ namespace Lumina
                 AlignedPtr = (CurrentPtr + Alignment - 1) & ~(Alignment - 1); 
                 NextOffset = AlignedPtr - reinterpret_cast<SIZE_T>(CurrentBlock->GetData()) + Size; 
                 
-                LUM_ASSERT(NextOffset <= GetUsableBlockSize())
+                ASSERT(NextOffset <= GetUsableBlockSize());
             } 
              
             void* Result = CurrentBlock->GetData() + (AlignedPtr - reinterpret_cast<SIZE_T>(CurrentBlock->GetData())); 
@@ -259,7 +256,7 @@ namespace Lumina
         void AllocateNewBlock()
         {
             Block* NewBlock = (Block*)Memory::Malloc(BlockSize);
-            LUM_ASSERT(NewBlock != nullptr)
+            ASSERT(NewBlock != nullptr);
             
             NewBlock->Next = nullptr;
             

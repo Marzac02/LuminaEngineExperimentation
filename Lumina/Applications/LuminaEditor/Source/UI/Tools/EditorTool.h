@@ -171,7 +171,7 @@ namespace Lumina
 
         static FFixedString GetToolWindowName(char const* ToolWindowName, ImGuiID InDockspaceID)
         {
-            Assert(ToolWindowName != nullptr)
+            DEBUG_ASSERT(ToolWindowName != nullptr);
             return { FFixedString::CtorSprintf(), "%s##%08X", ToolWindowName, InDockspaceID };
         }
 

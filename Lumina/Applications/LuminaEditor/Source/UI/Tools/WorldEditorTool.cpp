@@ -823,7 +823,7 @@ namespace Lumina
                     using namespace entt::literals;
                     entt::meta_any Any = ECS::Utils::InvokeMetaFunc(MetaType, "static_struct"_hs);
                     CStruct* Type = Any.cast<CStruct*>();
-                    LUM_ASSERT(Type)
+                    ASSERT(Type);
                     
                     if (Type->HasMeta("HideInComponentList"))
                     {
@@ -1622,7 +1622,7 @@ namespace Lumina
                     
                     entt::meta_any Any = ECS::Utils::InvokeMetaFunc(MetaType, "static_struct"_hs);
                     CStruct* Struct = Any.cast<CStruct*>();
-                    LUM_ASSERT(Struct)
+                    ASSERT(Struct);
                     
                     if (Struct->HasMeta("HideInComponentList"))
                     {

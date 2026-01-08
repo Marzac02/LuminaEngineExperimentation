@@ -45,7 +45,7 @@ namespace Lumina
     void FAssetManager::NotifyAssetRequestCompleted(const TSharedPtr<FAssetRequest>& Request)
     {
         auto It = eastl::find(ActiveRequests.begin(), ActiveRequests.end(), Request);
-        Assert(It != ActiveRequests.end())
+        ASSERT(It != ActiveRequests.end());
 
         for (auto& Functor : Request->Listeners)
         {

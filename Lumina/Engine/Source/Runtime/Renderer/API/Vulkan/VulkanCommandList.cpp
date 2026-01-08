@@ -145,7 +145,7 @@ namespace Lumina
     void FVulkanCommandList::CopyImage(FRHIImage* RESTRICT Src, const FTextureSlice& SrcSlice, FRHIImage* RESTRICT Dst, const FTextureSlice& DstSlice)
     {
         LUMINA_PROFILE_SCOPE();
-        Assert(Src != nullptr && Dst != nullptr)
+        ASSERT(Src != nullptr && Dst != nullptr);
         
         CurrentCommandBuffer->AddReferencedResource(Src);
         CurrentCommandBuffer->AddReferencedResource(Dst);
@@ -207,7 +207,7 @@ namespace Lumina
         FTextureSlice ResolvedSrcSlice = SrcSlice.Resolve(Destination->GetDesc());
 
         auto DstRegion = Destination->GetSliceRegion(ResolvedDstSlice.MipLevel, ResolvedDstSlice.ArraySlice, ResolvedDstSlice.Z);
-        LUM_ASSERT((DstRegion.Offset & 0x3) == 0) // per vulkan spec
+        ASSERT((DstRegion.Offset & 0x3) == 0); // per vulkan spec
 
         
         FTextureSubresourceSet SrcSubresource = FTextureSubresourceSet(ResolvedSrcSlice.MipLevel, 1, ResolvedSrcSlice.ArraySlice, 1);
@@ -256,7 +256,7 @@ namespace Lumina
 
         auto SrcRegion = Source->GetSliceRegion(ResolvedSrcSlice.MipLevel, ResolvedSrcSlice.ArraySlice, ResolvedSrcSlice.Z);
 
-        LUM_ASSERT((SrcRegion.Offset & 0x3) == 0) // per vulkan spec
+        ASSERT((SrcRegion.Offset & 0x3) == 0); // per vulkan spec
         
         FTextureSubresourceSet DstSubresource = FTextureSubresourceSet(ResolvedDstSlice.MipLevel, 1, ResolvedDstSlice.ArraySlice, 1);
 
@@ -318,7 +318,7 @@ namespace Lumina
     void FVulkanCommandList::WriteImage(FRHIImage* RESTRICT Dst, uint32 ArraySlice, uint32 MipLevel, const void* RESTRICT Data, uint32 RowPitch, uint32 DepthPitch)
     {
         LUMINA_PROFILE_SCOPE();
-        Assert(Dst != nullptr && Data != nullptr)
+        ASSERT(Dst != nullptr && Data != nullptr);
         
         if (Dst->GetDescription().Extent.y > 1 && RowPitch == 0)
         {
@@ -536,10 +536,10 @@ namespace Lumina
     {
         LUMINA_PROFILE_SCOPE();
         
-        LUM_ASSERT(Source)
-        LUM_ASSERT(Destination)
-        LUM_ASSERT(DstOffset + CopySize <= Destination->GetDescription().Size)
-        LUM_ASSERT(SrcOffset + CopySize <= Source->GetDescription().Size)
+        ASSERT(Source);
+        ASSERT(Destination);
+        ASSERT(DstOffset + CopySize <= Destination->GetDescription().Size);
+        ASSERT(SrcOffset + CopySize <= Source->GetDescription().Size);
         
         bool bStagingDestination    = Destination->IsStagingBuffer();
         bool bStagingSource         = Source->IsStagingBuffer();
@@ -689,7 +689,7 @@ namespace Lumina
             return;
         }
         
-        LUM_ASSERT(Size <= Buffer->GetSize())
+        ASSERT(Size <= Buffer->GetSize());
 
         CommandListStats.NumBufferWrites++;
         
@@ -722,7 +722,7 @@ namespace Lumina
         }
         else
         {
-            LUM_ASSERT(Buffer->GetUsage().IsFlagCleared(EBufferUsageFlags::CPUWritable))
+            ASSERT(Buffer->GetUsage().IsFlagCleared(EBufferUsageFlags::CPUWritable));
             LUMINA_PROFILE_SECTION("VkCopyBuffer");
 
             FRHIBuffer* UploadBuffer;
@@ -1122,7 +1122,7 @@ namespace Lumina
 
             if (NumArraySlices)
             {
-                LUM_ASSERT(NumArraySlices == Subresource.NumArraySlices)
+                ASSERT(NumArraySlices == Subresource.NumArraySlices);
             }
             else
             {
@@ -1157,7 +1157,7 @@ namespace Lumina
 
             if (NumArraySlices)
             {
-                LUM_ASSERT(NumArraySlices == Subresource.NumArraySlices)
+                ASSERT(NumArraySlices == Subresource.NumArraySlices);
             }
             else
             {
@@ -1195,7 +1195,7 @@ namespace Lumina
     void FVulkanCommandList::ClearImageColor(FRHIImage* Image, const FColor& Color)
     {
         LUMINA_PROFILE_SCOPE();
-        Assert(Image != nullptr)
+        ASSERT(Image != nullptr);
         
         CurrentCommandBuffer->AddReferencedResource(Image);
 
@@ -1586,7 +1586,7 @@ namespace Lumina
                 FResourceStateMapping2 Before = Vk::ConvertResourceState2(Barrier.StateBefore);
                 FResourceStateMapping2 After = Vk::ConvertResourceState2(Barrier.StateAfter);
 
-                LUM_ASSERT(After.ImageLayout != VK_IMAGE_LAYOUT_UNDEFINED)
+                ASSERT(After.ImageLayout != VK_IMAGE_LAYOUT_UNDEFINED);
                 
                 FVulkanImage* Image = static_cast<FVulkanImage*>(Barrier.Texture);
                 const FFormatInfo& formatInfo = RHI::Format::Info(Image->GetDescription().Format);

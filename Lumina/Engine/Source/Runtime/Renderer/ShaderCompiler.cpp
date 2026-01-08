@@ -162,7 +162,7 @@ namespace Lumina
     {
         LUMINA_PROFILE_SCOPE();
         
-        LUM_ASSERT(ShaderPaths.size() == CompileOptions.size())
+        ASSERT(ShaderPaths.size() == CompileOptions.size());
     
         uint32 NumShaders = (uint32)ShaderPaths.size();
         if (NumShaders == 0)

@@ -33,6 +33,6 @@ namespace Lumina
 
     void FArrayProperty::SerializeItem(IStructuredArchive::FSlot Slot, void* Value, void const* Defaults)
     {
-        LUMINA_NO_ENTRY()
+        UNREACHABLE();
     }
 }

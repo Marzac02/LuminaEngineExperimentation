@@ -91,7 +91,7 @@ workspace "Lumina"
     filter "configurations:Development"
         optimize "Speed"
         symbols "On"
-        defines { "LE_RELEASE", "LUMINA_DEVELOPMENT", "NDEBUG", "LUMINA_DEVELOPMENT", "SOL_ALL_SAFETIES_ON", }
+        defines { "NDEBUG", "LE_DEVELOPMENT", "LUMINA_DEVELOPMENT", "SOL_ALL_SAFETIES_ON", }
         linktimeoptimization "on"
 
 
@@ -100,7 +100,7 @@ workspace "Lumina"
     filter "configurations:Shipping"
         optimize "Full"
         symbols "Off"
-        defines { "LE_SHIP", "LUMINA_SHIPPING", "NDEBUG" }
+        defines { "NDEBUG", "LE_SHIPPING", "LUMINA_SHIPPING" }
         removedefines { "TRACY_ENABLE" }
         linktimeoptimization "on"
         

@@ -16,7 +16,7 @@ namespace Lumina
         {
             auto RENDERDOC_GetAPI = Platform::LumGetProcAddress<pRENDERDOC_GetAPI>(Module, "RENDERDOC_GetAPI");
             int Ret = RENDERDOC_GetAPI(eRENDERDOC_API_Version_1_1_2, (void**)&RenderDocAPI);
-            LUM_ASSERT(Ret)
+            ASSERT(Ret);
         }
 
         // @TODO - Post settings, let user manually enter render doc UI path.

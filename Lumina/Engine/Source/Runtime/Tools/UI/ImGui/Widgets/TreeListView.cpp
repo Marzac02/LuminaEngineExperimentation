@@ -71,8 +71,8 @@ namespace Lumina
 
     void FTreeListView::RebuildTree(const FTreeListViewContext& Context)
     {
-        Assert(Context.RebuildTreeFunction)
-        Assert(bDirty)
+        DEBUG_ASSERT(Context.RebuildTreeFunction);
+        DEBUG_ASSERT(bDirty);
 
 
         THashSet<uint64> CachedExpandedItems;

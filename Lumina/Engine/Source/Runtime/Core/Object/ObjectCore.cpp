@@ -142,7 +142,7 @@ namespace Lumina
     
     void GetObjectsWithPackage(const CPackage* Package, TVector<CObject*>& OutObjects)
     {
-        Assert(Package != nullptr)
+        ASSERT(Package != nullptr);
         
         for (TObjectIterator<CObject> It; It; ++It)
         {

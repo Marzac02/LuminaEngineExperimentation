@@ -1,152 +1,122 @@
 #pragma once
-
-#include <iostream>
-#include <cstdlib>
-#include <fstream>
+#include <source_location>
 #include "Log/Log.h"
 
-#ifdef _MSC_VER
-#include <intrin.h>    // for __debugbreak
-#endif
-#include <csignal> // for raise(SIGTRAP)
 
-#ifdef LE_PLATFORM_WINDOWS
-#include <windows.h>
-#include <dbghelp.h>
-#pragma comment(lib, "DbgHelp.lib")
+
+#if __has_include(<stacktrace>) && defined(__cpp_lib_stacktrace)
+#include <stacktrace>
+#define HAS_STD_STACKTRACE 1
+#else
+#define HAS_STD_STACKTRACE 0
 #endif
 
-inline void PrintCallStack()
+namespace Lumina::Assert
 {
-#if LE_PLATFORM_WINDOWS
-    void* stack[100];
-    unsigned short frames;
-    SYMBOL_INFO* symbol;
-    HANDLE process = GetCurrentProcess();
-
-    // Initialize symbols for stack trace
-    SymInitialize(process, NULL, TRUE);
-    frames = CaptureStackBackTrace(0, 100, stack, NULL);
-
-    symbol = (SYMBOL_INFO*)malloc(sizeof(SYMBOL_INFO) + 256 * sizeof(char));
-    symbol->SizeOfStruct = sizeof(SYMBOL_INFO);
-    symbol->MaxNameLen = 255;
-
-    IMAGEHLP_LINE64 line;
-    DWORD displacement;
-    line.SizeOfStruct = sizeof(IMAGEHLP_LINE64);
-
-    LOG_ERROR("=---------------------Dumping Callstack---------------------=");
-    for (unsigned short i = 0; i < frames; ++i)
+    enum class EAssertionType : uint8
     {
-        SymFromAddr(process, (DWORD64)(stack[i]), 0, symbol);
-
-        if (SymGetLineFromAddr64(process, (DWORD64)(stack[i]), &displacement, &line))
-        {
-            if (Lumina::Logging::IsInitialized())
-            {
-                LOG_ERROR("{0}: {1} - {2} (File: {3}, Line: {4})",
-                          i, symbol->Name, symbol->Address, line.FileName, line.LineNumber);
-            }
-            else
-            {
-                std::cout << i << ": " << symbol->Name << " - " << symbol->Address
-                          << " (File: " << line.FileName << ", Line: " << line.LineNumber << ")" << "\n";
-            }
-        }
-        else
-        {
-            if (Lumina::Logging::IsInitialized())
-            {
-                LOG_ERROR("{0}: {1} - {2} (No Line Info)", i, symbol->Name, symbol->Address);
-            }
-            else
-            {
-                std::cout << i << ": " << symbol->Name << " - " << symbol->Address << " (No Line Info)" << "\n";
-            }
-        }
+        DebugAssert,
+        Assert,
+        Assume,
+        Unreachable,
+        Panic,
+        Alert,
+    };
+    
+    struct LUMINA_API FAssertion
+    {
+        FString                 Message;
+        std::source_location    Location;
+        FStringView             Expression;
+        EAssertionType          Type;
+    };
+    
+    
+    using AssertionHandler = void(*)(const FAssertion&);
+    
+    LUMINA_API void SetAssertionHandler(AssertionHandler Handler);
+    
+    namespace Detail
+    {
+        LUMINA_API void HandleAssertion(const FAssertion& Assertion);
     }
-    LOG_ERROR("=---------------------End of CallStack---------------------=");
+    
+    // ========================= LUMINA ASSERTION INFO =========================
+    // ASSERT_DEBUG(...)    - Checked in debug, no codegen in release.
+    // ASSERT(...)          - Checked in both debug and release.
+    // ASSUME(...)          - Checked in debug, compiler optimization hint in release.
+    // =========================================================================
+    
+#define LUMINA_HANDLE_ASSERTION_HEADER \
+    ::Lumina::Assert::Detail::HandleAssertion(::Lumina::Assert::FAssertion
 
-    free(symbol);
-#endif
-}
 
-#if LE_PLATFORM_WINDOWS
-inline LONG WINAPI ExceptionHandler(EXCEPTION_POINTERS* exceptionInfo)
-{
-    std::ofstream logFile("Logs/crash_log.txt", std::ios::app);
-    logFile << "Unhandled Exception Occurred!\n";
-    PrintCallStack();
-    logFile.close();
+#define LUMINA_ASSERTION_BODY(Expr, AssertType, ...) \
+    if(!(Expr)) [[unlikely]] \
+    { \
+        LUMINA_HANDLE_ASSERTION_HEADER \
+        { \
+            __VA_OPT__(.Message = std::format(__VA_ARGS__).c_str(),) \
+            .Location = std::source_location::current(), \
+            .Expression = #Expr, \
+            .Type = ::Lumina::Assert::EAssertionType::AssertType \
+        }); \
+    } \
 
-    return EXCEPTION_EXECUTE_HANDLER;
-}
-#endif
+    
+#define LUMINA_ASSERT_INVOKE(Expr, Type, ...) \
+    LUMINA_ASSERTION_BODY(Expr, Type, __VA_ARGS__) \
+    ((void)0)
+    
 
-#define LUMINA_NO_ENTRY() \
-    LOG_ERROR("No Entry Hit in {0} at line {1}", __FILE__, __LINE__); \
-    __debugbreak(); \
-    std::unreachable(); \
-
-#if defined(LUMINA_DEBUG)
-#define LUM_ENABLE_ASSERTS 1
+#ifdef LE_DEBUG
+#define LUMINA_DEBUG_ASSERT(Expr, ...)  LUMINA_ASSERT_INVOKE(Expr,      DebugAssert,    __VA_ARGS__)
 #else
-#define LUM_ENABLE_ASSERTS 0
+#define LUMINA_DEBUG_ASSERT(...)        ((void)0)
 #endif
-
-#if LUM_ENABLE_ASSERTS
-// Macro for assertion, triggering a breakpoint if the condition fails
-#define Assert(condition)                               \
-    do {                                                \
-        if ((!(condition))) [[unlikely]] {              \
-            LOG_CRITICAL("Assertion failed: {0} in {1} at line {2}", \
-                #condition, __FILE__, __LINE__);        \
-            PrintCallStack();                           \
-            /* Platform-specific debugging */           \
-            __debugbreak();                             \
-            std::exit(1);                               \
-        }                                               \
-    } while (false);
-
-// Macro for assertion with a custom message
-#define AssertMsg(condition, msg)                       \
-    do {                                                \
-        if ((!(condition))) [[unlikely]] {               \
-            LOG_ERROR("Assertion failed: {0} ({1}) in {2} at line {3}", \
-                msg, #condition, __FILE__, __LINE__);    \
-            PrintCallStack();                           \
-            /* Platform-specific debugging */            \
-            __debugbreak();                             \
-            std::exit(1);                               \
-        }                                               \
-    } while (false)
-
-// Ensure macro (will log and sleep for a while on failure)
-#define EnsureMsg(condition, msg)                       \
-do {                                                    \
-    if ((!(condition))) [[unlikely]] {                  \
-        LOG_ERROR("Ensure failed: {0} ({1}) in {2} at line {3}", \
-        msg, #condition, __FILE__, __LINE__);            \
-        PrintCallStack();                                \
-        std::this_thread::sleep_for(std::chrono::milliseconds(100)); \
-    }                                                   \
-} while (false)
+    
+#define LUMINA_ASSERT(Expr, ...)        LUMINA_ASSERT_INVOKE(Expr,      Assert,         __VA_ARGS__)
+    
+#ifdef LE_DEBUG
+#define LUMINA_ASSUME(Expr, ...)        LUMINA_ASSERT_INVOKE(Expr,      Assume,         __VA_ARGS__)
 #else
-#define Assert(...) 
-#define AssertMsg(...) 
-#define EnsureMsg(...) 
-#endif
-
-
-#define LUM_ASSERT(x) Assert(x)
-
-
 #if defined(_MSC_VER)
-    #include <xmmintrin.h>
-    #define LUM_PREFETCH(addr) _mm_prefetch(reinterpret_cast<const char*>(addr), _MM_HINT_T0)
-#elif defined(__GNUC__) || defined(__clang__)
-    #define LUM_PREFETCH(addr) __builtin_prefetch(addr, 0 /* read */, 3 /* temporal locality */)
+#define ASSUME(Condition, ...) __assume(Condition)
+#elif defined(__clang__)
+#define ASSUME(Condition, ...) __builtin_assume(Condition)
+#elif defined(__GNUC__)
+#define ASSUME(Condition, ...) do { if (!(Condition)) __builtin_unreachable(); } while(0)
 #else
-    #define LUM_PREFETCH(addr) ((void)0) // fallback: no-op
+#define ASSUME(Condition, ...) ((void)0)
 #endif
+#endif
+    
+
+#define LUMINA_PANIC(...)               LUMINA_ASSERT_INVOKE(false,     Panic,          __VA_ARGS__)
+    
+#ifndef LE_SHIPPING
+#define LUMINA_ALERT(Expr, ...)         LUMINA_ASSERT_INVOKE(Expr,      Alert,          __VA_ARGS__)
+#else
+#define LUMINA_ALERT(...)               ((void)0)
+#endif
+    
+#ifdef LE_DEBUG
+#define LUMINA_UNREACHABLE(...)         LUMINA_ASSERT_INVOKE(false,     Unreachable,    __VA_ARGS__)
+#else
+#define LUMINA_UNREACHABLE(...)         std::unreachable()
+#endif
+    
+    
+    
+#define DEBUG_ASSERT(...)   LUMINA_DEBUG_ASSERT(__VA_ARGS__)
+#define ASSERT(...)         LUMINA_ASSERT(__VA_ARGS__)
+#define ASSUME(...)         LUMINA_ASSUME(__VA_ARGS__)
+#define ALERT_IF_NOT(...)   LUMINA_ALERT(__VA_ARGS__)
+#define PANIC(...)          LUMINA_PANIC(__VA_ARGS__)
+#define UNREACHABLE(...)    LUMINA_UNREACHABLE(__VA_ARGS__)
+
+    
+
+    
+    
+}

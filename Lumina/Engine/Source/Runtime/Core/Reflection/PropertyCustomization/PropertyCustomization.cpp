@@ -26,13 +26,13 @@ namespace Lumina
 
     void FPropertyCustomizationRegistry::RegisterPropertyCustomization(const FName& Name, PropertyCustomizationRegisterFn Callback)
     {
-        Assert(RegisteredProperties.find(Name) == RegisteredProperties.end())
+        ASSERT(RegisteredProperties.find(Name) == RegisteredProperties.end());
         RegisteredProperties.emplace(Name, Callback);
     }
 
     void FPropertyCustomizationRegistry::UnregisterPropertyCustomization(const FName& Name)
     {
-        Assert(RegisteredProperties.find(Name) != RegisteredProperties.end())
+        ASSERT(RegisteredProperties.find(Name) != RegisteredProperties.end());
         RegisteredProperties.erase(Name);
     }
 

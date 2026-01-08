@@ -14,10 +14,6 @@ extern Lumina::FApplication* Lumina::CreateApplication(int argc, char** argv);
 
 inline int GuardedMain(int argc, char** argv)
 {
-#if LE_PLATFORM_WINDOWS
-	SetUnhandledExceptionFilter(ExceptionHandler);
-#endif
-	
 	int Result = 0;
 	{
 		Lumina::FApplicationGlobalState GlobalState;

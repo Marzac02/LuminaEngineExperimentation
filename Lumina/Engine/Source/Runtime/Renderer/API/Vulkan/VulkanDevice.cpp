@@ -64,7 +64,7 @@ namespace Lumina
 
         
         VK_CHECK(vmaCreateBuffer(Allocator, CreateInfo, &Info, vkBuffer, &Allocation, &AllocationInfo));
-        AssertMsg(Allocation, "Vulkan failed to allocate buffer memory!");
+        DEBUG_ASSERT(Allocation, "Vulkan failed to allocate buffer memory!");
     
     #if LE_DEBUG
         if (AllocationName)
@@ -82,7 +82,7 @@ namespace Lumina
 
         LUMINA_PROFILE_SCOPE();
     
-        LUM_ASSERT(CreateInfo->extent.depth != 0)
+        ASSERT(CreateInfo->extent.depth != 0);
     
         VmaAllocationCreateInfo Info = {};
         Info.usage = VMA_MEMORY_USAGE_AUTO;
@@ -100,7 +100,7 @@ namespace Lumina
         VmaAllocationInfo AllocationInfo;
         
         VK_CHECK(vmaCreateImage(Allocator, CreateInfo, &Info, vkImage, &Allocation, &AllocationInfo));
-        AssertMsg(Allocation, "Vulkan failed to allocate image memory!");
+        DEBUG_ASSERT(Allocation, "Vulkan failed to allocate image memory!");
     
     #if LE_DEBUG
         if (AllocationName && strlen(AllocationName) > 0)
@@ -116,7 +116,7 @@ namespace Lumina
     void FVulkanMemoryAllocator::DestroyBuffer(VkBuffer Buffer, VmaAllocation Allocation) const
     {
         LUMINA_PROFILE_SCOPE();
-        Assert(Buffer)
+        DEBUG_ASSERT(Buffer);
         
         vmaDestroyBuffer(Allocator, Buffer, Allocation);
     }
@@ -124,7 +124,7 @@ namespace Lumina
     void FVulkanMemoryAllocator::DestroyImage(VkImage Image, VmaAllocation Allocation) const
     {
         LUMINA_PROFILE_SCOPE();
-        Assert(Image)
+        DEBUG_ASSERT(Image);
         
         vmaDestroyImage(Allocator, Image, Allocation);
     }

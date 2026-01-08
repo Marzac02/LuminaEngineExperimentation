@@ -14,7 +14,7 @@ Lumina::CClass* Construct_CClass_Lumina_CObject()
         Registration_Info_CClass_Lumina_CObject.OuterSingleton = Lumina::CObject::StaticClass();
         Lumina::CObjectForceRegistration(Registration_Info_CClass_Lumina_CObject.OuterSingleton);
     }
-    Assert(Registration_Info_CClass_Lumina_CObject.OuterSingleton->GetClass() != nullptr)
+    ASSERT(Registration_Info_CClass_Lumina_CObject.OuterSingleton->GetClass() != nullptr);
     return Registration_Info_CClass_Lumina_CObject.OuterSingleton;
 }
     

@@ -459,7 +459,7 @@ namespace Lumina
 			if (Usage.IsFlagSet(BUF_NullResource))
 			{
 				// The null resource descriptor should have its other fields zeroed, and no additional flags.
-				Assert(Size == 0 && Stride == 0 && Usage.IsFlagSet(BUF_NullResource))
+				DEBUG_ASSERT(Size == 0 && Stride == 0 && Usage.IsFlagSet(BUF_NullResource));
 				return true;
 			}
 

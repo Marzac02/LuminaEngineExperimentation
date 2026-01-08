@@ -15,7 +15,7 @@ namespace Lumina
         {
             auto* StructParams = (const FStructPropertyParams*)Params;
             CStruct* InternalStruct = StructParams->StructFunc();
-            Assert(InternalStruct)
+            ASSERT(InternalStruct);
             SetStruct(InternalStruct);
             SetElementSize(Struct->GetAlignedSize());
         }

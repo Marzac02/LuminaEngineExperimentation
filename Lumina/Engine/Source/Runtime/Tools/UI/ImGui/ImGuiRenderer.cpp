@@ -91,12 +91,12 @@ namespace Lumina
     	using namespace ImGuiX::Font;
     	io.FontDefault = GFonts[static_cast<uint8>(EFont::Medium)];
     	
-        Assert(GFonts[(uint8)EFont::Small]->IsLoaded())
-        Assert(GFonts[(uint8)EFont::SmallBold]->IsLoaded())
-        Assert(GFonts[(uint8)EFont::Medium]->IsLoaded())
-        Assert(GFonts[(uint8)EFont::MediumBold]->IsLoaded())
-        Assert(GFonts[(uint8)EFont::Large]->IsLoaded())
-        Assert(GFonts[(uint8)EFont::LargeBold]->IsLoaded())
+        DEBUG_ASSERT(GFonts[(uint8)EFont::Small]->IsLoaded());
+        DEBUG_ASSERT(GFonts[(uint8)EFont::SmallBold]->IsLoaded());
+        DEBUG_ASSERT(GFonts[(uint8)EFont::Medium]->IsLoaded());
+        DEBUG_ASSERT(GFonts[(uint8)EFont::MediumBold]->IsLoaded());
+        DEBUG_ASSERT(GFonts[(uint8)EFont::Large]->IsLoaded());
+        DEBUG_ASSERT(GFonts[(uint8)EFont::LargeBold]->IsLoaded());
 		
     	
     	io.ConfigWindowsMoveFromTitleBarOnly = true;

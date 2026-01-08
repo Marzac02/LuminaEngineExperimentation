@@ -75,15 +75,15 @@ namespace Lumina
 
     void FBufferReader::Seek(int64 InPos)
     {
-        Assert(InPos >= 0)
-        Assert(InPos <= ReaderSize)
+        ASSERT(InPos >= 0);
+        ASSERT(InPos <= ReaderSize);
         ReaderPos = InPos;
     }
 
     void FBufferReader::Serialize(void* Data, int64 Size)
     {
-        Assert(ReaderPos >= 0)
-        Assert(ReaderPos + Size <= ReaderSize)
+        ASSERT(ReaderPos >= 0);
+        ASSERT(ReaderPos + Size <= ReaderSize);
         Memory::Memcpy(Data, static_cast<uint8*>(ReaderData) + ReaderPos, Size);
         ReaderPos += Size;
     }
@@ -105,7 +105,7 @@ namespace Lumina
             Bytes.resize(NewArrayCount);
         }
 
-        Assert((Offset + Size) <= (int64)Bytes.size())
+        ASSERT((Offset + Size) <= (int64)Bytes.size());
         
         Memory::Memcpy(&Bytes[Offset], Data, Size);
         Offset += Size;

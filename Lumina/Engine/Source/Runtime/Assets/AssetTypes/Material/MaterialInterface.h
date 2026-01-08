@@ -29,15 +29,15 @@ namespace Lumina
         GENERATED_BODY()
     public:
 
-        virtual CMaterial* GetMaterial() const { LUMINA_NO_ENTRY() }
-        virtual bool SetVectorValue(const FName& Name, const glm::vec4& Value) { LUMINA_NO_ENTRY() }
-        virtual bool SetScalarValue(const FName& Name, const float Value) { LUMINA_NO_ENTRY() }
-        virtual bool GetParameterValue(EMaterialParameterType Type, const FName& Name, FMaterialParameter& Param) { LUMINA_NO_ENTRY() }
+        virtual CMaterial* GetMaterial() const { return nullptr; }
+        virtual bool SetVectorValue(const FName& Name, const glm::vec4& Value) { return false; }
+        virtual bool SetScalarValue(const FName& Name, const float Value) { return false; }
+        virtual bool GetParameterValue(EMaterialParameterType Type, const FName& Name, FMaterialParameter& Param) { return false; }
         
-        virtual FRHIBindingSet* GetBindingSet() const { LUMINA_NO_ENTRY() }
-        virtual FRHIBindingLayout* GetBindingLayout() const { LUMINA_NO_ENTRY() }
-        virtual FRHIVertexShader* GetVertexShader() const { LUMINA_NO_ENTRY() }
-        virtual FRHIPixelShader* GetPixelShader() const { LUMINA_NO_ENTRY() }
+        virtual FRHIBindingSet* GetBindingSet() const { return nullptr; }
+        virtual FRHIBindingLayout* GetBindingLayout() const { return nullptr; }
+        virtual FRHIVertexShader* GetVertexShader() const { return nullptr; }
+        virtual FRHIPixelShader* GetPixelShader() const { return nullptr; }
 
         virtual EMaterialType GetMaterialType() const { return EMaterialType::None; };
 

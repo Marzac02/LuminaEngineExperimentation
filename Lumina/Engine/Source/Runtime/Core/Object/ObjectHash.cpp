@@ -13,7 +13,7 @@ namespace Lumina
 
         const FGuid& ObjectGUID = Object->GetGUID();
         auto It = ObjectGUIDHash.find(ObjectGUID);
-        LUM_ASSERT(It == ObjectGUIDHash.end())
+        ASSERT(It == ObjectGUIDHash.end());
 
         ObjectGUIDHash.emplace(ObjectGUID, Object);
         ObjectClassBucket[Object->GetClass()].emplace(Object);
@@ -27,7 +27,7 @@ namespace Lumina
 
         const FGuid& ObjectGUID = Object->GetGUID();
         auto It = ObjectGUIDHash.find(ObjectGUID);
-        LUM_ASSERT(It != ObjectGUIDHash.end())
+        ASSERT(It != ObjectGUIDHash.end());
 
         ObjectGUIDHash.erase(It);
 

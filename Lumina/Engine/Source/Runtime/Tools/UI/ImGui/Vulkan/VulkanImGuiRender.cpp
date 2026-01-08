@@ -157,7 +157,7 @@ namespace Lumina
         InitInfo.MSAASamples					= VK_SAMPLE_COUNT_1_BIT;
 		
         bool bInitImGui = ImGui_ImplVulkan_Init(&InitInfo);
-		LUM_ASSERT(bInitImGui)
+		ASSERT(bInitImGui);
 
 
 		FName SquareTexturePath		= Paths::GetEngineResourceDirectory() + "/Textures/WhiteSquareTexture.png";

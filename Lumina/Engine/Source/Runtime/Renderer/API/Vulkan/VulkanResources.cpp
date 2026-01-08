@@ -131,10 +131,10 @@ namespace Lumina
             case EImageDimension::Texture3D:        return VK_IMAGE_VIEW_TYPE_3D;
             case EImageDimension::TextureCube:      return VK_IMAGE_VIEW_TYPE_CUBE;
             case EImageDimension::TextureCubeArray: return VK_IMAGE_VIEW_TYPE_CUBE_ARRAY;
-            case EImageDimension::Unknown:          LUMINA_NO_ENTRY()
+            case EImageDimension::Unknown:          UNREACHABLE();
         }
 
-        LUMINA_NO_ENTRY()
+        UNREACHABLE();
     }
 
     VkBufferUsageFlags ToVkBufferUsage(const TBitFlags<EBufferUsageFlags>& Usage) 
@@ -412,8 +412,8 @@ namespace Lumina
 
     VkFormat ConvertFormat(EFormat Format)
     {
-        Assert(Format < EFormat::COUNT)
-        Assert(FormatMap[uint32(Format)].Format == Format)
+        DEBUG_ASSERT(Format < EFormat::COUNT);
+        DEBUG_ASSERT(FormatMap[static_cast<uint32>(Format)].Format == Format);
 
         return FormatMap[static_cast<uint32>(Format)].vkFormat;
     }
@@ -459,7 +459,7 @@ namespace Lumina
 
     bool FUploadManager::SuballocateBuffer(uint64 Size, FRHIBuffer*& Buffer, uint64& Offset, void*& CpuVA, uint64 CurrentVersion, uint32 Alignment)
     {
-        LUM_ASSERT(Size)
+        DEBUG_ASSERT(Size);
         LUMINA_PROFILE_SCOPE();
 
         TSharedPtr<FBufferChunk> ChunkToRetire = nullptr;
@@ -467,7 +467,7 @@ namespace Lumina
         if (CurrentChunk)
         {
             uint64 Aligned = Align<uint64>(CurrentChunk->WritePointer, Alignment);
-            LUM_ASSERT(Aligned % Alignment == 0)
+            ASSERT(Aligned % Alignment == 0);
             
             uint64 EndOfDataInChunk = Aligned + Size;
 
@@ -478,7 +478,7 @@ namespace Lumina
                 Buffer = CurrentChunk->Buffer.GetReference();
                 Offset = Aligned;
 
-                LUM_ASSERT(CurrentChunk->MappedMemory)
+                DEBUG_ASSERT(CurrentChunk->MappedMemory);
                 CpuVA = (char*)CurrentChunk->MappedMemory + Aligned;
 
                 return true;
@@ -604,7 +604,7 @@ namespace Lumina
             Alignment = Math::Max<uint64>(Alignment, AtomSize);
 
             // Check if it's a power of 2
-            Assert((Alignment & (Alignment - 1)) == 0)
+            DEBUG_ASSERT((Alignment & (Alignment - 1)) == 0);
             Size = (Size + Alignment - 1) & ~(Alignment - 1);
             
             Description.Size = Size;
@@ -625,12 +625,12 @@ namespace Lumina
         if (bIsUniformBuffer)
         {
             uint32 MaxSize = Device->GetPhysicalDeviceProperties().limits.maxUniformBufferRange;
-            Assert(Size <= MaxSize)
+            DEBUG_ASSERT(Size <= MaxSize);
         }
         else
         {
             uint32 MaxSize = Device->GetPhysicalDeviceProperties().limits.maxStorageBufferRange;
-            Assert(Size < MaxSize)
+            DEBUG_ASSERT(Size < MaxSize);
         }
         
         
@@ -711,7 +711,7 @@ namespace Lumina
         VkImageUsageFlags UsageFlags = VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
         VmaAllocationCreateFlags AllocationFlags = 0;
         
-        Assert(InDescription.Format != EFormat::UNKNOWN)
+        DEBUG_ASSERT(InDescription.Format != EFormat::UNKNOWN);
         VkFormat VulkanFormat = ConvertFormat(InDescription.Format);
         
         if (InDescription.Flags.IsFlagSet(EImageCreateFlags::RenderTarget))
@@ -952,8 +952,8 @@ namespace Lumina
         if (Desc.Depth != 1)
         {
             // Hard case, since each mip level has half the slices as the previous one.
-            LUM_ASSERT(ArraySlice == 0);
-            LUM_ASSERT(Z < Desc.Depth);
+            ASSERT(ArraySlice == 0);
+            ASSERT(Z < Desc.Depth);
 
             uint32 mipDepth = Desc.Depth;
             uint32 index = 0;
@@ -967,14 +967,14 @@ namespace Lumina
         else if (Desc.ArraySize != 1)
         {
             // Easy case, since each mip level has a consistent number of slices.
-            LUM_ASSERT(ArraySlice < Desc.ArraySize)
-            LUM_ASSERT(SliceRegions.size() == Desc.NumMips * Desc.ArraySize)
+            ASSERT(ArraySlice < Desc.ArraySize);
+            ASSERT(SliceRegions.size() == Desc.NumMips * Desc.ArraySize);
             return SliceRegions[MipLevel * Desc.ArraySize + ArraySlice];
         }
         else
         {
-            LUM_ASSERT(ArraySlice == 0)
-            LUM_ASSERT(SliceRegions.size() == Desc.NumMips)
+            ASSERT(ArraySlice == 0);
+            ASSERT(SliceRegions.size() == Desc.NumMips);
             return SliceRegions[MipLevel];
         }
     }
@@ -1007,7 +1007,7 @@ namespace Lumina
         , ShaderHashKey(Shader.Hash)
         , ShaderHeader(Shader)
     {
-        Assert(!Shader.Binaries.empty())
+        ASSERT(!Shader.Binaries.empty());
         
         VkShaderModuleCreateFlags Flags = 0;
             
@@ -1280,7 +1280,7 @@ namespace Lumina
         , Desc(InDesc)
         , DescriptorPool(nullptr)
     {
-        Assert(InLayout->DescriptorSetLayout)
+        ASSERT(InLayout->DescriptorSetLayout);
 
         VkDescriptorPoolCreateInfo PoolCreateInfo = {};
         PoolCreateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
@@ -1561,7 +1561,7 @@ namespace Lumina
         
         for (const FRHIBindingLayoutRef& Binding : BindingLayouts)
         {
-            LUM_ASSERT(Binding.IsValid())
+            ASSERT(Binding.IsValid());
             
             FVulkanBindingLayout* VkBindingLayout = Binding.As<FVulkanBindingLayout>();
             if (!VkBindingLayout->bBindless)

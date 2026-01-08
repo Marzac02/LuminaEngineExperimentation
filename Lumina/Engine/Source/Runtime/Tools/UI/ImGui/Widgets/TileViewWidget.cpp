@@ -84,7 +84,7 @@ namespace Lumina
 
     void FTileViewWidget::RebuildTree(const FTileViewContext& Context, bool bKeepSelections)
     {
-        Assert(bDirty)
+        ASSERT(bDirty);
 
         TVector<FTileViewItem*> CachedSelections = Selections;
         
@@ -205,7 +205,7 @@ namespace Lumina
     {
         for (FTileViewItem* Item : Selections)
         {
-            Assert(Item->bSelected)
+            ASSERT(Item->bSelected);
             
             Item->bSelected = false;
             Item->OnSelectionStateChanged();    

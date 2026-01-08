@@ -18,11 +18,5 @@ namespace Lumina
         glm::mat4           RenderTransform;
     };
     
-    struct FStaticMeshScenePrimitive : FScenePrimitive
-    {
-        FStaticMeshScenePrimitive(const SStaticMeshComponent& StaticMeshComponent, const glm::mat4& InRenderTransform, FDeferredRenderScene* InScene);
-        
-        const CStaticMesh* StaticMesh;
-    };
     
 }

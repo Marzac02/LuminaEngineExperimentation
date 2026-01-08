@@ -14,7 +14,7 @@ namespace Lumina
         {
             auto* EnumParams = static_cast<const FEnumPropertyParams*>(Params);
             CEnum* InternalEnum = EnumParams->EnumFunc();
-            Assert(InternalEnum)
+            ASSERT(InternalEnum);
             SetEnum(InternalEnum);
         }
         

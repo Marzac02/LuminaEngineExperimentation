@@ -18,7 +18,7 @@ namespace Lumina
     {
         FStringView VarName = Var.Name.data();
 
-        LUM_ASSERT(ConsoleVariables.find(VarName) == ConsoleVariables.end())
+        DEBUG_ASSERT(ConsoleVariables.find(VarName) == ConsoleVariables.end());
 
         ConsoleVariables.emplace(VarName, Move(Var));
     }

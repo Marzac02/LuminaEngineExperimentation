@@ -72,23 +72,23 @@ namespace Lumina::Hash
 
     namespace FNV1a
     {
-        constexpr uint32 const GConstValue32 = 0x811c9dc5;
-        constexpr uint32 const GDefaultOffsetBasis32 = 0x1000193;
-        constexpr uint64 const GConstValue64 = 0xcbf29ce484222325;
-        constexpr uint64 const GDefaultOffsetBasis64 = 0x100000001b3;
+        constexpr uint32 GConstValue32 = 0x811c9dc5;
+        constexpr uint32 GDefaultOffsetBasis32 = 0x1000193;
+        constexpr uint64 GConstValue64 = 0xcbf29ce484222325;
+        constexpr uint64 GDefaultOffsetBasis64 = 0x100000001b3;
 
-        constexpr static inline uint32 GetHash32(const char* const str, const uint32 val = GConstValue32)
+        constexpr static uint32 GetHash32(const char* const str, const uint32 val = GConstValue32)
         {
-            return ( str[0] == '\0' ) ? val : GetHash32( &str[1], ( (uint64_t) val ^ uint32( str[0] ) ) * GDefaultOffsetBasis32 );
+            return ( str[0] == '\0' ) ? val : GetHash32(&str[1], ((uint64) val ^ static_cast<uint32>(str[0])) * GDefaultOffsetBasis32);
         }
 
-        constexpr static inline uint64_t GetHash64( char const* const str, const uint64_t val = GConstValue64 )
+        constexpr static uint64 GetHash64( char const* const str, const uint64 val = GConstValue64 )
         {
-            return ( str[0] == '\0' ) ? val : GetHash64( &str[1], ( (uint64_t) val ^ uint64_t( str[0] ) ) * GDefaultOffsetBasis64 );
+            return ( str[0] == '\0' ) ? val : GetHash64(&str[1], ((uint64) val ^ static_cast<uint64>(str[0])) * GDefaultOffsetBasis64);
         }
     }
 
-    // Default EE hashing functions
+    // Default Lumina hashing functions
     //-------------------------------------------------------------------------
 
     FORCEINLINE uint32 GetHash32(const FString& string)
@@ -148,26 +148,55 @@ namespace Lumina::Hash
     {
         return XXHash::GetHash64(Array.data(), Array.size() * sizeof(T::value_type));
     }
-
+    
+    template<typename T>
+    concept HasHasher = requires(const T& Value)
+    {
+        { GetHash(Value) } -> std::convertible_to<SIZE_T>;
+    };
+    
+    template<typename T>
+    concept HashEASTLHasher = requires(const T& Value)
+    {
+        { eastl::hash<T>()(Value) } -> std::convertible_to<SIZE_T>;
+    };
+    
     template <typename T>
-    requires eastl::is_enum_v<T>
-    SIZE_T GetHash(const T& value)
+    requires eastl::is_enum_v<T> && (!HasHasher<T>) && (!HashEASTLHasher<T>)
+    SIZE_T GetHash(const T& value) noexcept
     {
         using UnderlyingType = eastl::underlying_type_t<T>;
         return eastl::hash<UnderlyingType>()(static_cast<UnderlyingType>(value));
     }
+    
+    template<typename T>
+    requires (HasHasher<T> && !HashEASTLHasher<T>)
+    SIZE_T GetHash(const T& Value) noexcept
+    {
+        return GetHash(Value);
+    }
 
     template <typename T>
-    requires requires { eastl::hash<T>(); } && (!eastl::is_enum_v<T>)
-    SIZE_T GetHash(const T& value)
+    requires (HashEASTLHasher<T> && !HasHasher<T>) 
+    SIZE_T GetHash(const T& value) noexcept
     {
         return eastl::hash<T>()(value);
     }
 
     template <class T>
-    void HashCombine(SIZE_T& seed, const T& v)
+    void HashCombine(SIZE_T& seed, const T& V) noexcept
     {
-        seed ^= GetHash(v) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+        seed ^= GetHash(V) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
     }
     
 }
+
+template<typename T>
+requires (Lumina::Hash::HasHasher<T>)
+struct eastl::hash<T>
+{
+    SIZE_T operator()(const T& Value) const
+    {
+        return ::Lumina::Hash::GetHash(Value);
+    }
+};

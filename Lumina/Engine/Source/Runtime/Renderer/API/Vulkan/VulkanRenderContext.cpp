@@ -213,7 +213,7 @@ namespace Lumina
             
             VkCommandPool CommandPool = VK_NULL_HANDLE;
             VK_CHECK(vkCreateCommandPool(Device->GetDevice(), &PoolInfo, VK_ALLOC_CALLBACK, &CommandPool));
-            LUM_ASSERT(CommandPool)
+            DEBUG_ASSERT(CommandPool);
 
             VkCommandBufferAllocateInfo BufferInfo = {};
             BufferInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
@@ -311,7 +311,7 @@ namespace Lumina
             }
             
             TRefCountPtr<FTrackedCommandBuffer>& TrackedBuffer = VulkanCommandList->CurrentCommandBuffer;
-            Assert(TrackedBuffer->Queue == this)
+            DEBUG_ASSERT(TrackedBuffer->Queue == this);
 
 
             CommandBuffers[i] = TrackedBuffer->CommandBuffer;
@@ -431,14 +431,14 @@ namespace Lumina
 
     void FQueue::AddSignalSemaphore(VkSemaphore Semaphore, uint64 Value)
     {
-        Assert(Semaphore)
+        ASSUME(Semaphore);
         SignalSemaphores.push_back(Semaphore);
         SignalSemaphoreValues.push_back(Value);
     }
 
     void FQueue::AddWaitSemaphore(VkSemaphore Semaphore, uint64 Value, VkPipelineStageFlags Stage)
     {
-        Assert(Semaphore)
+        ASSUME(Semaphore);
         WaitSemaphores.push_back(Semaphore);
         WaitSemaphoreValues.push_back(Value);
         WaitStageFlags.push_back(Stage);
@@ -485,9 +485,9 @@ namespace Lumina
     bool FVulkanRenderContext::Initialize(const FRenderContextDesc& Desc)
     {
         LUMINA_PROFILE_SCOPE();
-        AssertMsg(glfwVulkanSupported(), "Vulkan Is Not Supported!");
+        ASSERT(glfwVulkanSupported(), "Vulkan Is Not Supported!");
         VkResult VolkInitResult = volkInitialize();
-        AssertMsg(VolkInitResult == VK_SUCCESS, "Volk failed to initialize");
+        ASSERT(VolkInitResult == VK_SUCCESS, "Volk failed to initialize");
         
         Description = Desc;
         GVulkanAllocationCallbacks.pfnAllocation    = VulkanAlloc;
@@ -1145,7 +1145,7 @@ namespace Lumina
     void FVulkanRenderContext::SetEventQuery(IEventQuery* Query, ECommandQueue Queue)
     {
         FVulkanEventQuery* VkQuery = static_cast<FVulkanEventQuery*>(Query);
-        Assert(VkQuery->CommandListID == 0)
+        DEBUG_ASSERT(VkQuery->CommandListID == 0);
 
         VkQuery->Queue = Queue;
         VkQuery->CommandListID = GetQueue(Queue)->LastSubmittedID;
@@ -1175,7 +1175,7 @@ namespace Lumina
 
         FQueue* Queue = GetQueue(VkQuery->Queue);
         bool bSuccess = Queue->WaitCommandList(VkQuery->CommandListID, UINT64_MAX);
-        Assert(bSuccess)
+        ASSERT(bSuccess);
         
         (void)bSuccess;
     }

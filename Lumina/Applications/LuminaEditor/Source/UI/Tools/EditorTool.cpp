@@ -276,10 +276,10 @@ namespace Lumina
 
     FEditorTool::FToolWindow* FEditorTool::CreateToolWindow(FName InName, const TFunction<void(bool)>& DrawFunction, const ImVec2& WindowPadding, bool DisableScrolling)
     {
-        LUM_ASSERT(eastl::none_of(ToolWindows.begin(), ToolWindows.end(), [&](const TUniquePtr<FToolWindow>& W)
+        DEBUG_ASSERT(eastl::none_of(ToolWindows.begin(), ToolWindows.end(), [&](const TUniquePtr<FToolWindow>& W)
         {
             return W->Name == InName;
-        }))
+        }));
         
         auto ToolWindow = MakeUniquePtr<FToolWindow>(InName, DrawFunction, WindowPadding, DisableScrolling); 
         return ToolWindows.emplace_back(Move(ToolWindow)).get();

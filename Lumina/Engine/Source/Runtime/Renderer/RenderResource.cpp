@@ -86,7 +86,7 @@ namespace Lumina
             Memory::Delete(Resource);
         }
 
-        LUM_ASSERT(FRHIResourceList::Get().ResourceList.empty())
+        ASSERT(FRHIResourceList::Get().ResourceList.empty());
     }
     
     uint32 IRHIResource::GetNumberRHIResources()
@@ -312,7 +312,7 @@ namespace Lumina::RHI::Format
         }
 
         const FFormatInfo& info = GFormatInfo[static_cast<uint32>(format)];
-        Assert(info.Format == format)
+        DEBUG_ASSERT(info.Format == format);
         return info;
     }
 

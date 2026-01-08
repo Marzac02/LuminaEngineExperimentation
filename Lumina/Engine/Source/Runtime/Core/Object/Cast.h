@@ -40,7 +40,7 @@ namespace Lumina
             }
         }
         
-        LUM_ASSERT(0)
+        UNREACHABLE();
         return nullptr;
     }
 }

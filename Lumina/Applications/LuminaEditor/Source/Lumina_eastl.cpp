@@ -95,8 +95,7 @@ namespace eastl
 {
     void AssertionFailure(const char* expression)
     {
-        std::fprintf(stderr, "EASTL Assertion Failure: %s\n", expression);
-        Assert(0)
+        ASSERT(expression);
     }
 }
 

@@ -145,7 +145,7 @@ namespace Lumina
     void FEditorUI::OnStartFrame(const FUpdateContext& UpdateContext)
     {
         LUMINA_PROFILE_SCOPE();
-        Assert(UpdateContext.GetUpdateStage() == EUpdateStage::FrameStart)
+        DEBUG_ASSERT(UpdateContext.GetUpdateStage() == EUpdateStage::FrameStart);
 
         auto TitleBarLeftContents = [this, &UpdateContext] ()
         {
@@ -537,7 +537,7 @@ namespace Lumina
     void FEditorUI::DestroyTool(const FUpdateContext& UpdateContext, FEditorTool* Tool)
     {
         auto Itr = eastl::find(EditorTools.begin(), EditorTools.end(), Tool);
-        Assert(Itr != EditorTools.end())
+        ASSERT(Itr != EditorTools.end());
 
         EditorTools.erase(Itr);
         
@@ -640,7 +640,7 @@ namespace Lumina
 
         ImGuiID sourceToolID = SourceTool->GetPrevDockspaceID();
         ImGuiID destinationToolID = SourceTool->GetCurrDockspaceID();
-        Assert(sourceToolID != 0 && destinationToolID != 0)
+        ASSERT(sourceToolID != 0 && destinationToolID != 0);
         
         // Helper to build an array of strings pointer into the same contiguous memory buffer.
         struct ContiguousStringArrayBuilder
@@ -692,8 +692,8 @@ namespace Lumina
     bool FEditorUI::SubmitToolMainWindow(const FUpdateContext& UpdateContext, FEditorTool* EditorTool, ImGuiID TopLevelDockspaceID)
     {
         LUMINA_PROFILE_SCOPE();
-        Assert(EditorTool != nullptr)
-        Assert(TopLevelDockspaceID != 0)
+        ASSERT(EditorTool != nullptr);
+        ASSERT(TopLevelDockspaceID != 0);
 
         bool bIsToolStillOpen = true;
         bool* bIsToolOpen = (EditorTool == WorldEditorTool) ? nullptr : &bIsToolStillOpen; // Prevent closing the map-editor editor tool
@@ -753,7 +753,7 @@ namespace Lumina
         // We will also use this value as a suffix to create window titles, but we could perfectly have an indirection to allocate and use nicer names for window names (e.g. 0001, 0002).
         EditorTool->PrevDockspaceID = EditorTool->CurrDockspaceID;
         EditorTool->CurrDockspaceID = EditorTool->CalculateDockspaceID();
-        LUM_ASSERT(EditorTool->CurrDockspaceID != 0)
+        ASSERT(EditorTool->CurrDockspaceID != 0);
         
 
         ImGui::End();
@@ -769,7 +769,7 @@ namespace Lumina
         // (Therefore only the p_open and flags of the first call to Begin() applies)
         ImGui::Begin(Tool->GetToolName().c_str());
         
-        LUM_ASSERT(ImGui::GetCurrentWindow()->BeginCount == 2)
+        ASSERT(ImGui::GetCurrentWindow()->BeginCount == 2);
         
         const ImGuiID dockspaceID = Tool->GetCurrentDockspaceID();
         const ImVec2 DockspaceSize = ImGui::GetContentRegionAvail();
@@ -885,7 +885,7 @@ namespace Lumina
 
         if (Tool->IsSingleWindowTool())
         {
-            Assert(Tool->ToolWindows.size() == 1)
+            ASSERT(Tool->ToolWindows.size() == 1);
             Tool->ToolWindows[0]->DrawFunction(bIsLastFocusedTool);
         }
         else

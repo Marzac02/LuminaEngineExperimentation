@@ -39,27 +39,7 @@ namespace Lumina::Memory
     {
         std::memset(Ptr, Val, Size);
     }
-
-    LUMINA_API inline bool IsAligned(void const* ptr, size_t n)
-    {
-        return (reinterpret_cast<uintptr_t>(ptr) % n) == 0;
-    }
-
-    template <typename T>
-    bool IsAligned(T const* p)
-    {
-        return (reinterpret_cast<uintptr_t>(p) % alignof( T )) == 0;
-    }
-
-    LUMINA_API inline void CustomAssert(const char* pMessage)
-    {
-        if (pMessage && strstr(pMessage, "Memory leak detected"))
-        {
-            return;
-        }
-
-        std::cout << "[Memory Error] - " << pMessage << "\n";
-    }
+    
 
     LUMINA_API void Initialize();
 

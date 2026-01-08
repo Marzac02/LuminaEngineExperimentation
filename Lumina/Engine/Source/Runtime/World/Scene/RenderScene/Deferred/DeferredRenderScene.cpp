@@ -1610,7 +1610,7 @@ namespace Lumina
                             View.SetView(Light.Position, FViewVolume::BackwardAxis, FViewVolume::DownAxis);
                             break;
                         default:
-                            LUMINA_NO_ENTRY()
+                            UNREACHABLE();
                         }
                     };
 

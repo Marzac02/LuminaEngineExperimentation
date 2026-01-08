@@ -85,7 +85,7 @@ namespace Lumina
 	
 	FWindow::~FWindow()
 	{
-		Assert(Window == nullptr)
+		ASSERT(Window == nullptr);
 	}
 
 	void FWindow::Init()
@@ -349,13 +349,13 @@ namespace Lumina
 		
 		FWindow* GetPrimaryWindowHandle()
 		{
-			Assert(PrimaryWindow != nullptr)
+			ASSERT(PrimaryWindow != nullptr);
 			return PrimaryWindow;
 		}
 
 		void SetPrimaryWindowHandle(FWindow* InWindow)
 		{
-			Assert(PrimaryWindow == nullptr)
+			ASSERT(PrimaryWindow == nullptr);
 			PrimaryWindow = InWindow;
 		}
 	}

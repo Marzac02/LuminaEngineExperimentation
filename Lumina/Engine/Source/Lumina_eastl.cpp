@@ -94,10 +94,9 @@ void* operator new[](size_t size, size_t alignment, size_t /*alignmentOffset*/, 
 
 namespace eastl
 {
-    void AssertionFailure(const char* expression)
+    void AssertionFailure(const char* Expression)
     {
-        std::fprintf(stderr, "EASTL Assertion Failure: %s\n", expression);
-        Assert(0)
+        PANIC("{0}", Expression);
     }
 }
 

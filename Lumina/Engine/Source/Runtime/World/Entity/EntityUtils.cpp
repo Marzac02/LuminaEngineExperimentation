@@ -49,7 +49,7 @@ namespace Lumina::ECS::Utils
                     if (entt::meta_any ReturnValue = InvokeMetaFunc(MetaType, "static_struct"_hs))
                     {
                         CStruct* StructType = ReturnValue.cast<CStruct*>();
-                        LUM_ASSERT(StructType)
+                        ASSERT(StructType);
 
                         FName Name = StructType->GetName();
                         Ar << Name;
@@ -523,7 +523,7 @@ namespace Lumina::ECS::Utils
     entt::id_type GetTypeID(const sol::table& Data)
     {
         auto Name = Data["__type"].get<const char*>();
-        LUM_ASSERT(Name != nullptr)
+        ASSERT(Name != nullptr);
     
         return entt::hashed_string(Name);
     }
@@ -531,7 +531,7 @@ namespace Lumina::ECS::Utils
     entt::id_type GetTypeID(const sol::userdata& Data)
     {
         auto Name = Data["__type"].get<const char*>();
-        LUM_ASSERT(Name != nullptr)
+        ASSERT(Name != nullptr);
     
         return entt::hashed_string(Name);
     }

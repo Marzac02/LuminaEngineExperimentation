@@ -186,7 +186,7 @@ namespace Lumina
 
     bool CWorld::RegisterSystem(CEntitySystem* NewSystem)
     {
-        Assert(NewSystem != nullptr)
+        DEBUG_ASSERT(NewSystem != nullptr);
 
         NewSystem->Init(SystemContext);
         
@@ -237,7 +237,7 @@ namespace Lumina
     
     void CWorld::CopyEntity(entt::entity& To, entt::entity From)
     {
-        LUM_ASSERT(To != From)
+        ASSERT(To != From);
         
         To = EntityRegistry.create();
         
@@ -478,7 +478,7 @@ namespace Lumina
     entt::entity CWorld::GetSelectedEntity() const
     {
         auto View = EntityRegistry.view<FSelectedInEditorComponent>();
-        LUM_ASSERT(View.size() <= 1)
+        ASSERT(View.size() <= 1);
 
         for (entt::entity Entity : View)
         {
