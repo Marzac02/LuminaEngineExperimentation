@@ -38,7 +38,7 @@ namespace Lumina::Assert
     
     namespace Detail
     {
-        LUMINA_API void HandleAssertion(const FAssertion& Assertion);
+        FORCENOINLINE LUMINA_API void HandleAssertion(const FAssertion& Assertion);
     }
     
     // ========================= LUMINA ASSERTION INFO =========================

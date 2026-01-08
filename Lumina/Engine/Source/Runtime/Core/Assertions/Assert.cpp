@@ -6,13 +6,6 @@
 
 namespace Lumina::Assert
 {
-    static void AssertionTest()
-    {
-        int X = 12;
-        
-        DEBUG_ASSERT(X == 12, "Thingy");
-    }
-    
     static constexpr FStringView AssertionTypeToString(EAssertionType Type)
     {
         switch (Type)

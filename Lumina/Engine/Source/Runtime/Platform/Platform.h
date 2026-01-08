@@ -72,7 +72,13 @@
     #endif
 #endif
 
-#define FORCENOINLINE __declspec(noinline)
+#if defined(_MSC_VER)
+    #define FORCENOINLINE __declspec(noinline)
+#elif defined(__GNUC__) || defined(__clang__)
+    #define FORCENOINLINE __attribute__((noinline))
+#else
+    #define FORCENOINLINE
+#endif
 
 #define UTF8TEXT_PASTE(x)  u8 ## x
 #define UTF16TEXT_PASTE(x) u ## x
