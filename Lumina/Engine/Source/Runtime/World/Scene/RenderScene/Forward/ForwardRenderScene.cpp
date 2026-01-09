@@ -312,7 +312,7 @@ namespace Lumina
                         MaxZ = eastl::max(MaxZ, TRF.z);
                     }
                     
-                    constexpr float zMult = 100.0f;
+                    constexpr float zMult = 10.0f;
                     if (MinZ < 0)
                     {
                         MinZ *= zMult;

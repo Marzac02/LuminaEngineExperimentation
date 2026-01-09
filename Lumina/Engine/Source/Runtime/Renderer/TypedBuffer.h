@@ -1,6 +1,5 @@
 #pragma once
 #include "RenderContext.h"
-#include "RHIFwd.h"
 #include "RHIGlobals.h"
 
 
@@ -51,7 +50,7 @@ namespace Lumina
 
         void UpdateBuffer(ICommandList* CommandList, const TBufferStruct& Value)
         {
-            CommandList->WriteBuffer<TBufferStruct>(GetReference(), &Value);
+            CommandList->WriteBuffer(GetReference(), &Value, sizeof(TBufferStruct));
         }
     };
 
