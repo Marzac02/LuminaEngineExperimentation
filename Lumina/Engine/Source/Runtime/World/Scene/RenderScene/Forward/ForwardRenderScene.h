@@ -57,9 +57,7 @@ namespace Lumina
         void CheckLightBufferResize(uint32 NumLights);
         void CheckSimpleVertexResize(uint32 NumVertices);
         
-        FRHIImageRef GetRenderTarget() const override;
-        ERenderSceneDebugFlags GetDebugMode() const override;
-        void SetDebugMode(ERenderSceneDebugFlags Mode) override;
+        FRHIImage* GetRenderTarget() const override;
         FSceneRenderSettings& GetSceneRenderSettings() override;
         entt::entity GetEntityAtPixel(uint32 X, uint32 Y) const override;
 
@@ -129,8 +127,6 @@ namespace Lumina
         FRHIImageRef                        DepthAttachment;
         FRHIImageRef                        DepthPyramid;
         FRHIImageRef                        PickerImage;
-        
-        ERenderSceneDebugFlags              DebugVisualizationMode;
         
         /** Packed array of per-instance data */
         TVector<FInstanceData>                  InstanceData;

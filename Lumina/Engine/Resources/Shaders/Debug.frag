@@ -5,7 +5,7 @@
 
 layout(set = 1, binding = 0) uniform sampler2D uDepth;
 layout(set = 1, binding = 1) uniform sampler2DArray uShadowAtlas;
-
+layout(set = 1, binding = 2) uniform sampler2DArray uShadowCascades;
 
 layout(location = 0) in vec2 vUV;
 layout(location = 0) out vec4 OutFragColor;
@@ -22,6 +22,7 @@ layout(location = 0) out vec4 OutFragColor;
 #define DEBUG_SPECULAR          8
 #define DEBUG_DEPTH             9
 #define DEBUG_SHADOW_ATLAS      10
+#define DEBUG_CASCADES          11
 
 layout(push_constant) uniform DebugInfo
 {
@@ -73,6 +74,31 @@ void main()
             OutFragColor = vec4(0.0);
         }
         return;
+    }
+
+    if(Debug.DebugFlags == DEBUG_CASCADES)
+    {
+        int LayerCount = 4;
+        int Cols = int(ceil(sqrt((float(LayerCount)))));
+        int Rows = int(ceil((float(LayerCount) / float(Cols))));
+
+        vec2 GridUV = vUV * vec2(Cols, Rows);
+        ivec2 Cell = ivec2(GridUV);
+        vec2 CellUV = fract(GridUV);
+
+        int Layer = Cell.y * Cols + Cell.x;
+
+        if(Layer < LayerCount)
+        {
+            float Depth = texture(uShadowCascades, vec3(CellUV, float(Layer))).r;
+            float LinearDepth = LinearizeDepth(Depth, GetNearPlane(), 1000.0f);
+            float VisualizedDepth = LinearDepth / GetNearPlane();
+            OutFragColor = vec4(vec3(VisualizedDepth), 1.0);
+        }
+        else
+        {
+            OutFragColor = vec4(0.0);
+        }
     }
 
     OutFragColor.a = 1.0;

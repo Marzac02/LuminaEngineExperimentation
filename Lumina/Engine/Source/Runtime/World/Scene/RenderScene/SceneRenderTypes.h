@@ -65,7 +65,29 @@ namespace Lumina
 		Specular            = 8,
         Depth               = 9,
         ShadowAtlas		    = 10,
+        Cascade             = 11,
+        Num                 = 12,
     };
+    
+    constexpr FStringView RenderFlagsAsString(ERenderSceneDebugFlags Flags)
+    {
+        switch (Flags)
+        {
+            case ERenderSceneDebugFlags::None: return "None";
+            case ERenderSceneDebugFlags::Position: return "Position";
+            case ERenderSceneDebugFlags::Normals: return "Normals";
+            case ERenderSceneDebugFlags::Albedo: return "Albedo";
+            case ERenderSceneDebugFlags::SSAO: return "SSAO";
+            case ERenderSceneDebugFlags::AmbientOcclusion: return "Ambient Occlusion";
+            case ERenderSceneDebugFlags::Roughness: return "Roughness";
+            case ERenderSceneDebugFlags::Metallic: return "Metallic";
+            case ERenderSceneDebugFlags::Specular: return "Specular";
+            case ERenderSceneDebugFlags::Depth: return "Depth";
+            case ERenderSceneDebugFlags::ShadowAtlas: return "Shadow Atlas";
+            case ERenderSceneDebugFlags::Cascade: return "Cascades";
+            default: return "None";
+        }
+    }
 
     enum class ELightType : uint8
     {
@@ -328,15 +350,16 @@ namespace Lumina
         uint32 MeshDrawSize;
         uint32 IndirectDrawOffset;
     };
-
-
+    
     struct FSceneRenderSettings
     {
-        uint8 bUseInstancing:1 = true;
-        uint8 bHasEnvironment:1 = false;
-        uint8 bDrawAABB:1 = false;
-        uint8 bSSAO:1 = false;
-        uint8 bFrustumCull:1 = true;
-        uint8 bOcclusionCull:1 = true;
+        ERenderSceneDebugFlags Flags    = ERenderSceneDebugFlags::None;
+        uint8 bUseInstancing:1          = true;
+        uint8 bHasEnvironment:1         = false;
+        uint8 bDrawAABB:1               = false;
+        uint8 bSSAO:1                   = false;
+        uint8 bFrustumCull:1            = true;
+        uint8 bOcclusionCull:1          = true;
+        uint8 bWireframe:1              = false;
     };
 }

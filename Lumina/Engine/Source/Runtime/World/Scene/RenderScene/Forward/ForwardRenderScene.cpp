@@ -26,7 +26,6 @@ namespace Lumina
         , LightData()
         , SceneGlobalData()
         , ShadowAtlas(FShadowAtlasConfig())
-        , DebugVisualizationMode(ERenderSceneDebugFlags::None)
         , DepthMeshPass()
         , OpaqueMeshPass()
         , TranslucentMeshPass()
@@ -237,7 +236,6 @@ namespace Lumina
                 LightData.bHasSun = true;
                 const FViewVolume& ViewVolume = SceneViewport->GetViewVolume();
                 
-                
                 float NearClip          = ViewVolume.GetNear();
                 float FarClip           = ViewVolume.GetFar();
                                         
@@ -257,22 +255,19 @@ namespace Lumina
                 LightData.SunDirection  = Light.Direction;
                 Light.Radius            = FarClip;
                 
-                LightData.Lights[0]     = Light;
-                LightData.NumLights++;
-                
         
                 float CascadeSplits[NumCascades];
-                for (uint32 i = 0; i < NumCascades; i++)
+                for (int i = 0; i < NumCascades; i++)
                 {
-                    float P             = ((float)i + 1) / (float)NumCascades;
+                    float P             = (static_cast<float>(i) + 1) / static_cast<float>(NumCascades);
                     float Log           = ClipMinZ * glm::pow(Ratio, P);
                     float Uniform       = ClipMinZ + Range * P;
                     float D             = CVarShadowCascadeLambda.GetValue() * (Log - Uniform) + Uniform;
                     CascadeSplits[i]    = (D - NearClip) / ClipRange;
                 }
                 
-                glm::mat4 ViewProjection = glm::perspective(glm::radians(ViewVolume.GetFOV()), ViewVolume.GetAspectRatio(), NearClip, FarClip);
-                glm::mat4 ViewProjectionMatrix = ViewProjection * ViewVolume.GetViewMatrix();
+                glm::mat4 ViewProjection        = glm::perspective(glm::radians(ViewVolume.GetFOV()), ViewVolume.GetAspectRatio(), NearClip, FarClip);
+                glm::mat4 ViewProjectionMatrix  = ViewProjection * ViewVolume.GetViewMatrix();
                 
                 glm::vec3 FrustumCorners[8];
                 FFrustum::ComputeFrustumCorners(ViewProjectionMatrix, FrustumCorners);
@@ -291,9 +286,8 @@ namespace Lumina
                     }
                     
                     glm::vec3 FrustumCenter = glm::vec3(0.0f);
-                    FrustumCenter = std::reduce(std::begin(FrustumCorners), std::end(FrustumCorners)) / 8.0f;
-                    
-                    glm::mat4 LightView  = glm::lookAt(FrustumCenter + Light.Direction, FrustumCenter, FViewVolume::UpAxis);
+                    FrustumCenter           = std::reduce(std::begin(FrustumCorners), std::end(FrustumCorners)) / 8.0f;
+                    glm::mat4 LightView     = glm::lookAt(FrustumCenter + Light.Direction, FrustumCenter, FViewVolume::UpAxis);
                     
                     float MinX = eastl::numeric_limits<float>::max();
                     float MaxX = eastl::numeric_limits<float>::lowest();
@@ -331,7 +325,11 @@ namespace Lumina
                     }
                     
                     glm::mat4 LightProjection       = glm::ortho(MinX, MaxX, MinY, MaxY, MinZ, MaxZ);
+                    
                     Light.ViewProjection[i]         = LightProjection * LightView;
+                    LightData.Lights[0]             = Light;
+                    LightData.NumLights++;
+                    
                     LastSplitDist                   = CascadeSplits[i];
                 }
             });
@@ -1156,6 +1154,7 @@ namespace Lumina
             
             FRasterState RasterState;
             RasterState.EnableDepthClip();
+            RasterState.SetFillMode(RenderSettings.bWireframe ? ERasterFillMode::Wireframe : ERasterFillMode::Solid);
         
             FDepthStencilState DepthState; DepthState
                 .SetDepthFunc(EComparisonFunc::Equal)
@@ -1387,12 +1386,11 @@ namespace Lumina
 
     void FForwardRenderScene::DebugDrawPass(FRenderGraph& RenderGraph)
     {
-        if (DebugVisualizationMode == ERenderSceneDebugFlags::None)
+        if (RenderSettings.Flags == ERenderSceneDebugFlags::None)
         {
             return;
         }
-
-
+        
         FRGPassDescriptor* Descriptor = RenderGraph.AllocDescriptor();
         RenderGraph.AddPass(RG_Raster, FRGEvent("Debug Draw Pass"), Descriptor, [&](ICommandList& CmdList)
         {
@@ -1444,7 +1442,7 @@ namespace Lumina
         
             CmdList.SetGraphicsState(GraphicsState);
         
-            uint32 Mode = (uint32)DebugVisualizationMode;
+            uint32 Mode = static_cast<uint32>(RenderSettings.Flags);
             CmdList.SetPushConstants(&Mode, sizeof(uint32));
             CmdList.Draw(3, 1, 0, 0); 
         });
@@ -1715,7 +1713,7 @@ namespace Lumina
             FBindingSetDesc SetDesc;
             SetDesc.AddItem(FBindingSetItem::TextureSRV(0, DepthAttachment));
             SetDesc.AddItem(FBindingSetItem::TextureSRV(1, ShadowAtlas.GetImage()));
-        
+            SetDesc.AddItem(FBindingSetItem::TextureSRV(2, CascadedShadowMap));
             SetDesc.AddItem(FBindingSetItem::PushConstants(0, sizeof(uint32)));
         
             TBitFlags<ERHIShaderType> Visibility;
@@ -1901,19 +1899,9 @@ namespace Lumina
         }
     }
 
-    FRHIImageRef FForwardRenderScene::GetRenderTarget() const
+    FRHIImage* FForwardRenderScene::GetRenderTarget() const
     {
         return SceneViewport->GetRenderTarget();
-    }
-
-    ERenderSceneDebugFlags FForwardRenderScene::GetDebugMode() const
-    {
-        return DebugVisualizationMode;
-    }
-
-    void FForwardRenderScene::SetDebugMode(ERenderSceneDebugFlags Mode)
-    {
-        DebugVisualizationMode = Mode;
     }
 
     FSceneRenderSettings& FForwardRenderScene::GetSceneRenderSettings()

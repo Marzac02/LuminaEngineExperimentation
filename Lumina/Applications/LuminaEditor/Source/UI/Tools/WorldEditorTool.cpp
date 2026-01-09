@@ -1292,9 +1292,10 @@ namespace Lumina
             ImGui::SetTooltip("View Mode Options");
         }
         
+        IRenderScene* RenderScene = World->GetRenderer();
         if (ImGui::BeginPopup("ViewModePopup", ImGuiWindowFlags_NoMove))
         {
-            ImGui::Text("Rendering Mode");
+            ImGui::Text("Visualizations");
             ImGui::Separator();
             
             if (ImGui::BeginMenu("Physics"))
@@ -1308,20 +1309,48 @@ namespace Lumina
                 ImGui::EndMenu();
             }
             
-            if (ImGui::Selectable("Lit"))
+            if (ImGui::BeginMenu("Rendering"))
             {
+                if (ImGui::BeginMenu("Shadows"))
+                {
+                    ERenderSceneDebugFlags CurrentFlag = RenderScene->GetSceneRenderSettings().Flags;
+                    FStringView Value = RenderFlagsAsString(CurrentFlag);
+                    if (ImGui::BeginCombo("##", Value.data()))
+                    {
+                        for (int i = 0; i < (int)ERenderSceneDebugFlags::Num; ++i)
+                        {
+                            ERenderSceneDebugFlags Flag = static_cast<ERenderSceneDebugFlags>(i);
+                            FStringView Name = RenderFlagsAsString(Flag);
+                            bool bSelected = Flag == CurrentFlag;
+                            if (ImGui::Selectable(Name.data(), &bSelected))
+                            {
+                                RenderScene->GetSceneRenderSettings().Flags = Flag;
+                            }
+                        }
+                        
+                        ImGui::EndCombo();
+                    }
+                    
+                    ImGui::EndMenu();
+                }
+                
+                if (ImGui::MenuItem("Lit"))
+                {
+                    
+                }
+                if (ImGui::MenuItem("Unlit"))
+                {
+                    
+                }
+                
+                bool bValue = RenderScene->GetSceneRenderSettings().bWireframe;
+                if (ImGui::MenuItem("Wireframe", nullptr, &bValue))
+                {
+                    RenderScene->GetSceneRenderSettings().bWireframe = bValue;
+                }
+                
+                ImGui::EndMenu();
             }
-            if (ImGui::Selectable("Unlit"))
-            {
-            }
-            if (ImGui::Selectable("Wireframe"))
-            {
-            }
-            
-            ImGui::Separator();
-            //ImGui::Checkbox("Show Physics", &bShowPhysics);
-            //ImGui::Checkbox("Show Collision", &bShowCollision);
-            //ImGui::Checkbox("Show Bounds", &bShowBounds);
             
             ImGui::EndPopup();
         }

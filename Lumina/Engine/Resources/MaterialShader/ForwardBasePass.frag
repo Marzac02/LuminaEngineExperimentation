@@ -197,7 +197,7 @@ float ComputeShadowFactor(FLight Light, vec3 FragmentPos, float Bias)
     {
         for (int i = 0; i < 3; ++i)
         {
-            ViewProjectionIndex = 0;//max(ViewProjectionIndex, int(step(LightData.CascadeSplits[i], ViewPosition.z)) * i);
+            ViewProjectionIndex = max(ViewProjectionIndex, int(step(LightData.CascadeSplits[i], ViewPosition.z)) * i);
         }
     }
 
@@ -249,7 +249,7 @@ float ComputeShadowFactor(FLight Light, vec3 FragmentPos, float Bias)
         if(IsDirectionalLight)
         {
             vec2 CascadeUV  = ProjectionUV;
-            ShadowDepth     = texture(uShadowCascade, vec3(CascadeUV, 0)).r;
+            ShadowDepth     = texture(uShadowCascade, vec3(CascadeUV, ViewProjectionIndex)).r;
             Shadow          += step(CurrentDepth, ShadowDepth);
         }
         else
