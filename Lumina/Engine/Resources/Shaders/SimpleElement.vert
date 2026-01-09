@@ -8,12 +8,12 @@
 layout(location = 0) in vec3 inPosition;
 layout(location = 1) in uint inColor;
 
-layout(location = 0) out vec4 outColor;
+layout(location = 0) out vec3 outColor;
 
 
 void main()
 {
-    outColor = UnpackColor(inColor);
+    outColor = UnpackColor(inColor).rgb;
     
     gl_Position = GetCameraProjection() * GetCameraView() * vec4(inPosition, 1.0);
 }

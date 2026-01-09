@@ -438,8 +438,18 @@ namespace Lumina
         
         FViewportState(const FViewport& InViewport, const FRect& Scissor)
         {
-            Viewports.push_back(InViewport);
-            Scissors.push_back(Scissor);
+            Viewports.emplace_back(InViewport);
+            Scissors.emplace_back(Scissor);
+        }
+        
+        void SetViewport(const FViewport& Viewport)
+        {
+            Viewports.empty() ? Viewports.emplace_back(Viewport) : Viewports[0] = Viewport;
+        }
+        
+        void SetScissorRect(const FRect& Rect)
+        {
+            Scissors.empty() ? Scissors.emplace_back(Rect) : Scissors[0] = Rect;
         }
         
         TFixedVector<FViewport, 1>   Viewports;

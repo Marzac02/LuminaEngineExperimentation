@@ -113,20 +113,23 @@ namespace Lumina
 
                 if (ImGui::BeginChild("##OptList", ComboDropDownSize, false, ImGuiChildFlags_NavFlattened))
                 {
-                    TVector<FAssetData> Assets = FAssetQuery().OfClass(ObjectProperty->GetPropertyClass()->GetName()).Execute();
-                    
-                    for (const FAssetData& Asset : Assets)
+                    TVector<FAssetData*> Assets = FAssetRegistry::Get().FindByPredicate([&](const FAssetData& Data)
                     {
-                        if (!SearchFilter.PassFilter(Asset.AssetName.c_str()))
+                        return Data.AssetClass == ObjectProperty->GetPropertyClass()->GetName();
+                    });
+                    
+                    for (const FAssetData* Asset : Assets)
+                    {
+                        if (!SearchFilter.PassFilter(Asset->AssetName.c_str()))
                         {
                             continue;
                         }
                         
                         FFixedString SelectableLabel;
-                        SelectableLabel.append(LE_ICON_FILE).append(" ").append(Asset.AssetName.c_str());
+                        SelectableLabel.append(LE_ICON_FILE).append(" ").append(Asset->AssetName.c_str());
                         if (ImGui::Selectable(SelectableLabel.c_str()))
                         {
-                            Object = LoadObject<CObject>(Asset.AssetGUID);
+                            Object = LoadObject<CObject>(Asset->AssetGUID);
                             ImGui::CloseCurrentPopup();
                         
                             bWasChanged = true;

@@ -38,7 +38,7 @@ namespace Lumina
         void LightCullPass(FRenderGraph& RenderGraph);
         void PointShadowPass(FRenderGraph& RenderGraph);
         void SpotShadowPass(FRenderGraph& RenderGraph);
-        void DirectionalShowPass(FRenderGraph& RenderGraph);
+        void CascadedShowPass(FRenderGraph& RenderGraph);
         void BasePass(FRenderGraph& RenderGraph);
         void TransparentPass(FRenderGraph& RenderGraph);
         void EnvironmentPass(FRenderGraph& RenderGraph);
@@ -131,8 +131,6 @@ namespace Lumina
         FRHIImageRef                        PickerImage;
         
         ERenderSceneDebugFlags              DebugVisualizationMode;
-
-        TArray<FShadowCascade, NumCascades>           ShadowCascades;
         
         /** Packed array of per-instance data */
         TVector<FInstanceData>                  InstanceData;

@@ -69,11 +69,11 @@ namespace Lumina
         LOG_INFO("Asset Registry Finished Initial Discovery: Num [{}]", Assets.size());
     }
 
-    void FAssetRegistry::AssetCreated(CObject* Asset)
+    void FAssetRegistry::AssetCreated(const CObject* Asset)
     {
         FFixedString FilePath = Asset->GetPackage()->GetPackagePath();
         
-        TSharedPtr<FAssetData> AssetData = MakeSharedPtr<FAssetData>();
+        auto AssetData = MakeUniquePtr<FAssetData>();
         AssetData->AssetClass   = Asset->GetClass()->GetName();
         AssetData->AssetGUID    = Asset->GetGUID();
         AssetData->AssetName    = Asset->GetName();
@@ -101,14 +101,14 @@ namespace Lumina
     {
         FScopeLock Lock(AssetsMutex);
 
-        auto It = eastl::find_if(Assets.begin(), Assets.end(), [&OldPath](const TSharedPtr<FAssetData>& Asset)
+        auto It = eastl::find_if(Assets.begin(), Assets.end(), [&OldPath](const TUniquePtr<FAssetData>& Asset)
         {
             return Asset->Path == OldPath;
         });
 
         ASSERT(It != Assets.end());
 
-        const TSharedPtr<FAssetData>& Data = *It;
+        const TUniquePtr<FAssetData>& Data = *It;
         Data->Path.assign_convert(NewPath);
 
         GetOnAssetRegistryUpdated().Broadcast();
@@ -144,7 +144,24 @@ namespace Lumina
         
         return It == Assets.end() ? nullptr : It->get();
     }
-    
+
+    TVector<FAssetData*> FAssetRegistry::FindByPredicate(const TFunction<bool(const FAssetData&)>& Predicate)
+    {
+        FScopeLock Lock(AssetsMutex);
+
+        TVector<FAssetData*> Datas;
+        Datas.reserve(Assets.size() / 2);
+        for (const TUniquePtr<FAssetData>& Data : Assets)
+        {
+            if (Predicate(*Data))
+            {
+                Datas.emplace_back(Data.get());
+            }
+        }
+        
+        return Datas;
+    }
+
 
     void FAssetRegistry::ProcessPackagePath(FStringView Path)
     {
@@ -178,7 +195,7 @@ namespace Lumina
             return;
         }
         
-        TSharedPtr<FAssetData> AssetData = MakeSharedPtr<FAssetData>();
+        auto AssetData = MakeUniquePtr<FAssetData>();
         AssetData->AssetClass   = Export->ClassName;
         AssetData->AssetGUID    = Export->ObjectGUID;
         AssetData->AssetName    = Export->ObjectName;
@@ -200,19 +217,5 @@ namespace Lumina
     void FAssetRegistry::BroadcastRegistryUpdate()
     {
         OnAssetRegistryUpdated.Broadcast();
-    }
-    
-    bool FClassPredicate::Evaluate(const FAssetData& Asset) const
-    {
-        if (!bIncludeDerived)
-        {
-            return Asset.AssetClass == ClassName;
-        }
-
-        const CClass* A = FindObject<CClass>(ClassName);
-        const CClass* B = FindObject<CClass>(Asset.AssetClass);
-        ASSERT(A && B);
-        
-        return B->IsChildOf(A);
     }
 }

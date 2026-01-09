@@ -9,5 +9,5 @@ layout(location = 0) out vec3 outFragColor;
 
 void main()
 {
-    outFragColor = inColor.rgb;
+    outFragColor = inColor;
 }

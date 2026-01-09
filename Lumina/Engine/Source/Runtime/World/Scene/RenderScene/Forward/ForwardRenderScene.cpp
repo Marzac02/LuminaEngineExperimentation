@@ -27,7 +27,6 @@ namespace Lumina
         , SceneGlobalData()
         , ShadowAtlas(FShadowAtlasConfig())
         , DebugVisualizationMode(ERenderSceneDebugFlags::None)
-        , ShadowCascades()
         , DepthMeshPass()
         , OpaqueMeshPass()
         , TranslucentMeshPass()
@@ -80,7 +79,7 @@ namespace Lumina
         LightCullPass(RenderGraph);
         PointShadowPass(RenderGraph);
         SpotShadowPass(RenderGraph);
-        DirectionalShowPass(RenderGraph);
+        CascadedShowPass(RenderGraph);
         EnvironmentPass(RenderGraph);
         BasePass(RenderGraph);
         TransparentPass(RenderGraph);
@@ -118,6 +117,7 @@ namespace Lumina
     {
         LUMINA_PROFILE_SCOPE();
 
+        //========================================================================================================================
         {
             LUMINA_PROFILE_SECTION("Compile Draw Commands");
             
@@ -132,7 +132,6 @@ namespace Lumina
             
             TFixedHashMap<uint64, uint64, 4> BatchedDraws;
             
-            //========================================================================================================================
             {
                 View.each([&](entt::entity Entity, const SStaticMeshComponent& MeshComponent, const STransformComponent& TransformComponent)
                 {
@@ -227,61 +226,6 @@ namespace Lumina
             }
         }
         
-        
-        //========================================================================================================================
-        
-        {
-            auto View = World->GetEntityRegistry().view<FLineBatcherComponent>();
-            View.each([&](FLineBatcherComponent& LineBatcherComponent)
-            {
-                if (LineBatcherComponent.Lines.empty())
-                {
-                    return;
-                }
-        
-                for (FLineBatcherComponent::FLineInstance& Line : LineBatcherComponent.Lines)
-                {
-                    if (Line.RemainingLifetime >= 0.0f)
-                    {
-                        Line.RemainingLifetime -= SceneGlobalData.DeltaTime;
-                    }
-                }
-        
-                TVector<FLineBatcherComponent::FLineInstance> NewLines;
-                TVector<FSimpleElementVertex> NewVertices;
-                
-                NewLines.reserve(LineBatcherComponent.Lines.size());
-                NewVertices.reserve(LineBatcherComponent.Vertices.size());
-        
-                uint32 CurrentVertexIndex = 0;
-                for (const FLineBatcherComponent::FLineInstance& Line : LineBatcherComponent.Lines)
-                {
-                    if (Line.RemainingLifetime > 0.0f)
-                    {
-                        FLineBatcherComponent::FLineInstance NewLine = Line;
-                        NewLine.StartVertexIndex = CurrentVertexIndex;
-                        NewLines.push_back(NewLine);
-        
-                        NewVertices.push_back(LineBatcherComponent.Vertices[Line.StartVertexIndex]);
-                        NewVertices.push_back(LineBatcherComponent.Vertices[Line.StartVertexIndex + 1]);
-                        
-                        CurrentVertexIndex += 2;
-                    }
-                }
-        
-                LineBatcherComponent.Lines = std::move(NewLines);
-                LineBatcherComponent.Vertices = std::move(NewVertices);
-        
-                if (!LineBatcherComponent.Vertices.empty())
-                {
-                    SimpleVertices.resize(LineBatcherComponent.Vertices.size());
-                    Memory::Memcpy(SimpleVertices.data(), 
-                                  LineBatcherComponent.Vertices.data(), 
-                                  LineBatcherComponent.Vertices.size() * sizeof(FSimpleElementVertex));
-                }
-            });
-        }
-        
         //========================================================================================================================
         
         {
@@ -291,104 +235,105 @@ namespace Lumina
             View.each([this](const SDirectionalLightComponent& DirectionalLightComponent)
             {
                 LightData.bHasSun = true;
-        
-                // Setup light data
-                FLight Light;
-                Light.Flags         = LIGHT_TYPE_DIRECTIONAL;
-                Light.Color         = PackColor(glm::vec4(DirectionalLightComponent.Color, 1.0));
-                Light.Intensity     = DirectionalLightComponent.Intensity;
-                Light.Direction     = glm::normalize(DirectionalLightComponent.Direction);
-        
                 const FViewVolume& ViewVolume = SceneViewport->GetViewVolume();
+                
+                
+                float NearClip          = ViewVolume.GetNear();
+                float FarClip           = ViewVolume.GetFar();
+                                        
+                float ClipRange         = FarClip - NearClip;
+                                        
+                float ClipMinZ          = NearClip;
+                float ClipMaxZ          = NearClip + ClipRange;
+                                        
+                float Range             = ClipMaxZ - ClipMinZ;
+                float Ratio             = ClipMaxZ / ClipMinZ;
         
-                float NearClip = ViewVolume.GetNear();
-                float FarClip = ViewVolume.GetFar();
-                float ClipRange = FarClip - NearClip;
-        
-                float MinZ = NearClip;
-                float MaxZ = NearClip + ClipRange;
-        
-                float Range = MaxZ - MinZ;
-                float Ratio = MaxZ / MinZ;
+                FLight Light;
+                Light.Flags             = LIGHT_TYPE_DIRECTIONAL;
+                Light.Color             = PackColor(glm::vec4(DirectionalLightComponent.Color, 1.0));
+                Light.Intensity         = DirectionalLightComponent.Intensity;
+                Light.Direction         = glm::normalize(DirectionalLightComponent.Direction);
+                LightData.SunDirection  = Light.Direction;
+                Light.Radius            = FarClip;
+                
+                LightData.Lights[0]     = Light;
+                LightData.NumLights++;
+                
         
                 float CascadeSplits[NumCascades];
                 for (uint32 i = 0; i < NumCascades; i++)
                 {
-                    float P = ((float)i + 1) / (float)NumCascades;
-                    float Log = MinZ * glm::pow(Ratio, P);
-                    float Uniform = MinZ + Range * P;
-                    float D = CVarShadowCascadeLambda.GetValue() * (Log - Uniform) + Uniform;
-                    CascadeSplits[i] = (D - NearClip) / ClipRange;
+                    float P             = ((float)i + 1) / (float)NumCascades;
+                    float Log           = ClipMinZ * glm::pow(Ratio, P);
+                    float Uniform       = ClipMinZ + Range * P;
+                    float D             = CVarShadowCascadeLambda.GetValue() * (Log - Uniform) + Uniform;
+                    CascadeSplits[i]    = (D - NearClip) / ClipRange;
                 }
-        
-                // For each cascade
+                
+                glm::mat4 ViewProjection = glm::perspective(glm::radians(ViewVolume.GetFOV()), ViewVolume.GetAspectRatio(), NearClip, FarClip);
+                glm::mat4 ViewProjectionMatrix = ViewProjection * ViewVolume.GetViewMatrix();
+                
+                glm::vec3 FrustumCorners[8];
+                FFrustum::ComputeFrustumCorners(ViewProjectionMatrix, FrustumCorners);
+                
                 float LastSplitDist = 0.0;
                 for (int i = 0; i < NumCascades; ++i)
                 {
                     float SplitDist = CascadeSplits[i];
                     LightData.CascadeSplits[i] = SplitDist;
-        
-                    FShadowCascade& Cascade = ShadowCascades[i];
-                    Cascade.DirectionalLight = Light;
-        
-                    glm::vec3 FrustumCorners[8];
-                    FFrustum::ComputeFrustumCorners(ViewVolume.ToReverseDepthViewProjectionMatrix(), FrustumCorners);
                     
                     for (uint32 j = 0; j < 4; j++)
                     {
-                        glm::vec3 dist = FrustumCorners[j + 4] - FrustumCorners[j];
-                        FrustumCorners[j + 4] = FrustumCorners[j] + (dist * SplitDist);
-                        FrustumCorners[j] = FrustumCorners[j] + (dist * LastSplitDist);
+                        glm::vec3 Dist          = FrustumCorners[j + 4] - FrustumCorners[j];
+                        FrustumCorners[j + 4]   = FrustumCorners[j] + (Dist * SplitDist);
+                        FrustumCorners[j]       = FrustumCorners[j] + (Dist * LastSplitDist);
                     }
-        
+                    
                     glm::vec3 FrustumCenter = glm::vec3(0.0f);
-                    for (uint32 j = 0; j < 8; j++)
+                    FrustumCenter = std::reduce(std::begin(FrustumCorners), std::end(FrustumCorners)) / 8.0f;
+                    
+                    glm::mat4 LightView  = glm::lookAt(FrustumCenter + Light.Direction, FrustumCenter, FViewVolume::UpAxis);
+                    
+                    float MinX = eastl::numeric_limits<float>::max();
+                    float MaxX = eastl::numeric_limits<float>::lowest();
+                    float MinY = eastl::numeric_limits<float>::max();
+                    float MaxY = eastl::numeric_limits<float>::lowest();
+                    float MinZ = eastl::numeric_limits<float>::max();
+                    float MaxZ = eastl::numeric_limits<float>::lowest();
+                    for (const auto& V : FrustumCorners)
                     {
-                        FrustumCenter += FrustumCorners[j];
+                        const auto TRF = LightView * glm::vec4(V, 1.0f);
+                        MinX = eastl::min(MinX, TRF.x);
+                        MaxX = eastl::max(MaxX, TRF.x);
+                        MinY = eastl::min(MinY, TRF.y);
+                        MaxY = eastl::max(MaxY, TRF.y);
+                        MinZ = eastl::min(MinZ, TRF.z);
+                        MaxZ = eastl::max(MaxZ, TRF.z);
                     }
-                    FrustumCenter /= 8.0f;
-        
-        
-                    float Radius = 0.0f;
-                    for (uint32 j = 0; j < 8; j++)
+                    
+                    constexpr float zMult = 100.0f;
+                    if (MinZ < 0)
                     {
-                        float distance = glm::length(FrustumCorners[j] - FrustumCenter);
-                        Radius = glm::max(Radius, distance);
+                        MinZ *= zMult;
                     }
-                    Radius = glm::ceil(Radius * 16.0f) / 16.0f;
-        
-                    glm::vec3 MaxExtents = glm::vec3(Radius);
-                    glm::vec3 MinExtents = -MaxExtents;
-        
-                    glm::vec3 LightDir = -Light.Direction;
-                    glm::mat4 LightViewMatrix = glm::lookAt(FrustumCenter - LightDir * -MinExtents.z, FrustumCenter, FViewVolume::UpAxis);
-        
-                    glm::vec3 FrustumCenterLS = LightViewMatrix * glm::vec4(FrustumCenter, 1.0f);
-                    float TexelSize = (Radius * 2.0f) / (float)GCSMResolution;
-                    FrustumCenterLS.x = glm::floor(FrustumCenterLS.x / TexelSize) * TexelSize;
-                    FrustumCenterLS.y = glm::floor(FrustumCenterLS.y / TexelSize) * TexelSize;
-        
-                    glm::mat4 InvLightViewMatrix = glm::inverse(LightViewMatrix);
-                    glm::vec3 SnappedFrustumCenter = InvLightViewMatrix * glm::vec4(FrustumCenterLS, 1.0f);
-        
-                    LightViewMatrix = glm::lookAt(SnappedFrustumCenter - LightDir * -MinExtents.z, SnappedFrustumCenter, FViewVolume::UpAxis);
-        
-                    glm::mat4 LightOrthoMatrix = glm::ortho(MinExtents.x, MaxExtents.x, MinExtents.y, MaxExtents.y, 0.0f, MaxExtents.z - MinExtents.z);
-        
-                    Cascade.SplitDepth = (NearClip + SplitDist * ClipRange) * -1.0f;
-                    Cascade.LightViewProjection = LightOrthoMatrix * LightViewMatrix;
-        
-                    Light.ViewProjection[i] = Cascade.LightViewProjection;
-        
-                    Cascade.ShadowMapSize = glm::uvec2(GCSMResolution);
-        
-                    LastSplitDist = CascadeSplits[i];
+                    else
+                    {
+                        MinZ /= zMult;
+                    }
+                    if (MaxZ < 0)
+                    {
+                        MaxZ /= zMult;
+                    }
+                    else
+                    {
+                        MaxZ *= zMult;
+                    }
+                    
+                    glm::mat4 LightProjection       = glm::ortho(MinX, MaxX, MinY, MaxY, MinZ, MaxZ);
+                    Light.ViewProjection[i]         = LightProjection * LightView;
+                    LastSplitDist                   = CascadeSplits[i];
                 }
-        
-                LightData.SunDirection = Light.Direction;
-                LightData.NumLights++;
-                
-                LightData.Lights[0] = Light;
             });
         }
         
@@ -528,6 +473,60 @@ namespace Lumina
                //World->DrawDebugCone(SpotLight.Position, Forward, glm::radians(OuterDegrees), SpotLightComponent.Attenuation, glm::vec4(SpotLightComponent.LightColor, 1.0f));
                //World->DrawDebugCone(SpotLight.Position, Forward, glm::radians(InnerDegrees), SpotLightComponent.Attenuation, glm::vec4(SpotLightComponent.LightColor, 1.0f));
         
+            });
+        }
+        
+        //========================================================================================================================
+        
+        {
+            auto View = World->GetEntityRegistry().view<FLineBatcherComponent>();
+            View.each([&](FLineBatcherComponent& LineBatcherComponent)
+            {
+                if (LineBatcherComponent.Lines.empty())
+                {
+                    return;
+                }
+        
+                for (FLineBatcherComponent::FLineInstance& Line : LineBatcherComponent.Lines)
+                {
+                    if (Line.RemainingLifetime >= 0.0f)
+                    {
+                        Line.RemainingLifetime -= SceneGlobalData.DeltaTime;
+                    }
+                }
+        
+                TVector<FLineBatcherComponent::FLineInstance> NewLines;
+                TVector<FSimpleElementVertex> NewVertices;
+                
+                NewLines.reserve(LineBatcherComponent.Lines.size());
+                NewVertices.reserve(LineBatcherComponent.Vertices.size());
+        
+                uint32 CurrentVertexIndex = 0;
+                for (const FLineBatcherComponent::FLineInstance& Line : LineBatcherComponent.Lines)
+                {
+                    if (Line.RemainingLifetime > 0.0f)
+                    {
+                        FLineBatcherComponent::FLineInstance NewLine = Line;
+                        NewLine.StartVertexIndex = CurrentVertexIndex;
+                        NewLines.push_back(NewLine);
+        
+                        NewVertices.push_back(LineBatcherComponent.Vertices[Line.StartVertexIndex]);
+                        NewVertices.push_back(LineBatcherComponent.Vertices[Line.StartVertexIndex + 1]);
+                        
+                        CurrentVertexIndex += 2;
+                    }
+                }
+        
+                LineBatcherComponent.Lines = std::move(NewLines);
+                LineBatcherComponent.Vertices = std::move(NewVertices);
+        
+                if (!LineBatcherComponent.Vertices.empty())
+                {
+                    SimpleVertices.resize(LineBatcherComponent.Vertices.size());
+                    Memory::Memcpy(SimpleVertices.data(), 
+                                  LineBatcherComponent.Vertices.data(), 
+                                  LineBatcherComponent.Vertices.size() * sizeof(FSimpleElementVertex));
+                }
             });
         }
         
@@ -1015,8 +1014,7 @@ namespace Lumina
         
                 
                 FViewportState ViewportState;
-                
-                ViewportState.Viewports.emplace_back(FViewport
+                ViewportState.SetViewport((FViewport
                 (
                     (float)TilePixelX,
                     (float)TilePixelX + TileSize,
@@ -1024,10 +1022,9 @@ namespace Lumina
                     (float)TilePixelY + TileSize,
                     0.0f,
                     1.0f 
-                ));
-        
-                // FRect(minX, maxX, minY, maxY)
-                ViewportState.Scissors.emplace_back(FRect
+                )));
+                
+                ViewportState.SetScissorRect(FRect
                 (
                     (int)TilePixelX,
                     (int)TilePixelX + TileSize,
@@ -1060,7 +1057,7 @@ namespace Lumina
         });
     }
 
-    void FForwardRenderScene::DirectionalShowPass(FRenderGraph& RenderGraph)
+    void FForwardRenderScene::CascadedShowPass(FRenderGraph& RenderGraph)
     {
         if (!LightData.bHasSun || DrawCommands.empty())
         {
@@ -1078,7 +1075,7 @@ namespace Lumina
             FRenderState RenderState; RenderState
                 .SetDepthStencilState(FDepthStencilState()
                     .SetDepthFunc(EComparisonFunc::LessOrEqual))
-                    .SetRasterState(FRasterState().SetSlopeScaleDepthBias(1.75f).SetDepthBias(100).SetCullFront());
+                    .SetRasterState(FRasterState().SetCullFront());
                         
             FGraphicsPipelineDesc Desc; Desc
                 .SetDebugName("Cascaded Shadow Maps")
@@ -1088,40 +1085,38 @@ namespace Lumina
                 .AddBindingLayout(ShadowPassLayout)
                 .SetVertexShader(VertexShader);
                 //.SetPixelShader(PixelShader);
-        
             
-            for (int i = 0; i < NumCascades; ++i)
+            
+            FRenderPassDesc::FAttachment Depth; Depth
+                .SetLoadOp(ERenderLoadOp::Clear)
+                .SetDepthClearValue(1.0)
+                .SetImage(CascadedShadowMap)
+                    .SetNumSlices(NumCascades - 1);
+            
+            FRenderPassDesc RenderPass; RenderPass
+                .SetDepthAttachment(Depth)
+                .SetViewMask(RenderUtils::CreateViewMask<0u, 1u, 2u, 3u>())
+                .SetRenderArea(glm::uvec2(GCSMResolution, GCSMResolution));
+        
+            FRHIGraphicsPipelineRef Pipeline = GRenderContext->CreateGraphicsPipeline(Desc, RenderPass);
+            
+            for (const FMeshDrawCommand& Batch : DrawCommands)
             {
-                FShadowCascade& Cascade = ShadowCascades[i];
-        
-                FRenderPassDesc::FAttachment Depth; Depth
-                    .SetImage(CascadedShadowMap)
-                    .SetDepthClearValue(1.0f);
-            
-                FRenderPassDesc RenderPass; RenderPass
-                    .SetDepthAttachment(Depth, FTextureSubresourceSet(0, 1, i, 1))
-                    .SetRenderArea(glm::uvec2(Cascade.ShadowMapSize.x, Cascade.ShadowMapSize.y));
-        
-                FRHIGraphicsPipelineRef Pipeline = GRenderContext->CreateGraphicsPipeline(Desc, RenderPass);
+                FGraphicsState GraphicsState; GraphicsState
+                    .SetRenderPass(RenderPass)
+                    .SetViewportState(MakeViewportStateFromImage(CascadedShadowMap))
+                    .SetPipeline(Pipeline)
+                    .AddBindingSet(BindingSet)
+                    .AddBindingSet(ShadowPassSet)
+                    .SetIndirectParams(IndirectDrawBuffer)
+                    .AddVertexBuffer({Batch.VertexBuffer})
+                    .SetIndexBuffer({Batch.IndexBuffer});
                 
-                for (const FMeshDrawCommand& Batch : DrawCommands)
-                {
-                    FGraphicsState GraphicsState; GraphicsState
-                        .SetRenderPass(RenderPass)
-                        .SetViewportState(MakeViewportStateFromImage(CascadedShadowMap))
-                        .SetPipeline(Pipeline)
-                        .AddBindingSet(BindingSet)
-                        .AddBindingSet(ShadowPassSet)
-                        .SetIndirectParams(IndirectDrawBuffer)
-                        .AddVertexBuffer({Batch.VertexBuffer})
-                        .SetIndexBuffer({Batch.IndexBuffer});
-                    
-                    CmdList.SetGraphicsState(GraphicsState);
+                CmdList.SetGraphicsState(GraphicsState);
         
-                    uint32 LightIndex = 0;
-                    CmdList.SetPushConstants(&LightIndex, sizeof(uint32));
-                    CmdList.DrawIndexedIndirect(1, Batch.IndirectDrawOffset * sizeof(FDrawIndexedIndirectArguments));
-                }
+                uint32 LightIndex = 0;
+                CmdList.SetPushConstants(&LightIndex, sizeof(uint32));
+                CmdList.DrawIndexedIndirect(1, Batch.IndirectDrawOffset * sizeof(FDrawIndexedIndirectArguments));
             }
         });
     }
@@ -1673,7 +1668,7 @@ namespace Lumina
             // Color
             VertexDesc[1].SetElementStride(sizeof(FSimpleElementVertex));
             VertexDesc[1].SetOffset(offsetof(FSimpleElementVertex, Color));
-            VertexDesc[1].Format = EFormat::RGBA32_FLOAT;
+            VertexDesc[1].Format = EFormat::R32_UINT;
         
             SimpleVertexLayoutInput = GRenderContext->CreateInputLayout(VertexDesc, std::size(VertexDesc));
         }

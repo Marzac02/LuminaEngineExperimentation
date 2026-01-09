@@ -393,7 +393,7 @@ namespace Lumina
             }
             else
             {
-                if (const FAssetData* Data = FAssetQuery().WithPath(Destroy.PendingDestroy).ExecuteFirst())
+                if (const FAssetData* Data = FAssetRegistry::Get().GetAssetByPath(Destroy.PendingDestroy))
                 {
                     if (CObject* AliveObject = FindObject<CObject>(Data->AssetGUID))
                     {

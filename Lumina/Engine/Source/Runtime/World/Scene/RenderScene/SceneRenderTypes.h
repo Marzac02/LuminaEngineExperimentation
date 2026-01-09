@@ -237,14 +237,6 @@ namespace Lumina
         
         FLight          Lights[MAX_LIGHTS];
     };
-
-    struct FShadowCascade
-    {
-        FLight          DirectionalLight;
-        glm::mat4       LightViewProjection;
-        float           SplitDepth;
-        glm::ivec2      ShadowMapSize;
-    };
     
     struct FSSAOSettings
     {
