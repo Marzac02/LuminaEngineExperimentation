@@ -238,15 +238,9 @@ namespace Lumina
                 const FViewVolume& ViewVolume = SceneViewport->GetViewVolume();
                 
                 float NearClip          = ViewVolume.GetNear();
-                float FarClip           = 50.0f;//ViewVolume.GetFar();
+                float FarClip           = 80.0f;
                                         
                 float ClipRange         = FarClip - NearClip;
-                                        
-                float ClipMinZ          = NearClip;
-                float ClipMaxZ          = NearClip + ClipRange;
-                                        
-                float Range             = ClipMaxZ - ClipMinZ;
-                float Ratio             = ClipMaxZ / ClipMinZ;
         
                 FLight Light;
                 Light.Flags             = LIGHT_TYPE_DIRECTIONAL;
@@ -256,16 +250,6 @@ namespace Lumina
                 LightData.SunDirection  = Light.Direction;
                 Light.Radius            = ClipRange;
                 
-        
-                //float CascadeSplits[NumCascades];
-                //for (int i = 0; i < NumCascades; i++)
-                //{
-                //    float P             = (static_cast<float>(i) + 1) / static_cast<float>(NumCascades);
-                //    float Log           = ClipMinZ * glm::pow(Ratio, P);
-                //    float Uniform       = ClipMinZ + Range * P;
-                //    float D             = CVarShadowCascadeLambda.GetValue() * (Log - Uniform) + Uniform;
-                //    CascadeSplits[i]    = (D - NearClip) / ClipRange;
-                //}
                 
                 glm::mat4 ViewProjection        = glm::perspective(glm::radians(ViewVolume.GetFOV()), ViewVolume.GetAspectRatio(), NearClip, FarClip);
                 glm::mat4 ViewProjectionMatrix  = ViewProjection * ViewVolume.GetViewMatrix();
@@ -273,19 +257,8 @@ namespace Lumina
                 glm::vec3 FrustumCorners[8];
                 FFrustum::ComputeFrustumCorners(ViewProjectionMatrix, FrustumCorners);
                 
-                //float LastSplitDist = 0.0;
                 for (int i = 0; i < NumCascades; ++i)
                 {
-                    //float SplitDist = CascadeSplits[i];
-                    //LightData.CascadeSplits[i] = SplitDist;
-                    //
-                    //for (uint32 j = 0; j < 4; j++)
-                    //{
-                    //    glm::vec3 Dist          = FrustumCorners[j + 4] - FrustumCorners[j];
-                    //    FrustumCorners[j + 4]   = FrustumCorners[j] + (Dist * SplitDist);
-                    //    FrustumCorners[j]       = FrustumCorners[j] + (Dist * LastSplitDist);
-                    //}
-                    
                     glm::vec3 FrustumCenter = std::reduce(std::begin(FrustumCorners), std::end(FrustumCorners)) / 8.0f;
                     glm::mat4 LightView     = glm::lookAt(FrustumCenter + Light.Direction, FrustumCenter, FViewVolume::UpAxis);
                     
@@ -329,8 +302,6 @@ namespace Lumina
                     Light.ViewProjection[i]         = LightProjection * LightView;
                     LightData.Lights[0]             = Light;
                     LightData.NumLights++;
-                    
-                    //LastSplitDist                   = CascadeSplits[i];
                 }
             });
         }
@@ -1721,7 +1692,7 @@ namespace Lumina
             FBindingSetDesc SetDesc;
             SetDesc.AddItem(FBindingSetItem::TextureSRV(0, DepthAttachment));
             SetDesc.AddItem(FBindingSetItem::TextureSRV(1, ShadowAtlas.GetImage()));
-            SetDesc.AddItem(FBindingSetItem::TextureSRV(2, CascadedShadowMap));
+            SetDesc.AddItem(FBindingSetItem::TextureSRV(2, CascadedShadowMap, TStaticRHISampler<true, true, AM_Border, AM_Border, AM_Border>::GetRHI()));
             SetDesc.AddItem(FBindingSetItem::PushConstants(0, sizeof(uint32)));
         
             TBitFlags<ERHIShaderType> Visibility;

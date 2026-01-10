@@ -200,6 +200,12 @@ namespace Lumina
         
         ImGui::End();
         
+        if (ImGui::IsKeyPressed(ImGuiKey_F5))
+        {
+            GRenderContext->CompileEngineShaders();
+            CMaterial::CreateDefaultMaterial();
+        }
+        
 
         if (!FocusTargetWindowName.empty())
         {
@@ -2025,6 +2031,7 @@ namespace Lumina
         }
 
         ImGui::Separator();
+        
 
         ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.8f, 0.6f, 0.4f, 1.0f));
         if (ImGui::BeginMenu(LE_ICON_HAMMER " Shaders"))
@@ -2032,8 +2039,9 @@ namespace Lumina
             if (ImGui::MenuItem(LE_ICON_HAMMER " Recompile All", "F5"))
             {
                 GRenderContext->CompileEngineShaders();
+                CMaterial::CreateDefaultMaterial();
             }
-
+            
             if (ImGui::MenuItem(LE_ICON_MATERIAL_DESIGN " Recompile Default Material"))
             {
                 CMaterial::CreateDefaultMaterial();

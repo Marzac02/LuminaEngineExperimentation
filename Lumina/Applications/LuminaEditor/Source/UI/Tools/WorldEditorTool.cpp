@@ -288,6 +288,11 @@ namespace Lumina
         }, World->GetEntityRegistry(), SelectedEntity);
     }
 
+    const char* FWorldEditorTool::GetTitlebarIcon() const
+    {
+        return LE_ICON_EARTH;
+    }
+
     void FWorldEditorTool::DrawToolMenu(const FUpdateContext& UpdateContext)
     {
         

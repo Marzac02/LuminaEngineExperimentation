@@ -205,7 +205,8 @@ float ComputeShadowFactor(FLight Light, vec3 FragmentPos, float Bias)
 
     vec4 ShadowCoord        = Light.ViewProjection[ViewProjectionIndex] * vec4(FragmentPos, 1.0);
     vec3 ProjCoords         = ShadowCoord.xyz / ShadowCoord.w;
-    vec2 ProjectionUV       = ProjCoords.xy * 0.5 + 0.5;
+    ProjCoords              = ProjCoords * 0.5 + 0.5;
+    vec2 ProjectionUV       = ProjCoords.xy;
 
     vec3 L                  = FragmentPos - Light.Position;
     float DistanceToLight   = length(L);
@@ -223,7 +224,8 @@ float ComputeShadowFactor(FLight Light, vec3 FragmentPos, float Bias)
     float BlockerDepth = 0.0f;
     if(IsDirectionalLight)
     {
-        BlockerDepth = texture(uShadowCascade, vec3(ProjectionUV, ViewProjectionIndex)).r;
+        CurrentDepth    = vec3(ShadowCoord.xyz / ShadowCoord.w).z;
+        BlockerDepth    = texture(uShadowCascade, vec3(ProjectionUV, ViewProjectionIndex)).r;
     }
     else
     {
@@ -244,17 +246,19 @@ float ComputeShadowFactor(FLight Light, vec3 FragmentPos, float Bias)
     float Shadow = 0.0f;
     for(int i = 0; i < SHADOW_SAMPLE_COUNT; i++)
     {
-        float ShadowDepth   = 0.0f;
-        vec2 Offset         = VogelDiskSample(i, SHADOW_SAMPLE_COUNT, Angle) * FilterRadius;
-        
+        float ShadowDepth   = 0.0f;        
         if(IsDirectionalLight)
         {
-            vec2 CascadeUV  = ProjectionUV;
+            vec2 Offset     = VogelDiskSample(i, SHADOW_SAMPLE_COUNT, Angle) * FilterRadius;
+        
+
+            vec2 CascadeUV  = ProjectionUV + Offset;
             ShadowDepth     = texture(uShadowCascade, vec3(CascadeUV, ViewProjectionIndex)).r;
-            Shadow          += step(CurrentDepth, ShadowDepth);
+            Shadow          += ShadowDepth < CurrentDepth ? 0.0 : 1.0;
         }
         else
         {
+            vec2 Offset         = VogelDiskSample(i, SHADOW_SAMPLE_COUNT, Angle) * FilterRadius;
             vec2 ClampedUV  = clamp(Coord.UV + (Offset / ShadowTile.AtlasUVScale), 0.001, 0.999);
             vec2 SampleUV   = ShadowTile.AtlasUVOffset + (ClampedUV * ShadowTile.AtlasUVScale);
             int ArrayLayer  = ShadowTile.ShadowMapLayer;
@@ -263,7 +267,7 @@ float ComputeShadowFactor(FLight Light, vec3 FragmentPos, float Bias)
             Shadow          += step(CurrentDepth - Bias, ShadowDepth);
         }
     }
-    
+
     return Shadow / float(SHADOW_SAMPLE_COUNT);
 }
 
