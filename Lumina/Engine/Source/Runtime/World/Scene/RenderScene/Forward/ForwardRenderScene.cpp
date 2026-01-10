@@ -298,11 +298,11 @@ namespace Lumina
                     }
                     
                     glm::mat4 LightProjection       = glm::ortho(MinX, MaxX, MinY, MaxY, MinZ, MaxZ);
-                    
                     Light.ViewProjection[i]         = LightProjection * LightView;
-                    LightData.Lights[0]             = Light;
-                    LightData.NumLights++;
                 }
+                
+                LightData.Lights[0] = Light;
+                LightData.NumLights++;
             });
         }
         
@@ -1072,7 +1072,7 @@ namespace Lumina
             
             FRenderPassDesc RenderPass; RenderPass
                 .SetDepthAttachment(Depth)
-                .SetViewMask(RenderUtils::CreateViewMask<0u, 1u, 2u, 3u>())
+                .SetViewMask(RenderUtils::CreateViewMask<0u, 1u>()) // Must match NUM_CASCADES
                 .SetRenderArea(glm::uvec2(GCSMResolution, GCSMResolution));
         
             FRHIGraphicsPipelineRef Pipeline = GRenderContext->CreateGraphicsPipeline(Desc, RenderPass);

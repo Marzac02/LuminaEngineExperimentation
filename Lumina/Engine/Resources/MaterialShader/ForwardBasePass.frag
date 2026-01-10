@@ -196,7 +196,7 @@ float ComputeShadowFactor(FLight Light, vec3 FragmentPos, float Bias)
     int ViewProjectionIndex = 0;
     if(IsDirectionalLight)
     {
-        for (int i = 0; i < 3; ++i)
+        for (int i = 0; i < NUM_CASCADES; ++i)
         {
             ViewProjectionIndex = 0;//max(ViewProjectionIndex, int(step(LightData.CascadeSplits[i], ViewPosition.z)) * i);
         }

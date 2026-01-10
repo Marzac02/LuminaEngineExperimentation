@@ -78,7 +78,7 @@ void main()
 
     if(Debug.DebugFlags == DEBUG_CASCADES)
     {
-        int LayerCount = 4;
+        int LayerCount = NUM_CASCADES;
         int Cols = int(ceil(sqrt((float(LayerCount)))));
         int Rows = int(ceil((float(LayerCount) / float(Cols))));
 
@@ -91,7 +91,7 @@ void main()
         if(Layer < LayerCount)
         {
             float Depth = texture(uShadowCascades, vec3(CellUV, float(Layer))).r;
-            float LinearDepth = LinearizeDepth(Depth, GetNearPlane(), 1000.0f);
+            float LinearDepth = LinearizeDepth(Depth, GetNearPlane(), 80.0f);
             float VisualizedDepth = LinearDepth / GetNearPlane();
             OutFragColor = vec4(vec3(Depth), 1.0);
         }

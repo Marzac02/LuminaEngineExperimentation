@@ -10,7 +10,6 @@
 #include <Jolt/Physics/Collision/CollisionCollectorImpl.h>
 #include <Jolt/Physics/Collision/RayCast.h>
 #include <Jolt/Physics/Collision/ShapeCast.h>
-#include <Jolt/Physics/Collision/Shape/ScaledShape.h>
 #include <Jolt/Renderer/DebugRendererSimple.h>
 
 #include "JoltPhysics.h"
@@ -22,11 +21,11 @@
 #include "Jolt/Physics/Collision/Shape/BoxShape.h"
 #include "Jolt/Physics/Collision/Shape/SphereShape.h"
 #include "Renderer/RendererUtils.h"
-#include "World/Entity/Components/PhysicsComponent.h"
 #include "World/World.h"
 #include "World/Entity/Components/CharacterComponent.h"
 #include "World/Entity/Components/CharacterControllerComponent.h"
 #include "World/Entity/Components/DirtyComponent.h"
+#include "World/Entity/Components/PhysicsComponent.h"
 #include "World/Entity/Components/TransformComponent.h"
 #include "world/entity/components/velocitycomponent.h"
 #include "World/Entity/Events/ImpulseEvent.h"
@@ -787,14 +786,26 @@ namespace Lumina::Physics
             const SBoxColliderComponent& BC = Registry.get<SBoxColliderComponent>(Entity);
             JPH::BoxShapeSettings Settings(JoltUtils::ToJPHVec3(BC.HalfExtent * TransformComponent.GetScale()));
             Settings.SetEmbedded();
-            Shape = Settings.Create().Get();
+            auto Result = Settings.Create();
+            if (Result.HasError())
+            {
+                return LOG_ERROR("Failed to create BoxCollider Shape for Entity: {} - {}", entt::to_integral(Entity), Result.GetError());
+            }
+            
+            Shape = Result.Get();
         }
         else if (Registry.all_of<SSphereColliderComponent>(Entity))
         {
             const SSphereColliderComponent& SC = Registry.get<SSphereColliderComponent>(Entity);
             JPH::SphereShapeSettings Settings(SC.Radius * TransformComponent.MaxScale());
             Settings.SetEmbedded();
-            Shape = Settings.Create().Get();
+            auto Result = Settings.Create();
+            if (Result.HasError())
+            {
+                return LOG_ERROR("Failed to create SphereCollider Shape for Entity: {} - {}", entt::to_integral(Entity), Result.GetError());
+            }
+            
+            Shape = Result.Get();      
         }
 
         JPH::ObjectLayer Layer      = ToJoltObjectType(RigidBodyComponent.BodyType);
