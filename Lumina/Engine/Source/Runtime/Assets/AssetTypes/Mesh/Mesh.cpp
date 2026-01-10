@@ -24,11 +24,6 @@ namespace Lumina
         Ar << *MeshResources;
     }
 
-    void CMesh::Serialize(IStructuredArchive::FSlot Slot)
-    {
-        CObject::Serialize(Slot);
-    }
-
     void CMesh::PostLoad()
     {
         GenerateBoundingBox();

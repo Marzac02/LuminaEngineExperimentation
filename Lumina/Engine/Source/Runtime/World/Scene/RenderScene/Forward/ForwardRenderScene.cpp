@@ -518,12 +518,9 @@ namespace Lumina
             auto View = World->GetEntityRegistry().view<SEnvironmentComponent>();
             View.each([this] (const SEnvironmentComponent& EnvironmentComponent)
             {
-                LightData.AmbientLight                              = glm::vec4(EnvironmentComponent.AmbientLight.Color, EnvironmentComponent.AmbientLight.Intensity);
-                RenderSettings.bHasEnvironment                      = true;
-                RenderSettings.bSSAO                                = EnvironmentComponent.bSSAOEnabled;
-                SceneGlobalData.SSAOSettings.Intensity              = EnvironmentComponent.SSAOInfo.Intensity;
-                SceneGlobalData.SSAOSettings.Power                  = EnvironmentComponent.SSAOInfo.Power;
-                SceneGlobalData.SSAOSettings.Radius                 = EnvironmentComponent.SSAOInfo.Radius;
+                LightData.AmbientLight          = glm::vec4(EnvironmentComponent.AmbientColor, EnvironmentComponent.Intensity);
+                RenderSettings.bHasEnvironment  = true;
+                RenderSettings.bSSAO            = false;
             });
         }
         

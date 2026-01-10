@@ -18,11 +18,6 @@ namespace Lumina
         Ar << *TextureResource.get();
     }
 
-    void CTexture::Serialize(IStructuredArchive::FSlot Slot)
-    {
-        CObject::Serialize(Slot);
-    }
-
     void CTexture::PreLoad()
     {
         if (TextureResource == nullptr)

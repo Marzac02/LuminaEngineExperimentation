@@ -51,7 +51,7 @@ namespace Lumina
         LUMINA_API virtual void Serialize(FArchive& Ar);
 
         /** Used during serialization to and from a structured archive (Packaging, Network, etc.). */
-        LUMINA_API virtual void Serialize(IStructuredArchive::FSlot Slot);
+        LUMINA_API virtual void Serialize(IStructuredArchive::FRecord Record);
         
         /** Called after constructor and after properties have been initialized. */
         LUMINA_API virtual void PostInitProperties();

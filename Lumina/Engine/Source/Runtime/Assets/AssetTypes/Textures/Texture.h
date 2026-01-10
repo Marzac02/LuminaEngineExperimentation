@@ -19,7 +19,6 @@ namespace Lumina
 
         
         void Serialize(FArchive& Ar) override;
-        void Serialize(IStructuredArchive::FSlot Slot) override;
         void PreLoad() override;
         void PostLoad() override;
         bool IsAsset() const override { return true; }

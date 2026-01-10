@@ -7,7 +7,7 @@ layout(location = 0) out vec4 fragColor;
 layout(location = 0) in vec2 vUV;
 
 // Improved sun color calculation with proper day/night cycle
-vec3 calculateSunColor() 
+vec3 CalculateSunColor() 
 {
     float sunHeight = GetSunDirection().y;
 
@@ -45,7 +45,7 @@ vec3 calculateSunColor()
     return sunColor;
 }
 
-vec3 uSunColor = calculateSunColor();
+vec3 uSunColor              = CalculateSunColor();
 const float uSunSize        = radians(0.53);
 const vec3 uSkyZenith       = vec3(0.05, 0.1, 0.4);
 const vec3 uSkyHorizon      = vec3(0.6, 0.8, 1.0);
@@ -190,12 +190,12 @@ vec3 renderSun(vec3 rayDir)
 {
     float sunDot = dot(rayDir, GetSunDirection());
 
-    float sunDisc = smoothstep(cos(uSunSize * 0.5), cos(uSunSize * 0.25), sunDot);
+    float sunDisc = smoothstep(cos(uSunSize * 1.4), cos(uSunSize * 0.5), sunDot);
 
     float sunGlow = smoothstep(cos(uSunSize * 1.8), cos(uSunSize * 1.1), sunDot);
     sunGlow = pow(sunGlow, 3.0);
 
-    float sunFade = smoothstep(0, 0.1, GetSunDirection().y);
+    float sunFade = smoothstep(0, 2.5, GetSunDirection().y);
 
     vec3 sunColor = uSunColor * (sunDisc * 0.8 + sunGlow * 0.3) * sunFade;
 
@@ -213,23 +213,9 @@ void main()
     color += computeAtmosphericScattering(cameraPos, rayDir);
 
     color += renderSun(rayDir);
-
-    vec2 groundIntersect = raySphereIntersect(cameraPos, rayDir, planetRadius);
-    if (groundIntersect.x > 0.0)
-    {
-        float GroundDot = max(dot(GetSunDirection(), vec3(0.0, 1.0, 0.0)), 0.0);
-        vec3 groundColor = uGroundColor * (0.3 + 0.7 * GroundDot);
-
-        float distance = groundIntersect.x;
-        float atmosphericFade = exp(-distance * 1e-5);
-
-        float horizonGlow = smoothstep(-0.92, 0.1, rayDir.y);
-
-        color = mix(groundColor * atmosphericFade, color, horizonGlow);
-    }
-
-    float avgLuminance = dot(color, vec3(0.299, 0.587, 0.114));
-    float exposure = 1.0 / (1.0 + avgLuminance * 0.1);
+    
+    float AvgLuminance = dot(color, vec3(0.299, 0.587, 0.114));
+    float exposure = 1.0 / (1.0 + AvgLuminance * 0.1);
     exposure = mix(1.2, 2.5, smoothstep(-0.2, 0.3, GetSunDirection().y));
 
     color = 1.0 - exp(-color * exposure);

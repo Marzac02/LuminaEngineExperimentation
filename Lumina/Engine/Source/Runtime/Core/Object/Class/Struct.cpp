@@ -214,14 +214,4 @@ namespace Lumina
             }
         }
     }
-    
-    void CStruct::Serialize(FArchive& Ar)
-    {
-        
-    }
-
-    void CStruct::Serialize(IStructuredArchive::FSlot Slot)
-    {
-        
-    }
 }

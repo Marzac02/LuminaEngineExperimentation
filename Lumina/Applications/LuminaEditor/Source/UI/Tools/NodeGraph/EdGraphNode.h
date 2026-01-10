@@ -61,7 +61,7 @@ namespace Lumina
         void SetError(const FString& InError) { Error = InError; bHasError = true; }
         FString GetError() const { return Error; }
         bool HasError() const { return bHasError; }
-        void ClearError() { Error = FString(); bHasError = false; }
+        void ClearError() { Error = {}; bHasError = false; }
         
         CEdNodeGraphPin* GetPin(uint16 ID, ENodePinDirection Direction);
         CEdNodeGraphPin* GetPinByIndex(uint32 Index, ENodePinDirection Direction);
@@ -72,8 +72,8 @@ namespace Lumina
         float GetNodeX() const { return GridX; }
         float GetNodeY() const { return GridY; }
 
-        const TVector<TObjectPtr<CEdNodeGraphPin>>& GetInputPins() const { return NodePins[uint32(ENodePinDirection::Input)]; }
-        const TVector<TObjectPtr<CEdNodeGraphPin>>& GetOutputPins() const { return NodePins[uint32(ENodePinDirection::Output)]; }
+        const TVector<TObjectPtr<CEdNodeGraphPin>>& GetInputPins() const { return NodePins[static_cast<uint32>(ENodePinDirection::Input)]; }
+        const TVector<TObjectPtr<CEdNodeGraphPin>>& GetOutputPins() const { return NodePins[static_cast<uint32>(ENodePinDirection::Output)]; }
 
         CEdNodeGraphPin* CreatePin(CClass* InClass, const FString& Name, ENodePinDirection Direction, EMaterialInputType Type);
 
@@ -83,14 +83,17 @@ namespace Lumina
         PROPERTY()
         float GridY;
 
+        PROPERTY()
+        uint64 NodeID = 0;
+        
+        
     protected:
 
-        TArray<TVector<TObjectPtr<CEdNodeGraphPin>>, uint32(ENodePinDirection::Count)> NodePins;
+        TArray<TVector<TObjectPtr<CEdNodeGraphPin>>, static_cast<uint32>(ENodePinDirection::Count)> NodePins;
 
         uint32 DebugExecutionOrder;
 
 
-        uint64      NodeID = 0;
         FString     FullName;
         FString     Error;
         bool        bHasError;

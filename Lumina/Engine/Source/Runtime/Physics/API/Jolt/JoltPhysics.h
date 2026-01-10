@@ -29,7 +29,6 @@ namespace Lumina::Physics
 
     struct FJoltData
     {
-        TUniquePtr<JPH::TempAllocator> TemporariesAllocator;
         TUniquePtr<JPH::JobSystemThreadPool> JobThreadPool;
         TUniquePtr<FJoltDebugRenderer> DebugRenderer;
 
@@ -45,7 +44,6 @@ namespace Lumina::Physics
         void Shutdown() override;
         TUniquePtr<IPhysicsScene> CreatePhysicsScene(CWorld* World) override;
 
-        static JPH::TempAllocator* GetAllocator();
         static JPH::JobSystemThreadPool* GetThreadPool();
 		static FJoltDebugRenderer* GetDebugRenderer();
         

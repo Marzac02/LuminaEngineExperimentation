@@ -26,13 +26,16 @@ namespace Lumina
     {
         if (CClass* Class = GetClass())
         {
-            GetClass()->SerializeTaggedProperties(Ar, this);
+            Class->SerializeTaggedProperties(Ar, this);
         }
     }
 
-    void CObject::Serialize(IStructuredArchive::FSlot Slot)
+    void CObject::Serialize(IStructuredArchive::FRecord Record)
     {
-        GetClass()->Serialize(Slot);
+        if (CClass* Class = GetClass())
+        {
+            Class->SerializeTaggedProperties(Record.EnterField("Properties").GetArchiver(), this);
+        }
     }
 
     void CObject::PostInitProperties()

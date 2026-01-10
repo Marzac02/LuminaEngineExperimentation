@@ -5,6 +5,7 @@
 #include "Renderer/PrimitiveDrawInterface.h"
 #include "World/Entity/Components/CharacterComponent.h"
 #include "world/entity/components/lightcomponent.h"
+#include "world/entity/components/physicscomponent.h"
 #include "World/Entity/Components/TransformComponent.h"
 
 namespace Lumina
@@ -60,6 +61,32 @@ namespace Lumina
             glm::vec4(PointLight.LightColor, 1.0f), 32, 1.0f, 0.0f);
     }
 
+    CStruct* CComponentVisualizer_SphereCollider::GetSupportedComponentType() const
+    {
+        return SSphereColliderComponent::StaticStruct();
+    }
+
+    void CComponentVisualizer_SphereCollider::Draw(IPrimitiveDrawInterface* PDI, entt::registry& Registry, entt::entity Entity)
+    {
+        const SSphereColliderComponent& Sphere = Registry.get<SSphereColliderComponent>(Entity);
+        const STransformComponent& Transform = Registry.get<STransformComponent>(Entity);
+        
+        PDI->DrawSphere(Transform.GetLocation(), Sphere.Radius * Transform.MaxScale(), FColor::Red, 12, 1.0f, 0.0f);
+    }
+
+    CStruct* CComponentVisualizer_BoxCollider::GetSupportedComponentType() const
+    {
+        return SBoxColliderComponent::StaticStruct();
+    }
+
+    void CComponentVisualizer_BoxCollider::Draw(IPrimitiveDrawInterface* PDI, entt::registry& Registry, entt::entity Entity)
+    {
+        const SBoxColliderComponent& Box = Registry.get<SBoxColliderComponent>(Entity);
+        const STransformComponent& Transform = Registry.get<STransformComponent>(Entity);
+        
+        PDI->DrawBox(Transform.GetLocation(), Box.HalfExtent * Transform.GetScale(), Transform.GetRotation(), FColor::Red, 1.0f, 0.0f);
+    }
+
     CStruct* CComponentVisualizer_CharacterPhysics::GetSupportedComponentType() const
     {
         return SCharacterPhysicsComponent::StaticStruct();
@@ -74,6 +101,6 @@ namespace Lumina
         glm::vec3 Start = Location - glm::vec3(0, Character.HalfHeight, 0);
         glm::vec3 End = Location + glm::vec3(0, Character.HalfHeight, 0);
     
-        PDI->DrawCapsule(Start, End, Character.Radius, glm::vec4(0.0f, 1.0f, 0.0f, 1.0f), 16, 2.0f, 0.0f);
+        PDI->DrawCapsule(Start, End, Character.Radius, glm::vec4(0.0f, 1.0f, 0.0f, 1.0f), 12, 2.0f, 0.0f);
     }
 }

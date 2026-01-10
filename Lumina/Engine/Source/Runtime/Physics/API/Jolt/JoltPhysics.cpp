@@ -127,9 +127,6 @@ namespace Lumina::Physics
 
         JPH::RegisterTypes();
         
-
-        JoltData->TemporariesAllocator = MakeUniquePtr<JPH::TempAllocatorImpl>(300 * 1024 * 1024);
-
         JoltData->JobThreadPool = MakeUniquePtr<JPH::JobSystemThreadPool>(2048, 8, Threading::GetNumThreads() - 1);
 
     }
@@ -145,11 +142,6 @@ namespace Lumina::Physics
     TUniquePtr<IPhysicsScene> FJoltPhysicsContext::CreatePhysicsScene(CWorld* World)
     {
         return MakeUniquePtr<FJoltPhysicsScene>(World);
-    }
-
-    JPH::TempAllocator* FJoltPhysicsContext::GetAllocator()
-    {
-        return JoltData->TemporariesAllocator.get();
     }
 
     JPH::JobSystemThreadPool* FJoltPhysicsContext::GetThreadPool()

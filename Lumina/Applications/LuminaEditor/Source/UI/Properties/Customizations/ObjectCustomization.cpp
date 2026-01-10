@@ -115,7 +115,9 @@ namespace Lumina
                 {
                     TVector<FAssetData*> Assets = FAssetRegistry::Get().FindByPredicate([&](const FAssetData& Data)
                     {
-                        return Data.AssetClass == ObjectProperty->GetPropertyClass()->GetName();
+                        CClass* DataClass = FindObject<CClass>(Data.AssetClass);
+                        CClass* PropertyClass = ObjectProperty->GetPropertyClass();
+                        return DataClass->IsChildOf(PropertyClass);
                     });
                     
                     for (const FAssetData* Asset : Assets)

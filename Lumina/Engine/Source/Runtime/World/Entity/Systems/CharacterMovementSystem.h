@@ -6,14 +6,13 @@
 namespace Lumina
 {
     REFLECT()
-    class LUMINA_API CPlayerCharacterMovementSystem : public CEntitySystem
+    class LUMINA_API CCharacterMovementSystem : public CEntitySystem
     {
         GENERATED_BODY()
-        ENTITY_SYSTEM(RequiresUpdate(EUpdateStage::PrePhysics, EUpdatePriority::Default))
+        ENTITY_SYSTEM(RequiresUpdate(EUpdateStage::PrePhysics, EUpdatePriority::Highest))
+        
     public:
-
-
+        
         void Update(FSystemContext& SystemContext) override;
-    
     };
 }

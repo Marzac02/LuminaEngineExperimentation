@@ -88,6 +88,7 @@ namespace Lumina
         void Serialize(CObject*& Value);
         void Serialize(FObjectHandle& Value);
         void Serialize(void* Data, uint64 DataSize);
+        FArchive& GetArchiver() const;
 
         template<typename T>
         FORCEINLINE void operator<<(StructuredArchive::TNamedValue<T> Item);
@@ -194,7 +195,8 @@ namespace Lumina
         friend class FArchiveMap;
     
     public:
-        using FSlot = FArchiveSlot;
+        using FSlot     = FArchiveSlot;
+        using FRecord   = FArchiveRecord;
 
         struct FIDGenerator
         {

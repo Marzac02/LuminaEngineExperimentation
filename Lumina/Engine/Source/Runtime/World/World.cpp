@@ -224,11 +224,16 @@ namespace Lumina
     entt::entity CWorld::ConstructEntity(const FName& Name, const FTransform& Transform)
     {
         entt::entity NewEntity = GetEntityRegistry().create();
-
-        FString StringName(Name.c_str());
-        StringName += "_" + eastl::to_string(static_cast<int>(NewEntity));
         
-        EntityRegistry.emplace<SNameComponent>(NewEntity).Name = StringName;
+        FName ActualName = Name;
+        if (ActualName == NAME_None)
+        {
+            FFixedString StringName;
+            StringName.append_convert(Name + eastl::to_string(entt::to_integral(NewEntity)));
+            ActualName = StringName;
+        }
+        
+        EntityRegistry.emplace<SNameComponent>(NewEntity).Name = Name;
         EntityRegistry.emplace<STransformComponent>(NewEntity).Transform = Transform;
         EntityRegistry.emplace_or_replace<FNeedsTransformUpdate>(NewEntity);
         

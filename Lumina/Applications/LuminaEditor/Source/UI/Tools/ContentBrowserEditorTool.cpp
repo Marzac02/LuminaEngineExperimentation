@@ -324,7 +324,7 @@ namespace Lumina
                     DisplayName.append(LE_ICON_FOLDER).append(" ").append(Info.Name.begin(), Info.Name.end());
             
                     entt::entity ItemEntity = Tree.CreateNode(ParentItem, DisplayName, Hash::GetHash64(Info.PathSource));
-                    Tree.EmplaceUserData<FContentBrowserListViewItemData>(ItemEntity).Path.assign(Info.Name.begin(), Info.Name.end());
+                    Tree.EmplaceUserData<FContentBrowserListViewItemData>(ItemEntity).Path.assign(Info.VirtualPath.begin(), Info.VirtualPath.end());
                     
                     if (Info.VirtualPath == SelectedPath)
                     {

@@ -45,7 +45,7 @@ namespace Lumina
         template<typename TComponent>
         TComponent& GetComponent(entt::registry& Registry, entt::entity Entity)
         {
-            return Registry.get_or_emplace<TComponent>(Entity);
+            return Registry.get<TComponent>(Entity);
         }
 
         template<typename TComponent>
@@ -93,8 +93,8 @@ namespace Lumina
         template<typename TComponent>
         sol::reference GetComponentLua(entt::registry& Registry, entt::entity Entity, sol::state_view S)
         {
-            auto& Component = Registry.get<TComponent>(Entity);
-            return sol::make_reference(S, std::ref(Component));
+            LUMINA_PROFILE_SCOPE();
+            return sol::make_reference(S, std::ref(Registry.get<TComponent>(Entity)));
         }
         
         template<typename TComponent>

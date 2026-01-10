@@ -26,7 +26,6 @@ namespace Lumina
     public:
         
         void Serialize(FArchive& Ar) override;
-        void Serialize(IStructuredArchive::FSlot Slot) override;
         void PostLoad() override;
 
         bool IsReadyForRender() const;

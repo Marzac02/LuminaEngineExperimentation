@@ -511,8 +511,28 @@ namespace Lumina
     void FMaterialCompiler::Mod(CMaterialInput* A, CMaterialInput* B)
     {
         CMaterialExpression_Mod* Node = A->GetOwningNode<CMaterialExpression_Mod>();
+    
+        FString OwningNode = A->GetOwningNode()->GetNodeFullName();
+        FInputValue AValue = GetTypedInputValue(A, Node->ConstA);
+        FInputValue BValue = GetTypedInputValue(B, Node->ConstB);
+    
+        EMaterialValueType ResultType = DetermineResultType(AValue.Type, BValue.Type, true);
+        FString TypeStr = GetVectorType(ResultType);
 
-        //...
+        // Check for invalid operations
+        if (AValue.ComponentCount > 1 && BValue.ComponentCount > 1 && AValue.ComponentCount != BValue.ComponentCount)
+        {
+            FError Error;
+            Error.ErrorNode         = A->GetOwningNode<CMaterialGraphNode>();
+            Error.ErrorName         = "Type Mismatch";
+            Error.ErrorDescription  = "Cannot perform Mod between " + GetVectorType(AValue.Type) + " and " + GetVectorType(BValue.Type);
+            AddError(Error);
+        
+            ShaderChunks.append("// ERROR: Type mismatch\n");
+        }
+
+        ShaderChunks.append(TypeStr + " " + OwningNode + " = mod(" + AValue.Value + ", " + BValue.Value + ");\n");
+        RegisterNodeOutput(OwningNode, ResultType, EComponentMask::RGBA);
     }
 
     void FMaterialCompiler::Min(CMaterialInput* A, CMaterialInput* B)

@@ -1833,7 +1833,7 @@ namespace Lumina
         {
             SNameComponent& NameComponent = World->GetEntityRegistry().get<SNameComponent>(WorldEntity);
             FFixedString Name;
-            Name.append(LE_ICON_CUBE).append(" ").append(NameComponent.Name.c_str());
+            Name.append(LE_ICON_CUBE).append(" ").append(NameComponent.Name.c_str()).append_convert(FString(" - (" + eastl::to_string(entt::to_integral(WorldEntity)) + ")"));
             
             entt::entity ItemEntity = Tree.CreateNode(ParentItem, Name);
             Tree.Get<FTreeNodeDisplay>(ItemEntity).TooltipText = FString("Entity: " + eastl::to_string(entt::to_integral(WorldEntity))).c_str();
@@ -2786,8 +2786,7 @@ namespace Lumina
         entt::hashed_string Hash = entt::hashed_string(Component->GetName().c_str());
         entt::meta_type MetaType = entt::resolve(Hash);
         
-        CreatedEntity = World->ConstructEntity("Entity");
-        World->GetEntityRegistry().get<SNameComponent>(CreatedEntity).Name = Component->MakeDisplayName() + "_" + eastl::to_string((uint32)CreatedEntity).c_str();
+        CreatedEntity = World->ConstructEntity(Component->MakeDisplayName());
         ECS::Utils::InvokeMetaFunc(MetaType, "emplace"_hs, entt::forward_as_meta(World->GetEntityRegistry()), CreatedEntity, entt::forward_as_meta(entt::meta_any{}));
 
         if (CreatedEntity != entt::null)

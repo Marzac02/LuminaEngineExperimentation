@@ -88,6 +88,8 @@ namespace Lumina
 
         bool                                            bFirstDraw = true;
         
+        ImGuiTextFilter                                 Filter;
+        
     private:
 
         ax::NodeEditor::EditorContext* Context = nullptr;

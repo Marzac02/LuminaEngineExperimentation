@@ -73,7 +73,7 @@ namespace Lumina
 
                 if (SelectedNode == nullptr)
                 {
-                    GetPropertyTable()->SetObject(Asset, CMaterial::StaticClass());
+                    GetPropertyTable()->SetObject(Asset, Asset->GetClass());
                 }
                 else
                 {
@@ -112,6 +112,14 @@ namespace Lumina
         MeshEntity = World->ConstructEntity("MeshEntity");
         SStaticMeshComponent& StaticMeshComponent = World->GetEntityRegistry().emplace<SStaticMeshComponent>(MeshEntity);
         StaticMeshComponent.StaticMesh = CThumbnailManager::Get().SphereMesh;
+
+        STransformComponent& MeshTransform = World->GetEntityRegistry().get<STransformComponent>(MeshEntity);
+        MeshTransform.SetLocation(glm::vec3(0.0f, 0.0f, -5.0));
+        
+
+        STransformComponent& EditorTransform = World->GetEntityRegistry().get<STransformComponent>(EditorEntity);
+        glm::quat Rotation = Math::FindLookAtRotation(MeshTransform.GetLocation(), EditorTransform.GetLocation());
+        EditorTransform.SetRotation(Rotation);
         
         StaticMeshComponent.MaterialOverrides.push_back(CastAsserted<CMaterialInterface>(Asset.Get()));
     }

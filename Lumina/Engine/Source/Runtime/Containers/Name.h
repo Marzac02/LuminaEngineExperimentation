@@ -114,6 +114,12 @@ namespace Lumina
         {
             return strlen(GNameTable->GetString(ID));
         }
+        
+        // For stl.
+        SIZE_T length() const
+        {
+            return strlen(GNameTable->GetString(ID));
+        }
 
         FName& operator=(const EName) { ID = 0; return *this; }
         

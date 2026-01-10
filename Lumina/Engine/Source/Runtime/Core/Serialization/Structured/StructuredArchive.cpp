@@ -147,6 +147,11 @@ namespace Lumina
         StructuredArchive.LeaveSlot();
     }
 
+    FArchive& FArchiveSlot::GetArchiver() const
+    {
+        return StructuredArchive.GetInnerAr();
+    }
+
     //------------------------------------------------------------------------------------------------------
     // FArchiveRecord
     //------------------------------------------------------------------------------------------------------

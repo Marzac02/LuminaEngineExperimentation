@@ -77,7 +77,7 @@ namespace Lumina
         
         CurrentCommandBuffer = RenderContext->GetQueue(Info.CommandQueue)->GetOrCreateCommandBuffer();
         
-        static VkCommandBufferBeginInfo BeginInfo
+        static constexpr VkCommandBufferBeginInfo BeginInfo
         {
             .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
             .pNext = nullptr,

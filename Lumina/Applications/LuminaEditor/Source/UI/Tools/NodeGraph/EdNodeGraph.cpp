@@ -24,8 +24,6 @@ namespace Lumina
     }
     
     CEdNodeGraph::CEdNodeGraph()
-        : NodeSelectedCallback()
-        , PreNodeDeletedCallback()
     {
     }
 
@@ -97,6 +95,7 @@ namespace Lumina
         for (CEdGraphNode* Node : Nodes)
         {
             NodeIDToIndex[Node->GetNodeID()] = Index;
+            NextID = std::max(Node->GetNodeID() + 1, NextID);
             
             NodeBuilder.Begin(Node->GetNodeID());
             
@@ -238,7 +237,7 @@ namespace Lumina
     
                         for (CEdGraphNode* Node : Nodes)
                         {
-                            StartPin = Node->GetPin(StartPinID.Get(), ENodePinDirection::Output);
+                            StartPin = Node->GetPin(static_cast<uint16>(StartPinID.Get()), ENodePinDirection::Output);
                             if (StartPin)
                             {
                                 break;
@@ -247,7 +246,7 @@ namespace Lumina
     
                         for (CEdGraphNode* Node : Nodes)
                         {
-                            EndPin = Node->GetPin(EndPinID.Get(), ENodePinDirection::Input);
+                            EndPin = Node->GetPin(static_cast<uint16>(EndPinID.Get()), ENodePinDirection::Input);
                             if (EndPin)
                             {
                                 break;
@@ -271,7 +270,6 @@ namespace Lumina
         }
 
         NodeEditor::EndCreate();
-
         
         if (NodeEditor::BeginDelete())
         {
@@ -361,12 +359,11 @@ namespace Lumina
 
     void CEdNodeGraph::DrawGraphContextMenu()
     {
-        const ImVec2 PopupSize(320, 450);
-        const ImVec2 SearchBarPadding(12, 10);
-        const ImVec2 CategoryPadding(8, 6);
+        constexpr ImVec2 PopupSize(320, 450);
+        constexpr ImVec2 SearchBarPadding(12, 10);
+        constexpr ImVec2 CategoryPadding(8, 6);
+        constexpr float CategorySpacing = 4.0f;
         const float ItemHeight = 28.0f;
-        const float CategorySpacing = 4.0f;
-        static char SearchBuffer[256] = "";
 
         ImGui::SetNextWindowSize(PopupSize, ImGuiCond_Always);
         
@@ -381,66 +378,58 @@ namespace Lumina
             ImGui::SetCursorPos(ImVec2(12, 12));
             ImGui::PushItemWidth(PopupSize.x - 24);
 
-            
-            bool SearchChanged = ImGui::InputTextWithHint("##NodeSearch", LE_ICON_BOOK_SEARCH " Search nodes...", 
-                SearchBuffer, 
-                IM_ARRAYSIZE(SearchBuffer),
-                ImGuiInputTextFlags_AutoSelectAll);
+            Filter.Draw("##NodeFilter");
             
             ImGui::PopItemWidth();
             ImGui::PopStyleColor(3);
             ImGui::PopStyleVar();
         }
         
-        // Separator line
         ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 8);
         ImGui::PushStyleColor(ImGuiCol_Separator, ImVec4(0.25f, 0.25f, 0.27f, 1.0f));
         ImGui::Separator();
         ImGui::PopStyleColor();
         
         
-        struct FNodeInfo
-        {
-            CClass* NodeClass;
-            CEdGraphNode* CDO;
-            int MatchScore;
-        };
-        
-        THashMap<FName, TVector<FNodeInfo>> CategoryMap;
-        TVector<FName> CategoryOrder;
+        THashMap<FName, TVector<CEdGraphNode*>> CategoryMap;
+        TVector<FName> SortedCategories;
         int TotalMatches = 0;
         
         for (CClass* NodeClass : SupportedNodes)
         {
             CEdGraphNode* CDO = Cast<CEdGraphNode>(NodeClass->GetDefaultObject());
+            
+            if (!Filter.PassFilter(CDO->GetNodeDisplayName().c_str()))
+            {
+                continue;
+            }
+            
             FName Category = CDO->GetNodeCategory().c_str();
-            
-
-            if (CategoryMap.find(Category) == CategoryMap.end())
+            auto It = CategoryMap.find(Category);
+            if (It == CategoryMap.end())
             {
-                CategoryOrder.push_back(Category);
+                SortedCategories.emplace_back(Category);
+                CategoryMap[Category].emplace_back(CDO);
+            }
+            else
+            {
+                It->second.emplace_back(CDO);
             }
             
-            int Score = 100;
-            if (SearchBuffer[0] != '\0' && strncmp(CDO->GetNodeDisplayName().c_str(), SearchBuffer, strlen(SearchBuffer)) == 0)
-            {
-                Score += 50;
-            }
-            
-            CategoryMap[Category].push_back({NodeClass, CDO, Score});
             TotalMatches++;
         }
+        
+        eastl::sort(SortedCategories.begin(), SortedCategories.end(), [](const FName& LHS, const FName& RHS)
+        {
+            return LHS.ToString() < RHS.ToString(); 
+        });
         
         // Sort nodes within each category by relevance
         for (auto& [Category, NodesInMap] : CategoryMap)
         {
-            eastl::sort(NodesInMap.begin(), NodesInMap.end(), [](const FNodeInfo& A, const FNodeInfo& B)
+            eastl::sort(NodesInMap.begin(), NodesInMap.end(), [](const CEdGraphNode* A, const CEdGraphNode* B)
             {
-                if (A.MatchScore != B.MatchScore)
-                {
-                    return A.MatchScore > B.MatchScore;
-                }
-                return strcmp(A.CDO->GetNodeDisplayName().c_str(), B.CDO->GetNodeDisplayName().c_str()) < 0;
+                return A->GetNodeDisplayName() < B->GetNodeDisplayName();
             });
         }
 
@@ -463,9 +452,9 @@ namespace Lumina
             {
                 bool IsFirstCategory = true;
                 
-                for (const FName& Category : CategoryOrder)
+                for (const FName& Category : SortedCategories)
                 {
-                    const auto& NodeInfos = CategoryMap[Category];
+                    const TVector<CEdGraphNode*>& NodesInCategory = CategoryMap[Category];
                     
                     if (!IsFirstCategory)
                     {
@@ -489,9 +478,9 @@ namespace Lumina
                         ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(0, 1));
                         ImGui::PushStyleVar(ImGuiStyleVar_SelectableTextAlign, ImVec2(0.0f, 0.5f));
                         
-                        for (const FNodeInfo& Info : NodeInfos)
+                        for (const CEdGraphNode* Node : NodesInCategory)
                         {
-                            ImGui::PushID(Info.CDO);
+                            ImGui::PushID(Node);
                             
                             ImVec4 AccentColor = ImVec4(0.8f, 0.4f, 0.2f, 1.0f);
                             
@@ -508,9 +497,9 @@ namespace Lumina
                                 2.0f
                             );
                             
-                            if (ImGui::Selectable(Info.CDO->GetNodeDisplayName().c_str(), false, ImGuiSelectableFlags_SpanAvailWidth, ImVec2(0, ItemHeight)))
+                            if (ImGui::Selectable(Node->GetNodeDisplayName().c_str(), false, ImGuiSelectableFlags_SpanAvailWidth, ImVec2(0, ItemHeight)))
                             {
-                                CEdGraphNode* NewNode = CreateNode(Info.NodeClass);
+                                CEdGraphNode* NewNode = CreateNode(Node->GetClass());
                                 ax::NodeEditor::SetNodePosition(NewNode->GetNodeID(), ax::NodeEditor::ScreenToCanvas(ImGui::GetMousePosOnOpeningCurrentPopup()));
                                 ImGui::CloseCurrentPopup();
                             }
@@ -519,11 +508,11 @@ namespace Lumina
                             {
                                 ImGui::BeginTooltip();
                                 ImGui::PushStyleColor(ImGuiCol_Text, AccentColor);
-                                ImGui::Text("%s", Info.CDO->GetNodeDisplayName().c_str());
+                                ImGui::TextUnformatted(Node->GetNodeDisplayName().c_str());
                                 ImGui::PopStyleColor();
                                 
                                 ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.7f, 0.7f, 0.7f, 1.0f));
-                                ImGui::TextWrapped("%s", Info.CDO->GetNodeTooltip().c_str());
+                                ImGui::TextWrapped("%s", Node->GetNodeTooltip().c_str());
                                 ImGui::PopStyleColor();
                                 ImGui::EndTooltip();
                             }
@@ -536,7 +525,7 @@ namespace Lumina
                     }
                 }
                 
-                if (TotalMatches == 0 && SearchBuffer[0] != '\0')
+                if (TotalMatches == 0)
                 {
                     ImGui::SetCursorPosY(ChildSize.y * 0.4f);
                     ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.5f, 0.5f, 0.5f, 1.0f));
@@ -569,7 +558,7 @@ namespace Lumina
         {
             ImGui::Text("%d node%s found", TotalMatches, TotalMatches == 1 ? "" : "s");
         }
-        else if (SearchBuffer[0] == '\0')
+        else if (Filter.IsActive())
         {
             ImGui::Text("%d node%s available", (int)SupportedNodes.size(), SupportedNodes.size() == 1 ? "" : "s");
         }

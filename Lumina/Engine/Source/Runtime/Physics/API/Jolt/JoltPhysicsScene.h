@@ -161,14 +161,16 @@ namespace Lumina::Physics
         void OnAddImpulseAtPositionEvent(const SAddImpulseAtPositionEvent& Event);
         void OnAddForceAtPositionEvent(const SAddForceAtPositionEvent& Event);
         void OnSetGravityFactorEvent(const SSetGravityFactorEvent& Event);
+    	
+    	JPH::PhysicsSystem* GetPhysicsSystem() const { return JoltSystem.get(); }
 
     private:
     	
-    	TUniquePtr<FJoltContactListener> ContactListener;
-        TUniquePtr<JPH::PhysicsSystem> JoltSystem;
-        TUniquePtr<FLayerInterfaceImpl> JoltInterfaceLayer;
-        CWorld* World;
-
+    	JPH::TempAllocatorImpl				Allocator;
+    	TUniquePtr<FJoltContactListener>	ContactListener;
+        TUniquePtr<JPH::PhysicsSystem>		JoltSystem;
+        TUniquePtr<FLayerInterfaceImpl>		JoltInterfaceLayer;
+        CWorld*								World = nullptr;
 
         double FixedTimeStep = 1.0 / 60.0;
         double Accumulator = 0.0;

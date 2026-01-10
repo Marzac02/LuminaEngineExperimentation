@@ -12,7 +12,7 @@ namespace Lumina
         GENERATED_BODY()
         
         FUNCTION(Script)
-        FORCEINLINE void AddMovementInput(const glm::vec2& Move) { MoveInput += Move; }
+        FORCEINLINE void AddMovementInput(const glm::vec3& Move) { MoveInput += Move; }
         
         FUNCTION(Script)
         FORCEINLINE void AddLookInput(const glm::vec2& Look) { LookInput += Look; }
@@ -22,7 +22,7 @@ namespace Lumina
         
         
         PROPERTY(Script, ReadOnly)
-        glm::vec2 MoveInput;
+        glm::vec3 MoveInput;
 
         PROPERTY(Script, ReadOnly)
         glm::vec2 LookInput;

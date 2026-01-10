@@ -351,16 +351,21 @@ namespace Lumina
 
         MeshEntity = World->ConstructEntity("MeshEntity");
         World->GetEntityRegistry().emplace<SStaticMeshComponent>(MeshEntity).StaticMesh = StaticMesh;
-        World->GetEntityRegistry().get<STransformComponent>(MeshEntity).SetLocation(glm::vec3(0.0f, 0.0f, -5.0));
-        World->GetEntityRegistry().emplace_or_replace<FNeedsTransformUpdate>(MeshEntity);
+        STransformComponent& MeshTransform = World->GetEntityRegistry().get<STransformComponent>(MeshEntity);
+        MeshTransform.SetLocation(glm::vec3(0.0f, 0.0f, 5.0));
 
-        FocusViewportToEntity(MeshEntity);
+        STransformComponent& EditorTransform = World->GetEntityRegistry().get<STransformComponent>(EditorEntity);
+
+        glm::quat Rotation = Math::FindLookAtRotation(MeshTransform.GetLocation(), EditorTransform.GetLocation());
+        EditorTransform.SetRotation(Rotation);
+        
+        World->MarkTransformDirty(EditorEntity);
     }
 
     void FMeshEditorTool::Update(const FUpdateContext& UpdateContext)
     {
         FAssetEditorTool::Update(UpdateContext);
-
+        
         if (!World.IsValid())
         {
             return;
