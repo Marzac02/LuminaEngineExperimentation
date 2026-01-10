@@ -186,7 +186,7 @@ namespace Lumina
             
             shaderc::CompileOptions CompileOpts;
             CompileOpts.SetIncluder(std::make_unique<FShaderCIncluder>());
-            CompileOpts.SetOptimizationLevel(shaderc_optimization_level_performance);
+            CompileOpts.SetOptimizationLevel(shaderc_optimization_level_zero);
             CompileOpts.SetGenerateDebugInfo();
             CompileOpts.SetTargetEnvironment(shaderc_target_env_vulkan, shaderc_env_version_vulkan_1_3);
 

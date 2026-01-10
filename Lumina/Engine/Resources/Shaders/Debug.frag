@@ -93,7 +93,7 @@ void main()
             float Depth = texture(uShadowCascades, vec3(CellUV, float(Layer))).r;
             float LinearDepth = LinearizeDepth(Depth, GetNearPlane(), 1000.0f);
             float VisualizedDepth = LinearDepth / GetNearPlane();
-            OutFragColor = vec4(vec3(VisualizedDepth), 1.0);
+            OutFragColor = vec4(vec3(Depth), 1.0);
         }
         else
         {

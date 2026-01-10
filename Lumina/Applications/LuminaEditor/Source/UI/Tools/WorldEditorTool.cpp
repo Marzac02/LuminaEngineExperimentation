@@ -36,7 +36,7 @@ namespace Lumina
 
 
     FWorldEditorTool::FWorldEditorTool(IEditorToolContext* Context, CWorld* InWorld)
-        : FEditorTool(Context, InWorld->GetName().ToString(), InWorld)
+        : FEditorTool(Context, "World Editor", InWorld)
         , SelectedEntity(entt::null)
         , CopiedEntity(entt::null)
     {

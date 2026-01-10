@@ -3,7 +3,6 @@
 #include "Containers/String.h"
 #include "Containers/Array.h"
 #include "Containers/Function.h"
-#include "Core/Functional/FunctionRef.h"
 
 namespace Lumina::FileSystem
 {

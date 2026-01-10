@@ -228,8 +228,9 @@ namespace Lumina
         //========================================================================================================================
         
         {
+            LUMINA_PROFILE_SECTION("Directional Light Processing");
+
             LightData.bHasSun = false;
-            
             auto View = World->GetEntityRegistry().view<SDirectionalLightComponent>();
             View.each([this](const SDirectionalLightComponent& DirectionalLightComponent)
             {
@@ -237,7 +238,7 @@ namespace Lumina
                 const FViewVolume& ViewVolume = SceneViewport->GetViewVolume();
                 
                 float NearClip          = ViewVolume.GetNear();
-                float FarClip           = ViewVolume.GetFar();
+                float FarClip           = 50.0f;//ViewVolume.GetFar();
                                         
                 float ClipRange         = FarClip - NearClip;
                                         
@@ -253,18 +254,18 @@ namespace Lumina
                 Light.Intensity         = DirectionalLightComponent.Intensity;
                 Light.Direction         = glm::normalize(DirectionalLightComponent.Direction);
                 LightData.SunDirection  = Light.Direction;
-                Light.Radius            = FarClip;
+                Light.Radius            = ClipRange;
                 
         
-                float CascadeSplits[NumCascades];
-                for (int i = 0; i < NumCascades; i++)
-                {
-                    float P             = (static_cast<float>(i) + 1) / static_cast<float>(NumCascades);
-                    float Log           = ClipMinZ * glm::pow(Ratio, P);
-                    float Uniform       = ClipMinZ + Range * P;
-                    float D             = CVarShadowCascadeLambda.GetValue() * (Log - Uniform) + Uniform;
-                    CascadeSplits[i]    = (D - NearClip) / ClipRange;
-                }
+                //float CascadeSplits[NumCascades];
+                //for (int i = 0; i < NumCascades; i++)
+                //{
+                //    float P             = (static_cast<float>(i) + 1) / static_cast<float>(NumCascades);
+                //    float Log           = ClipMinZ * glm::pow(Ratio, P);
+                //    float Uniform       = ClipMinZ + Range * P;
+                //    float D             = CVarShadowCascadeLambda.GetValue() * (Log - Uniform) + Uniform;
+                //    CascadeSplits[i]    = (D - NearClip) / ClipRange;
+                //}
                 
                 glm::mat4 ViewProjection        = glm::perspective(glm::radians(ViewVolume.GetFOV()), ViewVolume.GetAspectRatio(), NearClip, FarClip);
                 glm::mat4 ViewProjectionMatrix  = ViewProjection * ViewVolume.GetViewMatrix();
@@ -272,21 +273,20 @@ namespace Lumina
                 glm::vec3 FrustumCorners[8];
                 FFrustum::ComputeFrustumCorners(ViewProjectionMatrix, FrustumCorners);
                 
-                float LastSplitDist = 0.0;
+                //float LastSplitDist = 0.0;
                 for (int i = 0; i < NumCascades; ++i)
                 {
-                    float SplitDist = CascadeSplits[i];
-                    LightData.CascadeSplits[i] = SplitDist;
+                    //float SplitDist = CascadeSplits[i];
+                    //LightData.CascadeSplits[i] = SplitDist;
+                    //
+                    //for (uint32 j = 0; j < 4; j++)
+                    //{
+                    //    glm::vec3 Dist          = FrustumCorners[j + 4] - FrustumCorners[j];
+                    //    FrustumCorners[j + 4]   = FrustumCorners[j] + (Dist * SplitDist);
+                    //    FrustumCorners[j]       = FrustumCorners[j] + (Dist * LastSplitDist);
+                    //}
                     
-                    for (uint32 j = 0; j < 4; j++)
-                    {
-                        glm::vec3 Dist          = FrustumCorners[j + 4] - FrustumCorners[j];
-                        FrustumCorners[j + 4]   = FrustumCorners[j] + (Dist * SplitDist);
-                        FrustumCorners[j]       = FrustumCorners[j] + (Dist * LastSplitDist);
-                    }
-                    
-                    glm::vec3 FrustumCenter = glm::vec3(0.0f);
-                    FrustumCenter           = std::reduce(std::begin(FrustumCorners), std::end(FrustumCorners)) / 8.0f;
+                    glm::vec3 FrustumCenter = std::reduce(std::begin(FrustumCorners), std::end(FrustumCorners)) / 8.0f;
                     glm::mat4 LightView     = glm::lookAt(FrustumCenter + Light.Direction, FrustumCenter, FViewVolume::UpAxis);
                     
                     float MinX = eastl::numeric_limits<float>::max();
@@ -330,7 +330,7 @@ namespace Lumina
                     LightData.Lights[0]             = Light;
                     LightData.NumLights++;
                     
-                    LastSplitDist                   = CascadeSplits[i];
+                    //LastSplitDist                   = CascadeSplits[i];
                 }
             });
         }
@@ -338,6 +338,8 @@ namespace Lumina
         //========================================================================================================================
         
         {
+            LUMINA_PROFILE_SECTION("Point Light Processing");
+
             auto View = World->GetEntityRegistry().view<SPointLightComponent, STransformComponent>();
             View.each([&] (SPointLightComponent& PointLightComponent, STransformComponent& TransformComponent)
             {
@@ -415,6 +417,8 @@ namespace Lumina
         //========================================================================================================================
         
         {
+            LUMINA_PROFILE_SECTION("Spot Light Processing");
+
             auto View = World->GetEntityRegistry().view<SSpotLightComponent, STransformComponent>();
             View.each([&] (SSpotLightComponent& SpotLightComponent, STransformComponent& TransformComponent)
             {
@@ -477,6 +481,8 @@ namespace Lumina
         //========================================================================================================================
         
         {
+            LUMINA_PROFILE_SECTION("Batched Line Processing");
+
             auto View = World->GetEntityRegistry().view<FLineBatcherComponent>();
             View.each([&](FLineBatcherComponent& LineBatcherComponent)
             {
@@ -533,6 +539,8 @@ namespace Lumina
         
             
         {
+            LUMINA_PROFILE_SECTION("Environment Processing");
+
             RenderSettings.bHasEnvironment = false;
             LightData.AmbientLight = glm::vec4(0.0f);
             RenderSettings.bSSAO = false;

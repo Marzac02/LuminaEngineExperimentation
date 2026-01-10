@@ -57,27 +57,27 @@ namespace Lumina
 
         static void ComputeFrustumCorners(const glm::mat4& ViewProjection, glm::vec3 OutCorners[8])
         {
+            LUMINA_PROFILE_SCOPE();
+
             glm::mat4 InverseVP = glm::inverse(ViewProjection);
 
-            glm::vec3 FrustumCorners[8] =
+            for (int x = 0; x < 2; ++x)
             {
-                // Near Plane
-                glm::vec3(-1.0f,  1.0f, 0.0f),
-                glm::vec3( 1.0f,  1.0f, 0.0f),
-                glm::vec3( 1.0f, -1.0f, 0.0f),
-                glm::vec3(-1.0f, -1.0f, 0.0f),
-                
-                // Far Plane
-                glm::vec3(-1.0f,  1.0f,  1.0f),
-                glm::vec3( 1.0f,  1.0f,  1.0f),
-                glm::vec3( 1.0f, -1.0f,  1.0f),
-                glm::vec3(-1.0f, -1.0f,  1.0f),
-            };
+                for (int y = 0; y < 2; ++y)
+                {
+                    for (int z = 0; z < 2; ++z)
+                    {
+                        const int Index = x + y * 2 + z * 4;
 
-            for (int i = 0; i < 8; i++)
-            {
-                glm::vec4 InvCorner = InverseVP * glm::vec4(FrustumCorners[i], 1.0f);
-                OutCorners[i] = InvCorner / InvCorner.w;
+                        const glm::vec4 Pt = InverseVP * glm::vec4(
+                            2.0f * x - 1.0f,
+                            2.0f * y - 1.0f, 
+                            2.0f * z - 1.0f, 
+                            1.0f);
+                        
+                        OutCorners[Index] = Pt / Pt.w;
+                    }
+                }
             }
         }
     };

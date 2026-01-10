@@ -46,19 +46,19 @@ vec3 calculateSunColor()
 }
 
 vec3 uSunColor = calculateSunColor();
-const float uSunSize = radians(0.53);
-const vec3 uSkyZenith = vec3(0.05, 0.1, 0.4);
-const vec3 uSkyHorizon = vec3(0.6, 0.8, 1.0);
-const vec3 uGroundColor = vec3(0.4, 0.25, 0.1);
+const float uSunSize        = radians(0.53);
+const vec3 uSkyZenith       = vec3(0.05, 0.1, 0.4);
+const vec3 uSkyHorizon      = vec3(0.6, 0.8, 1.0);
+const vec3 uGroundColor     = vec3(0.72627, 0.7555, 0.9908);
 
-const vec3 rayleighCoeff = vec3(5.8e-6, 13.5e-6, 33.1e-6);
-const float mieCoeff = 2.1e-5;
-const float mieG = 0.76;
+const vec3 rayleighCoeff    = vec3(5.8e-6, 13.5e-6, 33.1e-6);
+const float mieCoeff        = 2.1e-5;
+const float mieG            = 0.76;
 
-const float atmosphereRadius = 6420e2;
-const float planetRadius = 6360e2;
-const float rayleighHeight = 8e2;
-const float mieHeight = 1.2e2;
+const float atmosphereRadius    = 6420e2;
+const float planetRadius        = 6360e2;
+const float rayleighHeight      = 8e2;
+const float mieHeight           = 1.2e2;
 
 vec3 getViewRay(vec2 uv) 
 {
@@ -217,8 +217,8 @@ void main()
     vec2 groundIntersect = raySphereIntersect(cameraPos, rayDir, planetRadius);
     if (groundIntersect.x > 0.0)
     {
-        float groundDot = max(dot(GetSunDirection(), vec3(0.0, 1.0, 0.0)), 0.0);
-        vec3 groundColor = uGroundColor * (0.3 + 0.7 * groundDot);
+        float GroundDot = max(dot(GetSunDirection(), vec3(0.0, 1.0, 0.0)), 0.0);
+        vec3 groundColor = uGroundColor * (0.3 + 0.7 * GroundDot);
 
         float distance = groundIntersect.x;
         float atmosphericFade = exp(-distance * 1e-5);

@@ -1,4 +1,5 @@
 #version 460 core
+
 #pragma shader_stage(fragment)
 
 #include "Includes/SceneGlobals.glsl"
@@ -197,13 +198,13 @@ float ComputeShadowFactor(FLight Light, vec3 FragmentPos, float Bias)
     {
         for (int i = 0; i < 3; ++i)
         {
-            ViewProjectionIndex = max(ViewProjectionIndex, int(step(LightData.CascadeSplits[i], ViewPosition.z)) * i);
+            ViewProjectionIndex = 0;//max(ViewProjectionIndex, int(step(LightData.CascadeSplits[i], ViewPosition.z)) * i);
         }
     }
 
 
     vec4 ShadowCoord        = Light.ViewProjection[ViewProjectionIndex] * vec4(FragmentPos, 1.0);
-    vec3 ProjCoords         = ShadowCoord.xyz / max(ShadowCoord.w, 1.0);
+    vec3 ProjCoords         = ShadowCoord.xyz / ShadowCoord.w;
     vec2 ProjectionUV       = ProjCoords.xy * 0.5 + 0.5;
 
     vec3 L                  = FragmentPos - Light.Position;
