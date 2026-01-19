@@ -2,6 +2,9 @@
 #include "StaticMeshFactory.h"
 #include "Assets/AssetRegistry/AssetRegistry.h"
 #include "Assets/AssetTypes/Material/Material.h"
+#include "Assets/AssetTypes/Mesh/Animation/Animation.h"
+#include "Assets/AssetTypes/Mesh/SkeletalMesh/SkeletalMesh.h"
+#include "assets/assettypes/mesh/skeleton/skeleton.h"
 #include "Assets/AssetTypes/Mesh/StaticMesh/StaticMesh.h"
 #include "Assets/Factories/TextureFactory/TextureFactory.h"
 #include "Core/Object/Package/Package.h"
@@ -16,12 +19,7 @@
 
 namespace Lumina
 {
-    CObject* CStaticMeshFactory::CreateNew(const FName& Name, CPackage* Package)
-    {
-        return NewObject<CStaticMesh>(Package, Name);
-    }
-
-    bool CStaticMeshFactory::DrawImportDialogue(const FFixedString& RawPath, const FFixedString& DestinationPath, eastl::any& ImportSettings, bool& bShouldClose)
+    bool CMeshFactory::DrawImportDialogue(const FFixedString& RawPath, const FFixedString& DestinationPath, eastl::any& ImportSettings, bool& bShouldClose)
     {
         using namespace Import::Mesh;
         
@@ -210,8 +208,8 @@ namespace Lumina
     
                     SetColoredColumn(0, "{0}", Resource.Name.c_str());
                     
-                    ImVec4 VertexColor = Resource.Vertices.size() > 10000 ? ImVec4(1,0.7f,0.3f,1) : ImVec4(0.7f,1,0.7f,1);
-                    SetColoredColumnWithColor(1, VertexColor,  "{0}", ImGuiX::FormatSize(Resource.Vertices.size()));
+                    ImVec4 VertexColor = Resource.GetNumVertices() > 10000 ? ImVec4(1,0.7f,0.3f,1) : ImVec4(0.7f,1,0.7f,1);
+                    SetColoredColumnWithColor(1, VertexColor,  "{0}", ImGuiX::FormatSize(Resource.GetNumVertices()));
                     SetColoredColumn(2, "{0}", ImGuiX::FormatSize(Resource.Indices.size()));
                     SetColoredColumn(3, "{0}", Resource.GeometrySurfaces.size());
                     
@@ -295,13 +293,220 @@ namespace Lumina
                         
                         ImGui::EndTable();
                         ImGui::PopStyleVar();
-                        ImGui::EndChild();
                     }
+                    
                 }
+                
+                ImGui::EndChild();
+            }
+            
+            if (!ImportedData->Skeletons.empty())
+            {
+                ImGui::Spacing();
+                ImGui::PushStyleColor(ImGuiCol_Separator, ImVec4(0.8f, 0.6f, 0.8f, 0.8f));
+                ImGui::SeparatorText(LE_ICON_ANIMATION "Skeletons Preview");
+                ImGui::PopStyleColor();
+                ImGui::Spacing();
+                
+                if (ImGui::BeginChild("ImportSkeletonsChild", ImVec2(0, 300), true))
+                {
+                    ImGui::PushStyleVar(ImGuiStyleVar_CellPadding, ImVec2(8, 8));
+                    if (ImGui::BeginTable("ImportSkeletons", 3, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg | ImGuiTableFlags_Resizable))
+                    {
+                        ImGui::TableSetupColumn("Import", ImGuiTableColumnFlags_WidthFixed, 40.0f);
+                        ImGui::TableSetupColumn("Name", ImGuiTableColumnFlags_WidthFixed, 80.0f);
+                        ImGui::TableSetupColumn("Bones", ImGuiTableColumnFlags_WidthStretch);
+                        
+                        ImGui::PushStyleColor(ImGuiCol_TableHeaderBg, ImVec4(0.4f, 0.3f, 0.4f, 1.0f));
+                        ImGui::TableHeadersRow();
+                        ImGui::PopStyleColor();
+                        
+                        for (const TUniquePtr<FSkeletonResource>& Skeleton : ImportedData->Skeletons)
+                        {
+                            ImGui::TableNextRow();
+                            ImGui::PushID(Skeleton.get());
+                            
+                            ImGui::TableNextColumn();
+                            bool bImport = true;//Skeleton->bShouldImport;
+                            if (ImGui::Checkbox("##import", &bImport))
+                            {
+                                //Skeleton->bShouldImport = bImport;
+                            }
+                            
+                            ImGui::TableNextColumn();
+                            ImGui::Text("%s", Skeleton->Name.c_str());
+                            
+                            ImGui::TableNextColumn();
+                            if (ImGui::TreeNodeEx("Bone Hierarchy", ImGuiTreeNodeFlags_DefaultOpen | ImGuiTreeNodeFlags_Framed))
+                            {
+                                auto DisplayBoneHierarchy = [&](int32 BoneIndex, int Depth, auto& Self) -> void
+                                {
+                                    const FSkeletonResource::FBoneInfo& Bone = Skeleton->Bones[BoneIndex];
+                                    
+                                    FFixedString NodeName(FFixedString::CtorSprintf(), "%s (Index: %d)", Bone.Name.c_str(), BoneIndex);
+                                    if (ImGui::TreeNodeEx(NodeName.c_str(), ImGuiTreeNodeFlags_DefaultOpen))
+                                    {
+                                        TVector<int32> Children = Skeleton->GetChildBones(BoneIndex);
+                                        for (int32 ChildIdx : Children)
+                                        {
+                                            Self(ChildIdx, Depth + 1, Self);
+                                        }
+                                        ImGui::TreePop();
+                                    }
+                                };
+                                
+                                for (int32 RootIdx : Skeleton->GetRootBones())
+                                {
+                                    DisplayBoneHierarchy(RootIdx, 0, DisplayBoneHierarchy);
+                                }
+                                
+                                ImGui::TreePop();
+                            }
+                            
+                            ImGui::PopID();
+                        }
+                        
+                        ImGui::EndTable();
+                    }
+                    
+                    ImGui::PopStyleVar();
+                    
+                    ImGui::Spacing();
+                    if (ImGui::Button("Select All##Skeletons"))
+                    {
+                        for (auto& Skeleton : ImportedData->Skeletons)
+                        {
+                            //Skeleton->bShouldImport = true;
+                        }
+                    }
+                    ImGui::SameLine();
+                    if (ImGui::Button("Deselect All##Skeletons"))
+                    {
+                        for (auto& Skeleton : ImportedData->Skeletons)
+                        {
+                            //Skeleton->bShouldImport = false;
+                        }
+                    }
+                    
+                }
+                
+                ImGui::EndChild();
+            }
+            
+            if (!ImportedData->Animations.empty())
+            {
+                ImGui::Spacing();
+                ImGui::PushStyleColor(ImGuiCol_Separator, ImVec4(0.8f, 0.6f, 0.8f, 0.8f));
+                ImGui::SeparatorText(LE_ICON_ANIMATION "Animations Preview");
+                ImGui::PopStyleColor();
+                ImGui::Spacing();
+                
+                if (ImGui::BeginChild("ImportAnimationsChild", ImVec2(0, 300), true))
+                {
+                    ImGui::PushStyleVar(ImGuiStyleVar_CellPadding, ImVec2(8, 8));
+                    if (ImGui::BeginTable("ImportAnimations", 4, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg | ImGuiTableFlags_Resizable))
+                    {
+                        ImGui::TableSetupColumn("Import", ImGuiTableColumnFlags_WidthFixed, 60.0f);
+                        ImGui::TableSetupColumn("Name", ImGuiTableColumnFlags_WidthStretch);
+                        ImGui::TableSetupColumn("Duration", ImGuiTableColumnFlags_WidthFixed, 100.0f);
+                        ImGui::TableSetupColumn("Channels", ImGuiTableColumnFlags_WidthFixed, 80.0f);
+                        
+                        ImGui::PushStyleColor(ImGuiCol_TableHeaderBg, ImVec4(0.4f, 0.3f, 0.4f, 1.0f));
+                        ImGui::TableHeadersRow();
+                        ImGui::PopStyleColor();
+                        
+                        ImGuiListClipper Clipper;
+                        Clipper.Begin((int)ImportedData->Animations.size());
+                        
+                        while (Clipper.Step())
+                        {
+                            for (int i = Clipper.DisplayStart; i < Clipper.DisplayEnd; i++)
+                            {
+                                const TUniquePtr<FAnimationClip>& Animation = ImportedData->Animations[i];
+                                
+                                ImGui::TableNextRow();
+                                ImGui::PushID(i);
+                                
+                                // Column 0: Import checkbox
+                                ImGui::TableSetColumnIndex(0);
+                                bool bImport = true;//Animation->bShouldImport;
+                                if (ImGui::Checkbox("##import", &bImport))
+                                {
+                                    //Animation->bShouldImport = bImport;
+                                }
+                                
+                                // Column 1: Animation name
+                                ImGui::TableSetColumnIndex(1);
+                                ImGui::Text("%s", Animation->Name.c_str());
+                                
+                                // Column 2: Duration
+                                ImGui::TableSetColumnIndex(2);
+                                ImGui::Text("%.2f s", Animation->Duration);
+                                
+                                // Column 3: Channel count
+                                ImGui::TableSetColumnIndex(3);
+                                ImGui::Text("%zu", Animation->Channels.size());
+                                
+                                // Tooltip with more details on hover
+                                if (ImGui::IsItemHovered())
+                                {
+                                    ImGui::BeginTooltip();
+                                    ImGui::Text("Animation: %s", Animation->Name.c_str());
+                                    ImGui::Separator();
+                                    ImGui::Text("Duration: %.2f seconds", Animation->Duration);
+                                    ImGui::Text("Channels: %zu", Animation->Channels.size());
+                                    //ImGui::Text("Keyframes: %d", Animation->GetTotalKeyframes());
+                                    
+                                    if (ImGui::TreeNode("Channel Details"))
+                                    {
+                                        for (const auto& Channel : Animation->Channels)
+                                        {
+                                            const char* pathName = "Unknown";
+                                            switch (Channel.TargetPath)
+                                            {
+                                                case FAnimationChannel::ETargetPath::Translation: pathName = "Translation"; break;
+                                                case FAnimationChannel::ETargetPath::Rotation: pathName = "Rotation"; break;
+                                                case FAnimationChannel::ETargetPath::Scale: pathName = "Scale"; break;
+                                                case FAnimationChannel::ETargetPath::Weights: pathName = "Weights"; break;
+                                            }
+                                            ImGui::BulletText("Bone %s - %s (%zu keys)", Channel.TargetBone.c_str(), pathName, Channel.Timestamps.size());
+                                        }
+                                        ImGui::TreePop();
+                                    }
+                                    ImGui::EndTooltip();
+                                }
+                                
+                                ImGui::PopID();
+                            }
+                        }
+                        
+                        ImGui::EndTable();
+                    }
+                    ImGui::PopStyleVar();
+                    
+                    ImGui::Spacing();
+                    if (ImGui::Button("Select All"))
+                    {
+                        for (auto& Anim : ImportedData->Animations)
+                        {
+                            //Anim->bShouldImport = true;
+                        }
+                    }
+                    ImGui::SameLine();
+                    if (ImGui::Button("Deselect All"))
+                    {
+                        for (auto& Anim : ImportedData->Animations)
+                        {
+                            //Anim->bShouldImport = false;
+                        }
+                    }
+                    
+                }
+                
+                ImGui::EndChild();
             }
         }
     
-        ImGui::Spacing();
         ImGui::Spacing();
         ImGui::Separator();
         ImGui::Spacing();
@@ -351,14 +556,13 @@ namespace Lumina
         return bShouldImport;
     }
     
-    void CStaticMeshFactory::TryImport(const FFixedString& RawPath, const FFixedString& DestinationPath, const eastl::any& ImportSettings)
+    void CMeshFactory::TryImport(const FFixedString& RawPath, const FFixedString& DestinationPath, const eastl::any& ImportSettings)
     {
         uint32 Counter = 0;
         
         using namespace Import::Mesh;
 
         TSharedPtr<FMeshImportData> ImportData = eastl::any_cast<TSharedPtr<FMeshImportData>>(ImportSettings);
-
         if (ImportData == nullptr)
         {
             return;
@@ -366,6 +570,9 @@ namespace Lumina
         
         for (TUniquePtr<FMeshResource>& MeshResource : ImportData->Resources)
         {
+            bool bIsRiggedMesh = false;
+            CSkeleton* NewSkeleton = nullptr; //@TODO Not thread-safe.
+            
             size_t LastSlashPos = DestinationPath.find_last_of('/');
             FFixedString QualifiedPath = DestinationPath.substr(0, LastSlashPos + 1).append_convert(MeshResource->Name.ToString());
             
@@ -374,11 +581,48 @@ namespace Lumina
                 QualifiedPath.append_convert(eastl::to_string(Counter));
             }
             
-            CStaticMesh* NewMesh = TryCreateNew<CStaticMesh>(QualifiedPath);
-            NewMesh->SetFlag(OF_NeedsPostLoad);
-
-            NewMesh->MeshResources = Move(MeshResource);
-
+            if (!ImportData->Skeletons.empty())
+            {
+                bIsRiggedMesh = true;
+                
+                uint32 WorkSize = (uint32)ImportData->Skeletons.size();
+                Task::ParallelFor(WorkSize, [&](uint32 Index)
+                {
+                    TUniquePtr<FSkeletonResource>& Skeleton = ImportData->Skeletons[Index];
+                    
+                    size_t Pos = DestinationPath.find_last_of('/');
+                    FFixedString SkeletonPath = DestinationPath.substr(0, Pos + 1).append_convert(Skeleton->Name.ToString());
+                
+                    NewSkeleton = CreateNewOf<CSkeleton>(SkeletonPath);
+                    NewSkeleton->SkeletonResource = Move(Skeleton);
+                    
+                    CPackage* NewPackage = NewSkeleton->GetPackage();
+                    CPackage::SavePackage(NewPackage, NewPackage->GetPackagePath());
+                    FAssetRegistry::Get().AssetCreated(NewSkeleton);
+                    NewSkeleton->ConditionalBeginDestroy();
+                });
+            }
+            
+            if (!ImportData->Animations.empty())
+            {
+                uint32 WorkSize = (uint32)ImportData->Animations.size();
+                Task::ParallelFor(WorkSize, [&](uint32 Index)
+                {
+                    TUniquePtr<FAnimationClip>& Clip = ImportData->Animations[Index];
+                    
+                    size_t Pos = DestinationPath.find_last_of('/');
+                    FFixedString AnimationPath = DestinationPath.substr(0, Pos + 1).append_convert(Clip->Name.ToString());
+                    
+                    CAnimation* NewAnimation = CreateNewOf<CAnimation>(AnimationPath);
+                    NewAnimation->AnimationClip = Move(Clip);
+                    
+                    CPackage* NewPackage = NewAnimation->GetPackage();
+                    CPackage::SavePackage(NewPackage, NewPackage->GetPackagePath());
+                    FAssetRegistry::Get().AssetCreated(NewAnimation);
+                    NewAnimation->ConditionalBeginDestroy();
+                });
+            }
+            
             if (!ImportData->Textures.empty())
             {
                 TVector<FMeshImportImage> Images(ImportData->Textures.begin(), ImportData->Textures.end());
@@ -406,18 +650,24 @@ namespace Lumina
                     }
                 });
             }
-
-            //if (!ImportedData.Materials.empty())
-            //{
-            //    for (SIZE_T i = 0; i < ImportedData.Materials[Counter].size(); ++i)
-            //    {
-            //        //const Import::Mesh::GLTF::FGLTFMaterial& Material = ImportedData.Materials[Counter][i];
-            //        //FName MaterialName = (i == 0) ? FString(FileName + "_Material").c_str() : FString(FileName + "_Material" + eastl::to_string(i)).c_str();
-            //        ////CMaterial* NewMaterial = NewObject<CMaterial>(NewPackage, MaterialName.c_str());
-            //        //NewMesh->Materials.push_back(nullptr);
-            //    }
-            //}
-
+            
+            
+            CMesh* NewMesh = nullptr;
+            
+            if (!bIsRiggedMesh)
+            {
+                NewMesh = CreateNewOf<CStaticMesh>(QualifiedPath);
+            }
+            else
+            {
+                CSkeletalMesh* NewSkeletalMesh = CreateNewOf<CSkeletalMesh>(QualifiedPath);
+                NewSkeletalMesh->Skeleton = NewSkeleton;
+                NewMesh = NewSkeletalMesh;
+            }
+            
+            NewMesh->SetFlag(OF_NeedsPostLoad);
+            NewMesh->MeshResources = Move(MeshResource);
+            
             CPackage* NewPackage = NewMesh->GetPackage();
             CPackage::SavePackage(NewPackage, NewPackage->GetPackagePath());
             FAssetRegistry::Get().AssetCreated(NewMesh);

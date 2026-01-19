@@ -14,7 +14,9 @@
 
 namespace Lumina
 {
+    struct FAnimationClip;
     struct FMeshResource;
+    struct FSkeletonResource;
     class IRenderContext;
     struct FVertex;
 }
@@ -97,6 +99,8 @@ namespace Lumina::Import
             FMeshStatistics                             MeshStatistics;
             FMeshImportTextureMap                       Textures;
             TVector<TUniquePtr<FMeshResource>>          Resources;
+            TVector<TUniquePtr<FAnimationClip>>         Animations;
+            TVector<TUniquePtr<FSkeletonResource>>      Skeletons;
         };
         
         void OptimizeNewlyImportedMesh(FMeshResource& MeshResource);
@@ -106,7 +110,7 @@ namespace Lumina::Import
 
         namespace OBJ
         {
-            NODISCARD LUMINA_API TExpected<FMeshImportData, FString> ImportOBJ( const FMeshImportOptions& ImportOptions, FStringView FilePath);
+            NODISCARD LUMINA_API TExpected<FMeshImportData, FString> ImportOBJ(const FMeshImportOptions& ImportOptions, FStringView FilePath);
         }
 
         

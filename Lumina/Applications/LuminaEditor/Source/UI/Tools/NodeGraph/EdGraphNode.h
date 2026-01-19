@@ -77,13 +77,13 @@ namespace Lumina
 
         CEdNodeGraphPin* CreatePin(CClass* InClass, const FString& Name, ENodePinDirection Direction, EMaterialInputType Type);
 
-        PROPERTY()
+        PROPERTY(DuplicateTransient)
         float GridX;
 
-        PROPERTY()
+        PROPERTY(DuplicateTransient)
         float GridY;
 
-        PROPERTY()
+        PROPERTY(DuplicateTransient)
         uint64 NodeID = 0;
         
         

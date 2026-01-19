@@ -8,7 +8,7 @@ namespace Lumina
 	struct TCanBulkSerialize : eastl::false_type { };
 	
 	template<typename T>
-	requires(eastl::is_trivially_copyable_v<T>)
+	requires(eastl::is_trivial_v<T>)
 	struct TCanBulkSerialize<T> : eastl::true_type { };
 	
 }

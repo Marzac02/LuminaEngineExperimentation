@@ -23,7 +23,7 @@ namespace Lumina
     {
         {
             TUniquePtr<FMeshResource> Resource = MakeUniquePtr<FMeshResource>();
-            PrimitiveMeshes::GenerateCube(Resource->Vertices, Resource->Indices);
+            PrimitiveMeshes::GenerateCube(Resource->Vertices.emplace<TVector<FVertex>>(), Resource->Indices);
             
             FGeometrySurface Surface;
             Surface.ID = "CubeMesh";
@@ -39,7 +39,7 @@ namespace Lumina
 
         {
             TUniquePtr<FMeshResource> Resource = MakeUniquePtr<FMeshResource>();
-            PrimitiveMeshes::GenerateSphere(Resource->Vertices, Resource->Indices);
+            PrimitiveMeshes::GenerateSphere(Resource->Vertices.emplace<TVector<FVertex>>(), Resource->Indices);
             
             FGeometrySurface Surface;
             Surface.ID = "SphereMesh";
@@ -55,7 +55,7 @@ namespace Lumina
 
         {
             TUniquePtr<FMeshResource> Resource = MakeUniquePtr<FMeshResource>();
-            PrimitiveMeshes::GeneratePlane(Resource->Vertices, Resource->Indices);
+            PrimitiveMeshes::GeneratePlane(Resource->Vertices.emplace<TVector<FVertex>>(), Resource->Indices);
             
             FGeometrySurface Surface;
             Surface.ID = "PlaneMesh";

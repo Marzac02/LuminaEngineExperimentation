@@ -1,0 +1,249 @@
+﻿#include "SkeletonEditorTool.h"
+#include "ImGuiDrawUtils.h"
+#include "assets/assettypes/mesh/skeleton/skeleton.h"
+#include "glm/gtx/string_cast.hpp"
+#include "Tools/UI/ImGui/ImGuiFonts.h"
+#include "Tools/UI/ImGui/ImGuiX.h"
+#include "world/entity/components/environmentcomponent.h"
+#include "World/Entity/Components/LightComponent.h"
+#include "world/entity/components/skeletalmeshcomponent.h"
+#include "World/Entity/Components/StaticMeshComponent.h"
+#include "world/entity/components/velocitycomponent.h"
+
+
+namespace Lumina
+{
+    static const char* SkeletonPropertiesName       = "Skeleton Properties";
+    static const char* BoneHierarchyName            = "Bone Hierarchy";
+
+    FSkeletonEditorTool::FSkeletonEditorTool(IEditorToolContext* Context, CObject* InAsset)
+        : FAssetEditorTool(Context, InAsset->GetName().c_str(), InAsset, NewObject<CWorld>())
+    {
+    }
+
+    void FSkeletonEditorTool::OnInitialize()
+    {
+        CreateToolWindow(SkeletonPropertiesName, [&](bool bFocused)
+        {
+            ImGuiX::Font::PushFont(ImGuiX::Font::EFont::Large);
+            ImGui::SeparatorText("Asset Details");
+            ImGuiX::Font::PopFont();
+            
+            ImGui::Spacing();
+            PropertyTable.DrawTree();
+        });
+        
+        CreateToolWindow(BoneHierarchyName, [&](bool bFocused)
+        {
+            ImGuiX::Font::PushFont(ImGuiX::Font::EFont::Large);
+            ImGui::SeparatorText("Bone Hierarchy");
+            ImGuiX::Font::PopFont();
+            ImGui::Spacing();
+            
+            BoneListView.Draw(BoneListContext);
+        });
+        
+        
+                
+        BoneListContext.ItemContextMenuFunction = [this](FTreeListView& Tree, entt::entity Item)
+        {
+            
+        };
+
+        BoneListContext.DragDropFunction = [this](FTreeListView& Tree, entt::entity Item)
+        {
+           
+        };
+        
+        BoneListContext.RebuildTreeFunction = [this](FTreeListView& Tree)
+        {
+            CSkeleton* Skeleton = GetAsset<CSkeleton>();
+            TFunction<void(entt::entity, const FSkeletonResource::FBoneInfo&)> AddChildrenRecursive;
+            
+            AddChildrenRecursive = [&](entt::entity ParentItem, const FSkeletonResource::FBoneInfo& Bone)
+            {
+                int32 Index = Skeleton->GetSkeletonResource()->FindBoneIndex(Bone.Name);
+                
+                for (int32 Child : Skeleton->GetSkeletonResource()->GetChildBones(Index))
+                {
+                    const FSkeletonResource::FBoneInfo& ChildBone = Skeleton->GetSkeletonResource()->GetBone(Child);
+
+                    entt::entity NewNode = Tree.CreateNode(ParentItem, ChildBone.Name.c_str());
+                    Tree.Get<FTreeNodeState>(NewNode).bExpanded = true;
+                    AddChildrenRecursive(NewNode, ChildBone);
+                }
+            };
+            
+            for (int32 BoneIndex : Skeleton->GetSkeletonResource()->GetRootBones())
+            {
+                const FSkeletonResource::FBoneInfo& Bone = Skeleton->GetSkeletonResource()->GetBone(BoneIndex);
+                entt::entity RootItem = Tree.CreateNode(entt::null, Bone.Name.c_str());
+                Tree.Get<FTreeNodeState>(RootItem).bExpanded = true;
+
+                AddChildrenRecursive(RootItem, Bone);
+            }
+        };
+
+        BoneListContext.ItemSelectedFunction = [this] (FTreeListView& Tree, entt::entity Item)
+        {
+            if (Item == entt::null)
+            {
+                SelectedBone = NAME_None;
+            }
+            else
+            {
+                SelectedBone = Tree.Get<FTreeNodeDisplay>(Item).DisplayName;
+            }
+        };
+
+        BoneListContext.KeyPressedFunction = [this] (FTreeListView& Tree, entt::entity Item, ImGuiKey Key) -> bool
+        {
+            return false;
+        };
+        
+        BoneListView.MarkTreeDirty();
+    }
+
+    void FSkeletonEditorTool::SetupWorldForTool()
+    {
+        FEditorTool::SetupWorldForTool();
+        
+        DirectionalLightEntity = World->ConstructEntity("Directional Light");
+        World->GetEntityRegistry().emplace<SDirectionalLightComponent>(DirectionalLightEntity);
+        World->GetEntityRegistry().emplace<SEnvironmentComponent>(DirectionalLightEntity);
+        
+        CSkeleton* Skeleton = GetAsset<CSkeleton>();
+        
+        World->GetEntityRegistry().get<SVelocityComponent>(EditorEntity).Speed = 5.0f;
+
+        if (!Skeleton->PreviewMesh.IsValid())
+        {
+            return;
+        }
+
+        MeshEntity = World->ConstructEntity("MeshEntity");
+        SSkeletalMeshComponent& MeshComponent = World->GetEntityRegistry().emplace<SSkeletalMeshComponent>(MeshEntity);
+        MeshComponent.SkeletalMesh = Skeleton->PreviewMesh;
+        Skeleton->ComputeBindPoseSkinningMatrices(MeshComponent.BoneTransforms);
+        
+        STransformComponent& MeshTransform = World->GetEntityRegistry().get<STransformComponent>(MeshEntity);
+        MeshTransform.SetLocation(glm::vec3(0.0f, 0.0f, 2.5));
+
+        STransformComponent& EditorTransform = World->GetEntityRegistry().get<STransformComponent>(EditorEntity);
+
+        glm::quat Rotation = Math::FindLookAtRotation(MeshTransform.GetLocation(), EditorTransform.GetLocation());
+        EditorTransform.SetRotation(Rotation);
+        
+        World->MarkTransformDirty(EditorEntity);
+    }
+
+    void FSkeletonEditorTool::Update(const FUpdateContext& UpdateContext)
+    {
+        FAssetEditorTool::Update(UpdateContext);
+        
+        if (!World.IsValid())
+        {
+            return;
+        }
+        
+        if (SelectedBone != NAME_None)
+        {
+            CSkeleton* Skeleton = GetAsset<CSkeleton>();
+            int32 BoneIndex = Skeleton->GetSkeletonResource()->FindBoneIndex(SelectedBone);
+            if (BoneIndex == INDEX_NONE)
+            {
+                return;
+            }
+    
+            FTransform Transform = World->GetEntityRegistry().get<STransformComponent>(MeshEntity).GetTransform();
+            FSkeletonResource* SkeletonResource = Skeleton->GetSkeletonResource();
+            TVector<glm::mat4> WorldTransforms;
+            WorldTransforms.resize(SkeletonResource->GetNumBones());
+            glm::mat4 EntityMatrix = Transform.GetMatrix();
+
+            for (int i = 0; i < SkeletonResource->GetNumBones(); ++i)
+            {
+                const FSkeletonResource::FBoneInfo& Bone = SkeletonResource->GetBone(i);
+                if (Bone.ParentIndex == INDEX_NONE)
+                {
+                    WorldTransforms[i] = EntityMatrix * Bone.LocalTransform;
+                }
+                else
+                {
+                    WorldTransforms[i] = WorldTransforms[Bone.ParentIndex] * Bone.LocalTransform;
+                }
+            }
+    
+            DrawBoneHierarchy(World, SkeletonResource, WorldTransforms, BoneIndex);
+        }
+    }
+
+    void FSkeletonEditorTool::OnDeinitialize(const FUpdateContext& UpdateContext)
+    {
+    }
+
+    void FSkeletonEditorTool::OnAssetLoadFinished()
+    {
+    }
+
+    void FSkeletonEditorTool::DrawToolMenu(const FUpdateContext& UpdateContext)
+    {
+        FAssetEditorTool::DrawToolMenu(UpdateContext);
+        
+        // Gizmo Control Dropdown
+        if (ImGui::BeginMenu(LE_ICON_MOVE_RESIZE " Gizmo Control"))
+        {
+            const char* operations[] = { "Translate", "Rotate", "Scale" };
+            static int currentOp = 0;
+
+            if (ImGui::Combo("##", &currentOp, operations, IM_ARRAYSIZE(operations)))
+            {
+                switch (currentOp)
+                {
+                case 0: GuizmoOp = ImGuizmo::TRANSLATE; break;
+                case 1: GuizmoOp = ImGuizmo::ROTATE;    break;
+                case 2: GuizmoOp = ImGuizmo::SCALE;     break;
+                }
+            }
+
+            ImGui::EndMenu();
+        }
+    }
+
+    void FSkeletonEditorTool::InitializeDockingLayout(ImGuiID DockspaceID, const ImVec2& DockspaceSize) const
+    {
+        ImGuiID leftID, centerID, rightID;
+        
+        ImGui::DockBuilderSplitNode(DockspaceID, ImGuiDir_Right, 0.25f, &rightID, &centerID);
+        ImGui::DockBuilderSplitNode(centerID, ImGuiDir_Left, 0.25f, &leftID, &centerID);
+        
+        ImGui::DockBuilderDockWindow(GetToolWindowName(ViewportWindowName).c_str(), centerID);
+        ImGui::DockBuilderDockWindow(GetToolWindowName(SkeletonPropertiesName).c_str(), rightID);
+        ImGui::DockBuilderDockWindow(GetToolWindowName(BoneHierarchyName).c_str(), leftID);
+    }
+
+    void FSkeletonEditorTool::DrawBoneHierarchy(CWorld* DrawWorld, FSkeletonResource* SkeletonResource, const TVector<glm::mat4>& WorldTransforms, int32 BoneIndex)
+    {
+        if (BoneIndex < 0 || BoneIndex >= SkeletonResource->GetNumBones())
+        {
+            return;
+        }
+    
+        const FSkeletonResource::FBoneInfo& Bone = SkeletonResource->GetBone(BoneIndex);
+        glm::vec3 BonePosition = glm::vec3(WorldTransforms[BoneIndex][3]);
+    
+        DrawWorld->DrawSphere(BonePosition, 0.05f, FColor::Red, 8);
+    
+        if (Bone.ParentIndex != INDEX_NONE)
+        {
+            glm::vec3 ParentPosition = glm::vec3(WorldTransforms[Bone.ParentIndex][3]);
+            DrawWorld->DrawLine(ParentPosition, BonePosition, FColor::Green);
+        }
+    
+        TVector<int32> Children = SkeletonResource->GetChildBones(BoneIndex);
+        for (int32 ChildIndex : Children)
+        {
+            DrawBoneHierarchy(DrawWorld, SkeletonResource, WorldTransforms, ChildIndex);
+        }
+    }
+}

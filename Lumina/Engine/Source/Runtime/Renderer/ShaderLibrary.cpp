@@ -3,10 +3,12 @@
 #include "RenderResource.h"
 #include "RHIGlobals.h"
 #include "Shader.h"
+#include "ShaderCompiler.h"
+#include "Paths/Paths.h"
 
 namespace Lumina
 {
-    void FShaderLibrary::CreateAndAddShader(FName Key, const FShaderHeader& Header, bool bReloadPipelines)
+    void FShaderLibrary::CreateAndAddShader(const FName& Path, const FShaderHeader& Header, bool bReloadPipelines)
     {
         FRHIShaderRef Shader;
         
@@ -35,44 +37,67 @@ namespace Lumina
             break;
         }
 
-        AddShader(Key, Shader);
+        AddShader(Path, Shader);
         GRenderContext->OnShaderCompiled(Shader, false, bReloadPipelines);
     }
 
-    void FShaderLibrary::AddShader(FName Key, FRHIShader* Shader)
-    {
-        FScopeLock Lock(Mutex);   
-        Shaders.insert_or_assign(Key, Shader);
-    }
-
-    void FShaderLibrary::RemoveShader(FName Key)
+    void FShaderLibrary::AddShader(const FName& Path, FRHIShader* Shader)
     {
         FScopeLock Lock(Mutex);
-        Shaders.erase(Key);
+        
+        uint64 Hash = Path.GetID();
+        for (const FString& Define : Shader->GetShaderHeader().Defines)
+        {
+            Hash::HashCombine(Hash, Define);
+        }
+        
+        Shaders.insert_or_assign(Hash, Shader);
+    }
+    
+    FRHIVertexShaderRef FShaderLibrary::GetVertexShader(const FName& Path, TSpan<FString> Macros)
+    {
+        return GRenderContext->GetShaderLibrary()->GetShader<FRHIVertexShader>(Path, Macros);
     }
 
-    FRHIVertexShaderRef FShaderLibrary::GetVertexShader(FName Key)
+    FRHIPixelShaderRef FShaderLibrary::GetPixelShader(const FName& Path, TSpan<FString> Macros)
     {
-        return GRenderContext->GetShaderLibrary()->GetShader<FRHIVertexShader>(Key);
+        return GRenderContext->GetShaderLibrary()->GetShader<FRHIPixelShader>(Path, Macros);
     }
 
-    FRHIPixelShaderRef FShaderLibrary::GetPixelShader(FName Key)
+    FRHIComputeShaderRef FShaderLibrary::GetComputeShader(const FName& Path, TSpan<FString> Macros)
     {
-        return GRenderContext->GetShaderLibrary()->GetShader<FRHIPixelShader>(Key);
+        return GRenderContext->GetShaderLibrary()->GetShader<FRHIComputeShader>(Path, Macros);
     }
 
-    FRHIComputeShaderRef FShaderLibrary::GetComputeShader(FName Key)
+    FRHIGeometryShaderRef FShaderLibrary::GetGeometryShader(const FName& Path, TSpan<FString> Macros)
     {
-        return GRenderContext->GetShaderLibrary()->GetShader<FRHIComputeShader>(Key);
+        return GRenderContext->GetShaderLibrary()->GetShader<FRHIGeometryShader>(Path, Macros);
     }
 
-    FRHIGeometryShaderRef FShaderLibrary::GetGeometryShader(FName Key)
+    FRHIShaderRef FShaderLibrary::GetShader(const FName& Path, TSpan<FString> Macros)
     {
-        return GRenderContext->GetShaderLibrary()->GetShader<FRHIGeometryShader>(Key);
-    }
-
-    FRHIShaderRef FShaderLibrary::GetShader(FName Key)
-    {
-        return Shaders.at(Key);
+        uint64 Hash = Path.GetID();
+        for (const FString& Define : Macros)
+        {
+            Hash::HashCombine(Hash, Define);
+        }
+        
+        auto It = Shaders.find(Hash);
+        if (It == Shaders.end())
+        {
+            FString ShaderPath = Paths::GetEngineShadersDirectory() + "/" + Path.c_str();
+            FShaderCompileOptions Options;
+            Options.bGenerateReflectionData = true;
+            Options.MacroDefinitions.assign(Macros.begin(), Macros.end());
+            GRenderContext->GetShaderCompiler()->CompileShaderPath(ShaderPath, Options, [&](const FShaderHeader& Header)
+            {
+                CreateAndAddShader(Path, Header, true);
+            });
+            
+            GRenderContext->GetShaderCompiler()->Flush();
+            It = Shaders.find(Hash);
+        }
+        
+        return It->second;
     }
 }

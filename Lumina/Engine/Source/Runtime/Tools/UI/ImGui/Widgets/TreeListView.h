@@ -3,8 +3,7 @@
 #include "Containers/Array.h"
 #include "Containers/Name.h"
 #include "Containers/Function.h"
-#include "Memory/Memory.h"
-#include "Memory/Allocators/Allocator.h"
+#include "entt/entt.hpp"
 
 namespace Lumina
 {

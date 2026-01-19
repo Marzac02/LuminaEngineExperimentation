@@ -503,7 +503,7 @@ namespace Lumina
         }
     };
 
-    class FVulkanInputLayout : public IRHIInputLayout
+    class FVulkanInputLayout : public FRHIInputLayout
     {
     public:
     

@@ -101,9 +101,9 @@ namespace Lumina
         return Material->GetBindingLayout();
     }
 
-    FRHIVertexShader* CMaterialInstance::GetVertexShader() const
+    FRHIVertexShader* CMaterialInstance::GetVertexShader(EVertexFormat Format) const
     {
-        return Material->GetVertexShader();
+        return Material->GetVertexShader(Format);
     }
 
     FRHIPixelShader* CMaterialInstance::GetPixelShader() const

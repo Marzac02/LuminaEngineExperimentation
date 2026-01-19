@@ -7,13 +7,13 @@
 
 namespace Lumina
 {
-    class FMeshEditorTool : public FAssetEditorTool
+    class FStaticMeshEditorTool : public FAssetEditorTool
     {
     public:
         
-        LUMINA_EDITOR_TOOL(FMeshEditorTool)
+        LUMINA_EDITOR_TOOL(FStaticMeshEditorTool)
         
-        FMeshEditorTool(IEditorToolContext* Context, CObject* InAsset);
+        FStaticMeshEditorTool(IEditorToolContext* Context, CObject* InAsset);
 
 
         bool IsSingleWindowTool() const override { return false; }

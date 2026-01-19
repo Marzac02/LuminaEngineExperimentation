@@ -33,7 +33,7 @@ namespace Lumina
         if (bAlreadyInQueue)
         {
             FlushAsyncLoading();
-            return ActiveRequest->GetPendingObject();
+            return FindObject<CObject>(ActiveRequest->RequestedGUID);
         }
         
         ActiveRequest->Process();

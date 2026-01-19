@@ -1,12 +1,11 @@
 ﻿#include "PCH.h"
-#include "ImportHelpers.h"
-#include <meshoptimizer.h>
 #include <glm/glm.hpp>
-#include "Renderer/MeshData.h"
 #include <tinyobjloader/tiny_obj_loader.h>
-
+#include "ImportHelpers.h"
+#include "Assets/AssetTypes/Mesh/Animation/Animation.h"
 #include "FileSystem/FileSystem.h"
 #include "Paths/Paths.h"
+#include "Renderer/MeshData.h"
 
 
 namespace Lumina::Import::Mesh::OBJ
@@ -112,6 +111,17 @@ namespace Lumina::Import::Mesh::OBJ
             }
         }
         
+        bool bIsSkinned = !Attribute.skin_weights.empty();
+        if (bIsSkinned)
+        {
+            MeshResource->Vertices = TVector<FSkinnedVertex>();
+            MeshResource->bSkinnedMesh = true;
+        }
+        else
+        {
+            MeshResource->Vertices = TVector<FVertex>();
+        }
+        
         for (const tinyobj::shape_t& Shape : Shapes)
         {
             size_t IndexOffset = 0;
@@ -132,10 +142,10 @@ namespace Lumina::Import::Mesh::OBJ
                 {
                     tinyobj::index_t Index = Shape.mesh.indices[IndexOffset + V];
     
-                    MeshResource->Indices.push_back(static_cast<uint32>(MeshResource->Vertices.size()));
+                    MeshResource->Indices.push_back(static_cast<uint32>(MeshResource->GetNumVertices()));
                     Surface.IndexCount++;
     
-                    FVertex Vertex;
+                    FSkinnedVertex Vertex;
                     Vertex.Position.x = Attribute.vertices[3 * Index.vertex_index + 0];
                     Vertex.Position.y = Attribute.vertices[3 * Index.vertex_index + 1];
                     Vertex.Position.z = Attribute.vertices[3 * Index.vertex_index + 2];
@@ -155,7 +165,19 @@ namespace Lumina::Import::Mesh::OBJ
                         Vertex.UV.y = (uint16)Attribute.texcoords[2 * Index.texcoord_index + 1];
                     }
     
-                    MeshResource->Vertices.push_back(Vertex);
+                    if (bIsSkinned)
+                    {
+                        eastl::get<TVector<FSkinnedVertex>>(MeshResource->Vertices).push_back(Vertex);
+                    }
+                    else
+                    {
+                        FVertex StaticVertex;
+                        StaticVertex.Position   = Vertex.Position;
+                        StaticVertex.Normal     = Vertex.Normal;
+                        StaticVertex.UV         = Vertex.UV;
+                        StaticVertex.Color      = Vertex.Color;
+                        eastl::get<TVector<FVertex>>(MeshResource->Vertices).push_back(StaticVertex);
+                    }
                 }
 
                 IndexOffset += NumFaceVerts;

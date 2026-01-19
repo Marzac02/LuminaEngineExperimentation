@@ -100,7 +100,7 @@ namespace Lumina
     {
         DEBUG_ASSERT(!bInitialized && "Object pool already allocated!");
 
-        const int32 MaxObjects = Math::Min(1000, InMaxCObjects);
+        const int32 MaxObjects = Math::Max(1000, InMaxCObjects);
         
         ChunkedArray.Initialize(MaxObjects);
             

@@ -16,6 +16,8 @@
 
 namespace Lumina
 {
+	struct FShaderCompileOptions;
+	class FRHIInputLayout;
 	struct FShaderHeader;
 	enum class EBufferUsageFlags : uint32;
     class IRenderContext;
@@ -371,7 +373,7 @@ namespace Lumina
 	using FRHIComputePipelineRef    = TRefCountPtr<FRHIComputePipeline>;
 	using FRHIBindingLayoutRef      = TRefCountPtr<FRHIBindingLayout>;
 	using FRHIBindingSetRef         = TRefCountPtr<FRHIBindingSet>;
-	using FRHIInputLayoutRef        = TRefCountPtr<IRHIInputLayout>;
+	using FRHIInputLayoutRef        = TRefCountPtr<FRHIInputLayout>;
 	using FRHIShaderLibraryRef      = TRefCountPtr<FShaderLibrary>;
 	using FRHIDescriptorTableRef    = TRefCountPtr<FRHIDescriptorTable>;
 	
@@ -890,29 +892,29 @@ namespace Lumina
 	public:
 
 		RENDER_RESOURCE(RRT_ShaderLibrary)
-
-		void CreateAndAddShader(FName Key, const FShaderHeader& Header, bool bReloadPipelines);
-		void AddShader(FName Key, FRHIShader* Shader);
-		void RemoveShader(FName Key);
-
 		
-		static FRHIVertexShaderRef GetVertexShader(FName Key);
-		static FRHIPixelShaderRef GetPixelShader(FName Key);
-		static FRHIComputeShaderRef GetComputeShader(FName Key);
-		static FRHIGeometryShaderRef GetGeometryShader(FName Key);
+		using ShaderKey = uint64;
+
+		void CreateAndAddShader(const FName& Path, const FShaderHeader& Header, bool bReloadPipelines);
+		void AddShader(const FName& Path, FRHIShader* Shader);
+		
+		static FRHIVertexShaderRef GetVertexShader(const FName& Path, TSpan<FString> Macros = {});
+		static FRHIPixelShaderRef GetPixelShader(const FName& Path, TSpan<FString> Macros = {});
+		static FRHIComputeShaderRef GetComputeShader(const FName& Path, TSpan<FString> Macros = {});
+		static FRHIGeometryShaderRef GetGeometryShader(const FName& Path, TSpan<FString> Macros = {});
 
 		template<typename T>
-		TRefCountPtr<T> GetShader(FName Key)
+		TRefCountPtr<T> GetShader(FName Key, TSpan<FString> Macros = {})
 		{
-			return GetShader(Key).As<T>();
+			return GetShader(Key, Macros).As<T>();
 		}
 
-		FRHIShaderRef GetShader(FName Key);
+		FRHIShaderRef GetShader(const FName& Path, TSpan<FString> Macros = {});
 
 	private:
 
 		FMutex Mutex;
-		THashMap<FName, FRHIShaderRef> Shaders;
+		THashMap<ShaderKey, FRHIShaderRef> Shaders;
     
 	};
 	
@@ -1002,7 +1004,7 @@ namespace Lumina
 		constexpr FVertexAttributeDesc& SetIsInstanced(bool value) { bInstanced = value; return *this; }
 	};
 	
-	class LUMINA_API IRHIInputLayout : public IRHIResource
+	class LUMINA_API FRHIInputLayout : public IRHIResource
 	{
 	public:
 		
@@ -1667,7 +1669,7 @@ namespace Lumina
     	
 		FORCEINLINE FGraphicsPipelineDesc& SetDebugName(const FString& InDebugName) { DebugName = Move(InDebugName); return *this; }
         FORCEINLINE FGraphicsPipelineDesc& SetPrimType(EPrimitiveType value) { PrimType = value; return *this; }
-        FORCEINLINE FGraphicsPipelineDesc& SetInputLayout(IRHIInputLayout* value) { InputLayout = value; return *this; }
+        FORCEINLINE FGraphicsPipelineDesc& SetInputLayout(FRHIInputLayout* value) { InputLayout = value; return *this; }
     	FORCEINLINE FGraphicsPipelineDesc& SetVertexShader(FRHIVertexShader* value) { VS = value; return *this; }
         FORCEINLINE FGraphicsPipelineDesc& SetPixelShader(FRHIPixelShader* value) { PS = value; return *this; }
     	FORCEINLINE FGraphicsPipelineDesc& SetGeometryShader(FRHIGeometryShader* value) { GS = value; return *this; }

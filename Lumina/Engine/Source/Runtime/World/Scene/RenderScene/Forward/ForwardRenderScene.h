@@ -75,8 +75,6 @@ namespace Lumina
 
         FRHIViewportRef                     SceneViewport;
         
-        FRHIInputLayoutRef                  VertexLayoutInput;
-        FRHIInputLayoutRef                  PositionOnlyLayoutInput;
         FRHIInputLayoutRef                  SimpleVertexLayoutInput;
 
         FSceneGlobalData                    SceneGlobalData;
@@ -116,6 +114,7 @@ namespace Lumina
         FRHIBufferRef                               ClusterBuffer;
         FRHIBufferRef                               SceneDataBuffer;
         FRHIBufferRef                               InstanceDataBuffer;
+        FRHIBufferRef                               BoneDataBuffer;
         FRHIBufferRef                               InstanceMappingBuffer;
         FRHIBufferRef                               LightDataBuffer;
         FRHIBufferRef                               IndirectDrawBuffer;
@@ -130,7 +129,8 @@ namespace Lumina
         
         /** Packed array of per-instance data */
         TVector<FInstanceData>                  InstanceData;
-
+        TVector<glm::mat4>                      BonesData;
+        
         
         FMeshPass DepthMeshPass;
         FMeshPass OpaqueMeshPass;

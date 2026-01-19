@@ -3,6 +3,7 @@
 #include "Core/Object/Object.h"
 #include "Renderer/RHIFwd.h"
 #include "MaterialInterface.generated.h"
+#include "Renderer/Vertex.h"
 
 namespace Lumina
 {
@@ -36,14 +37,14 @@ namespace Lumina
         
         virtual FRHIBindingSet* GetBindingSet() const { return nullptr; }
         virtual FRHIBindingLayout* GetBindingLayout() const { return nullptr; }
-        virtual FRHIVertexShader* GetVertexShader() const { return nullptr; }
+        virtual FRHIVertexShader* GetVertexShader(EVertexFormat Format) const { return nullptr; }
         virtual FRHIPixelShader* GetPixelShader() const { return nullptr; }
 
         virtual EMaterialType GetMaterialType() const { return EMaterialType::None; };
 
-        virtual bool DoesCastShadows() const { return false; };
-        virtual bool IsTwoSided() const { return false; };
-        virtual bool IsTranslucent() { return false; };
+        virtual bool DoesCastShadows() const { return false; }
+        virtual bool IsTwoSided() const { return false; }
+        virtual bool IsTranslucent() { return false; }
         
 
         void SetReadyForRender(bool bReady) { bReadyForRender.store(bReady, std::memory_order_release); }

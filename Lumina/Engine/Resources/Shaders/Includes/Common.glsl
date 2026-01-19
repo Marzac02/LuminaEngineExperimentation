@@ -59,6 +59,22 @@ const uint LIGHT_FLAG_CASTSHADOW       = 1 << 3;
 
 //////////////////////////////////////////////////////////
 
+// Unpack 10:10:10:2 normal
+vec3 UnpackNormal(uint packed)
+{
+    vec3 normal;
+    normal.x = float(int(packed << 22) >> 22) / 511.0;
+    normal.y = float(int(packed << 12) >> 22) / 511.0;
+    normal.z = float(int(packed << 2) >> 22) / 511.0;
+    return normalize(normal);
+}
+
+// Unpack uint16 UV to float
+vec2 UnpackUV(uvec2 packed)
+{
+    return vec2(packed) / 65535.0;
+}
+
 vec2 VogelDiskSample(int SampleIndex, int SamplesCount, float Angle)
 {
     float GoldenAngle   = 2.0 * PI * (1.0 - 1.0 / PHI);
@@ -93,7 +109,7 @@ struct FInstanceData
     uint    EntityID;
     uint    BatchedDrawID;
     uint    Selected;
-    uint    Reserved;
+    uint    BoneOffset;
 };
 
 struct FLightShadow

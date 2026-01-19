@@ -166,7 +166,7 @@ namespace Lumina
 
         virtual void SerializeBool(bool& D);
         
-        virtual FArchive& operator<<(FString& str)
+        virtual FArchive& operator<<(FString& Str)
         {
             if (IsReading())
             {
@@ -182,23 +182,24 @@ namespace Lumina
             
                 if (SaveNum)
                 {
-                    str.clear();
-                    str.resize(SaveNum);
-                    Serialize(str.data(), (int64)SaveNum);
+                    Str.clear();
+                    Str.shrink_to_fit();
+                    Str.resize(SaveNum);
+                    Serialize(Str.data(), SaveNum);
                 }
                 else
                 {
-                    str.clear();
+                    Str.clear();
                 }
             }
             else
             {
-                SIZE_T SaveNum = str.size();
+                SIZE_T SaveNum = Str.size();
                 *this << SaveNum;
 
                 if (SaveNum)
                 {
-                    Serialize(str.data(), static_cast<int64>(SaveNum));
+                    Serialize(Str.data(), SaveNum);
                 }
             }
         
@@ -215,7 +216,7 @@ namespace Lumina
             }
             else
             {
-                FString SavedString(Name.ToString());
+                FString SavedString(Name.c_str());
                 *this << SavedString;
             }
 
@@ -238,6 +239,7 @@ namespace Lumina
                 if (IsReading())
                 {
                     Array.clear();
+                    Array.shrink_to_fit();
                 }
             
                 return *this;
@@ -255,6 +257,8 @@ namespace Lumina
             {
                 if (IsReading())
                 {
+                    Array.clear();
+                    Array.shrink_to_fit();
                     Array.resize(SerializeNum);
                 }
             
@@ -265,19 +269,54 @@ namespace Lumina
                 if (IsReading())
                 {
                     Array.clear();
+                    Array.shrink_to_fit();
                     Array.resize(SerializeNum);
-
-                    for (SIZE_T i = 0; i < SerializeNum; i++)
-                    {
-                        *this << Array[i];
-                    }
                 }
-                else
+
+                for (SIZE_T i = 0; i < SerializeNum; i++)
                 {
-                    for (SIZE_T i = 0; i < SerializeNum; i++)
-                    {
-                        *this << Array[i];
-                    }
+                    *this << Array[i];
+                }
+            }
+
+            return *this;
+        }
+        
+        template<typename K, typename V>
+        FArchive& operator << (TPair<K, V>& Pair)
+        {
+            *this << Pair.first;
+            *this << Pair.second;
+            
+            return *this;
+        }
+        
+        template<typename K, typename V>
+        FArchive& operator<<(THashMap<K, V>& Map)
+        {
+            uint32 Count;
+
+            if (IsWriting())
+            {
+                Count = static_cast<uint32>(Map.size());
+                *this << Count;
+
+                for (TPair<K, V> Pair : Map)
+                {
+                    *this << Pair;
+                }
+            }
+            else
+            {
+                *this << Count;
+                Map.clear();
+                Map.reserve(Count);
+
+                for (uint32 i = 0; i < Count; ++i)
+                {
+                    TPair<K, V> Pair;
+                    *this << Pair;
+                    Map.emplace(Pair.first, std::move(Pair.second));
                 }
             }
 
@@ -315,18 +354,18 @@ namespace Lumina
 
     inline void FArchive::SerializeBool(bool& D)
     {
-        uint32 OldUBoolValue;
+        uint32 OldBoolValue;
 
-        OldUBoolValue = D ? 1 : 0;
-        Serialize(&OldUBoolValue, sizeof(OldUBoolValue));
+        OldBoolValue = D ? 1 : 0;
+        Serialize(&OldBoolValue, sizeof(OldBoolValue));
 
-        if (OldUBoolValue > 1)
+        if (OldBoolValue > 1)
         {
             LOG_ERROR("Invalid boolean encountered while reading archive - stream is most likely corrupted.");
 
             SetHasError(true);
         }
-        D = !!OldUBoolValue;
+        D = !!OldBoolValue;
     }
 
     // GLM Vector Types
@@ -385,7 +424,26 @@ namespace Lumina
         Ar << v.x << v.y << v.z << v.w;
         return Ar;
     }
+    
+    // GLM 8-bit Unsigned Integer Vector Types
+    inline FArchive& operator<<(FArchive& Ar, glm::u8vec2& v)
+    {
+        Ar << v.x << v.y;
+        return Ar;
+    }
 
+    inline FArchive& operator<<(FArchive& Ar, glm::u8vec3& v)
+    {
+        Ar << v.x << v.y << v.z;
+        return Ar;
+    }
+    
+    inline FArchive& operator<<(FArchive& Ar, glm::u8vec4& v)
+    {
+        Ar << v.x << v.y << v.z << v.w;
+        return Ar;
+    }
+    
     // GLM 16-bit Unsigned Integer Vector Types
     inline FArchive& operator<<(FArchive& Ar, glm::u16vec2& v)
     {

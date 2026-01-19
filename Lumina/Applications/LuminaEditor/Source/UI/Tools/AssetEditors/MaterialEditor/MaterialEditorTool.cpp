@@ -344,14 +344,8 @@ namespace Lumina
                     Material->PixelShaderBinaries.assign(Header.Binaries.begin(), Header.Binaries.end());
                     Material->PixelShader = PixelShader;
                 }
-                
-                {
-                    Material->VertexShaderBinaries.assign(VertexShader->GetShaderHeader().Binaries.begin(), VertexShader->GetShaderHeader().Binaries.end());
-                    Material->VertexShader = VertexShader;
-                }
-                
+
                 GRenderContext->OnShaderCompiled(PixelShader, false, true);
-                
             });
 
             ShaderCompiler->Flush();

@@ -102,7 +102,7 @@ namespace Lumina::Assert
 #endif
     
 #ifdef LE_DEBUG
-#define LUMINA_UNREACHABLE(...)         LUMINA_ASSERT_INVOKE(false,     Unreachable,    __VA_ARGS__)
+#define LUMINA_UNREACHABLE(...)         LUMINA_ASSERT_INVOKE(false,     Unreachable,    __VA_ARGS__); std::unreachable()
 #else
 #define LUMINA_UNREACHABLE(...)         std::unreachable()
 #endif

@@ -6,7 +6,6 @@
 #include "glm/gtx/string_cast.hpp"
 #include "Tools/UI/ImGui/ImGuiFonts.h"
 #include "Tools/UI/ImGui/ImGuiX.h"
-#include "World/Entity/Components/DirtyComponent.h"
 #include "world/entity/components/environmentcomponent.h"
 #include "World/Entity/Components/LightComponent.h"
 #include "World/Entity/Components/StaticMeshComponent.h"
@@ -18,12 +17,12 @@ namespace Lumina
 {
     static const char* MeshPropertiesName        = "MeshProperties";
 
-    FMeshEditorTool::FMeshEditorTool(IEditorToolContext* Context, CObject* InAsset)
-    : FAssetEditorTool(Context, InAsset->GetName().c_str(), InAsset, NewObject<CWorld>())
+    FStaticMeshEditorTool::FStaticMeshEditorTool(IEditorToolContext* Context, CObject* InAsset)
+        : FAssetEditorTool(Context, InAsset->GetName().c_str(), InAsset, NewObject<CWorld>())
     {
     }
 
-    void FMeshEditorTool::OnInitialize()
+    void FStaticMeshEditorTool::OnInitialize()
     {
         CreateToolWindow(MeshPropertiesName, [&](bool bFocused)
         {
@@ -66,7 +65,7 @@ namespace Lumina
                 };
     
                 // Geometry counts
-                PropertyRow("Vertices", eastl::to_string(Resource.Vertices.size()));
+                PropertyRow("Vertices", eastl::to_string(Resource.GetNumVertices()));
                 PropertyRow("Triangles", eastl::to_string(Resource.Indices.size() / 3));
                 PropertyRow("Indices", eastl::to_string(Resource.Indices.size()));
                 PropertyRow("Shadow Indices", eastl::to_string(Resource.ShadowIndices.size()));
@@ -77,7 +76,7 @@ namespace Lumina
                 ImGui::Dummy(ImVec2(0, 4));
                 
                 // Memory usage
-                const float vertexSizeKB = (Resource.Vertices.size() * sizeof(FVertex)) / 1024.0f;
+                const float vertexSizeKB = (Resource.GetNumVertices() * Resource.GetVertexTypeSize()) / 1024.0f;
                 const float indexSizeKB = (Resource.Indices.size() * sizeof(uint32_t)) / 1024.0f;
                 const float totalSizeKB = vertexSizeKB + indexSizeKB;
                 
@@ -118,7 +117,7 @@ namespace Lumina
                     // Vertices Tab
                     if (ImGui::BeginTabItem("Vertices"))
                     {
-                        ImGui::Text("Total Vertices: %zu", Resource.Vertices.size());
+                        ImGui::Text("Total Vertices: %zu", Resource.GetNumVertices());
                         ImGui::Spacing();
                         
                         if (ImGui::BeginTable("##Vertices", 5, 
@@ -136,33 +135,32 @@ namespace Lumina
                             ImGui::TableHeadersRow();
                             
                             ImGuiListClipper clipper;
-                            clipper.Begin(static_cast<int>(Resource.Vertices.size()));
+                            clipper.Begin(static_cast<int>(Resource.GetNumVertices()));
                             
                             while (clipper.Step())
                             {
                                 for (int i = clipper.DisplayStart; i < clipper.DisplayEnd; i++)
                                 {
-                                    const FVertex& Vertex = Resource.Vertices[i];
+                                    const glm::vec3& Position = Resource.GetPositionAt(i);
+                                    glm::vec3 Normal = UnpackNormal(Resource.GetNormalAt(i));
+                                    glm::u16vec2 UV = Resource.GetUVAt(i);
+                                    glm::vec4 Color = UnpackColor(Resource.GetColorAt(i));
                                     
                                     ImGui::TableNextRow();
                                     ImGui::TableSetColumnIndex(0);
                                     ImGui::Text("%d", i);
                                     
                                     ImGui::TableSetColumnIndex(1);
-                                    ImGui::Text("%.3f, %.3f, %.3f", Vertex.Position.x, Vertex.Position.y, Vertex.Position.z);
-                                    
-                                    glm::vec3 Normal = UnpackNormal(Vertex.Normal);
+                                    ImGui::Text("%.3f, %.3f, %.3f", Position.x, Position.y, Position.z);
                                     
                                     ImGui::TableSetColumnIndex(2);
                                     ImGui::Text("%.3f, %.3f, %.3f", Normal.x, Normal.y, Normal.z);
                                     
                                     ImGui::TableSetColumnIndex(3);
-                                    ImGui::Text("%.3hu, %.3hu", Vertex.UV.x, Vertex.UV.y);
-                                    
-                                    glm::vec4 Color = UnpackColor(Vertex.Color);
+                                    ImGui::Text("%.3hu, %.3hu", UV.x, UV.y);
                                     
                                     ImGui::TableSetColumnIndex(4);
-                                    ImGui::Text("%i, %i, %i", Color.x, Color.y, Color.z);  
+                                    ImGui::Text("%f, %f, %f", Color.x, Color.y, Color.z);  
                                 }
                             }
                             
@@ -336,7 +334,7 @@ namespace Lumina
         });
     }
 
-    void FMeshEditorTool::SetupWorldForTool()
+    void FStaticMeshEditorTool::SetupWorldForTool()
     {
         FEditorTool::SetupWorldForTool();
         
@@ -362,7 +360,7 @@ namespace Lumina
         World->MarkTransformDirty(EditorEntity);
     }
 
-    void FMeshEditorTool::Update(const FUpdateContext& UpdateContext)
+    void FStaticMeshEditorTool::Update(const FUpdateContext& UpdateContext)
     {
         FAssetEditorTool::Update(UpdateContext);
         
@@ -382,15 +380,15 @@ namespace Lumina
         }
     }
 
-    void FMeshEditorTool::OnDeinitialize(const FUpdateContext& UpdateContext)
+    void FStaticMeshEditorTool::OnDeinitialize(const FUpdateContext& UpdateContext)
     {
     }
 
-    void FMeshEditorTool::OnAssetLoadFinished()
+    void FStaticMeshEditorTool::OnAssetLoadFinished()
     {
     }
 
-    void FMeshEditorTool::DrawToolMenu(const FUpdateContext& UpdateContext)
+    void FStaticMeshEditorTool::DrawToolMenu(const FUpdateContext& UpdateContext)
     {
         FAssetEditorTool::DrawToolMenu(UpdateContext);
         
@@ -426,7 +424,7 @@ namespace Lumina
         }
     }
 
-    void FMeshEditorTool::InitializeDockingLayout(ImGuiID InDockspaceID, const ImVec2& InDockspaceSize) const
+    void FStaticMeshEditorTool::InitializeDockingLayout(ImGuiID InDockspaceID, const ImVec2& InDockspaceSize) const
     {
         ImGuiID leftDockID = 0, rightDockID = 0, bottomDockID = 0;
 

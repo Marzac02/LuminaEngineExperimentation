@@ -89,6 +89,8 @@ namespace Lumina
         bool                                            bFirstDraw = true;
         
         ImGuiTextFilter                                 Filter;
+    
+        TVector<CEdGraphNode*>                          CopiedNodes;
         
     private:
 

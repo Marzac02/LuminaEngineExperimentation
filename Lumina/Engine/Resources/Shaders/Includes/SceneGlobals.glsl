@@ -27,7 +27,6 @@ layout(set = 0, binding = 2) restrict readonly buffer InstanceMappingData
     uint Mapping[];
 } uMappingData;
 
-
 layout(set = 0, binding = 3) restrict readonly buffer FLightData
 {
     uint    NumLights;
@@ -43,6 +42,10 @@ layout(set = 0, binding = 3) restrict readonly buffer FLightData
     FLight  Lights[MAX_LIGHTS];
 } LightData;
 
+layout(set = 0, binding = 4) restrict readonly buffer FBoneData
+{
+    mat4 BoneMatrices[];
+} Bones;
 
 //////////////////////////////////////////////////////////
 
@@ -50,6 +53,11 @@ layout(set = 0, binding = 3) restrict readonly buffer FLightData
 uint DrawIDToInstanceID(uint ID)
 {
     return uMappingData.Mapping[ID];
+}
+
+FInstanceData GetInstanceData(uint Index)
+{
+    return ModelData.Instances[DrawIDToInstanceID(Index)];
 }
 
 vec3 GetSunDirection()

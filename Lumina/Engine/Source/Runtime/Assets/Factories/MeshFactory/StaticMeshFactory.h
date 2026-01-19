@@ -8,16 +8,15 @@
 namespace Lumina
 {
     REFLECT()
-    class CStaticMeshFactory : public CFactory
+    class CMeshFactory : public CFactory
     {
         GENERATED_BODY()
     public:
 
-        CObject* CreateNew(const FName& Name, CPackage* Package) override;
-        FString GetAssetName() const override { return "Static Mesh"; }
+        FString GetAssetName() const override { return "Mesh"; }
         FStringView GetDefaultAssetCreationName() override { return "NewMesh"; }
 
-        FString GetAssetDescription() const override { return "A static mesh."; }
+        FString GetAssetDescription() const override { return "A mesh."; }
         CClass* GetAssetClass() const override { return CStaticMesh::StaticClass(); }
         bool CanImport() override { return true; }
         bool IsExtensionSupported(FStringView Ext) override { return Ext == ".gltf" || Ext == ".glb" || Ext == ".obj"; }

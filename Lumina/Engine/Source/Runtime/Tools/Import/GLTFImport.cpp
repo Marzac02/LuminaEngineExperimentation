@@ -7,8 +7,11 @@
 #include <fastgltf/tools.hpp>
 #include <fastgltf/types.hpp>
 #include <glm/glm.hpp>
+#include <glm/gtc/type_ptr.hpp>
+#include <glm/gtx/string_cast.hpp>
 
 #include "ImportHelpers.h"
+#include "Assets/AssetTypes/Mesh/Animation/Animation.h"
 #include "FileSystem/FileSystem.h"
 #include "Memory/Memory.h"
 #include "Paths/Paths.h"
@@ -82,7 +85,165 @@ namespace Lumina::Import::Mesh::GLTF
         
         FMeshImportData ImportData;
         ImportData.Resources.reserve(Asset.meshes.size());
-
+        
+        for (const fastgltf::Animation& Animation : Asset.animations)
+        {
+            TUniquePtr<FAnimationClip> AnimClip = MakeUniquePtr<FAnimationClip>();
+            AnimClip->Name = Animation.name.c_str();
+            
+            for (const fastgltf::AnimationChannel& Channel : Animation.channels)
+            {
+                FAnimationChannel AnimChannel;
+                
+                size_t NodeIndex = Channel.nodeIndex.value();
+                const fastgltf::Node& Node = Asset.nodes[NodeIndex];
+                AnimChannel.TargetBone = FName(Node.name.empty() ? ("Bone_" + eastl::to_string(NodeIndex)) : Node.name.c_str());
+                
+                if (Channel.path == fastgltf::AnimationPath::Translation)
+                {
+                    AnimChannel.TargetPath = FAnimationChannel::ETargetPath::Translation;
+                }
+                else if (Channel.path == fastgltf::AnimationPath::Rotation)
+                {
+                    AnimChannel.TargetPath = FAnimationChannel::ETargetPath::Rotation;
+                }
+                else if (Channel.path == fastgltf::AnimationPath::Scale)
+                {
+                    AnimChannel.TargetPath = FAnimationChannel::ETargetPath::Scale;
+                }
+                
+                const auto& Sampler = Animation.samplers[Channel.samplerIndex];
+                
+                const auto& TimeAccessor = Asset.accessors[Sampler.inputAccessor];
+                fastgltf::iterateAccessor<float>(Asset, TimeAccessor, [&](float time)
+                {
+                    AnimChannel.Timestamps.push_back(time);
+                });
+                
+                const auto& ValueAccessor = Asset.accessors[Sampler.outputAccessor];
+                if (Channel.path == fastgltf::AnimationPath::Translation || Channel.path == fastgltf::AnimationPath::Scale)
+                {
+                    fastgltf::iterateAccessor<glm::vec3>(Asset, ValueAccessor, [&](glm::vec3 Value)
+                    {
+                        if (Channel.path == fastgltf::AnimationPath::Translation)
+                        {
+                            AnimChannel.Translations.push_back(Value);
+                        }
+                        else
+                        {
+                            AnimChannel.Scales.push_back(Value);
+                        }
+                    });
+                }
+                else if (Channel.path == fastgltf::AnimationPath::Rotation)
+                {
+                    fastgltf::iterateAccessor<glm::vec4>(Asset, ValueAccessor, [&](glm::vec4 value)
+                    {
+                        AnimChannel.Rotations.push_back(glm::quat(value.w, value.x, value.y, value.z));
+                    });
+                }
+                
+                AnimClip->Channels.push_back(AnimChannel);
+                AnimClip->Duration = glm::max(AnimClip->Duration, AnimChannel.Timestamps.back());
+            }
+            
+            ImportData.Animations.push_back(Move(AnimClip));
+        }
+        
+        for (const fastgltf::Skin& Skin : Asset.skins)
+        {
+            TUniquePtr<FSkeletonResource> NewSkeleton = MakeUniquePtr<FSkeletonResource>();
+    
+            if (Skin.name.empty())
+            {
+                NewSkeleton->Name = FName("Skeleton_" + eastl::to_string(ImportData.Skeletons.size()));
+            }
+            else
+            {
+                NewSkeleton->Name = FName(Skin.name.c_str());
+            }
+            
+            NewSkeleton->Bones.reserve(Skin.joints.size());
+            
+            TVector<glm::mat4> InverseBindMatrices;
+            if (Skin.inverseBindMatrices.has_value())
+            {
+                const fastgltf::Accessor& MatrixAccessor = Asset.accessors[Skin.inverseBindMatrices.value()];
+                InverseBindMatrices.reserve(MatrixAccessor.count);
+                
+                fastgltf::iterateAccessor<glm::mat4>(Asset, MatrixAccessor, [&](const glm::mat4& matrix)
+                {
+                    InverseBindMatrices.push_back(matrix);
+                });
+            }
+            
+            THashMap<size_t, size_t> NodeToParent;
+            for (size_t nodeIdx = 0; nodeIdx < Asset.nodes.size(); ++nodeIdx)
+            {
+                const fastgltf::Node& Node = Asset.nodes[nodeIdx];
+                for (size_t ChildIdx : Node.children)
+                {
+                    NodeToParent[ChildIdx] = nodeIdx;
+                }
+            }
+            
+            for (size_t JointIdx = 0; JointIdx < Skin.joints.size(); ++JointIdx)
+            {
+                size_t NodeIdx = Skin.joints[JointIdx];
+                const fastgltf::Node& BoneNode = Asset.nodes[NodeIdx];
+                
+                FSkeletonResource::FBoneInfo Bone;
+                Bone.Name = FName(BoneNode.name.empty() ? ("Bone_" + eastl::to_string(NodeIdx)) : BoneNode.name.c_str());
+                
+                Bone.ParentIndex = -1;
+                
+                auto ParentIt = NodeToParent.find(NodeIdx);
+                if (ParentIt != NodeToParent.end())
+                {
+                    size_t ParentNodeIdx = ParentIt->second;
+        
+                    for (size_t i = 0; i < Skin.joints.size(); ++i)
+                    {
+                        if (Skin.joints[i] == ParentNodeIdx)
+                        {
+                            Bone.ParentIndex = (int32)i;
+                            break;
+                        }
+                    }
+                }
+                
+                glm::mat4 LocalTransform(1.0f);
+                if (auto* trs = std::get_if<fastgltf::TRS>(&BoneNode.transform))
+                {
+                    glm::mat4 translation = glm::translate(glm::mat4(1.0f), glm::vec3(trs->translation[0], trs->translation[1], trs->translation[2]));
+                    glm::quat rotation(trs->rotation[3], trs->rotation[0], trs->rotation[1], trs->rotation[2]);
+                    glm::mat4 rotationMat = glm::mat4_cast(rotation);
+                    glm::mat4 scale = glm::scale(glm::mat4(1.0f), glm::vec3(trs->scale[0], trs->scale[1], trs->scale[2]));
+                    LocalTransform = translation * rotationMat * scale;
+                }
+                else if (auto* mat = std::get_if<fastgltf::Node::TransformMatrix>(&BoneNode.transform))
+                {
+                    LocalTransform = glm::make_mat4(mat->data());
+                }
+                
+                Bone.LocalTransform = LocalTransform;
+                
+                if (JointIdx < InverseBindMatrices.size())
+                {
+                    Bone.InvBindMatrix = InverseBindMatrices[JointIdx];
+                }
+                else
+                {
+                    Bone.InvBindMatrix = glm::mat4(1.0f);
+                }
+                
+                NewSkeleton->Bones.push_back(Bone);
+                NewSkeleton->BoneNameToIndex[Bone.Name] = (int32)JointIdx;
+            }
+            
+            ImportData.Skeletons.push_back(Move(NewSkeleton));
+        }
+        
         THashSet<FString> SeenMeshes;
         for (const fastgltf::Mesh& Mesh : Asset.meshes)
         {
@@ -155,7 +316,19 @@ namespace Lumina::Import::Mesh::GLTF
                     NewSurface.MaterialIndex = (int16)Primitive.materialIndex.value();
                 }
                 
-                SIZE_T InitialVert = NewResource->Vertices.size();
+                auto Joints = Primitive.findAttribute("JOINTS_0");
+                auto Weights = Primitive.findAttribute("WEIGHTS_0");
+                if (Joints != Primitive.attributes.end() && Weights != Primitive.attributes.end())
+                {
+                    NewResource->Vertices = TVector<FSkinnedVertex>();
+                    NewResource->bSkinnedMesh = true;
+                }
+                else
+                {
+                    NewResource->Vertices = TVector<FVertex>();
+                }
+                
+                SIZE_T InitialVert = NewResource->GetNumVertices();
             
                 const fastgltf::Accessor& IndexAccessor = Asset.accessors[Primitive.indicesAccessor.value()];
                 NewResource->Indices.reserve(NewResource->Indices.size() + IndexAccessor.count);
@@ -168,20 +341,43 @@ namespace Lumina::Import::Mesh::GLTF
                 });
             
                 const fastgltf::Accessor& PosAccessor = Asset.accessors[Primitive.findAttribute("POSITION")->second];
-                NewResource->Vertices.resize(NewResource->Vertices.size() + PosAccessor.count);
+                eastl::visit([&](auto& Vector)
+                {
+                    Vector.resize(NewResource->GetNumVertices() + PosAccessor.count);
+                }, NewResource->Vertices);
             
                 // Initialize all vertices with defaults
-                for (size_t i = InitialVert; i < NewResource->Vertices.size(); ++i)
+                for (size_t i = InitialVert; i < NewResource->GetNumVertices(); ++i)
                 {
-                    NewResource->Vertices[i].Normal = PackNormal(FViewVolume::UpAxis);
-                    NewResource->Vertices[i].UV = glm::u16vec2(0, 0);
-                    NewResource->Vertices[i].Color = 0xFFFFFFFF;
+                    NewResource->SetNormalAt(i, PackNormal(FViewVolume::UpAxis));
+                    NewResource->SetUVAt(i, glm::u16vec2(0, 0));
+                    NewResource->SetColorAt(i, 0xFFFFFFFF);
                 }
+                
+                if (Joints != Primitive.attributes.end())
+                {
+                    fastgltf::iterateAccessorWithIndex<glm::u8vec4>(Asset, Asset.accessors[Joints->second], [&](glm::u8vec4 v, size_t Index)
+                    {
+                        NewResource->SetJointIndicesAt(InitialVert + Index, v);
+                        LOG_INFO("Joints {0}", glm::to_string(v));
+                    });
+                }
+                
+                if (Weights != Primitive.attributes.end())
+                {
+                    fastgltf::iterateAccessorWithIndex<glm::vec4>(Asset, Asset.accessors[Weights->second], [&](glm::vec4 v, size_t Index)
+                    {
+                        glm::u8vec4 WeightBytes = glm::u8vec4(v * 255.0f);
+                        NewResource->SetJointWeightsAt(InitialVert + Index, WeightBytes);
+                        LOG_INFO("Weights {0}", glm::to_string(WeightBytes));
+                    });
+                }
+                
             
                 // Load positions
                 fastgltf::iterateAccessorWithIndex<glm::vec3>(Asset, PosAccessor, [&](glm::vec3 V, size_t Index)
                 {
-                    NewResource->Vertices[InitialVert + Index].Position = V;
+                    NewResource->SetPositionAt(InitialVert + Index, V);
                 });
             
                 // Load normals
@@ -190,7 +386,7 @@ namespace Lumina::Import::Mesh::GLTF
                 {
                     fastgltf::iterateAccessorWithIndex<glm::vec3>(Asset, Asset.accessors[normals->second], [&](glm::vec3 v, size_t index)
                     {
-                        NewResource->Vertices[InitialVert + index].Normal = PackNormal(glm::normalize(v));
+                        NewResource->SetNormalAt(InitialVert + index, PackNormal(glm::normalize(v)));
                     });
                 }
             
@@ -205,8 +401,11 @@ namespace Lumina::Import::Mesh::GLTF
                         {
                             v.y = 1.0f - v.y;
                         }
-                        NewResource->Vertices[InitialVert + index].UV.x = (uint16)(glm::clamp(v.x, 0.0f, 1.0f) * 65535.0f);
-                        NewResource->Vertices[InitialVert + index].UV.y = (uint16)(glm::clamp(v.y, 0.0f, 1.0f) * 65535.0f);
+                        
+                        glm::u16vec2 UV;
+                        UV.x = (uint16)(glm::clamp(v.x, 0.0f, 1.0f) * 65535.0f);
+                        UV.y = (uint16)(glm::clamp(v.y, 0.0f, 1.0f) * 65535.0f);
+                        NewResource->SetUVAt(InitialVert + index, UV);
                     });
                 }
             
@@ -216,9 +415,10 @@ namespace Lumina::Import::Mesh::GLTF
                 {
                     fastgltf::iterateAccessorWithIndex<glm::vec4>(Asset, Asset.accessors[colors->second], [&](glm::vec4 v, size_t index)
                     {
-                        NewResource->Vertices[InitialVert + index].Color = PackColor(v);
+                        NewResource->SetColorAt(InitialVert + index, PackColor(v));
                     });
                 }
+                
                 
                 NewResource->GeometrySurfaces.push_back(NewSurface);
             }

@@ -53,4 +53,66 @@ namespace Lumina
         HandleNameChange(NewName, NewPackage);
         return true;
     }
+
+    CObject* CObject::Duplicate()
+    {
+        CObject* Duplicate = NewObject(GetClass(), GetPackage());
+        if (CClass* Class = GetClass())
+        {
+            for (FProperty* Current = Class->LinkedProperty; Current; Current = (FProperty*)Current->Next)
+            {
+                if (Current->HasMetadata("DuplicateTransient"))
+                {
+                    continue;
+                }
+                
+                
+                TVector<uint8> Bytes;
+                
+                {
+                    void* ValuePtr = Current->IsA(EPropertyTypeFlags::Vector) ? this : Current->GetValuePtr<void>(this);
+                    FMemoryWriter Writer(Bytes);
+                    Current->Serialize(Writer, ValuePtr);
+                }
+                
+                {
+                    void* ValuePtr = Current->IsA(EPropertyTypeFlags::Vector) ? Duplicate : Current->GetValuePtr<void>(Duplicate);
+                    FMemoryReader Reader(Bytes);
+                    Current->Serialize(Reader, ValuePtr);
+                }
+            }
+        }
+        
+        return Duplicate;
+    }
+
+    void CObject::CopyPropertiesTo(CObject* Other)
+    {
+        ASSERT(Other->GetClass() == GetClass());
+        
+        if (CClass* Class = GetClass())
+        {
+            for (FProperty* Current = Class->LinkedProperty; Current; Current = (FProperty*)Current->Next)
+            {
+                if (Current->HasMetadata("DuplicateTransient"))
+                {
+                    continue;
+                }
+                
+                TVector<uint8> Bytes;
+                
+                {
+                    void* ValuePtr = Current->IsA(EPropertyTypeFlags::Vector) ? this : Current->GetValuePtr<void>(this);
+                    FMemoryWriter Writer(Bytes);
+                    Current->Serialize(Writer, ValuePtr);
+                }
+                
+                {
+                    void* ValuePtr = Current->IsA(EPropertyTypeFlags::Vector) ? Other : Current->GetValuePtr<void>(Other);
+                    FMemoryReader Reader(Bytes);
+                    Current->Serialize(Reader, ValuePtr);
+                }
+            }
+        }
+    }
 }

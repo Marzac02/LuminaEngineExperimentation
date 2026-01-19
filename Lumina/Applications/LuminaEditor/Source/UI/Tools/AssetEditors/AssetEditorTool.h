@@ -43,7 +43,7 @@ namespace Lumina
         template<Concept::IsACObject T>
         T* GetAsset()
         {
-            return Cast<T>(Asset);
+            return Cast<T>(Asset.Get());
         }
         
         virtual bool ShouldGenerateThumbnailOnLoad() const { return false; }

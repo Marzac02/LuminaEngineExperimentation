@@ -82,7 +82,7 @@ workspace "Lumina"
         optimize "Debug"
         symbols "On"
         editandcontinue "Off"
-        defines { "LE_DEBUG", "LUMINA_DEBUG", "_DEBUG", "JPH_DEBUG", "SOL_ALL_SAFETIES_ON", }
+        defines { "LE_DEBUG", "LUMINA_DEBUG", "_DEBUG", "SOL_ALL_SAFETIES_ON", }
         flags { "NoRuntimeChecks" }
         linktimeoptimization "Off"
 

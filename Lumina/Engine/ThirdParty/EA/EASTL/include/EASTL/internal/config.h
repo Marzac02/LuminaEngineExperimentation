@@ -715,7 +715,7 @@ namespace eastl
 ///////////////////////////////////////////////////////////////////////////////
 
 #ifndef EASTL_ALLOCATOR_COPY_ENABLED
-	#define EASTL_ALLOCATOR_COPY_ENABLED 0
+	#define EASTL_ALLOCATOR_COPY_ENABLED 1
 #endif
 
 

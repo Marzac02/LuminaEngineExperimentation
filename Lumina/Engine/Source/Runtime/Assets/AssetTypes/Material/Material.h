@@ -37,7 +37,7 @@ namespace Lumina
         CMaterial* GetMaterial() const override;
         FRHIBindingSet* GetBindingSet() const override;
         FRHIBindingLayout* GetBindingLayout() const override;
-        FRHIVertexShader* GetVertexShader() const override;
+        FRHIVertexShader* GetVertexShader(EVertexFormat Format) const override;
         FRHIPixelShader* GetPixelShader() const override;
         static CMaterial* GetDefaultMaterial();
 
@@ -64,14 +64,15 @@ namespace Lumina
         PROPERTY()
         TVector<TObjectPtr<CTexture>>           Textures;
         
-        TVector<uint32>                         VertexShaderBinaries;
         TVector<uint32>                         PixelShaderBinaries;
 
         TVector<FMaterialParameter>             Parameters;
         
         FMaterialUniforms                       MaterialUniforms;
         
-        FRHIVertexShaderRef                     VertexShader;
+        FRHIVertexShaderRef                     StaticVertexShader;
+        FRHIVertexShaderRef                     SkinnedVertexShader;
+        
         FRHIPixelShaderRef                      PixelShader;
         FRHIBufferRef                           UniformBuffer;
         FRHIBindingLayoutRef                    BindingLayout;

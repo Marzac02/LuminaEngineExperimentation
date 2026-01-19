@@ -48,7 +48,19 @@ namespace Lumina
 
         return New;
     }
-    
+
+    CObject* CFactory::CreateNewOf(CClass* Class, FStringView Path)
+    {
+        FStringView SafePath = SanitizeObjectName(Path);
+        CPackage* Package = CPackage::CreatePackage(SafePath);
+        FStringView FileName = FileSystem::FileName(Path, true);
+
+        CObject* New = NewObject(Class, Package, FileName, FGuid::New(), OF_Public);
+        Package->ExportTable.emplace_back(New);
+        
+        return New;
+    }
+
     void CFactory::Import(const FFixedString& ImportFile, const FFixedString& DestinationPath, const eastl::any& ImportSettings)
     {
         TryImport(ImportFile, DestinationPath, ImportSettings);

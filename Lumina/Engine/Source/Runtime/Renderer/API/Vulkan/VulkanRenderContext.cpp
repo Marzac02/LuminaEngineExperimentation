@@ -64,6 +64,11 @@ namespace Lumina
         const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
         void* pUserData)
     {
+        if (messageTypes & VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT)
+        {
+            return VK_FALSE;
+        }
+        
         // Helper to decode messageTypes
         auto GetMessageTypeString = [](VkDebugUtilsMessageTypeFlagsEXT types) -> FFixedString
         {
@@ -100,8 +105,7 @@ namespace Lumina
             LOG_ERROR("Vulkan {}{}", StringView, pCallbackData->pMessage);
             break;
         case VK_DEBUG_UTILS_MESSAGE_SEVERITY_FLAG_BITS_MAX_ENUM_EXT:
-            std::unreachable();
-            break;
+            UNREACHABLE();
         }
 
         return VK_FALSE;
@@ -1102,10 +1106,8 @@ namespace Lumina
             LayoutDesc.Bindings.push_back(Item);
         }
 
-        OutLayout = CreateBindingLayout(LayoutDesc);
-        
-        OutBindingSet = CreateBindingSet(Desc, OutLayout);
-        
+        OutLayout       = CreateBindingLayout(LayoutDesc);
+        OutBindingSet   = CreateBindingSet(Desc, OutLayout);
     }
 
     FRHIComputePipelineRef FVulkanRenderContext::CreateComputePipeline(const FComputePipelineDesc& Desc)

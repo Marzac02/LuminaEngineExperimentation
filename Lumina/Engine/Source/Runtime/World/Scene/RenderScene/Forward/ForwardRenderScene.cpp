@@ -4,7 +4,8 @@
 #include "Core/Console/ConsoleVariable.h"
 #include "Core/Templates/AsBytes.h"
 #include "Core/Windows/Window.h"
-#include "Memory/Memcpy.h"
+#include "Assets/AssetTypes/Mesh/SkeletalMesh/SkeletalMesh.h"
+#include "assets/assettypes/mesh/skeleton/skeleton.h"
 #include "Renderer/RendererUtils.h"
 #include "Renderer/RHIStaticStates.h"
 #include "Renderer/ShaderCompiler.h"
@@ -14,6 +15,7 @@
 #include "world/entity/components/environmentcomponent.h"
 #include "world/entity/components/lightcomponent.h"
 #include "World/Entity/Components/LineBatcherComponent.h"
+#include "World/Entity/Components/SkeletalMeshComponent.h"
 #include "world/entity/components/staticmeshcomponent.h"
 #include "World/Scene/RenderScene/MeshDrawCommand.h"
 
@@ -115,14 +117,15 @@ namespace Lumina
     void FForwardRenderScene::CompileDrawCommands(FRenderGraph& RenderGraph)
     {
         LUMINA_PROFILE_SCOPE();
-
+        
         //========================================================================================================================
         {
             LUMINA_PROFILE_SECTION("Compile Draw Commands");
             
-            auto View = World->GetEntityRegistry().view<SStaticMeshComponent, STransformComponent>();
-            
-            const size_t EntityCount = View.size_hint();
+            auto StaticView = World->GetEntityRegistry().view<SStaticMeshComponent, STransformComponent>();
+            auto SkeletalView = World->GetEntityRegistry().view<SSkeletalMeshComponent, STransformComponent>();
+
+            const size_t EntityCount = StaticView.size_hint() + SkeletalView.size_hint();
             const size_t EstimatedProxies = EntityCount * 2;
 
             InstanceData.reserve(EstimatedProxies);
@@ -132,9 +135,9 @@ namespace Lumina
             TFixedHashMap<uint64, uint64, 4> BatchedDraws;
             
             {
-                View.each([&](entt::entity Entity, const SStaticMeshComponent& MeshComponent, const STransformComponent& TransformComponent)
+                StaticView.each([&](entt::entity Entity, const SStaticMeshComponent& MeshComponent, const STransformComponent& TransformComponent)
                 {
-                    CStaticMesh* Mesh = MeshComponent.StaticMesh;
+                    CMesh* Mesh = MeshComponent.StaticMesh;
                     if (!IsValid(Mesh))
                     {
                         return;
@@ -176,10 +179,15 @@ namespace Lumina
         
                             DrawCommands.emplace_back(FMeshDrawCommand
                             {
-                                .Material = Material,
-                                .IndexBuffer =  Mesh->GetIndexBuffer(),
-                                .VertexBuffer = Mesh->GetVertexBuffer(),
-                                .IndirectDrawOffset = (uint32)IndirectDrawArguments.size()
+                                .VertexShader       = Material->GetVertexShader(EVertexFormat::Static),
+                                .PixelShader        = Material->GetPixelShader(), 
+                                .IndexBuffer        = Mesh->GetIndexBuffer(),
+                                .VertexBuffer       = Mesh->GetVertexBuffer(),
+                                .BindingLayout      = Material->GetBindingLayout(),
+                                .BindingSet         = Material->GetBindingSet(),
+                                .InputLayout        = Mesh->GetMeshResource().VertexLayout,
+                                .IndirectDrawOffset = (uint32)IndirectDrawArguments.size(),
+                                .bSkinned           = false,
                             });
                         
                             IndirectDrawArguments.emplace_back(FDrawIndexedIndirectArguments
@@ -203,7 +211,93 @@ namespace Lumina
                             .EntityID       = entt::to_integral(Entity),
                             .BatchedDrawID  = (uint32)BatchedDraws[SortKey],
                             .bSelected      = Entity == World->GetSelectedEntity(),
-                            .Reserved       = 0,
+                            .BoneOffset     = 0,
+                        });   
+                    }
+                });
+            }
+            
+            {
+                SkeletalView.each([&](entt::entity Entity, const SSkeletalMeshComponent& MeshComponent, const STransformComponent& TransformComponent)
+                {
+                    CSkeletalMesh* Mesh = MeshComponent.SkeletalMesh;
+                    if (!IsValid(Mesh))
+                    {
+                        return;
+                    }
+        
+                    uint32 BoneDataOffset = static_cast<uint32>(BonesData.size());
+                    BonesData.insert(BonesData.end(), MeshComponent.BoneTransforms.begin(), MeshComponent.BoneTransforms.end());
+                    
+                    const FMeshResource& Resource = Mesh->GetMeshResource();
+                    const uintptr_t MeshPtr = reinterpret_cast<uintptr_t>(Mesh);
+                    const uint64 MeshID = (MeshPtr & 0xFFFFFull) << 24;
+
+                    glm::mat4 TransformMatrix = TransformComponent.GetMatrix();
+                    
+                    FAABB BoundingBox       = Mesh->GetAABB().ToWorld(TransformMatrix);
+                    glm::vec3 Center        = (BoundingBox.Min + BoundingBox.Max) * 0.5f;
+                    glm::vec3 Extents       = BoundingBox.Max - Center;
+                    float Radius            = glm::length(Extents);
+                    glm::vec4 SphereBounds  = glm::vec4(Center, Radius);
+                    
+                    for (const FGeometrySurface& Surface : Resource.GeometrySurfaces)
+                    {
+                        CMaterialInterface* Material = MeshComponent.GetMaterialForSlot(Surface.MaterialIndex);
+                    
+                        if (!IsValid(Material) || !Material->IsReadyForRender())
+                        {
+                            Material = CMaterial::GetDefaultMaterial();
+                        }
+                    
+                        const uintptr_t MaterialPtr = reinterpret_cast<uintptr_t>(Material);
+                        const uint64 MaterialID = (MaterialPtr & 0xFFFFFFFull) << 28;
+                        uint64 SortKey = MaterialID | MeshID;
+                        
+                        if (RenderSettings.bUseInstancing == false)
+                        {
+                            SortKey = entt::to_integral(Entity);
+                        }
+                        
+                        if (BatchedDraws.find(SortKey) == BatchedDraws.end())
+                        {
+                            BatchedDraws[SortKey] = IndirectDrawArguments.size();
+        
+                            DrawCommands.emplace_back(FMeshDrawCommand
+                            {
+                                .VertexShader       = Material->GetVertexShader(EVertexFormat::Skinned),
+                                .PixelShader        = Material->GetPixelShader(), 
+                                .IndexBuffer        = Mesh->GetIndexBuffer(),
+                                .VertexBuffer       = Mesh->GetVertexBuffer(),
+                                .BindingLayout      = Material->GetBindingLayout(),
+                                .BindingSet         = Material->GetBindingSet(),
+                                .InputLayout        = Mesh->GetMeshResource().VertexLayout,
+                                .IndirectDrawOffset = (uint32)IndirectDrawArguments.size(),
+                                .bSkinned           = true,
+                            });
+                        
+                            IndirectDrawArguments.emplace_back(FDrawIndexedIndirectArguments
+                            {
+                                .IndexCount = Surface.IndexCount,
+                                .InstanceCount = 1,
+                                .StartIndexLocation = Surface.StartIndex,
+                                .BaseVertexLocation = 0,
+                                .StartInstanceLocation = 0,
+                            });
+                        }
+                        else
+                        {
+                            IndirectDrawArguments[BatchedDraws[SortKey]].InstanceCount++;
+                        }
+                        
+                        InstanceData.emplace_back(FInstanceData
+                        {
+                            .Transform      = TransformMatrix,
+                            .SphereBounds   = SphereBounds,
+                            .EntityID       = entt::to_integral(Entity),
+                            .BatchedDrawID  = (uint32)BatchedDraws[SortKey],
+                            .bSelected      = Entity == World->GetSelectedEntity(),
+                            .BoneOffset     = BoneDataOffset,
                         });   
                     }
                 });
@@ -483,24 +577,21 @@ namespace Lumina
                     {
                         FLineBatcherComponent::FLineInstance NewLine = Line;
                         NewLine.StartVertexIndex = CurrentVertexIndex;
-                        NewLines.push_back(NewLine);
+                        NewLines.emplace_back(NewLine);
         
-                        NewVertices.push_back(LineBatcherComponent.Vertices[Line.StartVertexIndex]);
-                        NewVertices.push_back(LineBatcherComponent.Vertices[Line.StartVertexIndex + 1]);
+                        NewVertices.emplace_back(LineBatcherComponent.Vertices[Line.StartVertexIndex]);
+                        NewVertices.emplace_back(LineBatcherComponent.Vertices[Line.StartVertexIndex + 1]);
                         
                         CurrentVertexIndex += 2;
                     }
                 }
         
-                LineBatcherComponent.Lines = std::move(NewLines);
-                LineBatcherComponent.Vertices = std::move(NewVertices);
+                LineBatcherComponent.Lines      = std::move(NewLines);
+                LineBatcherComponent.Vertices   = std::move(NewVertices);
         
                 if (!LineBatcherComponent.Vertices.empty())
                 {
-                    SimpleVertices.resize(LineBatcherComponent.Vertices.size());
-                    Memory::Memcpy(SimpleVertices.data(), 
-                                  LineBatcherComponent.Vertices.data(), 
-                                  LineBatcherComponent.Vertices.size() * sizeof(FSimpleElementVertex));
+                    SimpleVertices = LineBatcherComponent.Vertices;
                 }
             });
         }
@@ -534,16 +625,19 @@ namespace Lumina
                 CheckLightBufferResize(LightData.NumLights);
                 CheckSimpleVertexResize(SimpleVertices.size());
                 
-                const SIZE_T SimpleVertexSize = SimpleVertices.size() * sizeof(FSimpleElementVertex);
-                const SIZE_T InstanceDataSize = InstanceData.size() * sizeof(FInstanceData);
-                const SIZE_T IndirectArgsSize = IndirectDrawArguments.size() * sizeof(FDrawIndexedIndirectArguments);
+                const SIZE_T SimpleVertexSize   = SimpleVertices.size() * sizeof(FSimpleElementVertex);
+                const SIZE_T InstanceDataSize   = InstanceData.size() * sizeof(FInstanceData);
+                const SIZE_T BoneDataSize       = BonesData.size() * sizeof(glm::mat4);
+                const SIZE_T IndirectArgsSize   = IndirectDrawArguments.size() * sizeof(FDrawIndexedIndirectArguments);
         
-                constexpr SIZE_T LightDataHeaderSize = offsetof(FSceneLightData, Lights);
-                const SIZE_T ActiveLightsSize = LightData.NumLights * sizeof(FLight);
-                const SIZE_T LightUploadSize = LightDataHeaderSize + ActiveLightsSize;
+                constexpr SIZE_T LightDataHeaderSize    = offsetof(FSceneLightData, Lights);
+                const SIZE_T ActiveLightsSize           = LightData.NumLights * sizeof(FLight);
+                const SIZE_T LightUploadSize            = LightDataHeaderSize + ActiveLightsSize;
+                
                 
                 CmdList.SetBufferState(SceneDataBuffer, EResourceStates::CopyDest);
                 CmdList.SetBufferState(InstanceDataBuffer, EResourceStates::CopyDest);
+                CmdList.SetBufferState(BoneDataBuffer, EResourceStates::CopyDest);
                 CmdList.SetBufferState(IndirectDrawBuffer, EResourceStates::CopyDest);
                 CmdList.SetBufferState(SimpleVertexBuffer, EResourceStates::CopyDest);
                 CmdList.SetBufferState(LightDataBuffer, EResourceStates::CopyDest);
@@ -551,6 +645,7 @@ namespace Lumina
                 
                 CmdList.DisableAutomaticBarriers();
                 CmdList.WriteBuffer(SceneDataBuffer, &SceneGlobalData, sizeof(FSceneGlobalData));
+                CmdList.WriteBuffer(BoneDataBuffer, BonesData.data(),  BoneDataSize);
                 CmdList.WriteBuffer(InstanceDataBuffer, InstanceData.data(), InstanceDataSize);
                 CmdList.WriteBuffer(IndirectDrawBuffer, IndirectDrawArguments.data(), IndirectArgsSize);
                 CmdList.WriteBuffer(SimpleVertexBuffer, SimpleVertices.data(), SimpleVertexSize);
@@ -568,6 +663,7 @@ namespace Lumina
         InstanceData.clear();
         LightData.NumLights = 0;
         ShadowAtlas.FreeTiles();
+        BonesData.clear();
 
         for (int i = 0; i < (int)ELightType::Num; ++i)
         {
@@ -637,8 +733,6 @@ namespace Lumina
         {
             LUMINA_PROFILE_SECTION_COLORED("Pre-Depth Pass", tracy::Color::Orange);
             
-            FRHIVertexShaderRef VertexShader = FShaderLibrary::GetVertexShader("DepthPrePass.vert");
-        
             FRenderPassDesc::FAttachment Depth; Depth
                 .SetImage(DepthAttachment)
                 .SetDepthClearValue(0.0f);
@@ -650,17 +744,26 @@ namespace Lumina
             FRenderState RenderState; RenderState
                 .SetDepthStencilState(FDepthStencilState().SetDepthFunc(EComparisonFunc::Greater))
                 .SetRasterState(FRasterState().EnableDepthClip());
-                    
-            FGraphicsPipelineDesc Desc; Desc
-                .SetRenderState(RenderState)
-                .SetInputLayout(PositionOnlyLayoutInput)
-                .AddBindingLayout(BindingLayout)
-                .SetVertexShader(VertexShader);
-                
-            FRHIGraphicsPipelineRef Pipeline = GRenderContext->CreateGraphicsPipeline(Desc, RenderPass);
+            
             
             for (const FMeshDrawCommand& Batch : DrawCommands)
             {
+                FRHIVertexShaderRef VertexShader = FShaderLibrary::GetVertexShader("DepthPrePass.vert");
+                
+                if (Batch.bSkinned)
+                {
+                    TFixedVector<FString, 1> Def{"SKINNED_VERTEX"};
+                    VertexShader = FShaderLibrary::GetVertexShader("DepthPrePass.vert", Def);
+                }
+                
+                FGraphicsPipelineDesc Desc; Desc
+                .SetRenderState(RenderState)
+                .SetInputLayout(Batch.InputLayout)
+                .AddBindingLayout(BindingLayout)
+                .SetVertexShader(VertexShader);
+                
+                FRHIGraphicsPipelineRef Pipeline = GRenderContext->CreateGraphicsPipeline(Desc, RenderPass);
+                
                 FGraphicsState GraphicsState;
                 GraphicsState.AddVertexBuffer({ Batch.VertexBuffer });
                 GraphicsState.SetIndexBuffer({ Batch.IndexBuffer });
@@ -852,14 +955,6 @@ namespace Lumina
                         .SetDepthBias(100)
                         .SetCullFront());
             
-            FGraphicsPipelineDesc Desc; Desc
-                .SetDebugName("Point Light Shadow Pass")
-                .SetRenderState(RenderState)
-                .SetInputLayout(PositionOnlyLayoutInput)
-                .AddBindingLayout(BindingLayout)
-                .AddBindingLayout(ShadowPassLayout)
-                .SetVertexShader(VertexShader)
-                .SetPixelShader(PixelShader);
 
             FRenderPassDesc::FAttachment Depth; Depth
                 .SetLoadOp(ERenderLoadOp::Clear)
@@ -872,14 +967,11 @@ namespace Lumina
                 .SetViewMask(RenderUtils::CreateViewMask<0u, 1u, 2u, 3u, 4u, 5u>())
                 .SetRenderArea(glm::uvec2(GShadowAtlasResolution, GShadowAtlasResolution));
             
-            FRHIGraphicsPipelineRef Pipeline = GRenderContext->CreateGraphicsPipeline(Desc, RenderPass);
-            
             FGraphicsState GraphicsState; GraphicsState
                 .SetRenderPass(Move(RenderPass))
                 .AddBindingSet(BindingSet)
                 .AddBindingSet(ShadowPassSet)
-                .SetIndirectParams(IndirectDrawBuffer)
-                .SetPipeline(Pipeline);
+                .SetIndirectParams(IndirectDrawBuffer);
 
             const TVector<FLightShadow>& PointShadows = PackedShadows[(uint32)ELightType::Point];
             
@@ -916,9 +1008,22 @@ namespace Lumina
                 
                 for (const FMeshDrawCommand& Batch : DrawCommands)
                 {
+                    FGraphicsPipelineDesc Desc; Desc
+                        .SetDebugName("Point Light Shadow Pass")
+                        .SetRenderState(RenderState)
+                        .SetInputLayout(Batch.InputLayout)
+                        .AddBindingLayout(BindingLayout)
+                        .AddBindingLayout(ShadowPassLayout)
+                        .SetVertexShader(VertexShader)
+                        .SetPixelShader(PixelShader);
+                    
+                    FRHIGraphicsPipelineRef Pipeline = GRenderContext->CreateGraphicsPipeline(Desc, RenderPass);
+
                     GraphicsState.SetVertexBuffer({ Batch.VertexBuffer });
                     GraphicsState.SetIndexBuffer({ Batch.IndexBuffer });
+                    GraphicsState.SetPipeline(Pipeline);
                     
+
                     CmdList.SetGraphicsState(GraphicsState);
                     
                     CmdList.SetPushConstants(&LightShadow.LightIndex, sizeof(uint32));
@@ -954,15 +1059,6 @@ namespace Lumina
                         .SetCullFront());
             
             
-            FGraphicsPipelineDesc Desc; Desc
-                .SetDebugName("Spot Shadow Pass")
-                .SetRenderState(RenderState)
-                .SetInputLayout(PositionOnlyLayoutInput)
-                .AddBindingLayout(BindingLayout)
-                .AddBindingLayout(ShadowPassLayout)
-                .SetVertexShader(VertexShader)
-                .SetPixelShader(PixelShader);
-            
             const TVector<FLightShadow>& SpotShadows = PackedShadows[(uint32)ELightType::Spot];
 
             for (const FLightShadow& Shadow : SpotShadows)
@@ -983,9 +1079,6 @@ namespace Lumina
                 FRenderPassDesc RenderPass; RenderPass
                     .SetDepthAttachment(Depth)
                     .SetRenderArea(glm::uvec2(GShadowAtlasResolution, GShadowAtlasResolution));
-        
-                FRHIGraphicsPipelineRef Pipeline = GRenderContext->CreateGraphicsPipeline(Desc, RenderPass);
-        
                 
                 FViewportState ViewportState;
                 ViewportState.SetViewport((FViewport
@@ -1009,7 +1102,6 @@ namespace Lumina
                 FGraphicsState GraphicsState; GraphicsState
                     .SetRenderPass(RenderPass)
                     .SetViewportState(ViewportState)
-                    .SetPipeline(Pipeline)
                     .AddBindingSet(BindingSet)
                     .AddBindingSet(ShadowPassSet)
                     .SetIndirectParams(IndirectDrawBuffer);                    
@@ -1017,6 +1109,18 @@ namespace Lumina
                 
                 for (const FMeshDrawCommand& Batch : DrawCommands)
                 {
+                    FGraphicsPipelineDesc Desc; Desc
+                        .SetDebugName("Spot Shadow Pass")
+                        .SetRenderState(RenderState)
+                        .SetInputLayout(Batch.InputLayout)
+                        .AddBindingLayout(BindingLayout)
+                        .AddBindingLayout(ShadowPassLayout)
+                        .SetVertexShader(VertexShader)
+                        .SetPixelShader(PixelShader);
+                    
+                    FRHIGraphicsPipelineRef Pipeline = GRenderContext->CreateGraphicsPipeline(Desc, RenderPass);
+                    
+                    GraphicsState.SetPipeline(Pipeline);
                     GraphicsState.SetVertexBuffer({Batch.VertexBuffer});
                     GraphicsState.SetIndexBuffer({Batch.IndexBuffer});
                     CmdList.SetGraphicsState(GraphicsState);
@@ -1044,21 +1148,11 @@ namespace Lumina
             LUMINA_PROFILE_SECTION_COLORED("Cascaded Shadow Map Pass", tracy::Color::DeepPink2);
         
             FRHIVertexShaderRef VertexShader = FShaderLibrary::GetVertexShader("ShadowMapping.vert");
-            //FRHIPixelShaderRef PixelShader = FShaderLibrary::GetPixelShader("ShadowMapping.frag");
         
             FRenderState RenderState; RenderState
                 .SetDepthStencilState(FDepthStencilState()
                     .SetDepthFunc(EComparisonFunc::LessOrEqual))
                     .SetRasterState(FRasterState().SetCullFront());
-                        
-            FGraphicsPipelineDesc Desc; Desc
-                .SetDebugName("Cascaded Shadow Maps")
-                .SetRenderState(RenderState)
-                .SetInputLayout(PositionOnlyLayoutInput)
-                .AddBindingLayout(BindingLayout)
-                .AddBindingLayout(ShadowPassLayout)
-                .SetVertexShader(VertexShader);
-                //.SetPixelShader(PixelShader);
             
             
             FRenderPassDesc::FAttachment Depth; Depth
@@ -1071,11 +1165,19 @@ namespace Lumina
                 .SetDepthAttachment(Depth)
                 .SetViewMask(RenderUtils::CreateViewMask<0u, 1u>()) // Must match NUM_CASCADES
                 .SetRenderArea(glm::uvec2(GCSMResolution, GCSMResolution));
-        
-            FRHIGraphicsPipelineRef Pipeline = GRenderContext->CreateGraphicsPipeline(Desc, RenderPass);
             
             for (const FMeshDrawCommand& Batch : DrawCommands)
             {
+                FGraphicsPipelineDesc Desc; Desc
+                    .SetDebugName("Cascaded Shadow Maps")
+                    .SetRenderState(RenderState)
+                    .SetInputLayout(Batch.InputLayout)
+                    .AddBindingLayout(BindingLayout)
+                    .AddBindingLayout(ShadowPassLayout)
+                    .SetVertexShader(VertexShader);
+                
+                FRHIGraphicsPipelineRef Pipeline = GRenderContext->CreateGraphicsPipeline(Desc, RenderPass);
+
                 FGraphicsState GraphicsState; GraphicsState
                     .SetRenderPass(RenderPass)
                     .SetViewportState(MakeViewportStateFromImage(CascadedShadowMap))
@@ -1141,19 +1243,17 @@ namespace Lumina
             RenderState.SetRasterState(RasterState);
             RenderState.SetDepthStencilState(DepthState);
             
-                for (const FMeshDrawCommand& Batch : DrawCommands)
+            for (const FMeshDrawCommand& Batch : DrawCommands)
             {
-                CMaterialInterface* Mat = Batch.Material;
-        
                 FGraphicsPipelineDesc Desc; Desc
                     .SetDebugName("Forward Base Pass")
                     .SetRenderState(RenderState)
-                    .SetInputLayout(VertexLayoutInput)
+                    .SetInputLayout(Batch.InputLayout)
+                    .SetVertexShader(Batch.VertexShader)
+                    .SetPixelShader(Batch.PixelShader)
                     .AddBindingLayout(BindingLayout)
                     .AddBindingLayout(BasePassLayout)
-                    .AddBindingLayout(Mat->GetBindingLayout())
-                    .SetVertexShader(Mat->GetMaterial()->VertexShader)
-                    .SetPixelShader(Mat->GetMaterial()->PixelShader);
+                    .AddBindingLayout(Batch.BindingLayout);
                 
                 FGraphicsState GraphicsState; GraphicsState
                     .SetRenderPass(RenderPass)
@@ -1164,7 +1264,7 @@ namespace Lumina
                     .SetIndirectParams(IndirectDrawBuffer)
                     .AddBindingSet(BindingSet)
                     .AddBindingSet(BasePassSet)
-                    .AddBindingSet(Mat->GetBindingSet());
+                    .AddBindingSet(Batch.BindingSet);
                 
                 CmdList.SetGraphicsState(GraphicsState);
                 CmdList.DrawIndexedIndirect(1, Batch.IndirectDrawOffset * sizeof(FDrawIndexedIndirectArguments));
@@ -1445,6 +1545,16 @@ namespace Lumina
             BufferDesc.DebugName = "Instance Buffer";
             InstanceDataBuffer = GRenderContext->CreateBuffer(BufferDesc);
         }
+        
+        {
+            FRHIBufferDesc BufferDesc;
+            BufferDesc.Size = sizeof(glm::mat4) * 255 * 1'000;
+            BufferDesc.Usage.SetFlag(BUF_StorageBuffer);
+            BufferDesc.bKeepInitialState = true;
+            BufferDesc.InitialState = EResourceStates::ShaderResource;
+            BufferDesc.DebugName = "Bone Data Buffer";
+            BoneDataBuffer = GRenderContext->CreateBuffer(BufferDesc);
+        }
 
         {
             FRHIBufferDesc BufferDesc;
@@ -1597,42 +1707,6 @@ namespace Lumina
         InitImages();
         
         {
-            FVertexAttributeDesc VertexDesc[4];
-            // Pos
-            VertexDesc[0].SetElementStride(sizeof(FVertex));
-            VertexDesc[0].SetOffset(offsetof(FVertex, Position));
-            VertexDesc[0].Format = EFormat::RGB32_FLOAT;
-        
-            // Normal
-            VertexDesc[1].SetElementStride(sizeof(FVertex));
-            VertexDesc[1].SetOffset(offsetof(FVertex, Normal));
-            VertexDesc[1].Format = EFormat::R32_UINT;
-        
-            // UV
-            VertexDesc[2].SetElementStride(sizeof(FVertex));
-            VertexDesc[2].SetOffset(offsetof(FVertex, UV));
-            VertexDesc[2].Format = EFormat::RG16_UINT;
-            
-            // Color
-            VertexDesc[3].SetElementStride(sizeof(FVertex));
-            VertexDesc[3].SetOffset(offsetof(FVertex, Color));
-            VertexDesc[3].Format = EFormat::RGBA8_UNORM;
-        
-        
-            VertexLayoutInput = GRenderContext->CreateInputLayout(VertexDesc, std::size(VertexDesc));
-        }
-        
-        {
-            FVertexAttributeDesc VertexDesc[1];
-            // Pos
-            VertexDesc[0].SetElementStride(sizeof(FVertex));
-            VertexDesc[0].SetOffset(offsetof(FVertex, Position));
-            VertexDesc[0].Format = EFormat::RGB32_FLOAT;
-            
-            PositionOnlyLayoutInput = GRenderContext->CreateInputLayout(VertexDesc, 1);
-        }
-        
-        {
             FVertexAttributeDesc VertexDesc[2];
             // Pos
             VertexDesc[0].SetElementStride(sizeof(FSimpleElementVertex));
@@ -1667,7 +1741,8 @@ namespace Lumina
             BindingSetDesc.AddItem(FBindingSetItem::BufferSRV(1, InstanceDataBuffer));
             BindingSetDesc.AddItem(FBindingSetItem::BufferSRV(2, InstanceMappingBuffer));
             BindingSetDesc.AddItem(FBindingSetItem::BufferSRV(3, LightDataBuffer));
-        
+            BindingSetDesc.AddItem(FBindingSetItem::BufferSRV(4, BoneDataBuffer));
+
             TBitFlags<ERHIShaderType> Visibility;
             Visibility.SetMultipleFlags(ERHIShaderType::Vertex, ERHIShaderType::Fragment);
             GRenderContext->CreateBindingSetAndLayout(Visibility, 0, BindingSetDesc, BindingLayout, BindingSet);
@@ -1809,7 +1884,8 @@ namespace Lumina
                 BindingSetDesc.AddItem(FBindingSetItem::BufferSRV(1, InstanceDataBuffer));
                 BindingSetDesc.AddItem(FBindingSetItem::BufferSRV(2, InstanceMappingBuffer));
                 BindingSetDesc.AddItem(FBindingSetItem::BufferSRV(3, LightDataBuffer));
-        
+                BindingSetDesc.AddItem(FBindingSetItem::BufferSRV(4, BoneDataBuffer));
+
                 TBitFlags<ERHIShaderType> Visibility;
                 Visibility.SetMultipleFlags(ERHIShaderType::Vertex, ERHIShaderType::Fragment);
                 GRenderContext->CreateBindingSetAndLayout(Visibility, 0, BindingSetDesc, BindingLayout, BindingSet);
@@ -1834,7 +1910,6 @@ namespace Lumina
                 BufferDesc.DebugName = "Light Data Buffer";
                 LightDataBuffer = GRenderContext->CreateBuffer(BufferDesc);
             }
-        
             
             {
         
@@ -1843,7 +1918,8 @@ namespace Lumina
                 BindingSetDesc.AddItem(FBindingSetItem::BufferSRV(1, InstanceDataBuffer));
                 BindingSetDesc.AddItem(FBindingSetItem::BufferSRV(2, InstanceMappingBuffer));
                 BindingSetDesc.AddItem(FBindingSetItem::BufferSRV(3, LightDataBuffer));
-        
+                BindingSetDesc.AddItem(FBindingSetItem::BufferSRV(4, BoneDataBuffer));
+
                 TBitFlags<ERHIShaderType> Visibility;
                 Visibility.SetMultipleFlags(ERHIShaderType::Vertex, ERHIShaderType::Fragment);
                 GRenderContext->CreateBindingSetAndLayout(Visibility, 0, BindingSetDesc, BindingLayout, BindingSet);

@@ -11,7 +11,7 @@ namespace Lumina
     class IRHIResource;
     class FShaderLibrary;
     class FRHIShader;
-    class IRHIInputLayout;
+    class FRHIInputLayout;
     class FRHIBindingSet;
     class FRHIBindingLayout;
     class FRHIComputePipeline;

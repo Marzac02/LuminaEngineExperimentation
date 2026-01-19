@@ -63,13 +63,19 @@ namespace Lumina
         );
     }
     
-    struct FVertex
+    enum class EVertexFormat : uint8
+    {
+        Static,
+        Skinned,
+    };
+    
+    struct alignas(16) FVertex
     {
         glm::vec3       Position;
         uint32          Normal;
         glm::u16vec2    UV;
         uint32          Color;
-
+        //              4 bytes of padding.
         
         friend FArchive& operator<<(FArchive& Ar, FVertex& Data)
         {
@@ -77,6 +83,25 @@ namespace Lumina
             Ar << Data.Normal;
             Ar << Data.UV;
             Ar << Data.Color;
+            
+            return Ar;
+        }
+    };
+    
+    struct alignas(16) FSkinnedVertex : FVertex
+    {
+        glm::u8vec4   JointIndices;
+        glm::u8vec4   JointWeights;
+
+        
+        friend FArchive& operator<<(FArchive& Ar, FSkinnedVertex& Data)
+        {
+            Ar << Data.Position;
+            Ar << Data.Normal;
+            Ar << Data.UV;
+            Ar << Data.Color;
+            Ar << Data.JointIndices;
+            Ar << Data.JointWeights;
             
             return Ar;
         }
@@ -90,6 +115,7 @@ namespace Lumina
 
     static_assert(offsetof(FVertex, Position) == 0, "Required FVertex::Position to be the first member.");
     static_assert(TCanBulkSerialize<FVertex>::value);
+    static_assert(TCanBulkSerialize<FSkinnedVertex>::value);
     static_assert(TCanBulkSerialize<FSimpleElementVertex>::value);
 
 }

@@ -25,7 +25,6 @@ namespace Lumina
     void CMaterial::Serialize(FArchive& Ar)
     {
         CMaterialInterface::Serialize(Ar);
-        Ar << VertexShaderBinaries;
         Ar << PixelShaderBinaries;
     }
 
@@ -39,17 +38,17 @@ namespace Lumina
 
     void CMaterial::PostLoad()
     {
-        if (!VertexShaderBinaries.empty() && !PixelShaderBinaries.empty())
+        if (!PixelShaderBinaries.empty())
         {
             FShaderHeader Header;
 
             FRHICommandListRef CommandList = GRenderContext->CreateCommandList(FCommandListInfo::Graphics());
             CommandList->Open();
             
-            Header.DebugName = GetName().ToString() + "_VertexShader";
-            Header.Hash = Hash::GetHash64(VertexShaderBinaries.data(), VertexShaderBinaries.size() * sizeof(uint32));
-            Header.Binaries = VertexShaderBinaries;
-            VertexShader = GRenderContext->CreateVertexShader(Header);
+            StaticVertexShader = FShaderLibrary::GetVertexShader("GeometryPass.vert");
+            
+            TVector<FString> Defs{"SKINNED_VERTEX"};
+            SkinnedVertexShader = FShaderLibrary::GetVertexShader("GeometryPass.vert", Defs);
             
             Header.DebugName = GetName().ToString() + "_PixelShader";
             Header.Hash = Hash::GetHash64(PixelShaderBinaries.data(), PixelShaderBinaries.size() * sizeof(uint32));
@@ -174,9 +173,14 @@ namespace Lumina
         return BindingLayout; 
     }
 
-    FRHIVertexShader* CMaterial::GetVertexShader() const
+    FRHIVertexShader* CMaterial::GetVertexShader(EVertexFormat Format) const
     {
-        return VertexShader;
+        switch (Format)
+        {
+            case EVertexFormat::Static: return StaticVertexShader;
+            case EVertexFormat::Skinned: return SkinnedVertexShader;
+        }
+        UNREACHABLE();
     }
 
     FRHIPixelShader* CMaterial::GetPixelShader() const
@@ -242,21 +246,18 @@ namespace Lumina
         {
             LOG_ERROR("Missing [$MATERIAL_INPUTS] in base shader!");
         }
-
+        
         ShaderCompiler->CompilerShaderRaw(LoadedString, {}, [](const FShaderHeader& Header) mutable 
         {
             DefaultMaterial->PixelShader = GRenderContext->CreatePixelShader(Header);
-            DefaultMaterial->VertexShader = GRenderContext->GetShaderLibrary()->GetShader("GeometryPass.vert").As<FRHIVertexShader>();
-                
+            DefaultMaterial->StaticVertexShader = GRenderContext->GetShaderLibrary()->GetShader("GeometryPass.vert").As<FRHIVertexShader>();
+
             DefaultMaterial->PixelShaderBinaries.assign(Header.Binaries.begin(), Header.Binaries.end());
-            DefaultMaterial->VertexShaderBinaries.assign(DefaultMaterial->VertexShader->GetShaderHeader().Binaries.begin(), DefaultMaterial->VertexShader->GetShaderHeader().Binaries.end());
-            
             GRenderContext->OnShaderCompiled(DefaultMaterial->PixelShader, false, true);
         });
 
         ShaderCompiler->Flush();
 
         DefaultMaterial->PostLoad();
-        
     }
 }

@@ -74,6 +74,12 @@ namespace Lumina
         /** Renames this object, optionally changing its package */
         LUMINA_API virtual bool Rename(const FName& NewName, CPackage* NewPackage = nullptr);
         
+        /** Uses this object as a template to construct a new object from, will only copy reflected properties. */
+        LUMINA_API CObject* Duplicate();
+        
+        /** Copies this object's properties over to another property of the same class */
+        LUMINA_API void CopyPropertiesTo(CObject* Other);
+        
     private:
 
     };

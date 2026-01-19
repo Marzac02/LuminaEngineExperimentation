@@ -91,7 +91,7 @@ namespace Lumina
             EndPin->AddConnection(StartPin);
         }
         
-        RegisterGraphNode(CEdNode_Reroute::StaticClass());
+        //RegisterGraphNode(CEdNode_Reroute::StaticClass());
 
         RegisterGraphNode(CMaterialExpression_SmoothStep::StaticClass());
         RegisterGraphNode(CMaterialExpression_Saturate::StaticClass());

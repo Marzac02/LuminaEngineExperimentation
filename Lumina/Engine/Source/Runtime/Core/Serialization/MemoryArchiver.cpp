@@ -34,7 +34,7 @@ namespace Lumina
             // Only serialize if we have the requested amount of data
             if (Offset + Size <= TotalSize())
             {
-                Memory::Memcpy(V, &Bytes[static_cast<int32>(Offset)], Size);
+                Memory::Memcpy(V, &Bytes[Offset], Size);
                 Offset += Size;
             }
             else
@@ -75,15 +75,15 @@ namespace Lumina
 
     void FBufferReader::Seek(int64 InPos)
     {
-        ASSERT(InPos >= 0);
-        ASSERT(InPos <= ReaderSize);
+        DEBUG_ASSERT(InPos >= 0);
+        DEBUG_ASSERT(InPos <= ReaderSize);
         ReaderPos = InPos;
     }
 
     void FBufferReader::Serialize(void* Data, int64 Size)
     {
-        ASSERT(ReaderPos >= 0);
-        ASSERT(ReaderPos + Size <= ReaderSize);
+        DEBUG_ASSERT(ReaderPos >= 0);
+        DEBUG_ASSERT(ReaderPos + Size <= ReaderSize);
         Memory::Memcpy(Data, static_cast<uint8*>(ReaderData) + ReaderPos, Size);
         ReaderPos += Size;
     }

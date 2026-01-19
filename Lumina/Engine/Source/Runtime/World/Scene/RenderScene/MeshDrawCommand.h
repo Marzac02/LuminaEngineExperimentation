@@ -4,6 +4,7 @@
 
 namespace Lumina
 {
+    class FRHIInputLayout;
     class FRHIBuffer;
     class CMaterialInterface;
 
@@ -14,13 +15,14 @@ namespace Lumina
      */
     struct FMeshDrawCommand
     {
-        CMaterialInterface* Material    = nullptr;
+        FRHIVertexShader*   VertexShader = nullptr;
+        FRHIPixelShader*    PixelShader = nullptr;
         FRHIBuffer*         IndexBuffer = nullptr;
-        FRHIBuffer*         VertexBuffer;
-        uint32              IndirectDrawOffset;
+        FRHIBuffer*         VertexBuffer = nullptr;
+        FRHIBindingLayout*  BindingLayout = nullptr;
+        FRHIBindingSet*     BindingSet = nullptr;
+        FRHIInputLayout*    InputLayout = nullptr;
+        uint32              IndirectDrawOffset = 0;
+        bool                bSkinned = false;
     };
-    
-    static_assert(sizeof(FMeshDrawCommand) <= 32, "FMeshDrawCommand should be at most 1/2 the size of a typical 64 bit cache line");
-    
-    
 }

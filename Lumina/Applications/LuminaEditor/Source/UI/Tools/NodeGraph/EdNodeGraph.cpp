@@ -10,7 +10,6 @@
 #include "Core/Profiler/Profile.h"
 #include "EASTL/sort.h"
 #include "imgui-node-editor/imgui_node_editor_internal.h"
-#include "Tools/UI/ImGui/ImGuiDesignIcons.h"
 #include "Tools/UI/ImGui/ImGuiX.h"
 
 namespace Lumina
@@ -96,6 +95,10 @@ namespace Lumina
         {
             NodeIDToIndex[Node->GetNodeID()] = Index;
             NextID = std::max(Node->GetNodeID() + 1, NextID);
+            
+            ImVec2 Position = NodeEditor::GetNodePosition(Node->GetNodeID());
+            Node->GridX = Position.x;
+            Node->GridY = Position.y;
             
             NodeBuilder.Begin(Node->GetNodeID());
             
@@ -197,7 +200,127 @@ namespace Lumina
                 ImGui::EndPopup();
             }
         }
+        
+        if (NodeEditor::BeginShortcut())
+        {
+            static ImVec2 CopiedPivot;
+            if (NodeEditor::AcceptCopy())
+            {
+                CopiedNodes.clear();
+                
+                NodeEditor::NodeId Selections[12];
+                int Num = NodeEditor::GetSelectedNodes(Selections, std::size(Selections));
+                
+                ImVec2 Min(FLT_MAX, FLT_MAX);
+                ImVec2 Max(-FLT_MAX, -FLT_MAX);
+                
+                for (int i = 0; i < Num; ++i)
+                {
+                    NodeEditor::NodeId Selection = Selections[i];
+                    auto NodeItr = eastl::find_if(Nodes.begin(), Nodes.end(), [&] (const TObjectPtr<CEdGraphNode>& A)
+                    {
+                        return A->GetNodeID() == Selection.Get() && A->IsDeletable();
+                    });
+                    
+                    if (NodeItr == Nodes.end())
+                    {
+                        continue;
+                    }
+                    
+                    CopiedNodes.push_back(NodeItr->Get());
+                    
+                    ImVec2 Pos = NodeEditor::GetNodePosition(Selection);
+                    ImVec2 Size = NodeEditor::GetNodeSize(Selection);
+
+                    Min.x = eastl::min(Min.x, Pos.x);
+                    Min.y = eastl::min(Min.y, Pos.y);
+
+                    Max.x = eastl::max(Max.x, Pos.x + Size.x);
+                    Max.y = eastl::max(Max.y, Pos.y + Size.y);
+                }
+                
+                CopiedPivot = (Min + Max) * 0.5f;
+            }
+            
+            if (NodeEditor::AcceptPaste())
+            {
+                NodeEditor::ClearSelection();
+                
+                ImVec2 PasteLocation = NodeEditor::ScreenToCanvas(ImGui::GetMousePos());
+
+                ImVec2 Delta = PasteLocation - CopiedPivot;
+                
+                for (CEdGraphNode* Node : CopiedNodes)
+                {
+                    ImVec2 CopiedCanvasPosition = NodeEditor::GetNodePosition(Node->GetNodeID());
+                    
+                    CEdGraphNode* NewNode = CreateNode(Node->GetClass());
+                    Node->CopyPropertiesTo(NewNode);
+                    
+                    ImVec2 NewPosition = CopiedCanvasPosition + Delta;
+                    NodeEditor::SetNodePosition(NewNode->GetNodeID(), NewPosition);
+                    NodeEditor::SelectNode(NewNode->GetNodeID(), true);
+                }
+            }
+            
+            if (NodeEditor::AcceptDuplicate())
+            {
+                TVector<CEdGraphNode*> DupNodes;
+                
+                NodeEditor::NodeId Selections[12];
+                int Num = NodeEditor::GetSelectedNodes(Selections, std::size(Selections));
+                
+                ImVec2 Min(FLT_MAX, FLT_MAX);
+                ImVec2 Max(-FLT_MAX, -FLT_MAX);
+                
+                for (int i = 0; i < Num; ++i)
+                {
+                    NodeEditor::NodeId Selection = Selections[i];
+                    auto NodeItr = eastl::find_if(Nodes.begin(), Nodes.end(), [&] (const TObjectPtr<CEdGraphNode>& A)
+                    {
+                        return A->GetNodeID() == Selection.Get() && A->IsDeletable();
+                    });
+                    
+                    if (NodeItr == Nodes.end())
+                    {
+                        continue;
+                    }
+                    
+                    DupNodes.push_back(NodeItr->Get());
+                    
+                    ImVec2 Pos = NodeEditor::GetNodePosition(Selection);
+                    ImVec2 Size = NodeEditor::GetNodeSize(Selection);
+
+                    Min.x = eastl::min(Min.x, Pos.x);
+                    Min.y = eastl::min(Min.y, Pos.y);
+
+                    Max.x = eastl::max(Max.x, Pos.x + Size.x);
+                    Max.y = eastl::max(Max.y, Pos.y + Size.y);
+                }
+                
+                CopiedPivot = (Min + Max) * 0.5f;
+                
+                NodeEditor::ClearSelection();
+                ImVec2 PasteLocation = NodeEditor::ScreenToCanvas(ImGui::GetMousePos());
+                ImVec2 Delta = PasteLocation - CopiedPivot;
+                
+                for (CEdGraphNode* Node : DupNodes)
+                {
+                    ImVec2 CopiedCanvasPosition = NodeEditor::GetNodePosition(Node->GetNodeID());
+                    
+                    CEdGraphNode* NewNode = CreateNode(Node->GetClass());
+                    Node->CopyPropertiesTo(NewNode);
+
+                    ImVec2 NewPosition = CopiedCanvasPosition + Delta;
+                    NodeEditor::SetNodePosition(NewNode->GetNodeID(), NewPosition);
+                    NodeEditor::SelectNode(NewNode->GetNodeID(), true);
+                }
+            }
+        }
+        
         NodeEditor::Resume();
+
+        NodeEditor::EndShortcut();
     
         bool bAnyNodeSelected = false;
         for (CEdGraphNode* Node : Nodes)
@@ -332,6 +455,7 @@ namespace Lumina
                 }
             }
             
+            
             NodeEditor::LinkId DeletedLinkId;
             while (NodeEditor::QueryDeletedLink(&DeletedLinkId))
             {
@@ -379,6 +503,11 @@ namespace Lumina
             ImGui::PushItemWidth(PopupSize.x - 24);
 
             Filter.Draw("##NodeFilter");
+            
+            if (ImGui::IsWindowAppearing())
+            {
+                ImGui::SetKeyboardFocusHere(-1);
+            }
             
             ImGui::PopItemWidth();
             ImGui::PopStyleColor(3);

@@ -20,6 +20,9 @@
 #include "LuminaEditor.h"
 #include "Assets/AssetTypes/Material/Material.h"
 #include "Assets/AssetTypes/Material/MaterialInstance.h"
+#include "Assets/AssetTypes/Mesh/Animation/Animation.h"
+#include "Assets/AssetTypes/Mesh/SkeletalMesh/SkeletalMesh.h"
+#include "Assets/AssetTypes/Mesh/Skeleton/Skeleton.h"
 #include "Assets/AssetTypes/Mesh/StaticMesh/StaticMesh.h"
 #include "Assets/AssetTypes/Prefabs/Prefab.h"
 #include "Assets/AssetTypes/Textures/Texture.h"
@@ -38,8 +41,11 @@
 #include "Renderer/RHIGlobals.h"
 #include "Renderer/ShaderCompiler.h"
 #include "Tools/GamePreviewTool.h"
+#include "Tools/AssetEditors/Animation/AnimationEditorTool.h"
 #include "Tools/AssetEditors/MaterialEditor/MaterialInstanceEditorTool.h"
 #include "Tools/AssetEditors/MeshEditor/MeshEditorTool.h"
+#include "Tools/AssetEditors/MeshEditor/SkeletalMeshEditorTool.h"
+#include "Tools/AssetEditors/MeshEditor/SkeletonEditorTool.h"
 #include "Tools/AssetEditors/PrefabEditor/PrefabEditorTool.h"
 #include "Tools/AssetEditors/TextureEditor/TextureEditorTool.h"
 #include "Tools/Import/ImportHelpers.h"
@@ -611,7 +617,19 @@ namespace Lumina
         }
         else if (Asset->IsA<CStaticMesh>())
         {
-            NewTool = CreateTool<FMeshEditorTool>(this, Asset);
+            NewTool = CreateTool<FStaticMeshEditorTool>(this, Asset);
+        }
+        else if (Asset->IsA<CSkeleton>())
+        {
+            NewTool = CreateTool<FSkeletonEditorTool>(this, Asset);
+        }
+        else if (Asset->IsA<CAnimation>())
+        {
+            NewTool = CreateTool<FAnimationEditorTool>(this, Asset);
+        }
+        else if (Asset->IsA<CSkeletalMesh>())
+        {
+            NewTool = CreateTool<FSkeletalMeshEditorTool>(this, Asset);
         }
         else if (Asset->IsA<CMaterialInstance>())
         {

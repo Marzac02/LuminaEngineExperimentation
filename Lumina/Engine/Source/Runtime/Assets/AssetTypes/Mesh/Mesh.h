@@ -21,7 +21,7 @@ namespace Lumina
     {
         GENERATED_BODY()
         
-        friend class CStaticMeshFactory;
+        friend class CMeshFactory;
         
     public:
         
@@ -47,11 +47,13 @@ namespace Lumina
         FORCEINLINE const FRHIBufferRef& GetIndexBuffer() const { return MeshResources->MeshBuffers.IndexBuffer; }
         FORCEINLINE const FRHIBufferRef& GetShadowIndexBuffer() const { return MeshResources->MeshBuffers.ShadowIndexBuffer; }
         
-        FUNCTION(Script)
-        FORCEINLINE SIZE_T GetNumVertices() const { return MeshResources->Vertices.size(); }
+        virtual bool IsSkinned() const { return false; }
         
         FUNCTION(Script)
-        FORCEINLINE SIZE_T GetNumIndices() const { return MeshResources->Indices.size(); }
+        FORCEINLINE SIZE_T GetNumVertices() const { return MeshResources->GetNumVertices(); }
+        
+        FUNCTION(Script)
+        FORCEINLINE SIZE_T GetNumIndices() const { return MeshResources->GetNumIndices(); }
         
         FUNCTION(Script)
         FORCEINLINE const FAABB& GetAABB() const { return BoundingBox; }

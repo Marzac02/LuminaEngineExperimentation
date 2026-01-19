@@ -304,7 +304,7 @@ namespace Lumina
         uint32      EntityID;
         uint32      BatchedDrawID;
         uint32      bSelected;
-        uint32      Reserved;
+        uint32      BoneOffset;
     };
     
     VERIFY_SSBO_ALIGNMENT(FInstanceData)

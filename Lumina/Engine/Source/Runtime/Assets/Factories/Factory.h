@@ -43,6 +43,14 @@ namespace Lumina
         }
         
         CObject* TryCreateNew(FStringView Path);
+        static CObject* CreateNewOf(CClass* Class, FStringView Path);
+        
+        template<Concept::IsACObject T>
+        static T* CreateNewOf(FStringView Path)
+        {
+            return Cast<T>(CreateNewOf(T::StaticClass(), Path));
+        }
+            
         
         virtual FString GetAssetName() const { return ""; }
         virtual FString GetAssetDescription() const { return ""; }

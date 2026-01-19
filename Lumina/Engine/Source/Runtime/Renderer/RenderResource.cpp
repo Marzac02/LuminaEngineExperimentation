@@ -24,7 +24,7 @@ namespace Lumina
     template class LUMINA_API TRefCountPtr<FRHIComputePipeline>;
     template class LUMINA_API TRefCountPtr<FRHIBindingLayout>;
     template class LUMINA_API TRefCountPtr<FRHIBindingSet>;
-    template class LUMINA_API TRefCountPtr<IRHIInputLayout>;
+    template class LUMINA_API TRefCountPtr<FRHIInputLayout>;
     template class LUMINA_API TRefCountPtr<FShaderLibrary>;
     template class LUMINA_API TRefCountPtr<FRHIDescriptorTable>;
 
