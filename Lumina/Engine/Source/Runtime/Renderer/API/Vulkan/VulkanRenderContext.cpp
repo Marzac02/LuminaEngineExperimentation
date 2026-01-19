@@ -2,6 +2,8 @@
 #include "VulkanRenderContext.h"
 #define VOLK_IMPLEMENTATION
 #include <volk/volk.h>
+
+#include "Convert.h"
 #include "VulkanCommandList.h"
 #include "VulkanDevice.h"
 #include "VulkanMacros.h"
@@ -37,25 +39,6 @@ namespace Lumina
     static void* VulkanRealloc(void* pUserData, void* pMemory, size_t size, size_t alignment, VkSystemAllocationScope allocationScope)
     {
         return Memory::Realloc(pMemory, size, alignment);
-    }
-
-    static FVulkanImage::ESubresourceViewType GetTextureViewType(EFormat BindingFormat, EFormat TextureFormat)
-    {
-        EFormat Format = (BindingFormat == EFormat::UNKNOWN) ? TextureFormat : BindingFormat;
-
-        const FFormatInfo& FormatInfo = RHI::Format::Info(Format);
-
-        if (FormatInfo.bHasDepth)
-        {
-            return FVulkanImage::ESubresourceViewType::DepthOnly;
-        }
-        
-        if (FormatInfo.bHasStencil)
-        {
-            return FVulkanImage::ESubresourceViewType::StencilOnly;
-        }
-        
-        return FVulkanImage::ESubresourceViewType::AllAspects;
     }
     
     VkBool32 VKAPI_PTR VkDebugCallback(
@@ -976,7 +959,7 @@ namespace Lumina
                     FVulkanImage* Image = static_cast<FVulkanImage*>(Binding.ResourceHandle);
 
                     const FTextureSubresourceSet Subresource = Binding.GetTextureResource().Subresources.Resolve(Image->GetDescription(), true);
-                    FVulkanImage::ESubresourceViewType ViewType = GetTextureViewType(Binding.Format, Image->GetDescription().Format);
+                    FVulkanImage::ESubresourceViewType ViewType = Vk::GetTextureViewType(Binding.Format, Image->GetDescription().Format);
                     VkImageView View = Image->GetSubresourceView(Subresource, Binding.GetTextureResource().Dimension, Binding.Format, VK_IMAGE_USAGE_SAMPLED_BIT, ViewType).View;
                     
                     VkDescriptorImageInfo& ImageInfo = ImageWriteInfos.emplace_back();
@@ -994,7 +977,7 @@ namespace Lumina
                     FVulkanImage* Image = static_cast<FVulkanImage*>(Binding.ResourceHandle);
 
                     const FTextureSubresourceSet Subresource = Binding.GetTextureResource().Subresources.Resolve(Image->GetDescription(), true);
-                    FVulkanImage::ESubresourceViewType ViewType = GetTextureViewType(Binding.Format, Image->GetDescription().Format);
+                    FVulkanImage::ESubresourceViewType ViewType = Vk::GetTextureViewType(Binding.Format, Image->GetDescription().Format);
                     VkImageView View = Image->GetSubresourceView(Subresource, Binding.GetTextureResource().Dimension, Binding.Format, VK_IMAGE_USAGE_STORAGE_BIT, ViewType).View;
                     
                     VkDescriptorImageInfo& ImageInfo = ImageWriteInfos.emplace_back();

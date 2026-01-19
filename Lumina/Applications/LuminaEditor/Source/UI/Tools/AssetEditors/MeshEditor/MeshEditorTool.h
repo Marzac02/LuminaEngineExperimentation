@@ -11,6 +11,8 @@ namespace Lumina
     {
     public:
         
+        FStringView MeshPropertiesName = "MeshProperties";
+        
         LUMINA_EDITOR_TOOL(FStaticMeshEditorTool)
         
         FStaticMeshEditorTool(IEditorToolContext* Context, CObject* InAsset);

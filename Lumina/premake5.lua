@@ -3,6 +3,7 @@ include(os.getenv("LUMINA_DIR") .. "/Dependencies.lua")
 project "Lumina"
     kind "SharedLib"
     rtti "off"
+    enableunitybuild "On"
     targetdir ("%{LuminaEngineDirectory}/Binaries/" .. outputdir)
     objdir ("%{LuminaEngineDirectory}/Intermediates/Obj/" .. outputdir .. "/%{prj.name}")
 
@@ -49,10 +50,7 @@ project "Lumina"
         "Engine/Source/**.h",
         reflection_unity_file,
         
-        "Engine/ThirdParty/EnkiTS/src/**.cpp",
-        "Engine/ThirdParty/JoltPhysics/Jolt/**.cpp",
         "Engine/ThirdParty/xxhash/xxhash.c",
-        "Engine/ThirdParty/rpmalloc/**.c",
         "Engine/ThirdParty/imgui/imgui_demo.cpp",
         "Engine/ThirdParty/imgui/implot_demo.cpp",
         "Engine/ThirdParty/meshoptimizer/src/**.cpp",
@@ -89,6 +87,9 @@ project "Lumina"
         "EA",
         "Tracy",
         "lua54",
+        "EnkiTS",
+        "JoltPhysics",
+        "RPMalloc",
         "shaderc_combined",
         "GFSDK_Aftermath_Lib",
     }

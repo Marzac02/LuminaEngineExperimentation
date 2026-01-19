@@ -168,6 +168,25 @@ namespace Lumina::Vk
         const FResourceStateMappingInternal Mapping = ConvertResourceStateInternal(State);
         return Mapping.AsResourceStateMapping2();
     }
+
+    FVulkanImage::ESubresourceViewType GetTextureViewType(EFormat BindingFormat, EFormat TextureFormat)
+    {
+        EFormat Format = (BindingFormat == EFormat::UNKNOWN) ? TextureFormat : BindingFormat;
+
+        const FFormatInfo& FormatInfo = RHI::Format::Info(Format);
+
+        if (FormatInfo.bHasDepth)
+        {
+            return FVulkanImage::ESubresourceViewType::DepthOnly;
+        }
+
+        if (FormatInfo.bHasStencil)
+        {
+            return FVulkanImage::ESubresourceViewType::StencilOnly;
+        }
+        
+        return FVulkanImage::ESubresourceViewType::AllAspects;
+    }
     
     FResourceStateMapping ConvertResourceState(EResourceStates State)
     {

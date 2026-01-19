@@ -5,6 +5,9 @@ project "Reflector"
 	kind "ConsoleApp"
     targetdir ("%{LuminaEngineDirectory}/Binaries/" .. outputdir)
     objdir ("%{LuminaEngineDirectory}/Intermediates/Obj/" .. outputdir .. "/%{prj.name}")
+	enableunitybuild "On"
+
+
 	configmap 
 	{
 		["Debug"] 		= "Development",

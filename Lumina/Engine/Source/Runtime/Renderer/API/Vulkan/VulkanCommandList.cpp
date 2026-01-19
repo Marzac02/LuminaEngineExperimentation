@@ -17,26 +17,7 @@ namespace Lumina
     {
         constexpr size_t vkCmdUpdateBufferLimit = 65536;
     }
-
-    static FVulkanImage::ESubresourceViewType GetTextureViewType(EFormat BindingFormat, EFormat TextureFormat)
-    {
-        EFormat Format = (BindingFormat == EFormat::UNKNOWN) ? TextureFormat : BindingFormat;
-
-        const FFormatInfo& FormatInfo = RHI::Format::Info(Format);
-
-        if (FormatInfo.bHasDepth)
-        {
-            return FVulkanImage::ESubresourceViewType::DepthOnly;
-        }
-        
-        if (FormatInfo.bHasStencil)
-        {
-            return FVulkanImage::ESubresourceViewType::StencilOnly;
-        }
-        
-        return FVulkanImage::ESubresourceViewType::AllAspects;
-    }
-
+    
     static EImageDimension GetDimensionForFramebuffer(EImageDimension dimension, bool isArray)
     {
         // Can't render into cubes and 3D textures directly, convert them to 2D arrays

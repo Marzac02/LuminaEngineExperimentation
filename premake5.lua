@@ -26,7 +26,6 @@ workspace "Lumina"
         "GLM_ENABLE_EXPERIMENTAL",
 		"IMGUI_DEFINE_MATH_OPERATORS",
         "IMGUI_IMPL_VULKAN_USE_VOLK",
-        "SOL_DEFAULT_PASS_ON_ERROR",
 
         "TRACY_ALLOW_SHADOW_WARNING",
         "TRACY_ENABLE",
@@ -59,7 +58,6 @@ workspace "Lumina"
 
     warnings "Default"
 
-    -- Platform-specific settings
     filter "system:windows"
         systemversion "latest"
         defines { "LE_PLATFORM_WINDOWS" }
@@ -67,15 +65,15 @@ workspace "Lumina"
         { 
             "/EHsc",
             "/Zc:preprocessor",
-            "/MP",      -- Multi-processor compilation
-            "/Zc:inline", -- Remove unreferenced functions/data
+            "/MP",
+            "/Zc:inline",
             "/Zc:__cplusplus",
             "/we4238"
         }
 
     filter "system:linux"
         defines { "LE_PLATFORM_LINUX" }
-        buildoptions { "-march=native" } -- CPU-specific optimizations
+        buildoptions { "-march=native" }
 
     -- Debug Configuration
     filter "configurations:Debug"
@@ -107,11 +105,15 @@ workspace "Lumina"
 
     filter {}
 
-	group "Dependencies"
+	group "ThirdParty"
 		include "Lumina/Engine/ThirdParty/EA"
 		include "Lumina/Engine/ThirdParty/glfw"
 		include "Lumina/Engine/ThirdParty/imgui"
 		include "Lumina/Engine/Thirdparty/Tracy"
+        include "Lumina/Engine/Thirdparty/EnkiTS"
+        include "Lumina/Engine/ThirdParty/Sol2"
+        include "Lumina/Engine/ThirdParty/JoltPhysics"
+        include "Lumina/Engine/ThirdParty/RPMalloc"
 	group ""
 
 	group "Core"

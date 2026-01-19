@@ -3,8 +3,7 @@ VULKAN_SDK = os.getenv("VULKAN_SDK")
 
 project "ImGui"
 	kind "StaticLib"
-	language "C++"
-
+	warnings "off"
     targetdir ("%{wks.location}/Binaries/" .. outputdir)
     objdir ("%{wks.location}/Intermediates/Obj/" .. outputdir .. "/%{prj.name}")
 
