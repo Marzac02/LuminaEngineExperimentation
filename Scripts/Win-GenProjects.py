@@ -183,8 +183,6 @@ def generate_solution(premake_path):
     try:
         result = subprocess.run(
             [premake_path, "vs2022"],
-            capture_output=True,
-            text=True,
             check=True
         )
         

@@ -1,18 +1,16 @@
 project "VKBootstrap"
 	kind "StaticLib"
 	warnings "off"
-    targetdir ("%{wks.location}/Binaries/" .. outputdir)
-    objdir ("%{wks.location}/Intermediates/Obj/" .. outputdir .. "/%{prj.name}")    
-    location(ProjectFilesDir)
+    
 
 	files
 	{
-		"src/**.cpp",
-		"src/**.h",
+		"**.cpp",
+		"**.h",
 	}
 
 	includedirs
 	{
-		"src/",
-		includedependencies()
+		".",
+		LuminaConfig.ThirdPartyDirectory(),
 	}

@@ -1,9 +1,5 @@
-include(os.getenv("LUMINA_DIR") .. "/Dependencies")
-
 project "Sandbox"
 	kind "ConsoleApp"
-    targetdir ("%{wks.location}/Binaries/" .. outputdir)
-    objdir ("%{wks.location}/Intermediates/Obj/" .. outputdir .. "/%{prj.name}")   
 	location(ProjectFilesDir)
 
 	defines
@@ -32,15 +28,8 @@ project "Sandbox"
 	}
 
 	includedirs
-	{ 
+	{
 	    "Source",
-	    
-	    "%{LuminaEngineDirectory}/Lumina/",
-		"%{LuminaEngineDirectory}/Lumina/Engine/",
-	    "%{LuminaEngineDirectory}/Lumina/Engine/Source/",
-	    "%{LuminaEngineDirectory}/Lumina/Engine/Source/Runtime/",
-
-	    reflection_dir,
-		includedependencies(),
+	    LuminaConfig.GetPublicIncludeDirectories()
 	}
 	 

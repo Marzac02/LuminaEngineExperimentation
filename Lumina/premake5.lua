@@ -1,72 +1,46 @@
-include(os.getenv("LUMINA_DIR") .. "/Dependencies")
+
+include "Scripts/Dependencies"
 
 project "Lumina"
     kind "SharedLib"
     rtti "off"
     staticruntime "Off"
     enableunitybuild "On"
-    targetdir ("%{LuminaEngineDirectory}/Binaries/" .. outputdir)
-    objdir ("%{LuminaEngineDirectory}/Intermediates/Obj/" .. outputdir .. "/%{prj.name}")
-    --location(ProjectFilesDir)
-
     pchheader "pch.h"
     pchsource "Engine/Source/pch.cpp"
-    dependson { "EA", "ImGui", "Tracy", "GLFW", "Reflector" }
+    dependson { "Reflector", "EA", "ImGui", "Tracy", "GLFW" }
+    
 
 
     defines
     {
-        "LUMINA_ENGINE_DIRECTORY=%{LuminaEngineDirectory}",
         "LUMINA_ENGINE",
-
         "EASTL_USER_DEFINED_ALLOCATOR=1",
-
         "GLFW_INCLUDE_NONE",
         "GLFW_STATIC",
-
         "LUMINA_RENDERER_VULKAN",
         "VK_NO_PROTOTYPES",
         "LUMINA_RPMALLOC",
-
         "JPH_DEBUG_RENDERER",
         "JPH_FLOATING_POINT_EXCEPTIONS_ENABLED",
         "JPH_EXTERNAL_PROFILE",
         "JPH_ENABLE_ASSERTS",
     }
 
-    prebuildcommands 
-    {
-        'python "%{LuminaEngineDirectory}/Scripts/RunReflection.py" "%{wks.location}/Lumina.sln"'
-    }
-    prebuildmessage "======== Running Lumina Reflection Tool ========"
-
-    postbuildcommands
-    {
-        '{COPYFILE} "%{LuminaEngineDirectory}/External/RenderDoc/renderdoc.dll" "%{cfg.targetdir}"',
-        '{COPYFILE} "%{LuminaEngineDirectory}/Lumina/Engine/ThirdParty/NvidiaAftermath/lib/GFSDK_Aftermath_Lib.x64.dll" "%{cfg.targetdir}"',
-    }
-
     files
     {
         "Engine/Source/**.cpp",
         "Engine/Source/**.h",
-        reflection_unity_file,
+        LuminaConfig.GetReflectionUnityFile()
     }
 
-    includedirs
-    { 
-        "Engine/Source",
-        "Engine/Source/Runtime",
-        
-        reflection_dir,
-        includedependencies(),
-    }
+    includedirs(LuminaConfig.GetPublicIncludeDirectories())
     
     libdirs
     {
-        "%{LuminaEngineDirectory}/Lumina/Engine/ThirdParty/lua",
-        "%{LuminaEngineDirectory}/Lumina/Engine/ThirdParty/NvidiaAftermath/lib",
-        "%{LuminaEngineDirectory}/External/ShaderC",
+        "%{LuminaConfig.EngineDirectory}/Lumina/Engine/ThirdParty/lua",
+        "%{LuminaConfig.EngineDirectory}/Lumina/Engine/ThirdParty/NvidiaAftermath/lib",
+        "%{LuminaConfig.EngineDirectory}/External/ShaderC",
     }
 
     links
@@ -89,6 +63,17 @@ project "Lumina"
         "OpenFBX",
         "shaderc_combined",
         "GFSDK_Aftermath_Lib",
+    }
+
+    prebuildcommands 
+    {
+        LuminaConfig.RunReflection("%{wks.location}Lumina.sln")
+    }
+    
+    postbuildcommands
+    {
+        '{COPYFILE} "%{LuminaConfig.EngineDirectory}/External/RenderDoc/renderdoc.dll" "%{cfg.targetdir}"',
+        '{COPYFILE} "%{LuminaConfig.EngineDirectory}/Lumina/Engine/ThirdParty/NvidiaAftermath/lib/GFSDK_Aftermath_Lib.x64.dll" "%{cfg.targetdir}"',
     }
 
     filter "configurations:Debug or configurations:DebugEditor"

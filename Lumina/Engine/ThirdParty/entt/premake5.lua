@@ -1,7 +1,7 @@
 project "Entt"
 	kind "None"
 	warnings "off"
-    location(ProjectFilesDir)
+    
 
 	files
 	{

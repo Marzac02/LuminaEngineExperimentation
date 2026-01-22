@@ -1,12 +1,6 @@
-include(os.getenv("LUMINA_DIR") .. "/Dependencies")
-
-
 project "Reflector"
 	kind "ConsoleApp"
-    targetdir ("%{LuminaEngineDirectory}/Binaries/" .. outputdir)
-    objdir ("%{LuminaEngineDirectory}/Intermediates/Obj/" .. outputdir .. "/%{prj.name}")
-    --location(ProjectFilesDir)
-
+    
 	configmap
 	{
 		["Debug"] 			= "Development",
@@ -22,14 +16,14 @@ project "Reflector"
 
 	prebuildcommands 
 	{
-		"{MKDIR} \"%{LuminaEngineDirectory}/Binaries/%{cfg.buildcfg}-%{cfg.system}-%{cfg.architecture}\"",
-	    "{COPYFILE} \"%{LuminaEngineDirectory}/External/LLVM/bin/libclang.dll\" \"%%{LuminaEngineDirectory}/Binaries/%{cfg.buildcfg}-%{cfg.system}-%{cfg.architecture}/\"",
+		LuminaConfig.MakeDirectory(LuminaConfig.EnginePath("Binaries/%{cfg.buildcfg}-%{cfg.system}-%{cfg.architecture}")),
+		LuminaConfig.CopyFile(LuminaConfig.EnginePath("External/LLVM/bin/libclang.dll"), LuminaConfig.GetTargetDirectory())
 	}
 
 	libdirs
 	{
-		"%{LuminaEngineDirectory}/External/LLVM/Lib",
-		"%{LuminaEngineDirectory}/External/LLVM/bin",
+		LuminaConfig.EnginePath("External/LLVM/Lib"),
+		LuminaConfig.EnginePath("External/LLVM/bin"),
 	}
 
 	links
@@ -60,17 +54,18 @@ project "Reflector"
 	{
 		"Source/**.cpp",
 		"Source/**.h",
-		"%{wks.location}/Lumina/Engine/ThirdParty/EA/**.h",
-		"%{wks.location}/Lumina/Engine/ThirdParty/EA/**.cpp",
-		"%{wks.location}/Lumina/Engine/ThirdParty/xxhash/**.c",
+		LuminaConfig.ThirdPartyPath("EA/**.h"),
+		LuminaConfig.ThirdPartyPath("EA/**.cpp"),
+		LuminaConfig.ThirdPartyPath("xxhash/**.c"),
 	}
 
 
 	includedirs
 	{ 
-		"Source",	    
-		"%{LuminaEngineDirectory}/External/LLVM/include/",
-		
-		includedependencies(),
+		"Source",
+		LuminaConfig.EnginePath("External/LLVM/include/"),
+		LuminaConfig.ThirdPartyPath("xxhash"),
+		LuminaConfig.ThirdPartyPath("EA/EASTL/include"),
+		LuminaConfig.ThirdPartyPath("EA/EABase/include/Common"),
 	}
 

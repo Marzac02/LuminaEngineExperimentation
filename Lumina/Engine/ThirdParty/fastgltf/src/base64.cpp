@@ -33,7 +33,7 @@
 #include <functional>
 
 //#include "simdjson.h"
-#include <fastgltf/deps/simdjson/simdjson.h>
+#include <deps/simdjson/simdjson.h>
 
 #include <fastgltf/base64.hpp>
 

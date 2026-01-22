@@ -18,7 +18,6 @@
 #include "Renderer/RHIStaticStates.h"
 #include "Renderer/ShaderCompiler.h"
 #include "Renderer/RenderGraph/RenderGraphDescriptor.h"
-#include "src/VkBootstrap.h"
 #include "TaskSystem/TaskSystem.h"
 #include "Renderer/ErrorHandling/Vulkan/VulkanCrashTracker.h"
 

@@ -1,19 +1,12 @@
-include(os.getenv("LUMINA_DIR") .. "/Dependencies")
-
 project "Editor"
 	kind "ConsoleApp"
     rtti "off"
-	enableunitybuild "On"
-    targetdir ("%{wks.location}/Binaries/" .. outputdir)
-    objdir ("%{wks.location}/Intermediates/Obj/" .. outputdir .. "/%{prj.name}")   
-	dependson { "Lumina", "ImGui", "EA", "Tracy", "lua54" }
-    --location(ProjectFilesDir)
-
+	dependson { "Reflector", "Lumina", "ImGui", "EA", "Tracy", "lua54" }
 	
     libdirs
     {
-        "%{LuminaEngineDirectory}/Lumina/Engine/ThirdParty/lua/",
-		"%{LuminaEngineDirectory}/Lumina/Engine/ThirdParty/NvidiaAftermath/lib",
+        "%{LuminaConfig.EngineDirectory}/Lumina/Engine/ThirdParty/lua/",
+		"%{LuminaConfig.EngineDirectory}/Lumina/Engine/ThirdParty/NvidiaAftermath/lib",
     }
 
 	links
@@ -31,19 +24,10 @@ project "Editor"
 		"Source/**.cpp",
 		"Source/**.h",
 		
-		reflection_unity_file,
+		LuminaConfig.GetReflectionUnityFile()
 	}
 
 	includedirs
-	{ 
-	    "Source",
-	    
-	    "%{LuminaEngineDirectory}/Lumina/",
-		"%{LuminaEngineDirectory}/Lumina/Engine/",
-	    "%{LuminaEngineDirectory}/Lumina/Engine/Source/",
-	    "%{LuminaEngineDirectory}/Lumina/Engine/Source/Runtime/",
-
-	    reflection_dir,
-
-		includedependencies(),
+	{
+		LuminaConfig.GetPublicIncludeDirectories(),
 	}

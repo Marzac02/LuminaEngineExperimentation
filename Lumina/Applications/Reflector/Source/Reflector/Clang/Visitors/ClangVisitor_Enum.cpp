@@ -48,19 +48,19 @@ namespace Lumina::Reflection::Visitor
             return CXChildVisit_Break;
         }
         
-        eastl::string FullyQualifiedName;
-        if (!ClangUtils::GetQualifiedNameForType(clang::QualType::getFromOpaquePtr(Data), FullyQualifiedName))
-        {
-            return CXChildVisit_Break;
-        }
-
-        
         FReflectionMacro Macro;
         if(!Context->TryFindMacroForCursor(Context->ReflectedHeader->HeaderPath, Cursor, Macro))
         {
             return CXChildVisit_Continue;
         }
 
+        
+        eastl::string FullyQualifiedName;
+        if (!ClangUtils::GetQualifiedNameForType(clang::QualType::getFromOpaquePtr(Data), FullyQualifiedName))
+        {
+            return CXChildVisit_Break;
+        }
+        
         if(Macro.Type != EReflectionMacro::Reflect)
         {
             return CXChildVisit_Continue;

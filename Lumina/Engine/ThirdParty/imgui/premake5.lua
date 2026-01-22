@@ -1,20 +1,14 @@
-
-VULKAN_SDK = os.getenv("VULKAN_SDK")
-
 project "ImGui"
 	kind "StaticLib"
 	warnings "off"
-    targetdir ("%{wks.location}/Binaries/" .. outputdir)
-    objdir ("%{wks.location}/Intermediates/Obj/" .. outputdir .. "/%{prj.name}")
-    location(ProjectFilesDir)
+    
 
 	includedirs
 	{
 		".",
 		"backends",
-		"%{LuminaEngineDirectory}/Lumina/Engine/ThirdParty/glfw/include/",
-		"%{LuminaEngineDirectory}/Lumina/Engine/ThirdParty/",
-		"%{VULKAN_SDK}/Include/",
+		LuminaConfig.ThirdPartyDirectory(),
+		LuminaConfig.ThirdPartyPath("glfw/include/")
 	}
 
 	files

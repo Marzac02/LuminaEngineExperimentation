@@ -6,6 +6,7 @@
 	#include <Windows.h>
 #endif
 #include <glfw/glfw3.h>
+#include "VkBootstrap.h"
 #include "VulkanDevice.h"
 #include "VulkanMacros.h"
 #include "VulkanRenderContext.h"
@@ -13,8 +14,6 @@
 #include "Core/Windows/Window.h"
 #include "Renderer/RenderTypes.h"
 #include "Renderer/RHIGlobals.h"
-#include "src/VkBootstrap.h"
-
 #include "Core/Engine/Engine.h"
 #include "Renderer/RenderManager.h"
 

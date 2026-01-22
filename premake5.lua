@@ -1,3 +1,6 @@
+
+include "Scripts/Dependencies"
+
 workspace "Lumina"
 	language "C++"
 	targetdir "Build"
@@ -6,6 +9,8 @@ workspace "Lumina"
 	cppdialect "C++latest"
 	staticruntime "Off"
     warnings "Default"
+    targetdir (LuminaConfig.GetTargetDirectory())
+    objdir (LuminaConfig.GetObjDirectory())
 
     configurations 
     { 
@@ -15,7 +20,6 @@ workspace "Lumina"
         "DevelopmentEditor",
         "Shipping",
     }
-
 
 	flags  
 	{

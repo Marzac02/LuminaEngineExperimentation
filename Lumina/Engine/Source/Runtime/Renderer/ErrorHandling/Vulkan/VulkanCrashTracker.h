@@ -9,7 +9,7 @@
 #if defined(WITH_AFTERMATH)
 #include <NvidiaAftermath/GFSDK_Aftermath_GpuCrashDump.h>
 #endif
-#include <src/VkBootstrap.h>
+#include "VkBootstrap.h"
 
 namespace Lumina::RHI
 {

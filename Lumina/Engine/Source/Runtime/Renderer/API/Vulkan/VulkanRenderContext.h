@@ -11,7 +11,7 @@
 #include "Memory/SmartPtr.h"
 #include "Renderer/RenderContext.h"
 #include "Renderer/ErrorHandling/Vulkan/VulkanCrashTracker.h"
-#include "src/VkBootstrap.h"
+#include "VkBootstrap.h"
 #include "Types/BitFlags.h"
 
 namespace Lumina

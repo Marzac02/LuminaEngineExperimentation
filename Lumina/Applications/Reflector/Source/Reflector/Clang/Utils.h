@@ -1,5 +1,6 @@
 #pragma once
 
+#include <print>
 #include <clang/AST/Ast.h>
 #include <clang-c/Index.h>
 #include "xxhash.h"

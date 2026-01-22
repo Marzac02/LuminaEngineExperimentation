@@ -47,8 +47,8 @@
 #endif
 
 //#include simdjson.h>
-#include <fastgltf/deps/simdjson/simdjson.h>
-#include <fastgltf/include/fastgltf/core.hpp>
+#include <deps/simdjson/simdjson.h>
+#include <include/fastgltf/core.hpp>
 
 #ifdef SIMDJSON_TARGET_VERSION
 // Make sure that SIMDJSON_TARGET_VERSION is equal to SIMDJSON_VERSION.
