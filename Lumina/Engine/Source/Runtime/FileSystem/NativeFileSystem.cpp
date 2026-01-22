@@ -135,6 +135,11 @@ namespace Lumina::FileSystem
         return std::filesystem::is_directory(ResolveVirtualPath(Path).c_str());
     }
 
+    size_t FNativeFileSystem::Size(FStringView Path) const
+    {
+        return std::filesystem::file_size(ResolveVirtualPath(Path).c_str());
+    }
+
     bool FNativeFileSystem::CreateDir(FStringView Path) const
     {
         return std::filesystem::create_directory(ResolveVirtualPath(Path).c_str());

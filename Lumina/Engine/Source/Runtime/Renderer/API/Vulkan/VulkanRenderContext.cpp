@@ -183,7 +183,7 @@ namespace Lumina
         LUMINA_PROFILE_SCOPE();
 
         LockMark(Mutex);
-        uint64 RecodingID = LastRecordingID.fetch_add(1, eastl::memory_order_relaxed);
+        uint64 RecodingID = LastRecordingID.fetch_add(1, std::memory_order_relaxed) + 1;
 
         TRefCountPtr<FTrackedCommandBuffer> TrackedBuffer;
         if (!CommandBufferPool.try_dequeue(TrackedBuffer))
@@ -691,7 +691,7 @@ namespace Lumina
     
     void FVulkanRenderContext::CreateDevice(vkb::Instance Instance)
     {
-        CrashTracker = MakeUniquePtr<RHI::FVulkanCrashTracker>();
+        CrashTracker = MakeUnique<RHI::FVulkanCrashTracker>();
         
         VkPhysicalDeviceFeatures DeviceFeatures             = {};
         DeviceFeatures.fragmentStoresAndAtomics             = VK_TRUE;
@@ -772,7 +772,7 @@ namespace Lumina
         {
             VkQueue Queue = vkbDevice.get_queue(vkb::QueueType::graphics).value();
             uint32 Index = vkbDevice.get_queue_index(vkb::QueueType::graphics).value();
-            Queues[uint32(ECommandQueue::Graphics)] = MakeUniquePtr<FQueue>(this, Queue, Index, ECommandQueue::Graphics);
+            Queues[uint32(ECommandQueue::Graphics)] = MakeUnique<FQueue>(this, Queue, Index, ECommandQueue::Graphics);
             SetVulkanObjectName("Graphics Queue", VK_OBJECT_TYPE_QUEUE, (uintptr_t)Queue);
         }
 
@@ -780,7 +780,7 @@ namespace Lumina
         {
             VkQueue Queue = vkbDevice.get_queue(vkb::QueueType::compute).value();
             uint32 Index = vkbDevice.get_queue_index(vkb::QueueType::compute).value();
-            Queues[uint32(ECommandQueue::Compute)] = MakeUniquePtr<FQueue>(this, Queue, Index, ECommandQueue::Compute);
+            Queues[uint32(ECommandQueue::Compute)] = MakeUnique<FQueue>(this, Queue, Index, ECommandQueue::Compute);
             SetVulkanObjectName("Compute Queue", VK_OBJECT_TYPE_QUEUE, (uintptr_t)Queue);
         }
 
@@ -788,7 +788,7 @@ namespace Lumina
         {
             VkQueue Queue = vkbDevice.get_queue(vkb::QueueType::transfer).value();
             uint32 Index = vkbDevice.get_queue_index(vkb::QueueType::transfer).value();
-            Queues[uint32(ECommandQueue::Transfer)] = MakeUniquePtr<FQueue>(this, Queue, Index, ECommandQueue::Transfer);
+            Queues[uint32(ECommandQueue::Transfer)] = MakeUnique<FQueue>(this, Queue, Index, ECommandQueue::Transfer);
             SetVulkanObjectName("Transfer Queue", VK_OBJECT_TYPE_QUEUE, (uintptr_t)Queue);
         }
     }

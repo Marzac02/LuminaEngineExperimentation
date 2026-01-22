@@ -22,7 +22,7 @@ namespace Lumina
         
         static TSharedPtr<FNumericPropertyCustomization> MakeInstance()
         {
-            return MakeSharedPtr<FNumericPropertyCustomization>();
+            return MakeShared<FNumericPropertyCustomization>();
         }
         
         EPropertyChangeOp DrawProperty(TSharedPtr<FPropertyHandle> Property) override
@@ -80,7 +80,7 @@ namespace Lumina
 
         static TSharedPtr<FBoolPropertyCustomization> MakeInstance()
         {
-            return MakeSharedPtr<FBoolPropertyCustomization>();
+            return MakeShared<FBoolPropertyCustomization>();
         }
         
         EPropertyChangeOp DrawProperty(TSharedPtr<FPropertyHandle> Property) override
@@ -111,7 +111,7 @@ namespace Lumina
 
         static TSharedPtr<FCObjectPropertyCustomization> MakeInstance()
         {
-            return MakeSharedPtr<FCObjectPropertyCustomization>();
+            return MakeShared<FCObjectPropertyCustomization>();
         }
         
         EPropertyChangeOp DrawProperty(TSharedPtr<FPropertyHandle> Property) override;
@@ -132,7 +132,7 @@ namespace Lumina
         
         static TSharedPtr<FEnumPropertyCustomization> MakeInstance()
         {
-            return MakeSharedPtr<FEnumPropertyCustomization>();
+            return MakeShared<FEnumPropertyCustomization>();
         }
 
         EPropertyChangeOp DrawProperty(TSharedPtr<FPropertyHandle> Property) override;
@@ -150,7 +150,7 @@ namespace Lumina
         
         static TSharedPtr<FNamePropertyCustomization> MakeInstance()
         {
-            return MakeSharedPtr<FNamePropertyCustomization>();
+            return MakeShared<FNamePropertyCustomization>();
         }
 
         EPropertyChangeOp DrawProperty(TSharedPtr<FPropertyHandle> Property) override;
@@ -169,7 +169,7 @@ namespace Lumina
         
         static TSharedPtr<FStringPropertyCustomization> MakeInstance()
         {
-            return MakeSharedPtr<FStringPropertyCustomization>();
+            return MakeShared<FStringPropertyCustomization>();
         }
 
         EPropertyChangeOp DrawProperty(TSharedPtr<FPropertyHandle> Property) override;
@@ -188,7 +188,7 @@ namespace Lumina
         
         static TSharedPtr<FVec2PropertyCustomization> MakeInstance()
         {
-            return MakeSharedPtr<FVec2PropertyCustomization>();
+            return MakeShared<FVec2PropertyCustomization>();
         }
 
         EPropertyChangeOp DrawProperty(TSharedPtr<FPropertyHandle> Property) override;
@@ -207,7 +207,7 @@ namespace Lumina
         
         static TSharedPtr<FVec3PropertyCustomization> MakeInstance()
         {
-            return MakeSharedPtr<FVec3PropertyCustomization>();
+            return MakeShared<FVec3PropertyCustomization>();
         }
 
         EPropertyChangeOp DrawProperty(TSharedPtr<FPropertyHandle> Property) override;
@@ -226,7 +226,7 @@ namespace Lumina
         
         static TSharedPtr<FVec4PropertyCustomization> MakeInstance()
         {
-            return MakeSharedPtr<FVec4PropertyCustomization>();
+            return MakeShared<FVec4PropertyCustomization>();
         }
 
         EPropertyChangeOp DrawProperty(TSharedPtr<FPropertyHandle> Property) override;
@@ -245,7 +245,7 @@ namespace Lumina
         
         static TSharedPtr<FQuatPropertyCustomization> MakeInstance()
         {
-            return MakeSharedPtr<FQuatPropertyCustomization>();
+            return MakeShared<FQuatPropertyCustomization>();
         }
 
         EPropertyChangeOp DrawProperty(TSharedPtr<FPropertyHandle> Property) override;
@@ -264,7 +264,7 @@ namespace Lumina
         
         static TSharedPtr<FTransformPropertyCustomization> MakeInstance()
         {
-            return MakeSharedPtr<FTransformPropertyCustomization>();
+            return MakeShared<FTransformPropertyCustomization>();
         }
 
         EPropertyChangeOp DrawProperty(TSharedPtr<FPropertyHandle> Property) override;

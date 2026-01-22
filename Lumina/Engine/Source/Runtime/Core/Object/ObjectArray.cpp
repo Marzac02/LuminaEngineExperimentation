@@ -158,7 +158,7 @@ namespace Lumina
             DEBUG_ASSERT(Item != nullptr);
     
             Generation = 1;
-            Item->Generation.store(Generation, eastl::memory_order_release);
+            Item->Generation.store(Generation, std::memory_order_release);
             Item->SetObj(Object);
     
             ChunkedArray.IncrementElementCount();

@@ -29,7 +29,6 @@ namespace Lumina
         TFixedVector<FTaskHandle, 1> TaskHandles;
         TFixedVector<ICommandList*, 1> AllCommandLists;
         
-        FMutex TaskHandlesMutex;
 		FMutex CommandListMutex;
 
         FRHICommandListRef CommandList = GRenderContext->CreateCommandList(FCommandListInfo::Graphics());
@@ -58,7 +57,6 @@ namespace Lumina
                         LocalCommandList->Close();
                     });
                     
-                    FScopeLock Lock(TaskHandlesMutex);
                     TaskHandles.emplace_back(Task);
                 }
                 else // Run the pass serially.

@@ -89,13 +89,13 @@ namespace Lumina
 
     CPackage* CPackage::CreatePackage(FStringView Path)
     {
-        FStringView ObjectName = SanitizeObjectName(Path);
+        FFixedString ObjectName = SanitizeObjectName(Path);
         ASSERT(FindObject<CPackage>(ObjectName) == nullptr);
 
         CPackage* Package = NewObject<CPackage>(nullptr, ObjectName);
         Package->AddToRoot();
 
-        Package->PackageThumbnail = MakeSharedPtr<FPackageThumbnail>();
+        Package->PackageThumbnail = MakeShared<FPackageThumbnail>();
         
         LOG_INFO("Created Package: \"{}\"", Path);
         
@@ -128,7 +128,7 @@ namespace Lumina
         TVector<FObjectExport> Exports;
         Reader << Exports;
 
-        FName PackageFileName = FileSystem::FileName(Path).data();
+        FName PackageFileName = FileSystem::FileName(Path, true);
 
         TOptional<FObjectExport> Export;
         for (const FObjectExport& E : Exports)
@@ -148,17 +148,8 @@ namespace Lumina
         
 
         FAssetRegistry::Get().AssetDeleted(Export->ObjectGUID);
+        FileSystem::Remove(Path);
 
-        try
-        {
-            FileSystem::Remove(Path);
-        }
-        catch (std::filesystem::filesystem_error& Error)
-        {
-            LOG_ERROR("Failed to delete asset file {0}", Error.what());
-            return false;
-        }
-        
         return true;
     }
     
@@ -204,17 +195,17 @@ namespace Lumina
 
     CPackage* CPackage::FindPackageByPath(FStringView Path)
     {
-        FStringView ObjectName = SanitizeObjectName(Path);
+        FFixedString ObjectName = SanitizeObjectName(Path);
         return FindObject<CPackage>(ObjectName);
     }
 
     void CPackage::RenamePackage(FStringView OldPath, FStringView NewPath)
     {
-        FStringView OldObjectName = SanitizeObjectName(OldPath);
+        FFixedString OldObjectName = SanitizeObjectName(OldPath);
         
         if (CPackage* Package = FindObject<CPackage>(OldObjectName))
         {
-            FStringView NewObjectName = SanitizeObjectName(NewPath);
+            FFixedString NewObjectName = SanitizeObjectName(NewPath);
 
             ASSERT(Package->Rename(NewObjectName, nullptr));
             return;
@@ -266,7 +257,7 @@ namespace Lumina
     {
         LUMINA_PROFILE_SCOPE();
 
-        FStringView ObjectName = SanitizeObjectName(Path);
+        FFixedString ObjectName = SanitizeObjectName(Path);
         
         CPackage* Package = FindObject<CPackage>(ObjectName);
         if (Package)
@@ -305,7 +296,7 @@ namespace Lumina
         int64 SizeBefore = Reader.Tell();
         Reader.Seek(PackageHeader.ThumbnailDataOffset);
         
-        Package->PackageThumbnail = MakeSharedPtr<FPackageThumbnail>();
+        Package->PackageThumbnail = MakeShared<FPackageThumbnail>();
         Package->PackageThumbnail->Serialize(Reader);
 
         Reader.Seek(SizeBefore);
@@ -349,7 +340,7 @@ namespace Lumina
         Header.ThumbnailDataOffset = Writer.Tell();
         if (!Package->PackageThumbnail)
         {
-            Package->PackageThumbnail = MakeSharedPtr<FPackageThumbnail>();
+            Package->PackageThumbnail = MakeShared<FPackageThumbnail>();
         }
         
         Package->PackageThumbnail->Serialize(Writer);
@@ -380,7 +371,7 @@ namespace Lumina
     {
         void* HeapData = Memory::Malloc(FileBinary.size());
         Memory::Memcpy(HeapData, FileBinary.data(), FileBinary.size());
-        Loader = MakeUniquePtr<FPackageLoader>(HeapData, FileBinary.size(), this);
+        Loader = MakeUnique<FPackageLoader>(HeapData, FileBinary.size(), this);
     }
 
     FPackageLoader* CPackage::GetLoader() const

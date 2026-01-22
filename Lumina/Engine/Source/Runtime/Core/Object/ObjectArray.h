@@ -41,48 +41,48 @@ namespace Lumina
 
         void AddStrongRef()
         {
-            StrongRefCount.fetch_add(1, eastl::memory_order_relaxed);
+            StrongRefCount.fetch_add(1, std::memory_order_relaxed);
         }
 
         uint32 ReleaseStrongRef()
         {
-            uint32 PrevCount = StrongRefCount.fetch_sub(1, eastl::memory_order_acq_rel);
+            uint32 PrevCount = StrongRefCount.fetch_sub(1, std::memory_order_acq_rel);
             return PrevCount - 1;
         }
 
         void AddWeakRef()
         {
-            WeakRefCount.fetch_add(1, eastl::memory_order_relaxed);
+            WeakRefCount.fetch_add(1, std::memory_order_relaxed);
         }
 
         void ReleaseWeakRef()
         {
-            WeakRefCount.fetch_sub(1, eastl::memory_order_relaxed);
+            WeakRefCount.fetch_sub(1, std::memory_order_relaxed);
         }
 
         int32 GetStrongRefCount() const
         {
-            return StrongRefCount.load(eastl::memory_order_relaxed);
+            return StrongRefCount.load(std::memory_order_relaxed);
         }
 
         int32 GetWeakRefCount() const
         {
-            return WeakRefCount.load(eastl::memory_order_relaxed);
+            return WeakRefCount.load(std::memory_order_relaxed);
         }
 
         int32 GetGeneration() const
         {
-            return Generation.load(eastl::memory_order_acquire);
+            return Generation.load(std::memory_order_acquire);
         }
 
         void IncrementGeneration()
         {
-            Generation.fetch_add(1, eastl::memory_order_release);
+            Generation.fetch_add(1, std::memory_order_release);
         }
 
         bool IsReferenced() const
         {
-            return StrongRefCount.load(eastl::memory_order_relaxed) > 0;
+            return StrongRefCount.load(std::memory_order_relaxed) > 0;
         }
     };
 

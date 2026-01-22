@@ -2,7 +2,7 @@
 
 #include <format>
 #include "imgui.h"
-#include "Tools/UI/ImGui/ImGuizmo.h"
+#include "ImGuizmo.h"
 #include "imgui_internal.h"
 #include "Assets/AssetRegistry/AssetRegistry.h"
 #include "Containers/Array.h"
@@ -91,7 +91,7 @@ namespace Lumina::ImGuiX
     LUMINA_API void SameLineSeparator( float width = 0, const ImColor& color = ImColor(0));
 
     LUMINA_API ImTextureRef ToImTextureRef(FRHIImage* Image);
-    LUMINA_API ImTextureRef ToImTextureRef(const FString& Path);
+    LUMINA_API ImTextureRef ToImTextureRef(FStringView Path);
 
     LUMINA_API FString FormatSize(size_t Bytes);
 

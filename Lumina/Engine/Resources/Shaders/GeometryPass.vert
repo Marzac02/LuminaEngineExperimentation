@@ -59,12 +59,14 @@ void main()
     mat3 NormalMatrixVS = transpose(inverse(mat3(View * ModelMatrix)));
     vec3 NormalVS = NormalMatrixVS * NormalOS;
 
+    FInstanceData InstanceData = GetInstanceData(gl_InstanceIndex);
+
     // Outputs
     outUV           = vec2(uv.x, uv.y);
     outFragPos      = ViewPos;
     outNormal       = vec4(NormalVS, 1.0);
     outNormalWS     = vec4(NormalWS, 1.0);
     outFragColor    = inColor;
-    outEntityID     = GetEntityID(gl_InstanceIndex);
+    outEntityID     = InstanceData.EntityID;
     gl_Position     = Projection * ViewPos;
 }

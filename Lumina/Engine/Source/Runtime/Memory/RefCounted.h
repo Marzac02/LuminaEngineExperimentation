@@ -3,10 +3,7 @@
 #include "Memory.h"
 #include "Core/Assertions/Assert.h"
 #include "Core/Templates/LuminaTemplate.h"
-PRAGMA_DISABLE_ALL_WARNINGS
-#include "EASTL/atomic.h"
-PRAGMA_ENABLE_ALL_WARNINGS
-#include "Log/Log.h"
+#include "Core/Threading/Atomic.h"
 
 namespace Lumina
 {
@@ -33,29 +30,29 @@ namespace Lumina
 		uint32 AddRef() const
 		{
 			/** Add 1 to the reference count */
-			return RefCount.fetch_add(1, eastl::memory_order_relaxed);
+			return RefCount.fetch_add(1, std::memory_order_relaxed);
 		}
 
 		uint32 Release() const
 		{
-			int Value = RefCount.fetch_sub(1, eastl::memory_order_acq_rel);
+			int Value = RefCount.fetch_sub(1, std::memory_order_release);
 			/** Returns the previous value (if previous value is 1, our new value is 0). */
 			if(Value == 1)
 			{
-				eastl::atomic_thread_fence(eastl::memory_order_acquire);
+				std::atomic_thread_fence(std::memory_order_acquire);
 				Memory::Delete(this);
 			}
 
 			return Value;
 		}
 
-		uint32 GetRefCount() const { return RefCount; }
+		uint32 GetRefCount() const { return RefCount.load(std::memory_order_relaxed); }
 
-		bool IsValid() const { return RefCount > 0; }
+		bool IsValid() const { return RefCount.load(std::memory_order_acquire) > 0; }
 
 	private:
 
-		mutable eastl::atomic<int> RefCount = 0;
+		mutable TAtomic<int> RefCount{0};
 
 	};
 

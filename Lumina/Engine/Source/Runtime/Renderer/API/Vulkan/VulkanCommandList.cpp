@@ -43,8 +43,8 @@ namespace Lumina
 
     FVulkanCommandList::FVulkanCommandList(FVulkanRenderContext* InContext, const FCommandListInfo& InInfo)
         : RenderContext(InContext)
-        , UploadManager(MakeUniquePtr<FUploadManager>(InContext, InInfo.UploadChunkSize, 0, false))
-        , ScratchManager(MakeUniquePtr<FUploadManager>(InContext, InInfo.ScratchChunkSize, InInfo.ScratchMaxMemory, true))
+        , UploadManager(MakeUnique<FUploadManager>(InContext, InInfo.UploadChunkSize, 0, false))
+        , ScratchManager(MakeUnique<FUploadManager>(InContext, InInfo.ScratchChunkSize, InInfo.ScratchMaxMemory, true))
         , Info(InInfo)
         , PushConstantVisibility(0)
         , CurrentPipelineLayout(nullptr)

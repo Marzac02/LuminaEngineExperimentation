@@ -3,15 +3,14 @@
 
 #include "RenderResource.h"
 #include "Core/Serialization/MemoryArchiver.h"
-#include "Core/Threading/Thread.h"
 #include "Core/Utils/Defer.h"
 #include "FileSystem/FileSystem.h"
 #include "Memory/Memory.h"
 #include "Paths/Paths.h"
 #include "Platform/Filesystem/FileHelper.h"
 #include "shaderc/shaderc.hpp"
-#include "TaskSystem/TaskSystem.h"
 #include "SPIRV-Reflect/spirv_reflect.h"
+#include "TaskSystem/TaskSystem.h"
 
 namespace Lumina
 {
@@ -146,9 +145,18 @@ namespace Lumina
 
     bool FSpirVShaderCompiler::HasPendingRequests() const
     {
-        return PendingTasks.load(eastl::memory_order_acquire) != 0;
+        return PendingTasks.load(std::memory_order_acquire) > 0;
     }
 
+    void FSpirVShaderCompiler::Flush() const
+    {
+        uint32 Expected = PendingTasks.load(std::memory_order_acquire);
+        while (Expected != 0) 
+        {
+            std::atomic_wait(&PendingTasks, Expected);
+            Expected = PendingTasks.load(std::memory_order_acquire);
+        }
+    }
 
     bool FSpirVShaderCompiler::CompileShaderPath(FString ShaderPath, const FShaderCompileOptions& CompileOptions, CompletedFunc OnCompleted)
     {
@@ -170,7 +178,7 @@ namespace Lumina
             return false;
         }
         
-        PendingTasks.fetch_add(NumShaders, eastl::memory_order_relaxed);
+        PendingTasks.fetch_add(NumShaders, std::memory_order_relaxed);
 
         LOG_INFO("Starting Shader Task Swarm - Num: {}", NumShaders);
         
@@ -194,7 +202,8 @@ namespace Lumina
 
             DEFER
             {
-                PendingTasks.fetch_sub(Num, eastl::memory_order_relaxed);
+                PendingTasks.fetch_sub(Num, std::memory_order_relaxed);
+                std::atomic_notify_all(&PendingTasks);
             };
             
             for (uint32 i = Start; i < End; ++i)
@@ -294,7 +303,7 @@ namespace Lumina
 
     bool FSpirVShaderCompiler::CompilerShaderRaw(FString ShaderString, const FShaderCompileOptions& CompileOptions, CompletedFunc OnCompleted)
     {
-        PendingTasks.fetch_add(1, eastl::memory_order_relaxed);
+        PendingTasks.fetch_add(1, std::memory_order_relaxed);
 
         Task::AsyncTask(1, 1, [this,
             ShaderString = Move(ShaderString),
@@ -304,7 +313,8 @@ namespace Lumina
         {
             DEFER
             {
-                PendingTasks.fetch_sub(1, eastl::memory_order_relaxed);
+                PendingTasks.fetch_sub(1, std::memory_order_relaxed);
+                std::atomic_notify_all(&PendingTasks);
             };
             
             auto CompileStart = std::chrono::high_resolution_clock::now();

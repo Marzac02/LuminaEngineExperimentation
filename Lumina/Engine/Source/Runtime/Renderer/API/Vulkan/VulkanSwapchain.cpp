@@ -1,16 +1,19 @@
 #include "pch.h"
 
+#include "VulkanSwapchain.h"
+
+#ifdef _WIN32
+	#include <Windows.h>
+#endif
+#include <glfw/glfw3.h>
 #include "VulkanDevice.h"
-#include "Core/Profiler/Profile.h"
-#include "Renderer/CommandList.h"
 #include "VulkanMacros.h"
 #include "VulkanRenderContext.h"
+#include "Core/Profiler/Profile.h"
 #include "Core/Windows/Window.h"
 #include "Renderer/RenderTypes.h"
-#include "src/VkBootstrap.h"
 #include "Renderer/RHIGlobals.h"
-#include "VulkanSwapchain.h"
-#include <glfw/glfw3.h>
+#include "src/VkBootstrap.h"
 
 #include "Core/Engine/Engine.h"
 #include "Renderer/RenderManager.h"

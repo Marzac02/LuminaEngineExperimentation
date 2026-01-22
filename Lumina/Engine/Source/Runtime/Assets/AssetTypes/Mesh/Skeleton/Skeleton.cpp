@@ -9,7 +9,7 @@ namespace Lumina
         
         if (!SkeletonResource)
         {
-            SkeletonResource = MakeUniquePtr<FSkeletonResource>();
+            SkeletonResource = MakeUnique<FSkeletonResource>();
         }
         
         Ar << *SkeletonResource;

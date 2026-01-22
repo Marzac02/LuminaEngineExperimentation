@@ -25,6 +25,7 @@ namespace Lumina::FileSystem
         { FS.Remove(Path) }                                     -> Concept::TSameAs<bool>;
         { FS.RemoveAll(Path) }                                  -> Concept::TSameAs<bool>;
         { FS.Rename(Path, Path) }                               -> Concept::TSameAs<bool>;
+        { FS.Size(Path) }                                       -> Concept::TSameAs<size_t>;
         { FS.DirectoryIterator(Path, Callback) }                -> Concept::TSameAs<void>;
         { FS.RecursiveDirectoryIterator(Path, Callback) }       -> Concept::TSameAs<void>;
         { FS.GetAliasPath() }                                   -> std::convertible_to<FStringView>;
@@ -48,6 +49,7 @@ namespace Lumina::FileSystem
         bool IsDirectory(FStringView Path) const;
         bool CreateDir(FStringView Path) const;
         bool Remove(FStringView Path) const;
+        size_t Size(FStringView Path) const;
         bool RemoveAll(FStringView Path) const;
         bool Rename(FStringView Old, FStringView New) const;
         void DirectoryIterator(FStringView Path, const TFunction<void(const FFileInfo&)>& Callback) const;
@@ -97,6 +99,7 @@ namespace Lumina::FileSystem
     LUMINA_API FStringView Extension(FStringView Path);
     LUMINA_API FStringView FileName(FStringView Path, bool bRemoveExtension = false);
     LUMINA_API bool Remove(FStringView Path);
+    LUMINA_API size_t Size(FStringView Path);
     LUMINA_API bool RemoveAll(FStringView Path);
     LUMINA_API FFixedString ResolvePath(FStringView Path);
     LUMINA_API bool DoesAliasExists(const FName& Alias);

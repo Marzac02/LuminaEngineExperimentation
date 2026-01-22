@@ -1,13 +1,15 @@
 ﻿#include "pch.h"
 #include "EditorEntityMovementSystem.h"
-
 #include <glm/gtx/string_cast.hpp>
-
+#include <World/Entity/Components/DirtyComponent.h>
 #include "Input/InputProcessor.h"
 #include "World/Entity/Components/CameraComponent.h"
 #include "World/Entity/Components/EditorComponent.h"
 #include "World/Entity/Components/VelocityComponent.h"
-#include <World/Entity/Components/DirtyComponent.h>
+#ifdef _WIN32
+    #include <Windows.h>
+#endif
+#include "glfw/glfw3.h"
 
 namespace Lumina
 {

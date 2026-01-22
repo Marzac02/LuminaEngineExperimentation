@@ -16,7 +16,7 @@ namespace Lumina
             return;
         }
         
-        ActiveModal = MakeUniquePtr<FEditorToolModal>(Title, Size);
+        ActiveModal = MakeUnique<FEditorToolModal>(Title, Size);
         ActiveModal->DrawFunction = Move(DrawFunction);
         ActiveModal->bBlocking = bBlocking;
         

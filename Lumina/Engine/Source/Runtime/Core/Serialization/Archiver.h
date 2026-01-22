@@ -258,8 +258,8 @@ namespace Lumina
                 if (IsReading())
                 {
                     Array.clear();
-                    Array.shrink_to_fit();
                     Array.resize(SerializeNum);
+                    Array.shrink_to_fit();
                 }
             
                 Serialize(Array.data(), SerializeNum * sizeof(ValueType));
@@ -269,8 +269,8 @@ namespace Lumina
                 if (IsReading())
                 {
                     Array.clear();
-                    Array.shrink_to_fit();
                     Array.resize(SerializeNum);
+                    Array.shrink_to_fit();
                 }
 
                 for (SIZE_T i = 0; i < SerializeNum; i++)

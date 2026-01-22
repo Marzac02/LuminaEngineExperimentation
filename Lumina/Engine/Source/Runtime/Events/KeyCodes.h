@@ -1,7 +1,6 @@
 #pragma once
 
 #include "Platform/GenericPlatform.h"
-#include <glfw/glfw3.h>
 
 namespace Lumina
 {
@@ -141,11 +140,4 @@ namespace Lumina
 	
 		Num,
 	};
-	
-	const char* GetKeyName();
-	
-	inline const char* GetKeyName(EKeyCode Key)
-	{
-		return glfwGetKeyName((int)Key, 0);
-	}
 }

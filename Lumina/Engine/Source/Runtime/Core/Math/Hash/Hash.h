@@ -152,7 +152,7 @@ namespace Lumina::Hash
     template<typename T>
     concept HasHasher = requires(const T& Value)
     {
-        { GetHash(Value) } -> std::convertible_to<SIZE_T>;
+        { GetTypeHash(Value) } -> std::convertible_to<SIZE_T>;
     };
     
     template<typename T>
@@ -173,7 +173,7 @@ namespace Lumina::Hash
     requires (HasHasher<T> && !HashEASTLHasher<T>)
     SIZE_T GetHash(const T& Value) noexcept
     {
-        return GetHash(Value);
+        return GetTypeHash(Value);
     }
 
     template <typename T>

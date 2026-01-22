@@ -431,11 +431,11 @@ void main()
     vec3 AmbientLightColor  = GetAmbientLightColor() * GetAmbientLightIntensity();
     vec3 Ambient            = AmbientLightColor * AO;
     vec3 Color              = Ambient + Lo;
-    
+
     Color                   += Material.Emissive;
 
 
-
+    // ---- Final Outputs ----
     outColor    = vec4(Color, Material.Opacity);
     outPicker   = inEntityID;
 }

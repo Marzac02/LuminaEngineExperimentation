@@ -119,15 +119,15 @@ namespace Lumina::Physics
         JPH::AlignedAllocate    = JPHCustomAlignedAllocate;
         JPH::AlignedFree        = JPHCustomAlignedFree;
 
-        JoltData = MakeUniquePtr<FJoltData>();
-		JoltData->DebugRenderer = MakeUniquePtr<FJoltDebugRenderer>();
+        JoltData = MakeUnique<FJoltData>();
+		JoltData->DebugRenderer = MakeUnique<FJoltDebugRenderer>();
 
         JPH::Factory::sInstance = Memory::New<JPH::Factory>();
         JPH::DebugRenderer::sInstance = JoltData->DebugRenderer.get();
 
         JPH::RegisterTypes();
         
-        JoltData->JobThreadPool = MakeUniquePtr<JPH::JobSystemThreadPool>(2048, 8, Threading::GetNumThreads() - 1);
+        JoltData->JobThreadPool = MakeUnique<JPH::JobSystemThreadPool>(2048, 8, Threading::GetNumThreads() - 1);
 
     }
 
@@ -141,7 +141,7 @@ namespace Lumina::Physics
 
     TUniquePtr<IPhysicsScene> FJoltPhysicsContext::CreatePhysicsScene(CWorld* World)
     {
-        return MakeUniquePtr<FJoltPhysicsScene>(World);
+        return MakeUnique<FJoltPhysicsScene>(World);
     }
 
     JPH::JobSystemThreadPool* FJoltPhysicsContext::GetThreadPool()

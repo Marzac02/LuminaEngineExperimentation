@@ -73,7 +73,7 @@ namespace Lumina
     {
         FFixedString FilePath = Asset->GetPackage()->GetPackagePath();
         
-        auto AssetData = MakeUniquePtr<FAssetData>();
+        auto AssetData = MakeUnique<FAssetData>();
         AssetData->AssetClass   = Asset->GetClass()->GetName();
         AssetData->AssetGUID    = Asset->GetGUID();
         AssetData->AssetName    = Asset->GetName();
@@ -195,7 +195,7 @@ namespace Lumina
             return;
         }
         
-        auto AssetData = MakeUniquePtr<FAssetData>();
+        auto AssetData = MakeUnique<FAssetData>();
         AssetData->AssetClass   = Export->ClassName;
         AssetData->AssetGUID    = Export->ObjectGUID;
         AssetData->AssetName    = Export->ObjectName;

@@ -24,14 +24,14 @@ namespace Lumina
 
     template<typename T, typename... Args>
     requires (std::is_constructible_v<T, Args...>)
-    TSharedPtr<T> MakeSharedPtr(Args&&... args)
+    TSharedPtr<T> MakeShared(Args&&... args)
     {
         return eastl::make_shared<T>(std::forward<Args>(args)...);
     }
 
     template<typename T, typename... Args>
     requires (std::is_constructible_v<T, Args...>)
-    TUniquePtr<T> MakeUniquePtr(Args&&... args)
+    TUniquePtr<T> MakeUnique(Args&&... args)
     {
         return eastl::make_unique<T>(std::forward<Args>(args)...);
     }

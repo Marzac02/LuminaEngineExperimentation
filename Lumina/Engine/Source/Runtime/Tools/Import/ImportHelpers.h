@@ -14,7 +14,7 @@
 
 namespace Lumina
 {
-    struct FAnimationClip;
+    struct FAnimationResource;
     struct FMeshResource;
     struct FSkeletonResource;
     class IRenderContext;
@@ -36,28 +36,26 @@ namespace Lumina::Import
         LUMINA_API TOptional<FTextureImportResult> ImportTexture(FStringView RawFilePath, bool bFlipVertical = true);
     
         /** Creates a raw RHI Image */
-        NODISCARD LUMINA_API FRHIImageRef CreateTextureFromImport(IRenderContext* RenderContext, const FString& RawFilePath, bool bFlipVerticalOnLoad = true);
+        NODISCARD LUMINA_API FRHIImageRef CreateTextureFromImport(IRenderContext* RenderContext, FStringView RawFilePath, bool bFlipVerticalOnLoad = true);
     }
 
     namespace Mesh
     {
         struct FMeshImportOptions
         {
-            bool bOptimize = true;               // Weather to run a mesh optimization pass.
-            bool bImportMaterials = true;        // Whether to import materials defined in the GLTF file
-            bool bImportTextures = true;         // Whether to import textures found in the GLTF file.
-            bool bImportAnimations = true;       // Whether to import animations
-            bool bGenerateTangents = true;       // Whether to generate tangents (if not present in file)
-            bool bMergeMeshes = false;           // Whether to merge all meshes into a single static mesh
-            bool bApplyTransforms = true;        // Whether to bake transforms into the mesh
-            bool bUseCompression = false;        // Whether to compress vertex/index data after import
-            bool bFlipUVs = false;               // Flip UVs on import.
-            float Scale = 1.0f;                  // Scene-wide scale factor
+            bool bOptimize          = true;
+            bool bImportMaterials   = true;
+            bool bImportTextures    = true;
+            bool bImportMeshes      = true;
+            bool bImportAnimations  = true;
+            bool bImportSkeleton    = true;
+            bool bFlipUVs           = false;
+            float Scale             = 1.0f;
         };
 
         struct FMeshImportImage
         {
-            FString RelativePath;
+            FFixedString RelativePath;
             SIZE_T ByteOffset;
 
             bool operator==(const FMeshImportImage& Other) const
@@ -99,7 +97,7 @@ namespace Lumina::Import
             FMeshStatistics                             MeshStatistics;
             FMeshImportTextureMap                       Textures;
             TVector<TUniquePtr<FMeshResource>>          Resources;
-            TVector<TUniquePtr<FAnimationClip>>         Animations;
+            TVector<TUniquePtr<FAnimationResource>>     Animations;
             TVector<TUniquePtr<FSkeletonResource>>      Skeletons;
         };
         
@@ -111,6 +109,11 @@ namespace Lumina::Import
         namespace OBJ
         {
             NODISCARD LUMINA_API TExpected<FMeshImportData, FString> ImportOBJ(const FMeshImportOptions& ImportOptions, FStringView FilePath);
+        }
+        
+        namespace FBX
+        {
+            NODISCARD LUMINA_API TExpected<FMeshImportData, FString> ImportFBX(const FMeshImportOptions& ImportOptions, FStringView FilePath);
         }
 
         

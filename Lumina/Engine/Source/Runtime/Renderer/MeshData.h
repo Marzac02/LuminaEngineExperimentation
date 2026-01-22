@@ -18,8 +18,8 @@ namespace Lumina
         friend FArchive& operator << (FArchive& Ar, FGeometrySurface& Data)
         {
             Ar << Data.ID;
-            Ar << Data.StartIndex;
             Ar << Data.IndexCount;
+            Ar << Data.StartIndex;
             Ar << Data.MaterialIndex;
 
             return Ar;

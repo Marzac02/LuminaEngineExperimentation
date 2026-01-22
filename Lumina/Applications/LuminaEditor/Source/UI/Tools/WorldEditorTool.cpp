@@ -507,7 +507,7 @@ namespace Lumina
                 if (ImGui::MenuItem("Add Component"))
                 {
                     PushAddComponentModal(SelectedEntity);
-                    ImGui::EndMenu();
+                    ImGui::CloseCurrentPopup();
                 }
                 
                 if (ImGui::BeginMenu("Remove Component"))
@@ -655,7 +655,7 @@ namespace Lumina
             bool bTagExists = false;
         };
         
-        TUniquePtr<FTagModalState> State = MakeUniquePtr<FTagModalState>();
+        TUniquePtr<FTagModalState> State = MakeUnique<FTagModalState>();
         
         ToolContext->PushModal("Add Tag", ImVec2(400.0f, 180.0f), [this, Entity, State = Move(State)] () -> bool
         {
@@ -764,7 +764,7 @@ namespace Lumina
 
     void FWorldEditorTool::PushAddComponentModal(entt::entity Entity)
     {
-        TUniquePtr<ImGuiTextFilter> Filter = MakeUniquePtr<ImGuiTextFilter>();
+        TUniquePtr<ImGuiTextFilter> Filter = MakeUnique<ImGuiTextFilter>();
         ToolContext->PushModal("Add Component", ImVec2(650.0f, 500.0f), [this, Entity, Filter = Move(Filter)] () -> bool
         {
             bool bComponentAdded = false;
@@ -2760,7 +2760,7 @@ namespace Lumina
 
             for (const auto& [Component, Struct] : Sorted)
             {
-                TUniquePtr<FPropertyTable> NewTable = MakeUniquePtr<FPropertyTable>(Component, Struct);
+                TUniquePtr<FPropertyTable> NewTable = MakeUnique<FPropertyTable>(Component, Struct);
                 
                 NewTable->SetPreEditCallback([&](const FPropertyChangedEvent& Event)
                 {

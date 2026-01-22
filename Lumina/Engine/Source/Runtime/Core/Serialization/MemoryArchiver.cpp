@@ -79,7 +79,7 @@ namespace Lumina
         DEBUG_ASSERT(InPos <= ReaderSize);
         ReaderPos = InPos;
     }
-
+    
     void FBufferReader::Serialize(void* Data, int64 Size)
     {
         DEBUG_ASSERT(ReaderPos >= 0);
@@ -87,7 +87,6 @@ namespace Lumina
         Memory::Memcpy(Data, static_cast<uint8*>(ReaderData) + ReaderPos, Size);
         ReaderPos += Size;
     }
-    
     
     FMemoryWriter::FMemoryWriter(TVector<uint8>& InBytes, bool bSetOffset)
         :Bytes(InBytes)

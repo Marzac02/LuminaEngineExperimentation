@@ -27,13 +27,10 @@ namespace Lumina::Reflection
         "/Lumina/Engine/ThirdParty/meshoptimizer/src",
         "/Lumina/Engine/ThirdParty/EnkiTS/src",
         "/Lumina/Engine/ThirdParty/SPIRV-Reflect",
-        "/Lumina/Engine/ThirdParty/json/include",
+        "/Lumina/Engine/ThirdParty/json",
         "/Lumina/Engine/ThirdParty/entt/single_include",
         "/Lumina/Engine/ThirdParty/EA/EASTL/include",
         "/Lumina/Engine/ThirdParty/EA/EABase/include/Common",
-        "/Lumina/Engine/ThirdParty/rpmalloc",
-        "/Lumina/Engine/ThirdParty/xxhash",
-        "/Lumina/Engine/ThirdParty/tracy/public",
     };
 
     static eastl::string ToLower(const eastl::string& Str)

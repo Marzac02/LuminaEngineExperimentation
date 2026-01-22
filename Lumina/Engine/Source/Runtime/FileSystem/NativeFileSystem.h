@@ -23,6 +23,7 @@ namespace Lumina::FileSystem
         
         bool Exists(FStringView Path) const;
         bool IsDirectory(FStringView Path) const;
+        size_t Size(FStringView Path) const;
 
         bool CreateDir(FStringView Path) const;
         

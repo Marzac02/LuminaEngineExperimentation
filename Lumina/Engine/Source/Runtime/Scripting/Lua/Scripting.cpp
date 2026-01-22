@@ -5,13 +5,16 @@
 #include "Containers/Name.h"
 #include "Core/Math/Color.h"
 #include "Events/KeyCodes.h"
+#ifdef _WIN32
+    #include <Windows.h>
+#endif
+#include "GLFW/glfw3.h"
 #include "Input/InputProcessor.h"
 #include "Memory/SmartPtr.h"
 #include "Paths/Paths.h"
 #include "Scripting/DeferredScriptRegistry.h"
 #include "Scripting/ScriptFactory.h"
 #include "Scripting/EnttGlue/EnttGlue.h"
-#include "World/Entity/Components/TagComponent.h"
 #include "World/Entity/Systems/SystemContext.h"
 
 namespace Lumina::Scripting
@@ -95,7 +98,7 @@ namespace Lumina::Scripting
     
     void Initialize()
     {
-        GScriptingContext = MakeUniquePtr<FScriptingContext>();
+        GScriptingContext = MakeUnique<FScriptingContext>();
         GScriptingContext->Initialize();
     }
 

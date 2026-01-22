@@ -3,6 +3,7 @@ include(os.getenv("LUMINA_DIR") .. "/Dependencies.lua")
 project "Lumina"
     kind "SharedLib"
     rtti "off"
+    staticruntime "Off"
     enableunitybuild "On"
     targetdir ("%{LuminaEngineDirectory}/Binaries/" .. outputdir)
     objdir ("%{LuminaEngineDirectory}/Intermediates/Obj/" .. outputdir .. "/%{prj.name}")
@@ -49,19 +50,6 @@ project "Lumina"
         "Engine/Source/**.cpp",
         "Engine/Source/**.h",
         reflection_unity_file,
-        
-        "Engine/ThirdParty/xxhash/xxhash.c",
-        "Engine/ThirdParty/imgui/imgui_demo.cpp",
-        "Engine/ThirdParty/imgui/implot_demo.cpp",
-        "Engine/ThirdParty/meshoptimizer/src/**.cpp",
-        "Engine/ThirdParty/vk-bootstrap/src/**.cpp",
-        "Engine/ThirdParty/json/src/**.cpp",
-        "Engine/ThirdParty/ImGuizmo/**.cpp",
-        "Engine/ThirdParty/SPIRV-Reflect/**.c",
-        "Engine/ThirdParty/SPIRV-Reflect/**.cpp",
-        "Engine/ThirdParty/fastgltf/src/**.cpp",
-        "Engine/ThirdParty/fastgltf/deps/simdjson/**.cpp",
-        "Engine/ThirdParty/tinyobjloader/**.cc"
     }
 
     includedirs
@@ -90,6 +78,14 @@ project "Lumina"
         "EnkiTS",
         "JoltPhysics",
         "RPMalloc",
+        "XXHash",
+        "Volk",
+        "VKBootstrap",
+        "TinyOBJLoader",
+        "MeshOptimizer",
+        "SPIRV-Reflect",
+        "FastGLTF",
+        "OpenFBX",
         "shaderc_combined",
         "GFSDK_Aftermath_Lib",
     }

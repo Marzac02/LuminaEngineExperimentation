@@ -1,6 +1,6 @@
 #include "LuminaEditor.h"
-#include "EntryPoint.h"
 #include "Config/Config.h"
+#include "Core/Application/ApplicationGlobalState.h"
 #include "Core/Module/ModuleManager.h"
 #include "Core/Windows/Window.h"
 #include "FileSystem/FileSystem.h"
@@ -11,6 +11,8 @@
 
 namespace Lumina
 {
+    FEditorEngine* GEditorEngine = nullptr;
+    
     bool FEditorEngine::Init()
     {
         InitializeCObjectSystem();
@@ -128,11 +130,6 @@ namespace Lumina
         ScriptPath.append(ProjectPath).append("/Game/Scripts/");
         Scripting::FScriptingContext::Get().LoadScriptsInDirectoryRecursively(ScriptPath);
     }
-
-    FApplication* CreateApplication(int argc, char** argv)
-    {
-        return Memory::New<LuminaEditor>();
-    }
     
     LuminaEditor::LuminaEditor()
         : FApplication("Lumina Editor", 1 << 0)
@@ -176,6 +173,34 @@ namespace Lumina
     {
         
     }
+}
+
+
+static int GuardedMain(int argc, char** argv)
+{
+    int Result = 0;
+    {
+        Lumina::FApplicationGlobalState GlobalState;
+        Lumina::FApplication* App = Lumina::Memory::New<Lumina::LuminaEditor>();
+        Result = App->Run(argc, argv);
+    }
+	
+    return Result;
+}
+
+#if LE_PLATFORM_WINDOWS
+#ifndef WIN32_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN
+#endif
+int APIENTRY WinMain(HINSTANCE hInst, HINSTANCE hInstPrev, PSTR cmdline, int cmdshow)
+{
+    return GuardedMain(__argc, __argv);
+}
+#endif
+
+int main(int argc, char** argv)
+{
+    return GuardedMain(argc, argv);
 }
 
 

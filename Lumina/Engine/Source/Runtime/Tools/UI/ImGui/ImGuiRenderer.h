@@ -28,14 +28,17 @@ namespace Lumina
         virtual void OnStartFrame(const FUpdateContext& UpdateContext) = 0;
         virtual void OnEndFrame(const FUpdateContext& UpdateContext, FRenderGraph& RenderGraph) = 0;
 
-        virtual ImTextureID GetOrCreateImTexture(const FString& Path) = 0;
+        virtual ImTextureID GetOrCreateImTexture(FStringView Path) = 0;
         virtual ImTextureID GetOrCreateImTexture(FRHIImage* Image, const FTextureSubresourceSet& Subresources = AllSubresources) = 0;
         virtual void DestroyImTexture(uint64 Hash) = 0;
 
         virtual void DrawRenderDebugInformationWindow(bool* bOpen, const FUpdateContext& Context) = 0;
         
+        LUMINA_API ImGuiContext* GetImGuiContext() const { return Context; }
+        
     protected:
 
+        ImGuiContext* Context = nullptr;
         
     };
 }

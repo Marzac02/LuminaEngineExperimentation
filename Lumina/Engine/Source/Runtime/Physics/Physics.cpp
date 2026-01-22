@@ -12,7 +12,7 @@ namespace Lumina::Physics
     {
         if (API == EPhysicsAPI::Jolt)
         {
-            GPhysicsContext = MakeUniquePtr<FJoltPhysicsContext>();
+            GPhysicsContext = MakeUnique<FJoltPhysicsContext>();
         }
 
         GPhysicsContext->Initialize();

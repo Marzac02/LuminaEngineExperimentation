@@ -16,7 +16,6 @@
 #include "Memory/Memory.h"
 #include "Paths/Paths.h"
 #include "Renderer/MeshData.h"
-#include "Renderer/RenderContext.h"
 #include "Renderer/RenderResource.h"
 #include "Renderer/Vertex.h"
 
@@ -70,6 +69,7 @@ namespace Lumina::Import::Mesh::GLTF
         }
     }
     
+    
 
     TExpected<FMeshImportData, FString> ImportGLTF(const FMeshImportOptions& ImportOptions, FStringView FilePath)
     {
@@ -88,7 +88,7 @@ namespace Lumina::Import::Mesh::GLTF
         
         for (const fastgltf::Animation& Animation : Asset.animations)
         {
-            TUniquePtr<FAnimationClip> AnimClip = MakeUniquePtr<FAnimationClip>();
+            TUniquePtr<FAnimationResource> AnimClip = MakeUnique<FAnimationResource>();
             AnimClip->Name = Animation.name.c_str();
             
             for (const fastgltf::AnimationChannel& Channel : Animation.channels)
@@ -152,7 +152,7 @@ namespace Lumina::Import::Mesh::GLTF
         
         for (const fastgltf::Skin& Skin : Asset.skins)
         {
-            TUniquePtr<FSkeletonResource> NewSkeleton = MakeUniquePtr<FSkeletonResource>();
+            TUniquePtr<FSkeletonResource> NewSkeleton = MakeUnique<FSkeletonResource>();
     
             if (Skin.name.empty())
             {
@@ -255,7 +255,7 @@ namespace Lumina::Import::Mesh::GLTF
             
             SeenMeshes.emplace(Mesh.name.c_str());
             
-            TUniquePtr<FMeshResource> NewResource = MakeUniquePtr<FMeshResource>();
+            TUniquePtr<FMeshResource> NewResource = MakeUnique<FMeshResource>();
             NewResource->GeometrySurfaces.reserve(Mesh.primitives.size());
             
             FFixedString MeshName;
@@ -307,7 +307,6 @@ namespace Lumina::Import::Mesh::GLTF
                 {
                     PrimitiveName.append_convert(Mesh.name);
                 }
-            
                 
                 NewSurface.ID = PrimitiveName;
                 

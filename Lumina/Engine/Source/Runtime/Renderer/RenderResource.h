@@ -321,35 +321,37 @@ namespace Lumina
     	        
     	uint32 AddRef() const
     	{
-    		uint32 NewValue = RefCount.fetch_add(1, eastl::memory_order_relaxed) + 1;
+    		uint32 NewValue = RefCount.fetch_add(1, std::memory_order_relaxed) + 1;
     		return NewValue;
     	}
         
     	uint32 Release()
     	{
-    		uint32 NewValue = RefCount.fetch_sub(1, eastl::memory_order_acq_rel) - 1;
-    		if (NewValue == 0)
+    		DEBUG_ASSERT((RefCount.load(std::memory_order_relaxed) > 0));
+    		uint32 Value = RefCount.fetch_sub(1, std::memory_order_release);
+    		/** Returns the previous value (if previous value is 1, our new value is 0). */
+    		if(Value == 1)
     		{
+    			std::atomic_thread_fence(std::memory_order_acquire);
     			Memory::Delete(this);
-    			return 0;
     		}
-		
-    		return NewValue;
+
+    		return Value;
     	}
         
     	uint32 GetRefCount() const
     	{
-    		return RefCount.load(eastl::memory_order_relaxed);
+    		return RefCount.load(std::memory_order_relaxed);
     	}
 
     	bool IsValid() const
     	{
-    		return RefCount.load(eastl::memory_order_relaxed) > 0;
+    		return RefCount.load(std::memory_order_acquire) > 0;
     	}
 	
     private:
 
-    	mutable eastl::atomic<uint32> RefCount = 0;
+    	mutable TAtomic<uint32> RefCount{0};
     };
 	
 	//-------------------------------------------------------------------------------------------------------------------

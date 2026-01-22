@@ -18,17 +18,19 @@ namespace Lumina
     struct FTaskCompletion
     {
         FTaskCompletion() = default;
-            
+        
         TAtomic<bool> bCompleted{false};
     
-        bool IsCompleted() const { return bCompleted.load(eastl::memory_order_acquire); }
-    
-        void Wait() const;
+        bool IsCompleted() const { return bCompleted.load(std::memory_order_acquire); }
+        void Wait() const
+        {
+            std::atomic_wait(&bCompleted, false);
+        }
     };
 
     using FTaskHandle = TSharedPtr<FTaskCompletion>;
 
-    enum class ETaskPriority
+    enum class ETaskPriority : uint8
     {
         High   = 0,
         Medium = 1,

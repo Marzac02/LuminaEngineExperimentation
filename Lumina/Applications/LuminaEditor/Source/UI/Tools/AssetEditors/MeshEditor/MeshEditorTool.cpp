@@ -344,7 +344,6 @@ namespace Lumina
         
         World->GetEntityRegistry().get<SVelocityComponent>(EditorEntity).Speed = 5.0f;
 
-
         MeshEntity = World->ConstructEntity("MeshEntity");
         World->GetEntityRegistry().emplace<SStaticMeshComponent>(MeshEntity).StaticMesh = StaticMesh;
         STransformComponent& MeshTransform = World->GetEntityRegistry().get<STransformComponent>(MeshEntity);
@@ -354,8 +353,6 @@ namespace Lumina
 
         glm::quat Rotation = Math::FindLookAtRotation(MeshTransform.GetLocation(), EditorTransform.GetLocation());
         EditorTransform.SetRotation(Rotation);
-        
-        World->MarkTransformDirty(EditorEntity);
     }
 
     void FStaticMeshEditorTool::Update(const FUpdateContext& UpdateContext)

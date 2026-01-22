@@ -35,7 +35,7 @@ namespace Lumina
     LUMINA_API CObject* FindObjectImpl(const FName& Name, CClass* Class);
     LUMINA_API CObject* StaticLoadObject(const FGuid& GUID);
     LUMINA_API CObject* StaticLoadObject(const FString& PathName);
-    LUMINA_API FStringView SanitizeObjectName(FStringView Name);
+    LUMINA_API FFixedString SanitizeObjectName(FStringView Name);
 
     LUMINA_API bool IsValid(const CObjectBase* Obj);
     LUMINA_API bool IsValid(CObjectBase* Obj);

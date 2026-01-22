@@ -1,7 +1,7 @@
 ﻿#include "AnimationEditorTool.h"
 #include "ImGuiDrawUtils.h"
+#include "implot.h"
 #include "Assets/AssetTypes/Mesh/Animation/Animation.h"
-#include "assets/assettypes/mesh/skeletalmesh/skeletalmesh.h"
 #include "assets/assettypes/mesh/skeleton/skeleton.h"
 #include "glm/gtx/string_cast.hpp"
 #include "Tools/UI/ImGui/ImGuiFonts.h"
@@ -16,7 +16,8 @@
 
 namespace Lumina
 {
-    static const char* MeshPropertiesName        = "MeshProperties";
+    static const char* MeshPropertiesName       = "MeshProperties";
+    static const char* SequencerName            = "SequencerName";
 
     FAnimationEditorTool::FAnimationEditorTool(IEditorToolContext* Context, CObject* InAsset)
         : FAssetEditorTool(Context, InAsset->GetName().c_str(), InAsset, NewObject<CWorld>())
@@ -33,6 +34,11 @@ namespace Lumina
             
             ImGui::Spacing();
             PropertyTable.DrawTree();
+        });
+        
+        CreateToolWindow(SequencerName, [&](bool bFocused)
+        {
+            DrawSequencer();
         });
     }
 
@@ -55,6 +61,8 @@ namespace Lumina
         MeshEntity = World->ConstructEntity("MeshEntity");
         World->GetEntityRegistry().emplace<SSkeletalMeshComponent>(MeshEntity).SkeletalMesh = Animation->Skeleton->PreviewMesh;
         World->GetEntityRegistry().emplace<SSimpleAnimationComponent>(MeshEntity).Animation = Animation;
+        World->GetEntityRegistry().get<SSimpleAnimationComponent>(MeshEntity).bPlaying = false;
+        
         STransformComponent& MeshTransform = World->GetEntityRegistry().get<STransformComponent>(MeshEntity);
         MeshTransform.SetLocation(glm::vec3(0.0f, 0.0f, 2.5));
 
@@ -62,8 +70,6 @@ namespace Lumina
 
         glm::quat Rotation = Math::FindLookAtRotation(MeshTransform.GetLocation(), EditorTransform.GetLocation());
         EditorTransform.SetRotation(Rotation);
-        
-        World->MarkTransformDirty(EditorEntity);
     }
 
     void FAnimationEditorTool::Update(const FUpdateContext& UpdateContext)
@@ -119,5 +125,221 @@ namespace Lumina
 
         ImGui::DockBuilderDockWindow(GetToolWindowName(ViewportWindowName).c_str(), leftDockID);
         ImGui::DockBuilderDockWindow(GetToolWindowName(MeshPropertiesName).c_str(), rightDockID);
+        ImGui::DockBuilderDockWindow(GetToolWindowName(SequencerName).c_str(), bottomDockID);
+    }
+
+    void FAnimationEditorTool::DrawSequencer()
+    {
+        CAnimation* Animation = GetAsset<CAnimation>();
+        if (!Animation)
+        {
+            return;
+        }
+    
+        float Duration = Animation->GetDuration();
+        FAnimationResource* AnimationResource = Animation->GetAnimationResource();
+        if (!AnimationResource)
+        {
+            return;
+        }
+        
+        SSimpleAnimationComponent* AnimationComponent = World->GetEntityRegistry().try_get<SSimpleAnimationComponent>(MeshEntity);
+        
+        if (AnimationComponent == nullptr)
+        {
+            return;
+        }
+    
+        float& CurrentTime = AnimationComponent->CurrentTime;
+        static bool bIsPlaying = false;
+        static int SelectedChannel = -1;
+        static bool bShowCurveEditor = true;
+        
+        if (bIsPlaying)
+        {
+            CurrentTime += ImGui::GetIO().DeltaTime * Playrate;
+            if (CurrentTime > Duration)
+            {
+                CurrentTime = fmod(CurrentTime, Duration);
+            }
+        }
+        
+        if (ImGui::Button(bIsPlaying ? LE_ICON_PAUSE " Pause" : LE_ICON_PLAY " Play", ImVec2(100, 0)))
+        {
+            bIsPlaying = !bIsPlaying;
+        }
+        
+        ImGui::SameLine();
+        if (ImGui::Button(LE_ICON_STOP " Stop", ImVec2(100, 0)))
+        {
+            bIsPlaying = false;
+            CurrentTime = 0.0f;
+        }
+        
+        ImGui::SameLine();
+        if (ImGui::Button(LE_ICON_STEP_BACKWARD, ImVec2(40, 0)))
+        {
+            CurrentTime = fmax(0.0f, CurrentTime - 0.033f);
+        }
+        
+        ImGui::SameLine();
+        if (ImGui::Button(LE_ICON_STEP_FORWARD, ImVec2(40, 0)))
+        {
+            CurrentTime = fmin(Duration, CurrentTime + 0.033f);
+        }
+        
+        ImGui::SameLine();
+        ImGui::SetNextItemWidth(100.0f);
+        ImGui::DragFloat(LE_ICON_ARROW_VERTICAL_LOCK " Play-Rate", &Playrate, 0.01f, 0.1f, 10.0f);
+        
+        ImGui::Separator();
+        
+        ImGui::Text("Time: %.3fs / %.3fs", CurrentTime, Duration);
+        
+        static float LeftPanelWidth = 250.0f;
+        
+        ImGui::BeginChild("LeftPanel", ImVec2(LeftPanelWidth, 0), true);
+        {
+            if (ImGui::CollapsingHeader("Animation Channels", ImGuiTreeNodeFlags_DefaultOpen))
+            {
+                for (int i = 0; i < AnimationResource->Channels.size(); ++i)
+                {
+                    const FAnimationChannel& Channel = AnimationResource->Channels[i];
+                    
+                    const char* PathIcon = "";
+                    switch (Channel.TargetPath)
+                    {
+                        case FAnimationChannel::ETargetPath::Translation: PathIcon = LE_ICON_AXIS_ARROW; break;
+                        case FAnimationChannel::ETargetPath::Rotation:    PathIcon = LE_ICON_ROTATE_360; break;
+                        case FAnimationChannel::ETargetPath::Scale:       PathIcon = LE_ICON_ARROW_TOP_RIGHT_BOTTOM_LEFT; break;
+                        case FAnimationChannel::ETargetPath::Weights:     PathIcon = LE_ICON_WEIGHT; break;
+                    }
+                    
+                    ImGui::PushID(i);
+                    bool bSelected = (SelectedChannel == i);
+                    
+                    if (ImGui::Selectable(std::format("{} {}", PathIcon, Channel.TargetBone.c_str()).c_str(), bSelected))
+                    {
+                        SelectedChannel = i;
+                    }
+                    
+                    if (ImGui::BeginPopupContextItem())
+                    {
+                        if (ImGui::MenuItem("Add Keyframe")) { /* Add keyframe */ }
+                        if (ImGui::MenuItem("Delete Channel")) { /* Delete channel */ }
+                        ImGui::EndPopup();
+                    }
+                    
+                    ImGui::PopID();
+                }
+            }
+        }
+        ImGui::EndChild();
+        ImGui::SameLine();
+        
+        if (bShowCurveEditor && SelectedChannel >= 0 && SelectedChannel < AnimationResource->Channels.size())
+        {
+            ImGui::BeginChild("CurveEditor", ImVec2(0, 0), true);
+            {
+                FAnimationChannel& Channel = AnimationResource->Channels[SelectedChannel];
+                
+                FStringView PathName;
+                switch (Channel.TargetPath)
+                {
+                case FAnimationChannel::ETargetPath::Translation:
+                    PathName = "Translation";
+                    break;
+                case FAnimationChannel::ETargetPath::Rotation:
+                    PathName = "Rotation";
+                    break;
+                case FAnimationChannel::ETargetPath::Scale:
+                    PathName = "Scale";
+                    break;
+                case FAnimationChannel::ETargetPath::Weights:
+                    PathName = "Weights";
+                    break;
+                }
+                
+                ImGui::Text("Channel: %s - (%s)", Channel.TargetBone.c_str(), PathName.data());
+                
+                if (ImPlot::BeginPlot("##AnimCurves", ImVec2(-1, -1)))
+                {
+                    ImPlot::SetupAxisLimits(ImAxis_X1, 0, Duration, ImGuiCond_Always);
+                    ImPlot::SetupAxis(ImAxis_X1, "Time (s)");
+                    ImPlot::SetupAxis(ImAxis_Y1, "Value");
+                    
+                    double CurrentTimeDouble = CurrentTime;
+                    ImPlot::DragLineX(0, &CurrentTimeDouble, ImVec4(1, 1, 0, 1), 2.0f);
+                    CurrentTime = (float)CurrentTimeDouble;
+                    
+                    switch (Channel.TargetPath)
+                    {
+                        case FAnimationChannel::ETargetPath::Translation:
+                        case FAnimationChannel::ETargetPath::Scale:
+                        {
+                            TVector<glm::vec3>& Data = (Channel.TargetPath == FAnimationChannel::ETargetPath::Translation) 
+                                ? Channel.Translations 
+                                : Channel.Scales;
+                            
+                            if (!Data.empty())
+                            {
+                                TVector<float> XVals, YVals, ZVals;
+                                for (const auto& V : Data)
+                                {
+                                    XVals.push_back(V.x);
+                                    YVals.push_back(V.y);
+                                    ZVals.push_back(V.z);
+                                }
+                                
+                                ImPlot::SetNextMarkerStyle(ImPlotMarker_Circle);
+                                ImPlot::PlotLine("X", Channel.Timestamps.data(), XVals.data(), (int)Data.size());
+                                ImPlot::PlotScatter("##X_keys", Channel.Timestamps.data(), XVals.data(), (int)Data.size());
+                                
+                                ImPlot::SetNextMarkerStyle(ImPlotMarker_Circle);
+                                ImPlot::PlotLine("Y", Channel.Timestamps.data(), YVals.data(), (int)Data.size());
+                                ImPlot::PlotScatter("##Y_keys", Channel.Timestamps.data(), YVals.data(), (int)Data.size());
+                                
+                                ImPlot::SetNextMarkerStyle(ImPlotMarker_Circle);
+                                ImPlot::PlotLine("Z", Channel.Timestamps.data(), ZVals.data(), (int)Data.size());
+                                ImPlot::PlotScatter("##Z_keys", Channel.Timestamps.data(), ZVals.data(), (int)Data.size());
+                            }
+                            break;
+                        }
+                        
+                        case FAnimationChannel::ETargetPath::Rotation:
+                        {
+                            if (!Channel.Rotations.empty())
+                            {
+                                TVector<float> XVals, YVals, ZVals;
+                                for (const auto& Q : Channel.Rotations)
+                                {
+                                    glm::vec3 Euler = glm::degrees(glm::eulerAngles(Q));
+                                    XVals.push_back(Euler.x);
+                                    YVals.push_back(Euler.y);
+                                    ZVals.push_back(Euler.z);
+                                }
+                                
+                                ImPlot::SetNextMarkerStyle(ImPlotMarker_Circle);
+                                ImPlot::PlotLine("X (deg)", Channel.Timestamps.data(), XVals.data(), (int)Channel.Rotations.size());
+                                ImPlot::PlotScatter("##X_keys", Channel.Timestamps.data(), XVals.data(), (int)Channel.Rotations.size());
+                                
+                                ImPlot::SetNextMarkerStyle(ImPlotMarker_Circle);
+                                ImPlot::PlotLine("Y (deg)", Channel.Timestamps.data(), YVals.data(), (int)Channel.Rotations.size());
+                                ImPlot::PlotScatter("##Y_keys", Channel.Timestamps.data(), YVals.data(), (int)Channel.Rotations.size());
+                                
+                                ImPlot::SetNextMarkerStyle(ImPlotMarker_Circle);
+                                ImPlot::PlotLine("Z (deg)", Channel.Timestamps.data(), ZVals.data(), (int)Channel.Rotations.size());
+                                ImPlot::PlotScatter("##Z_keys", Channel.Timestamps.data(), ZVals.data(), (int)Channel.Rotations.size());
+                            }
+                            break;
+                        }
+                    }
+                    
+                    ImPlot::EndPlot();
+                }
+            }
+            
+            ImGui::EndChild();
+        }
     }
 }

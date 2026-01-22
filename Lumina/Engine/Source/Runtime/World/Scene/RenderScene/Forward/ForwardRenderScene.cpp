@@ -21,7 +21,8 @@
 
 namespace Lumina
 {
-    static TConsoleVar CVarShadowCascadeLambda("Rendering.Shadows.CascadeLambda", 0.95f, "Changes the lambda of the cascade selection");
+    static TConsoleVar CVarShadowCascadeLambda("r.Shadows.CascadeLambda", 0.95f, "Changes the lambda of the cascade selection");
+    static TConsoleVar CVarSelectionThickness("r.SelectionThickness", 5, "Changes thickness of entity selection.");
 
     FForwardRenderScene::FForwardRenderScene(CWorld* InWorld)
         : World(InWorld)
@@ -85,6 +86,7 @@ namespace Lumina
         BasePass(RenderGraph);
         TransparentPass(RenderGraph);
         BatchedLineDraw(RenderGraph);
+        SelectionPass(RenderGraph);
         ToneMappingPass(RenderGraph);
         DebugDrawPass(RenderGraph);
     }
@@ -155,6 +157,7 @@ namespace Lumina
                     float Radius            = glm::length(Extents);
                     glm::vec4 SphereBounds  = glm::vec4(Center, Radius);
                     
+                    int SurfaceIndex = 0;
                     for (const FGeometrySurface& Surface : Resource.GeometrySurfaces)
                     {
                         CMaterialInterface* Material = MeshComponent.GetMaterialForSlot(Surface.MaterialIndex);
@@ -166,7 +169,10 @@ namespace Lumina
                     
                         const uintptr_t MaterialPtr = reinterpret_cast<uintptr_t>(Material);
                         const uint64 MaterialID = (MaterialPtr & 0xFFFFFFFull) << 28;
-                        uint64 SortKey = MaterialID | MeshID;
+                        const uint64 SurfaceID = (SurfaceIndex & 0xFFFFull);
+                        uint64 SortKey = MaterialID | MeshID | SurfaceID;
+                        
+                        SurfaceIndex++;
                         
                         if (RenderSettings.bUseInstancing == false)
                         {
@@ -241,6 +247,7 @@ namespace Lumina
                     float Radius            = glm::length(Extents);
                     glm::vec4 SphereBounds  = glm::vec4(Center, Radius);
                     
+                    int SurfaceIndex = 0;
                     for (const FGeometrySurface& Surface : Resource.GeometrySurfaces)
                     {
                         CMaterialInterface* Material = MeshComponent.GetMaterialForSlot(Surface.MaterialIndex);
@@ -252,7 +259,10 @@ namespace Lumina
                     
                         const uintptr_t MaterialPtr = reinterpret_cast<uintptr_t>(Material);
                         const uint64 MaterialID = (MaterialPtr & 0xFFFFFFFull) << 28;
-                        uint64 SortKey = MaterialID | MeshID;
+                        const uint64 SurfaceID = (SurfaceIndex & 0xFFFFull);
+                        uint64 SortKey = MaterialID | MeshID | SurfaceID;
+                        
+                        SurfaceIndex++;
                         
                         if (RenderSettings.bUseInstancing == false)
                         {
@@ -1402,6 +1412,72 @@ namespace Lumina
         });
     }
 
+    void FForwardRenderScene::SelectionPass(FRenderGraph& RenderGraph)
+    {
+        if (!World->GetEntityRegistry().valid(World->GetSelectedEntity()))
+        {
+            return;
+        }
+        
+        FRGPassDescriptor* Descriptor = RenderGraph.AllocDescriptor();
+        RenderGraph.AddPass(RG_Raster, FRGEvent("Selection Post Process Pass"), Descriptor, [&](ICommandList& CmdList)
+        {
+            LUMINA_PROFILE_SECTION_COLORED("Selection Post Process Pass", tracy::Color::Red2);
+            
+            FRHIVertexShaderRef VertexShader = FShaderLibrary::GetVertexShader("FullscreenQuad.vert");
+            FRHIPixelShaderRef PixelShader = FShaderLibrary::GetPixelShader("SelectionPostProcess.frag");
+            if (!VertexShader || !PixelShader)
+            {
+                return;
+            }
+            
+            FRenderPassDesc::FAttachment Attachment; Attachment
+                .SetImage(HDRRenderTarget)
+                .SetLoadOp(ERenderLoadOp::Load);
+        
+            FRenderPassDesc RenderPass; RenderPass
+                .AddColorAttachment(Attachment)
+                .SetRenderArea(HDRRenderTarget->GetExtent());
+            
+            FRasterState RasterState;
+            RasterState.SetCullNone();
+            
+            FDepthStencilState DepthState;
+            DepthState.DisableDepthTest();
+            DepthState.DisableDepthWrite();
+            
+            FRenderState RenderState;
+            RenderState.SetRasterState(RasterState);
+            RenderState.SetDepthStencilState(DepthState);
+            
+            FGraphicsPipelineDesc Desc;
+            Desc.SetDebugName("Selection Post Process Pass");
+            Desc.SetRenderState(RenderState);
+            Desc.AddBindingLayout(BindingLayout);
+            Desc.AddBindingLayout(SelectionPassLayout);
+            Desc.SetVertexShader(VertexShader);
+            Desc.SetPixelShader(PixelShader);
+        
+            FRHIGraphicsPipelineRef Pipeline = GRenderContext->CreateGraphicsPipeline(Desc, RenderPass);
+        
+            FGraphicsState GraphicsState;
+            GraphicsState.SetPipeline(Pipeline);
+            GraphicsState.AddBindingSet(BindingSet);
+            GraphicsState.AddBindingSet(SelectionPassSet);
+            GraphicsState.SetRenderPass(RenderPass);               
+            GraphicsState.SetViewportState(MakeViewportStateFromImage(HDRRenderTarget));
+        
+            CmdList.SetGraphicsState(GraphicsState);
+
+            uint32 Push[3];
+            Push[0] = PackColor(glm::vec4(255, 0, 0, 255));
+            Push[1] = CVarSelectionThickness.GetValue();
+            Push[2] = entt::to_integral(World->GetSelectedEntity());
+            CmdList.SetPushConstants(Push, sizeof(Push));
+            CmdList.Draw(3, 1, 0, 0); 
+        });
+    }
+
     void FForwardRenderScene::ToneMappingPass(FRenderGraph& RenderGraph)
     {
         FRGPassDescriptor* Descriptor = RenderGraph.AllocDescriptor();
@@ -1780,6 +1856,17 @@ namespace Lumina
         }
         
         {
+            
+            FBindingSetDesc SetDesc;
+            SetDesc.AddItem(FBindingSetItem::TextureSRV(0, PickerImage, TStaticRHISampler<false, false>::GetRHI()));
+            SetDesc.AddItem(FBindingSetItem::PushConstants(0, sizeof(uint32) * 3));
+        
+            TBitFlags<ERHIShaderType> Visibility;
+            Visibility.SetMultipleFlags(ERHIShaderType::Fragment);
+            GRenderContext->CreateBindingSetAndLayout(Visibility, 0, SetDesc, SelectionPassLayout, SelectionPassSet);
+        }
+        
+        {
             FBindingSetDesc SetDesc;
             SetDesc.AddItem(FBindingSetItem::BufferUAV(0, ClusterBuffer));
             SetDesc.AddItem(FBindingSetItem::PushConstants(0, sizeof(FLightClusterPC)));
@@ -1993,7 +2080,7 @@ namespace Lumina
             return entt::null;
         }
 
-        uint8* RowStart = reinterpret_cast<uint8*>(MappedMemory) + Y * RowPitch;
+        uint8* RowStart = static_cast<uint8*>(MappedMemory) + Y * RowPitch;
         uint32* PixelPtr = reinterpret_cast<uint32*>(RowStart) + X;
         uint32 PixelValue = *PixelPtr;
 

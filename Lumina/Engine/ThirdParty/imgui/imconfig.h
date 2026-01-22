@@ -27,11 +27,11 @@
 //#define IMGUI_API __declspec(dllimport)                   // MSVC Windows: DLL import
 //#define IMGUI_API __attribute__((visibility("default")))  // GCC/Clang: override visibility when set is hidden
 
-#ifdef LUMINA_ENGINE
-    #define IMGUI_API __declspec(dllexport)
-#else
-    #define IMGUI_API __declspec(dllimport)
-#endif
+//#ifdef IMGUI_MODULE
+//    #define IMGUI_API __declspec(dllexport)
+//#else
+//    #define IMGUI_API __declspec(dllimport)
+//#endif
 
 //---- Don't define obsolete functions/enums/behaviors. Consider enabling from time to time after updating to clean your code of obsolete function/names.
 #define IMGUI_DISABLE_OBSOLETE_FUNCTIONS

@@ -7,8 +7,6 @@
 #include "Core/Object/Package/Thumbnail/PackageThumbnail.h"
 #include "Core/Reflection/Type/Properties/ObjectProperty.h"
 #include "Paths/Paths.h"
-#include "Renderer/RenderManager.h"
-#include "thumbnails/thumbnailmanager.h"
 #include "Tools/UI/ImGui/ImGuiDesignIcons.h"
 #include "Tools/UI/ImGui/ImGuiX.h"
 #include "UI/EditorUI.h"
@@ -80,7 +78,7 @@ namespace Lumina
         
             ImGui::PushStyleColor(ImGuiCol_Text, bHasObject ? ImVec4(0.6f, 0.6f, 0.6f, 1.0f) : ImVec4(1.0f, 0.19f, 0.19f, 1.0f));
         
-            ImGui::InputText("##ObjectPathText", PathString.data(), PathString.size(), ImGuiInputTextFlags_AutoSelectAll | ImGuiInputTextFlags_ReadOnly);
+            ImGui::InputText("##ObjectPathText", PathString.data(), PathString.max_size(), ImGuiInputTextFlags_AutoSelectAll | ImGuiInputTextFlags_ReadOnly);
         
             ImGuiX::ItemTooltip(PathString.c_str());
         

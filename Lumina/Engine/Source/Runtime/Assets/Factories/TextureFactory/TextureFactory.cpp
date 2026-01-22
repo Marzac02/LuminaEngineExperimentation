@@ -24,7 +24,7 @@ namespace Lumina
         CTexture* NewTexture = TryCreateNew<CTexture>(DestinationPath);
         NewTexture->SetFlag(OF_NeedsPostLoad);
 
-        NewTexture->TextureResource = MakeUniquePtr<FTextureResource>();
+        NewTexture->TextureResource = MakeUnique<FTextureResource>();
 
         TOptional<Import::Textures::FTextureImportResult> MaybeResult = Import::Textures::ImportTexture(RawPath, false);
         if (!MaybeResult.has_value())

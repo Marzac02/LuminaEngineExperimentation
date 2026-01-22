@@ -43,6 +43,7 @@ namespace Lumina
         void TransparentPass(FRenderGraph& RenderGraph);
         void EnvironmentPass(FRenderGraph& RenderGraph);
         void BatchedLineDraw(FRenderGraph& RenderGraph);
+        void SelectionPass(FRenderGraph& RenderGraph);
         void ToneMappingPass(FRenderGraph& RenderGraph);
         void DebugDrawPass(FRenderGraph& RenderGraph);
         //~ End Render Passes
@@ -106,6 +107,10 @@ namespace Lumina
         FRHIBindingSetRef                   LightCullSet;
         FRHIBindingLayoutRef                LightCullLayout;
 
+        FRHIBindingSetRef                   SelectionPassSet;
+        FRHIBindingLayoutRef                SelectionPassLayout;
+
+        
         FRHITypedVertexBuffer<FSimpleElementVertex> SimpleVertexBuffer;
         TVector<FSimpleElementVertex>               SimpleVertices;
         FRHIBindingLayoutRef                        SimplePassLayout;

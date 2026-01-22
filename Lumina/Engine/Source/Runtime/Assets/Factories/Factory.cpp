@@ -37,7 +37,7 @@ namespace Lumina
     
     CObject* CFactory::TryCreateNew(FStringView Path)
     {
-        FStringView SafePath = SanitizeObjectName(Path);
+        FFixedString SafePath = SanitizeObjectName(Path);
         CPackage* Package = CPackage::CreatePackage(SafePath);
         FStringView FileName = FileSystem::FileName(Path, true);
 
@@ -51,7 +51,7 @@ namespace Lumina
 
     CObject* CFactory::CreateNewOf(CClass* Class, FStringView Path)
     {
-        FStringView SafePath = SanitizeObjectName(Path);
+        FFixedString SafePath = SanitizeObjectName(Path);
         CPackage* Package = CPackage::CreatePackage(SafePath);
         FStringView FileName = FileSystem::FileName(Path, true);
 

@@ -4,6 +4,7 @@
 #include "Containers/Array.h"
 #include "Containers/String.h"
 #include "Containers/Function.h"
+#include "Core/Threading/Atomic.h"
 #include "Core/Threading/Thread.h"
 #include "EASTL/internal/atomic/atomic.h"
 
@@ -31,10 +32,7 @@ namespace Lumina
         virtual bool CompileShaderPaths(TSpan<FString> ShaderPaths, TSpan<FShaderCompileOptions> CompileOptions, CompletedFunc OnCompleted) = 0;
 
         virtual bool HasPendingRequests() const = 0;
-        void Flush() const
-        {
-            while (HasPendingRequests()) { }
-        }
+        virtual void Flush() const = 0;
         
     };
     
@@ -60,9 +58,9 @@ namespace Lumina
         void ReflectSpirv(TSpan<uint32> SpirV, FShaderReflection& Reflection, bool bReflectFull);
 
         bool HasPendingRequests() const override;
+        void Flush() const override;
         
         FMutex                      RequestMutex;
-
-        eastl::atomic<uint32>       PendingTasks;
+        TAtomic<uint32>             PendingTasks;
     };
 }

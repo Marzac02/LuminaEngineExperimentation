@@ -12,12 +12,11 @@ namespace Lumina
     class FEditorLayer;
     class FEditorPanel;
 
-    inline class FEditorEngine* GEditorEngine = nullptr;
+    extern class FEditorEngine* GEditorEngine;
     
     class FEditorEngine : public FEngine
     {
     public:
-
         bool Init() override;
         bool Shutdown() override;
         IDevelopmentToolUI* CreateDevelopmentTools() override;

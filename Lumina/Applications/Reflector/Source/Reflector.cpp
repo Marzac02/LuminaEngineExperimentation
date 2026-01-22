@@ -65,7 +65,7 @@ int main(int argc, char* argv[])
                   << SolutionToReflect.c_str() << "\n";
         return 1;
     }
-
+    
     Lumina::Reflection::FTypeReflector TypeReflector(SolutionToReflect);
 
     double parseTime = 0.0;

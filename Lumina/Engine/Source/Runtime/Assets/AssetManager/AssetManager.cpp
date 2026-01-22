@@ -76,7 +76,7 @@ namespace Lumina
         }
 
         bAlreadyInQueue = false;
-        TSharedPtr<FAssetRequest> NewRequest = MakeSharedPtr<FAssetRequest>(InAssetPath, GUID);
+        TSharedPtr<FAssetRequest> NewRequest = MakeShared<FAssetRequest>(InAssetPath, GUID);
         return ActiveRequests.emplace_back(NewRequest);
     }
 

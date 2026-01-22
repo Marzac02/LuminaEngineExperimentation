@@ -9,39 +9,19 @@
 #include "Renderer/RenderGraph/RenderGraph.h"
 #include "TaskSystem/TaskSystem.h"
 #include "Tools/UI/Notification/ImGuiNotifications.h"
-
 #include <imgui.h>
-#include <implot.h>
-#include "ImGuizmo.h"
 #include "Paths/Paths.h"
 
 namespace Lumina
 {
-	static void* ImGuiMemAlloc(size_t size, void* user_data)
-	{
-		return Memory::Malloc(size);
-	}
-
-	static void ImGuiMemFree(void* ptr, void* user_data)
-	{
-		Memory::Free(ptr);
-	}
-
-	
     void IImGuiRenderer::Initialize()
     {
-
         IMGUI_CHECKVERSION();
 		
-		ImGui::SetAllocatorFunctions(ImGuiMemAlloc, ImGuiMemFree, nullptr);
-		
-        ImGuiContext* Context = ImGui::CreateContext();
-        ImPlot::CreateContext();
-    	ImGuizmo::SetImGuiContext(Context);
+        Context = ImGui::CreateContext();
 		
 		FString FontFile_Regular = Paths::GetEngineFontDirectory() + "/Lexend/Lexend-Regular.ttf";
 		FString FontFile_Bold = Paths::GetEngineFontDirectory() + "/Lexend/Lexend-Bold.ttf";
-
 		FString IconFontFile = Paths::GetEngineFontDirectory() + "/materialdesignicons-webfont.ttf";
 		constexpr ImWchar IconRanges[] = { LE_ICONRANGE_MIN, LE_ICONRANGE_MAX, 0 };
 

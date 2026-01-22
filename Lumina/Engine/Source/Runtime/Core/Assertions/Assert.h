@@ -78,6 +78,7 @@ namespace Lumina::Assert
     
 #define LUMINA_ASSERT(Expr, ...)        LUMINA_ASSERT_INVOKE(Expr,      DebugAssert,    __VA_ARGS__)
 
+
 #ifdef LE_DEBUG
 #define LUMINA_ASSUME(Expr, ...)        LUMINA_ASSERT_INVOKE(Expr,      Assume,         __VA_ARGS__)
 #else

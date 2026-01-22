@@ -86,7 +86,7 @@ namespace Lumina
         VkQueue                             Queue = VK_NULL_HANDLE;
         VkSemaphore                         TimelineSemaphore = VK_NULL_HANDLE;
     
-        eastl::atomic<uint64>               LastRecordingID = 0;
+        TAtomic<uint64>                     LastRecordingID{0};
     
         uint64                              LastSubmittedID = 0;
         uint64                              LastFinishedID = 0;

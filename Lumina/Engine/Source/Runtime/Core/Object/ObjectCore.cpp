@@ -78,15 +78,41 @@ namespace Lumina
         return nullptr;
     }
 
-    FStringView SanitizeObjectName(FStringView Name)
+    FFixedString SanitizeObjectName(FStringView Name)
     {
-        size_t ExtPos = Name.find_last_of(".");
+        // Strip extension
+        const size_t ExtPos = Name.find_last_of('.');
         if (ExtPos != FString::npos)
         {
-            return Name.substr(0, ExtPos);
+            Name = Name.substr(0, ExtPos);
         }
-        
-        return Name;
+
+        FFixedString Result;
+        Result.reserve(Name.size());
+
+        for (char c : Name)
+        {
+            const bool bInvalid =
+                c < 32 ||
+                c == '<' || c == '>' ||
+                c == ':' || c == '"' ||
+                c == '|' || c == '?' ||
+                c == '*';
+
+            Result.push_back(bInvalid ? '_' : c);
+        }
+
+        while (!Result.empty() && (Result.back() == ' ' || Result.back() == '.'))
+        {
+            Result.pop_back();
+        }
+
+        if (Result.empty())
+        {
+            Result = "Object";
+        }
+
+        return Result;
     }
 
     bool IsValid(const CObjectBase* Obj)

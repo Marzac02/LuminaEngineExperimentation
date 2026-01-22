@@ -79,6 +79,10 @@ namespace Lumina
 
     void FEditorUI::Initialize(const FUpdateContext& UpdateContext)
     {
+        ImGuiContext* Context = GetEngineSystem<FRenderManager>().GetImGuiRenderer()->GetImGuiContext();
+        ImGui::SetCurrentContext(Context);
+        ImPlot::CreateContext();
+        
         PropertyCustomizationRegistry = Memory::New<FPropertyCustomizationRegistry>();
         PropertyCustomizationRegistry->RegisterPropertyCustomization(TBaseStructure<glm::vec2>::Get()->GetName(), []
         {
@@ -152,6 +156,7 @@ namespace Lumina
     {
         LUMINA_PROFILE_SCOPE();
         DEBUG_ASSERT(UpdateContext.GetUpdateStage() == EUpdateStage::FrameStart);
+        ImGuizmo::BeginFrame();
 
         auto TitleBarLeftContents = [this, &UpdateContext] ()
         {
@@ -2159,7 +2164,7 @@ namespace Lumina
         
             ImGui::Separator();
         
-            if (ImGui::MenuItem(LE_ICON_BOX " Package for Windows"))
+            if (ImGui::MenuItem(LE_ICON_MICROSOFT_WINDOWS " Package for Windows"))
             {
                 // Package
             }
@@ -2573,8 +2578,105 @@ namespace Lumina
 
     void FEditorUI::AssetRegistryDialog()
     {
-        ModalManager.CreateDialogue("Asset Registry", ImVec2(1400, 800), [this] () -> bool
+        struct FAssetDialogueState
         {
+            FAssetData* SelectedData = nullptr;
+        };
+        
+        auto DialogueState = MakeUnique<FAssetDialogueState>();
+        
+        ModalManager.CreateDialogue("Asset Registry", ImVec2(1000, 700), [DialogueState = Move(DialogueState)] () -> bool
+        {
+            ImGui::BeginChild("SettingsCategories", ImVec2(200, 0), true);
+            {
+                ImGui::TextColored(ImVec4(0.8f, 0.9f, 1.0f, 1.0f), "Assets");
+                ImGui::Separator();
+                ImGui::Spacing();
+                
+                const FAssetDataMap& Assets = FAssetRegistry::Get().GetAssets();
+                
+                if (ImGui::BeginTable("##AssetList", 1, ImGuiTableFlags_Borders | ImGuiTableFlags_ScrollY))
+                {
+                    ImGui::TableSetupColumn("Name");
+                    ImGui::TableHeadersRow();
+    
+                    for (const TUniquePtr<FAssetData>& Asset : Assets)
+                    {
+                        ImGui::TableNextRow();
+                        
+                        ImGui::TableNextColumn();
+                        bool bIsSelected = (DialogueState->SelectedData == Asset.get());
+                        if (ImGui::Selectable(Asset->AssetName.c_str(), bIsSelected))
+                        {
+                            DialogueState->SelectedData = Asset.get();
+                        }
+                    }
+                    
+                    ImGui::EndTable();
+                }
+            }
+            ImGui::EndChild();
+            
+            ImGui::SameLine();
+            
+            ImGui::BeginChild("SettingsContent", ImVec2(0, -40), true);
+            {
+                if (DialogueState->SelectedData)
+                {
+                    FAssetData* Asset = DialogueState->SelectedData;
+                    
+                    ImGui::TextColored(ImVec4(0.8f, 0.9f, 1.0f, 1.0f), "Asset Details");
+                    ImGui::Separator();
+                    ImGui::Spacing();
+                    
+                    ImGui::Columns(2, nullptr, false);
+                    ImGui::SetColumnWidth(0, 100);
+                    
+                    ImGui::TextColored(ImVec4(0.7f, 0.7f, 0.7f, 1.0f), "Name:");
+                    ImGui::NextColumn();
+                    ImGui::TextUnformatted(Asset->AssetName.c_str());
+                    ImGui::NextColumn();
+                    ImGui::Spacing();
+                    
+                    ImGui::TextColored(ImVec4(0.7f, 0.7f, 0.7f, 1.0f), "Class:");
+                    ImGui::NextColumn();
+                    ImGui::TextColored(ImVec4(0.7f, 0.9f, 1.0f, 1.0f), "%s", Asset->AssetClass.c_str());
+                    ImGui::NextColumn();
+                    ImGui::Spacing();
+                    
+                    ImGui::TextColored(ImVec4(0.7f, 0.7f, 0.7f, 1.0f), "Path:");
+                    ImGui::NextColumn();
+                    ImGui::TextWrapped("%s", Asset->Path.c_str());
+                    ImGui::NextColumn();
+                    ImGui::Spacing();
+                    
+                    ImGui::TextColored(ImVec4(0.7f, 0.7f, 0.7f, 1.0f), "GUID:");
+                    ImGui::NextColumn();
+                    ImGui::TextColored(ImVec4(0.5f, 0.5f, 0.5f, 1.0f), "%s", Asset->AssetGUID.ToString().c_str());
+                    ImGui::NextColumn();
+                    ImGui::Spacing();
+
+                    ImGui::TextColored(ImVec4(0.7f, 0.7f, 0.7f, 1.0f), "Size On Disk:");
+                    ImGui::NextColumn();
+                    ImGui::TextColored(ImVec4(0.5f, 0.5f, 0.5f, 1.0f), "%s", ImGuiX::FormatSize(FileSystem::Size(Asset->Path)).c_str());
+                    ImGui::NextColumn();
+                    
+                    ImGui::Columns(1);
+                }
+                else
+                {
+                    ImGui::TextDisabled("Select an asset to view details");
+                }
+            }
+            ImGui::EndChild();
+            
+            ImGui::Spacing();
+            
+            if (ImGui::Button("Close", ImVec2(120, 0)))
+            {
+                return true;
+            }
+            
             return false;
         }, false);
     }

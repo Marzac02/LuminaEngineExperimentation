@@ -2,7 +2,8 @@
 
 #define USE_IMGUI_API
 #include <imgui.h>
-#include "Tools/UI/ImGui/ImGuizmo.h"
+
+#include "ImGuizmo.h"
 #include "UI/Tools/AssetEditors/AssetEditorTool.h"
 
 namespace Lumina
@@ -25,6 +26,10 @@ namespace Lumina
         void OnAssetLoadFinished() override;
         void DrawToolMenu(const FUpdateContext& UpdateContext) override;
         void InitializeDockingLayout(ImGuiID InDockspaceID, const ImVec2& InDockspaceSize) const override;
+        
+        void DrawSequencer();
+        
+        float Playrate = 1.0f;
         
         ImGuizmo::OPERATION GuizmoOp = ImGuizmo::TRANSLATE;
         entt::entity DirectionalLightEntity = entt::null;

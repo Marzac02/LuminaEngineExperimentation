@@ -57,12 +57,7 @@
 // backward nor forward ABI compatibility and also function call overhead. If you
 // do use ImPlot as a DLL, be sure to call SetImGuiContext (see Miscellanous section).
 
-#ifdef LUMINA_ENGINE
-#define IMPLOT_API __declspec(dllexport)
-#else
-#define IMPLOT_API __declspec(dllimport)
-#endif
-
+#define IMPLOT_API IMGUI_API
 
 // ImPlot version string.
 #define IMPLOT_VERSION "0.17"

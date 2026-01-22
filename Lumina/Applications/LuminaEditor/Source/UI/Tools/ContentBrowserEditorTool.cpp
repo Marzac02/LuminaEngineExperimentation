@@ -404,7 +404,6 @@ namespace Lumina
                 if (CPackage::DestroyPackage(Destroy.PendingDestroy))
                 {
                     ImGuiX::Notifications::NotifySuccess("Deleted Asset {0}", Destroy.PendingDestroy);
-
                 }
             }
 
@@ -579,7 +578,7 @@ namespace Lumina
                     bool bShouldClose = false;
                 } State;
                 
-                auto SharedState = MakeSharedPtr<FModelState>();
+                auto SharedState = MakeShared<FModelState>();
                 
                 ToolContext->PushModal("Import", {700, 800}, [this, Factory, Path = Move(Path), DestinationPath = Move(DestinationPath), SharedState] () mutable
                 {
@@ -616,7 +615,7 @@ namespace Lumina
 
     void FContentBrowserEditorTool::PushRenameModal(FContentBrowserTileViewItem* ContentItem)
     {
-        ToolContext->PushModal("Rename", ImVec2(480.0f, 300.0f), [this, ContentItem, RenameState = MakeUniquePtr<FRenameModalState<>>()]
+        ToolContext->PushModal("Rename", ImVec2(480.0f, 300.0f), [this, ContentItem, RenameState = MakeUnique<FRenameModalState<>>()]
         {
             RenameState->Initialize(ContentItem->GetName());
             

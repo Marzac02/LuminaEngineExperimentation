@@ -22,7 +22,7 @@ namespace Lumina
     void CThumbnailManager::Initialize()
     {
         {
-            TUniquePtr<FMeshResource> Resource = MakeUniquePtr<FMeshResource>();
+            TUniquePtr<FMeshResource> Resource = MakeUnique<FMeshResource>();
             PrimitiveMeshes::GenerateCube(Resource->Vertices.emplace<TVector<FVertex>>(), Resource->Indices);
             
             FGeometrySurface Surface;
@@ -38,7 +38,7 @@ namespace Lumina
         }
 
         {
-            TUniquePtr<FMeshResource> Resource = MakeUniquePtr<FMeshResource>();
+            TUniquePtr<FMeshResource> Resource = MakeUnique<FMeshResource>();
             PrimitiveMeshes::GenerateSphere(Resource->Vertices.emplace<TVector<FVertex>>(), Resource->Indices);
             
             FGeometrySurface Surface;
@@ -54,7 +54,7 @@ namespace Lumina
         }
 
         {
-            TUniquePtr<FMeshResource> Resource = MakeUniquePtr<FMeshResource>();
+            TUniquePtr<FMeshResource> Resource = MakeUnique<FMeshResource>();
             PrimitiveMeshes::GeneratePlane(Resource->Vertices.emplace<TVector<FVertex>>(), Resource->Indices);
             
             FGeometrySurface Surface;

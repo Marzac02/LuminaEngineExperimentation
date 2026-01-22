@@ -281,7 +281,7 @@ namespace Lumina
             return W->Name == InName;
         }));
         
-        auto ToolWindow = MakeUniquePtr<FToolWindow>(InName, DrawFunction, WindowPadding, DisableScrolling); 
+        auto ToolWindow = MakeUnique<FToolWindow>(InName, DrawFunction, WindowPadding, DisableScrolling); 
         return ToolWindows.emplace_back(Move(ToolWindow)).get();
     }
     

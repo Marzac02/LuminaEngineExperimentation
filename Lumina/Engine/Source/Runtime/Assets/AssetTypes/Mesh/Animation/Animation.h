@@ -38,24 +38,63 @@ namespace Lumina
             
             return Ar;
         }
-        
+    };
+    
+    struct FAnimationNotify
+    {
+        FName NotifyName;
+        float Time;
+        FName NotifyTrack;
+        glm::vec4 Color;
+    
+        friend FArchive& operator << (FArchive& Ar, FAnimationNotify& Data)
+        {
+            Ar << Data.NotifyName;
+            Ar << Data.Time;
+            Ar << Data.NotifyTrack;
+            Ar << Data.Color;
+            return Ar;
+        }
+    };
+    
+    struct FAnimationNotifyState
+    {
+        FName NotifyName;
+        float StartTime;
+        float EndTime;
+        FName NotifyTrack;
+        glm::vec4 Color;
+    
+        friend FArchive& operator << (FArchive& Ar, FAnimationNotifyState& Data)
+        {
+            Ar << Data.NotifyName;
+            Ar << Data.StartTime;
+            Ar << Data.EndTime;
+            Ar << Data.NotifyTrack;
+            Ar << Data.Color;
+            return Ar;
+        }
     };
         
-    struct FAnimationClip
+    struct FAnimationResource
     {
         FName Name;
         float Duration;
         TVector<FAnimationChannel> Channels;
+        TVector<FAnimationNotify> Notifies;
+        TVector<FAnimationNotifyState> NotifyStates;
         
-        friend FArchive& operator << (FArchive& Ar, FAnimationClip& Data)
+        
+        friend FArchive& operator << (FArchive& Ar, FAnimationResource& Data)
         {
             Ar << Data.Name;
             Ar << Data.Duration;
             Ar << Data.Channels;
+            Ar << Data.Notifies;
+            Ar << Data.NotifyStates;
             
             return Ar;
         }
-        
     };
     
     
@@ -72,20 +111,16 @@ namespace Lumina
         
         bool IsAsset() const override { return true; }
         
-        void SamplePose(float Time, FSkeletonResource* Skeleton, TArray<glm::mat4, 255>& OutBoneTransforms);
+        void SamplePose(float Time, FSkeletonResource* SkeletonResource, TArray<glm::mat4, 255>& OutBoneTransforms);
         
-        float GetDuration() const { return AnimationClip->Duration; }
+        float GetDuration() const { return AnimationResource->Duration; }
+        FAnimationResource* GetAnimationResource() const { return AnimationResource.get(); }
         
         PROPERTY(Editable, Category = "Skeleton")
         TObjectPtr<CSkeleton> Skeleton;
         
     private:
         
-        glm::vec3 SampleVec3(const TVector<float>& Times, const TVector<glm::vec3>& Values, float Time);
-        glm::quat SampleQuat(const TVector<float>& Times, const TVector<glm::quat>& Values, float Time);
-
-        
-        
-        TUniquePtr<FAnimationClip> AnimationClip;
+        TUniquePtr<FAnimationResource> AnimationResource;
     };
 }

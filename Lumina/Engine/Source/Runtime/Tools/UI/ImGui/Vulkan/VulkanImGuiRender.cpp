@@ -1,5 +1,6 @@
 #include "pch.h"
 #include "VulkanImGuiRender.h"
+#include "imgui.h"
 #include "implot.h"
 #include "Assets/Factories/TextureFactory/TextureFactory.h"
 #include "backends/imgui_impl_glfw.h"
@@ -12,10 +13,7 @@
 #include "Renderer/API/Vulkan/VulkanRenderContext.h"
 #include "Renderer/API/Vulkan/VulkanSwapchain.h"
 #include "Renderer/RenderGraph/RenderGraph.h"
-#include "Renderer/RenderGraph/RenderGraphDescriptor.h"
 #include "Tools/Import/ImportHelpers.h"
-#include <imgui.h>
-#include "Tools/UI/ImGui/ImGuizmo.h"
 
 namespace Lumina
 {
@@ -102,35 +100,7 @@ namespace Lumina
     	LUMINA_PROFILE_SCOPE();
 
 		VulkanRenderContext		= (FVulkanRenderContext*)GRenderContext;
-
-
-        //VkDescriptorPoolSize PoolSizes[] = 
-		//{ 
-		//	{ VK_DESCRIPTOR_TYPE_SAMPLER,					1000 },
-		//	{ VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,	1000 },
-		//	{ VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE,				1000 },
-		//	{ VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,				1000 },
-		//	{ VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER,		1000 },
-		//	{ VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER,		1000 },
-		//	{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,			1000 },
-		//	{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,			1000 },
-		//	{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC,	1000 },
-		//	{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC,	1000 },
-		//	{ VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT,			1000 } 
-		//};
-		//
-        //VkDescriptorPoolCreateInfo PoolInfo =  {};
-        //PoolInfo.sType			= VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-        //PoolInfo.flags			= VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
-        //PoolInfo.maxSets		= 1000;
-        //PoolInfo.poolSizeCount	= (uint32)std::size(PoolSizes);
-        //PoolInfo.pPoolSizes		= PoolSizes;
-		//
-		//
-        //VK_CHECK(vkCreateDescriptorPool(VulkanRenderContext->GetDevice()->GetDevice(), &PoolInfo, VK_ALLOC_CALLBACK, &DescriptorPool));
-    	
-        //VulkanRenderContext->SetVulkanObjectName("ImGui Descriptor Pool", VK_OBJECT_TYPE_DESCRIPTOR_POOL, reinterpret_cast<uint64>(DescriptorPool));
-    	
+		
         ImGui_ImplGlfw_InitForVulkan(Windowing::GetPrimaryWindowHandle()->GetWindow(), true);
 
 		VkFormat Format = VK_FORMAT_R8G8B8A8_UNORM;
@@ -149,7 +119,6 @@ namespace Lumina
         InitInfo.PhysicalDevice					= VulkanRenderContext->GetDevice()->GetPhysicalDevice();
         InitInfo.Device							= VulkanRenderContext->GetDevice()->GetDevice();
         InitInfo.Queue							= VulkanRenderContext->GetQueue(ECommandQueue::Graphics)->Queue;
-        //InitInfo.DescriptorPool					= DescriptorPool;
 		InitInfo.DescriptorPoolSize				= 1000;
         InitInfo.MinImageCount					= 2;
         InitInfo.ImageCount						= 3;
@@ -164,7 +133,7 @@ namespace Lumina
 		FRHIImageRef RHI			= Import::Textures::CreateTextureFromImport(GRenderContext, SquareTexturePath.ToString(), false);
 		ImTextureRef ImTex			= ImGuiX::ToImTextureRef(RHI);
 
-		TUniquePtr<FEntry> Entry	= MakeUniquePtr<FEntry>();
+		TUniquePtr<FEntry> Entry	= MakeUnique<FEntry>();
 		SquareWhiteTexture.first	= SquareTexturePath;
 		SquareWhiteTexture.second	= Entry.get();
 		Entry->Name					= SquareTexturePath; 
@@ -200,14 +169,13 @@ namespace Lumina
     	LUMINA_PROFILE_SCOPE();
 
 		FRecursiveScopeLock Lock(Mutex);
-		SquareWhiteTexture.second->LastUseFrame.exchange(GEngine->GetUpdateContext().GetFrame(), eastl::memory_order_relaxed);
+		SquareWhiteTexture.second->LastUseFrame.exchange(GEngine->GetUpdateContext().GetFrame(), std::memory_order_relaxed);
 		
 		ReferencedImages.clear();
 		
         ImGui_ImplVulkan_NewFrame();
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
-    	ImGuizmo::BeginFrame();
     }
 	
     void FVulkanImGuiRender::OnEndFrame(const FUpdateContext& UpdateContext, FRenderGraph& RenderGraph)
@@ -269,7 +237,7 @@ namespace Lumina
 				continue;
 			}
 
-			uint64 LastUse = Entry->LastUseFrame.load(eastl::memory_order_acquire);
+			uint64 LastUse = Entry->LastUseFrame.load(std::memory_order_acquire);
 			if (CurrentFrame - LastUse > 3)
 			{
 				ToDelete.push_back(KVP.first);
@@ -351,7 +319,7 @@ namespace Lumina
 		ImGui::End();
 	}
 
-	ImTextureID FVulkanImGuiRender::GetOrCreateImTexture(const FString& Path)
+	ImTextureID FVulkanImGuiRender::GetOrCreateImTexture(FStringView Path)
 	{
 		FRecursiveScopeLock Lock(Mutex);
 
@@ -360,7 +328,7 @@ namespace Lumina
 		
 		if (It != Images.end())
 		{
-			It->second->LastUseFrame.exchange(GEngine->GetUpdateContext().GetFrame(), eastl::memory_order_relaxed);
+			It->second->LastUseFrame.exchange(GEngine->GetUpdateContext().GetFrame(), std::memory_order_relaxed);
 			ReferencedImages.push_back(It->second->RHIImage);
 			return It->second->ImTexture.GetTexID();
 		}
@@ -377,11 +345,11 @@ namespace Lumina
 
 		ImTextureID NewTextureID = (ImTextureID)ImGui_ImplVulkan_AddTexture(VulkanSampler, View, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 		
-		TUniquePtr<FEntry> NewEntry = MakeUniquePtr<FEntry>();
+		TUniquePtr<FEntry> NewEntry = MakeUnique<FEntry>();
 		NewEntry->State				= ETextureState::Ready;
 		NewEntry->RHIImage			= Image;
 		NewEntry->ImTexture._TexID	= NewTextureID;
-		NewEntry->LastUseFrame.exchange(GEngine->GetUpdateContext().GetFrame(), eastl::memory_order_relaxed);
+		NewEntry->LastUseFrame.exchange(GEngine->GetUpdateContext().GetFrame(), std::memory_order_relaxed);
 		
 		Images.insert_or_assign(NamePath, Move(NewEntry));
 		
@@ -417,11 +385,11 @@ namespace Lumina
 
 		ImTextureID NewTextureID = (ImTextureID)ImGui_ImplVulkan_AddTexture(VulkanSampler, View, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
-		TUniquePtr<FEntry> NewEntry	= MakeUniquePtr<FEntry>();
+		TUniquePtr<FEntry> NewEntry	= MakeUnique<FEntry>();
 		NewEntry->State				= ETextureState::Ready;
 		NewEntry->RHIImage			= Image;
 		NewEntry->ImTexture._TexID	= NewTextureID;
-		NewEntry->LastUseFrame.exchange(GEngine->GetUpdateContext().GetFrame(), eastl::memory_order_relaxed);
+		NewEntry->LastUseFrame.exchange(GEngine->GetUpdateContext().GetFrame(), std::memory_order_relaxed);
 
     	Images.insert_or_assign(HashPtr, Move(NewEntry));
 

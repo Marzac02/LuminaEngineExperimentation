@@ -19,15 +19,15 @@ namespace Lumina
         TUniquePtr<FPropertyRow> NewRow;
         if (InPropHandle->Property->GetType() == EPropertyTypeFlags::Vector)
         {
-            NewRow = MakeUniquePtr<FArrayPropertyRow>(InPropHandle, InParentRow, InCallbacks);
+            NewRow = MakeUnique<FArrayPropertyRow>(InPropHandle, InParentRow, InCallbacks);
         }
         else if (InPropHandle->Property->GetType() == EPropertyTypeFlags::Struct)
         {
-            NewRow = MakeUniquePtr<FStructPropertyRow>(InPropHandle, InParentRow, InCallbacks);
+            NewRow = MakeUnique<FStructPropertyRow>(InPropHandle, InParentRow, InCallbacks);
         }
         else
         {
-            NewRow = MakeUniquePtr<FPropertyPropertyRow>(InPropHandle, InParentRow, InCallbacks);
+            NewRow = MakeUnique<FPropertyPropertyRow>(InPropHandle, InParentRow, InCallbacks);
         }
 
         return NewRow;
@@ -355,7 +355,7 @@ namespace Lumina
         
         for (SIZE_T i = 0; i < ElementCount; ++i)
         {
-            TSharedPtr<FPropertyHandle> ElementPropHandle = MakeSharedPtr<FPropertyHandle>(ArrayProperty->GetAt(ContainerPtr, i), ArrayProperty->GetInternalProperty(), 0);
+            TSharedPtr<FPropertyHandle> ElementPropHandle = MakeShared<FPropertyHandle>(ArrayProperty->GetAt(ContainerPtr, i), ArrayProperty->GetInternalProperty(), 0);
             TUniquePtr<FPropertyRow> NewRow = CreatePropertyRow(ElementPropHandle, this, Callbacks);
             NewRow->SetIsArrayElement(true);
             
@@ -470,7 +470,7 @@ namespace Lumina
 
     void FStructPropertyRow::RebuildChildren()
     {
-        PropertyTable = MakeUniquePtr<FPropertyTable>(PropertyHandle->Property->GetValuePtr<void>(PropertyHandle->ContainerPtr), StructProperty->GetStruct());
+        PropertyTable = MakeUnique<FPropertyTable>(PropertyHandle->Property->GetValuePtr<void>(PropertyHandle->ContainerPtr), StructProperty->GetStruct());
         PropertyTable->RebuildTree();
     }
 
@@ -532,7 +532,7 @@ namespace Lumina
                 
                 FCategoryPropertyRow* CategoryRow = FindOrCreateCategoryRow(Category);
 
-                TSharedPtr<FPropertyHandle> PropertyHandle = MakeSharedPtr<FPropertyHandle>(Object, Current);
+                TSharedPtr<FPropertyHandle> PropertyHandle = MakeShared<FPropertyHandle>(Object, Current);
                 CategoryRow->AddProperty(PropertyHandle);
             }
             
@@ -592,7 +592,7 @@ namespace Lumina
     {
         if (CategoryMap.find(CategoryName) == CategoryMap.end())
         {
-            auto NewRow = MakeUniquePtr<FCategoryPropertyRow>(Object, CategoryName, ChangeEventCallbacks);
+            auto NewRow = MakeUnique<FCategoryPropertyRow>(Object, CategoryName, ChangeEventCallbacks);
             CategoryMap.emplace(CategoryName, Move(NewRow));
         }
         

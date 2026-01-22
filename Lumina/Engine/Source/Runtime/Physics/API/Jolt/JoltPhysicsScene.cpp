@@ -123,8 +123,8 @@ namespace Lumina::Physics
         : Allocator(300ull * 1024 * 1024)
         , World(InWorld)
     {
-        JoltSystem = MakeUniquePtr<JPH::PhysicsSystem>();
-        JoltInterfaceLayer = MakeUniquePtr<FLayerInterfaceImpl>();
+        JoltSystem = MakeUnique<JPH::PhysicsSystem>();
+        JoltInterfaceLayer = MakeUnique<FLayerInterfaceImpl>();
         
         JoltSystem->Init(65536, 0, 131072, 262144, *JoltInterfaceLayer, GObjectVsBroadPhaseLayerFilter, GObjectVsObjectLayerFilter);
         JoltSystem->SetGravity(JPH::Vec3Arg(0.0f, GEarthGravity, 0.0f));
@@ -133,7 +133,7 @@ namespace Lumina::Physics
         JoltSystem->SetPhysicsSettings(JoltSettings);
         
         entt::dispatcher& Dispatcher = World->GetEntityRegistry().ctx().get<entt::dispatcher&>();
-        ContactListener = MakeUniquePtr<FJoltContactListener>(Dispatcher, &JoltSystem->GetBodyLockInterfaceNoLock());
+        ContactListener = MakeUnique<FJoltContactListener>(Dispatcher, &JoltSystem->GetBodyLockInterfaceNoLock());
         JoltSystem->SetContactListener(ContactListener.get());
         
         FEntityRegistry& Registry = World->GetEntityRegistry();

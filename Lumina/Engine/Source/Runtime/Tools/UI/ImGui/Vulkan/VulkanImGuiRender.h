@@ -24,8 +24,8 @@ namespace Lumina
         struct FEntry
         {
             FName Name;
-            eastl::atomic<uint64> LastUseFrame{0};
-            eastl::atomic<ETextureState> State = ETextureState::Empty;
+            TAtomic<uint64> LastUseFrame{0};
+            TAtomic<ETextureState> State = ETextureState::Empty;
             FRHIImageRef RHIImage;
             ImTextureRef ImTexture;
         };
@@ -39,7 +39,7 @@ namespace Lumina
         void DrawRenderDebugInformationWindow(bool* bOpen, const FUpdateContext& Context) override;
 
         /** An ImTextureID in this context is castable to a VkDescriptorSet. */
-        LUMINA_API ImTextureID GetOrCreateImTexture(const FString& Path) override;
+        LUMINA_API ImTextureID GetOrCreateImTexture(FStringView Path) override;
         LUMINA_API ImTextureID GetOrCreateImTexture(FRHIImage* Image, const FTextureSubresourceSet& Subresources = AllSubresources) override;
         void DestroyImTexture(uint64 Hash) override;
     

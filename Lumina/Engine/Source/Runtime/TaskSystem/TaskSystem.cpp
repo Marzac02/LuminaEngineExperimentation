@@ -85,7 +85,7 @@ namespace Lumina
             return nullptr;
         }
         
-        FTaskHandle TaskHandle = MakeSharedPtr<FTaskCompletion>();
+        FTaskHandle TaskHandle = MakeShared<FTaskCompletion>();
         FLambdaTask* Task = Memory::New<FLambdaTask>(TaskHandle, Priority, Num, std::max(1u, MinRange), Move(Function));
         ScheduleTask(Task);
         

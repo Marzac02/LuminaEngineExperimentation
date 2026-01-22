@@ -146,7 +146,7 @@ namespace Lumina::Import::Textures
         return Result;
     }
 
-    FRHIImageRef CreateTextureFromImport(IRenderContext* RenderContext, const FString& RawFilePath, bool bFlipVerticalOnLoad)
+    FRHIImageRef CreateTextureFromImport(IRenderContext* RenderContext, FStringView RawFilePath, bool bFlipVerticalOnLoad)
     {
         LUMINA_PROFILE_SCOPE();
 

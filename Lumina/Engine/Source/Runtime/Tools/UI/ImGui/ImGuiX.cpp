@@ -9,7 +9,6 @@
 #include "Core/Object/Class.h"
 #include "Core/Reflection/Type/LuminaTypes.h"
 #include "Core/Windows/Window.h"
-#include "GLFW/glfw3.h"
 #include "Paths/Paths.h"
 #include "Renderer/RenderManager.h"
 
@@ -281,7 +280,7 @@ namespace Lumina::ImGuiX
         return GEngine->GetEngineSubsystem<FRenderManager>()->GetImGuiRenderer()->GetOrCreateImTexture(Image);
     }
 
-    ImTextureRef ToImTextureRef(const FString& Path)
+    ImTextureRef ToImTextureRef(FStringView Path)
     {
         return GEngine->GetEngineSubsystem<FRenderManager>()->GetImGuiRenderer()->GetOrCreateImTexture(Path);
     }
@@ -297,8 +296,9 @@ namespace Lumina::ImGuiX
             Size /= 1024.0;
             ++Suffix;
         }
-    	
-        return FString(std::format("{:.2f} {}", Size, Suffixes[Suffix]).c_str());
+    	FString Value;
+    	std::format_to(std::back_inserter(Value), "{:.2f} {}", Size, Suffixes[Suffix]);
+        return Value;
     }
 
     void RenderWindowOuterBorders(ImGuiWindow* Window)

@@ -7,11 +7,6 @@ project "ImGui"
     targetdir ("%{wks.location}/Binaries/" .. outputdir)
     objdir ("%{wks.location}/Intermediates/Obj/" .. outputdir .. "/%{prj.name}")
 
-    defines
-    {
-        "LUMINA_ENGINE",
-    }
-
 	includedirs
 	{
 		".",
@@ -37,9 +32,12 @@ project "ImGui"
 		"imstb_textedit.h",
 		"imstb_truetype.h",
 		"imgui_demo.cpp",
+        "implot_demo.cpp",
 		"backends/imgui_impl_glfw.h",
 		"backends/imgui_impl_glfw.cpp",
 		"backends/imgui_impl_vulkan.h",
 		"backends/imgui_impl_vulkan.cpp",
         "imgui_tables.cpp",
+		"ImGuizmo.h",
+		"ImGuizmo.cpp"
 	}

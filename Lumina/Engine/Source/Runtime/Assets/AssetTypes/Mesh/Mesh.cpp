@@ -16,7 +16,7 @@ namespace Lumina
 
         if (!MeshResources)
         {
-            MeshResources = MakeUniquePtr<FMeshResource>();
+            MeshResources = MakeUnique<FMeshResource>();
         }
         
         Ar << *MeshResources;
@@ -93,7 +93,7 @@ namespace Lumina
 
     void CMesh::GenerateGPUBuffers()
     {
-        FRHICommandListRef CommandList = GRenderContext->CreateCommandList(FCommandListInfo::Transfer());
+        FRHICommandListRef CommandList = GRenderContext->CreateCommandList(FCommandListInfo::Graphics());
         CommandList->Open();
         
         uint64 VertexSize = MeshResources->GetVertexTypeSize() * MeshResources->GetNumVertices();
@@ -102,37 +102,30 @@ namespace Lumina
         VertexBufferDesc.Size = VertexSize;
         VertexBufferDesc.Usage.SetFlag(BUF_VertexBuffer);
         VertexBufferDesc.DebugName = GetName().ToString() + " Vertex Buffer";
-        VertexBufferDesc.InitialState = EResourceStates::CopyDest;
-        VertexBufferDesc.bKeepInitialState = true;
         MeshResources->MeshBuffers.VertexBuffer = GRenderContext->CreateBuffer(VertexBufferDesc);
         
+        CommandList->BeginTrackingBufferState(MeshResources->MeshBuffers.VertexBuffer, EResourceStates::CopyDest);
         CommandList->WriteBuffer(MeshResources->MeshBuffers.VertexBuffer, MeshResources->GetVertexData(), VertexBufferDesc.Size);
-        
+        CommandList->SetPermanentBufferState(MeshResources->MeshBuffers.VertexBuffer, EResourceStates::VertexBuffer);
+
         uint64 IndexSize = sizeof(uint32) * MeshResources->Indices.size();
         
         FRHIBufferDesc IndexBufferDesc;
         IndexBufferDesc.Size = IndexSize;
-        IndexBufferDesc.InitialState = EResourceStates::CopyDest;
-        IndexBufferDesc.bKeepInitialState = true;
         IndexBufferDesc.Usage.SetFlag(BUF_IndexBuffer);
         IndexBufferDesc.DebugName = GetName().ToString() + " Index Buffer";
         MeshResources->MeshBuffers.IndexBuffer = GRenderContext->CreateBuffer(IndexBufferDesc);
         
+        CommandList->BeginTrackingBufferState(MeshResources->MeshBuffers.IndexBuffer, EResourceStates::CopyDest);
         CommandList->WriteBuffer(MeshResources->MeshBuffers.IndexBuffer, MeshResources->Indices.data(), IndexBufferDesc.Size);
-        
+        CommandList->SetPermanentBufferState(MeshResources->MeshBuffers.IndexBuffer, EResourceStates::IndexBuffer);
+
         MeshResources->MeshBuffers.ShadowIndexBuffer = MeshResources->MeshBuffers.IndexBuffer;
+
         
         CommandList->Close();
-        GRenderContext->ExecuteCommandList(CommandList, ECommandQueue::Transfer);
+        GRenderContext->ExecuteCommandList(CommandList, ECommandQueue::Graphics);
         
-        
-        FRHICommandListRef GCommandList = GRenderContext->CreateCommandList(FCommandListInfo::Graphics());
-        GCommandList->Open();
-        GCommandList->SetPermanentBufferState(MeshResources->MeshBuffers.VertexBuffer, EResourceStates::VertexBuffer);
-        GCommandList->SetPermanentBufferState(MeshResources->MeshBuffers.IndexBuffer, EResourceStates::IndexBuffer);
-        GCommandList->Close();
-        
-        GRenderContext->ExecuteCommandList(GCommandList, ECommandQueue::Graphics);
         
         if (!MeshResources->bSkinnedMesh)
         {

@@ -3,9 +3,9 @@
 #define USE_IMGUI_API
 #include <imgui.h>
 #include "EditorTool.h"
+#include "ImGuizmo.h"
 #include "Core/Delegates/Delegate.h"
 #include "Core/Object/Class.h"
-#include "Tools/UI/ImGui/ImGuizmo.h"
 #include "Tools/UI/ImGui/Widgets/TreeListView.h"
 #include "UI/Properties/PropertyTable.h"
 #include "World/Entity/Components/NameComponent.h"

@@ -44,14 +44,14 @@ namespace Lumina
 	{
 	    NODISCARD TGuardAtomicValue(eastl::atomic<AtomicType>& InAtomic, AtomicType NewValue)
 	        : AtomicRef(InAtomic)
-	        , OriginalValue(InAtomic.load(eastl::memory_order_relaxed)) // capture original value
+	        , OriginalValue(InAtomic.load(std::memory_order_relaxed)) // capture original value
 	    {
-	        AtomicRef.store(NewValue, eastl::memory_order_relaxed); // set new value
+	        AtomicRef.store(NewValue, std::memory_order_relaxed); // set new value
 	    }
 	
 	    ~TGuardAtomicValue()
 	    {
-	        AtomicRef.store(OriginalValue, eastl::memory_order_relaxed); // reset to original
+	        AtomicRef.store(OriginalValue, std::memory_order_relaxed); // reset to original
 	    }
 	
 	    FORCEINLINE const AtomicType& GetOriginalValue() const

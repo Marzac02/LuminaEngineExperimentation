@@ -1,11 +1,12 @@
 #pragma once
 
-#define GLFW_INCLUDE_VULKAN
-#include <GLFW/glfw3.h>
-
 #include "WindowTypes.h"
 #include "Core/Delegates/Delegate.h"
 
+#ifdef _WIN32
+	#include <Windows.h>
+#endif
+#include "GLFW/glfw3.h"
 
 namespace Lumina
 {

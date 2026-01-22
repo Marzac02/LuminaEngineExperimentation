@@ -16,7 +16,7 @@ namespace Lumina::FileSystem
     namespace Detail
     {
         template<typename TFunc, typename TFileSystemType = void>
-        auto VisitFileSystems(FStringView Path, TFunc&& Func) -> decltype(Func(eastl::declval<FFileSystem&>()))
+        static auto VisitFileSystems(FStringView Path, TFunc&& Func) -> decltype(Func(eastl::declval<FFileSystem&>()))
         {
             constexpr bool bIsVoid = eastl::is_same_v<decltype(Func(eastl::declval<FFileSystem&>())), void>;
 
@@ -90,6 +90,11 @@ namespace Lumina::FileSystem
         return eastl::visit([&](const auto& fs) { return fs.Remove(Path); }, Storage);
     }
 
+    size_t FFileSystem::Size(FStringView Path) const
+    {
+        return eastl::visit([&](const auto& fs) { return fs.Size(Path); }, Storage);
+    }
+
     bool FFileSystem::RemoveAll(FStringView Path) const
     {
         return eastl::visit([&](const auto& fs) { return fs.RemoveAll(Path); }, Storage);
@@ -155,14 +160,30 @@ namespace Lumina::FileSystem
 
     bool Remove(FStringView Path)
     {
-        FFixedString BasePath = ResolvePath(Path);
-        return std::filesystem::remove(BasePath.c_str());
+        bool VisitResult = Detail::VisitFileSystems(Path, [&](FFileSystem& FS)
+        {
+            return FS.Remove(Path);
+        });
+        
+        return VisitResult;
+    }
+
+    size_t Size(FStringView Path)
+    {
+        return Detail::VisitFileSystems(Path, [&](FFileSystem& FS)
+        {
+            return FS.Size(Path);
+        });
     }
 
     bool RemoveAll(FStringView Path)
     {
-        FFixedString BasePath = ResolvePath(Path);
-        return std::filesystem::remove_all(BasePath.c_str());
+        bool VisitResult = Detail::VisitFileSystems(Path, [&](FFileSystem& FS)
+        {
+            return FS.RemoveAll(Path);
+        });
+        
+        return VisitResult;
     }
 
     FFixedString ResolvePath(FStringView Path)

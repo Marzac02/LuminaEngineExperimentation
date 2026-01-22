@@ -71,8 +71,8 @@ namespace Lumina
         ScriptUpdatedDelegateHandle = Scripting::FScriptingContext::Get().OnScriptLoaded.AddMember(this, &ThisClass::ProcessAnyNewlyLoadedScripts);
         
         PhysicsScene    = Physics::GetPhysicsContext()->CreatePhysicsScene(this);
-        CameraManager   = MakeUniquePtr<FCameraManager>(this);
-        RenderScene     = MakeUniquePtr<FForwardRenderScene>(this);
+        CameraManager   = MakeUnique<FCameraManager>(this);
+        RenderScene     = MakeUnique<FForwardRenderScene>(this);
 
         EntityRegistry.ctx().emplace<Physics::IPhysicsScene*>(PhysicsScene.get());
         EntityRegistry.ctx().emplace<FCameraManager*>(CameraManager.get());

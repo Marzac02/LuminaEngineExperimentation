@@ -1,15 +1,10 @@
-
-
-
 #include "pch.h"
 #include "Window.h"
-#include "Events/Event.h"
 #include "stb_image.h"
 #include "Core/Application/Application.h"
+#include "Events/Event.h"
 #include "Paths/Paths.h"
 #include "Platform/Platform.h"
-
-
 
 namespace
 {

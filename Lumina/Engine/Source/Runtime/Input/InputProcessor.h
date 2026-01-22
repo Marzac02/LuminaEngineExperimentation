@@ -37,7 +37,7 @@ namespace Lumina
 
     private:
 
-    	int DesiredInputMode = GLFW_CURSOR_NORMAL;
+    	int DesiredInputMode = 0x00034001;
 
         double MouseX = 0.0;
         double MouseY = 0.0;

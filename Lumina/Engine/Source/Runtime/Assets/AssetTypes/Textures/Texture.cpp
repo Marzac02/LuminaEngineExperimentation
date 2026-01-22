@@ -12,7 +12,7 @@ namespace Lumina
 
         if (!TextureResource)
         {
-            TextureResource = MakeUniquePtr<FTextureResource>();
+            TextureResource = MakeUnique<FTextureResource>();
         }
         
         Ar << *TextureResource.get();
@@ -22,7 +22,7 @@ namespace Lumina
     {
         if (TextureResource == nullptr)
         {
-            TextureResource = MakeUniquePtr<FTextureResource>();
+            TextureResource = MakeUnique<FTextureResource>();
         }
     }
 
