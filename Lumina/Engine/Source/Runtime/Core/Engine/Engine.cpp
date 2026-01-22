@@ -26,15 +26,10 @@
 namespace Lumina
 {
     LUMINA_API FEngine* GEngine;
-
-    // We put this here so we don't need to include render resources in engine.h
+    
     static FRHIViewportRef EngineViewport;
     
-    static TConsoleVar CVarMaxFrameRate(
-        "Core.MaxFPS", 
-        144,
-        "Changes the maximum frame-rate of your engine");
-
+    static TConsoleVar CVarMaxFrameRate("Core.MaxFPS", 144, "Changes the maximum frame-rate of your engine");
     
     bool FEngine::Init()
     {

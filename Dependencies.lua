@@ -45,6 +45,8 @@ IncludeDir["LuminaReflectDir"]      = path.join("%{wks.location}", "Intermediate
 -- Output directory pattern
 outputdir               = "%{cfg.buildcfg}-%{cfg.system}-%{cfg.architecture}"
 
+ProjectFilesDir         = "%{wks.location}/Intermediates/ProjectFiles/%{prj.name}"
+
 -- Reflection paths
 reflection_dir          = path.join("%{wks.location}", "Intermediates/Reflection/%{prj.name}")
 reflection_unity_file   = path.join(reflection_dir, "ReflectionUnity.gen.cpp")

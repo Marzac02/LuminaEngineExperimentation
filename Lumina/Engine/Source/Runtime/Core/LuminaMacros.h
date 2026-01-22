@@ -28,6 +28,8 @@ enum class EName : uint32
     #define OFFSETOF(type, member) offsetof(type, member)
 #endif
 
+#define CAT(x, y) CAT_(x, y)
+#define CAT_(x, y) x##y
 
 // Tiny float threshold used for comparisons
 #define LE_EPSILON                      1.192092896e-07F
@@ -45,10 +47,24 @@ enum class EName : uint32
 #define LE_TWO_PI              (2.0 * LE_PI)
 #define LE_HALF_PI             (0.5 * LE_PI)
 
-// Degrees ↔ Radians
+
+// Degrees <-> Radians
 #define LE_DEG2RAD(x)          ((x) * (LE_PI / 180.0))
 #define LE_RAD2DEG(x)          ((x) * (180.0 / LE_PI))
 
+#define USING(flag) DETAIL_USING_FIRST(CAT(DETAIL_USING_CHECK_, flag))
+#define DETAIL_USING_CHECK_0 0,x
+#define DETAIL_USING_CHECK_1 1,x
+#if defined(_MSC_VER) && !defined(__clang__) && (!defined(_MSVC_TRADITIONAL) || _MSVC_TRADITIONAL) // Stupid legacy MSVC preprocessor.
+#define DETAIL_USING_DUMMY
+#define DETAIL_USING_FIRST(...) DETAIL_USING_FIRST_ DETAIL_USING_DUMMY(__VA_ARGS__)
+#else
+#define DETAIL_USING_FIRST(...) DETAIL_USING_FIRST_(__VA_ARGS__)
+#endif
+#define DETAIL_USING_FIRST_(x, y) x
+
+#define IN_USE 1
+#define NOT_IN_USE 0
 
 #define STRINGIFY_DETAIL(x) #x
 #define STRINGIFY(x) STRINGIFY_DETAIL(x)

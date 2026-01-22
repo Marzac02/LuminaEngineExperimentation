@@ -10,7 +10,7 @@ namespace Lumina::Reflection
 {
     void FClangParserContext::AddReflectedMacro(FReflectionMacro&& Macro)
     {
-        uint64 Hash = XXH64(Macro.HeaderID.c_str(), strlen(Macro.HeaderID.c_str()), 0);
+        uint64_t Hash = XXH64(Macro.HeaderID.c_str(), strlen(Macro.HeaderID.c_str()), 0);
 
         eastl::vector<FReflectionMacro>& Macros = ReflectionMacros[Hash];
         Macros.push_back(eastl::move(Macro));
@@ -18,7 +18,7 @@ namespace Lumina::Reflection
 
     void FClangParserContext::AddGeneratedBodyMacro(FReflectionMacro&& Macro)
     {
-        uint64 Hash = ClangUtils::HashString(Macro.HeaderID);
+        uint64_t Hash = ClangUtils::HashString(Macro.HeaderID);
         
         eastl::queue<FReflectionMacro>& Macros = GeneratedBodyMacros[Hash];
         Macros.push(eastl::move(Macro));
@@ -26,7 +26,7 @@ namespace Lumina::Reflection
 
     bool FClangParserContext::TryFindMacroForCursor(const eastl::string& HeaderID, const CXCursor& Cursor, FReflectionMacro& Macro)
     {
-        uint64 Hash = ClangUtils::HashString(HeaderID);
+        uint64_t Hash = ClangUtils::HashString(HeaderID);
 
         auto HeaderIter = ReflectionMacros.find(Hash);
         if (HeaderIter == ReflectionMacros.end())
@@ -83,7 +83,7 @@ namespace Lumina::Reflection
             return true;
         }
         
-        uint64 Hash = XXH64(HeaderID.c_str(), strlen(HeaderID.c_str()), 0);
+        uint64_t Hash = XXH64(HeaderID.c_str(), strlen(HeaderID.c_str()), 0);
         auto headerIter = GeneratedBodyMacros.find(Hash);
         if (headerIter == GeneratedBodyMacros.end())
         {

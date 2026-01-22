@@ -1,17 +1,18 @@
-include(os.getenv("LUMINA_DIR") .. "/Dependencies.lua")
+include(os.getenv("LUMINA_DIR") .. "/Dependencies")
 
 
 project "Reflector"
 	kind "ConsoleApp"
     targetdir ("%{LuminaEngineDirectory}/Binaries/" .. outputdir)
     objdir ("%{LuminaEngineDirectory}/Intermediates/Obj/" .. outputdir .. "/%{prj.name}")
-	enableunitybuild "On"
+    --location(ProjectFilesDir)
 
-
-	configmap 
+	configmap
 	{
-		["Debug"] 		= "Development",
-		["Shipping"]	= "Development",
+		["Debug"] 			= "Development",
+		["DebugGame"]		= "Development",
+		["DevelopmentGame"] = "Development",
+		["Shipping"]		= "Development",
 	}
 
 	disablewarnings
@@ -67,10 +68,7 @@ project "Reflector"
 
 	includedirs
 	{ 
-		"Source",
-	    
-	   	"%{LuminaEngineDirectory}/Lumina",
-		"%{LuminaEngineDirectory}/Lumina/Engine/ThirdParty/",
+		"Source",	    
 		"%{LuminaEngineDirectory}/External/LLVM/include/",
 		
 		includedependencies(),

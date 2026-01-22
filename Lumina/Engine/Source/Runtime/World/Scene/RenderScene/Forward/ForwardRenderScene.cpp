@@ -954,11 +954,10 @@ namespace Lumina
         {
             LUMINA_PROFILE_SECTION_COLORED("Point Light Shadow Pass", tracy::Color::DeepPink2);
             
-            FRHIVertexShaderRef VertexShader = FShaderLibrary::GetVertexShader("ShadowMapping.vert");
             FRHIPixelShaderRef PixelShader = FShaderLibrary::GetPixelShader("ShadowMapping.frag");
             
             FRenderState RenderState; RenderState
-                .SetDepthStencilState(FDepthStencilState()
+                    .SetDepthStencilState(FDepthStencilState()
                     .SetDepthFunc(EComparisonFunc::LessOrEqual))
                     .SetRasterState(FRasterState()
                         .SetSlopeScaleDepthBias(1.75f)
@@ -966,26 +965,26 @@ namespace Lumina
                         .SetCullFront());
             
 
-            FRenderPassDesc::FAttachment Depth; Depth
-                .SetLoadOp(ERenderLoadOp::Clear)
-                .SetDepthClearValue(1.0)
-                .SetImage(ShadowAtlas.GetImage())
-                    .SetNumSlices(6);
+                    FRenderPassDesc::FAttachment Depth; Depth
+                        .SetLoadOp(ERenderLoadOp::Clear)
+                        .SetDepthClearValue(1.0)
+                        .SetImage(ShadowAtlas.GetImage())
+                            .SetNumSlices(6);
+                    
+                    FRenderPassDesc RenderPass; RenderPass
+                        .SetDepthAttachment(Depth)
+                        .SetViewMask(RenderUtils::CreateViewMask<0u, 1u, 2u, 3u, 4u, 5u>())
+                        .SetRenderArea(glm::uvec2(GShadowAtlasResolution, GShadowAtlasResolution));
+                    
+                    FGraphicsState GraphicsState; GraphicsState
+                        .SetRenderPass(Move(RenderPass))
+                        .AddBindingSet(BindingSet)
+                        .AddBindingSet(ShadowPassSet)
+                        .SetIndirectParams(IndirectDrawBuffer);
+                    
             
-            FRenderPassDesc RenderPass; RenderPass
-                .SetDepthAttachment(Depth)
-                .SetViewMask(RenderUtils::CreateViewMask<0u, 1u, 2u, 3u, 4u, 5u>())
-                .SetRenderArea(glm::uvec2(GShadowAtlasResolution, GShadowAtlasResolution));
-            
-            FGraphicsState GraphicsState; GraphicsState
-                .SetRenderPass(Move(RenderPass))
-                .AddBindingSet(BindingSet)
-                .AddBindingSet(ShadowPassSet)
-                .SetIndirectParams(IndirectDrawBuffer);
-
             const TVector<FLightShadow>& PointShadows = PackedShadows[(uint32)ELightType::Point];
             
-
             for (const FLightShadow& LightShadow : PointShadows)
             {
                 LUMINA_PROFILE_SECTION_COLORED("Process Point Light", tracy::Color::DeepPink2);
@@ -1013,11 +1012,22 @@ namespace Lumina
                     (int)TilePixelY,
                     (int)TilePixelY + TileSize
                 );
-
+                
                 GraphicsState.SetViewportState(FViewportState(Viewport, Scissor));
                 
                 for (const FMeshDrawCommand& Batch : DrawCommands)
                 {
+                    FRHIVertexShaderRef VertexShader;
+                    if (Batch.bSkinned)
+                    {
+                        TFixedVector<FString, 1> Def{"SKINNED_VERTEX"};
+                        VertexShader = FShaderLibrary::GetVertexShader("ShadowMapping.vert", Def);
+                    }
+                    else
+                    {
+                        VertexShader = FShaderLibrary::GetVertexShader("ShadowMapping.vert");
+                    }
+                    
                     FGraphicsPipelineDesc Desc; Desc
                         .SetDebugName("Point Light Shadow Pass")
                         .SetRenderState(RenderState)
@@ -1057,7 +1067,6 @@ namespace Lumina
         {
             LUMINA_PROFILE_SECTION_COLORED("Spot Shadow Pass", tracy::Color::DeepPink4);
             
-            FRHIVertexShaderRef VertexShader = FShaderLibrary::GetVertexShader("ShadowMapping.vert");
             FRHIPixelShaderRef PixelShader = FShaderLibrary::GetPixelShader("ShadowMapping.frag");
             
             FRenderState RenderState; RenderState
@@ -1119,6 +1128,17 @@ namespace Lumina
                 
                 for (const FMeshDrawCommand& Batch : DrawCommands)
                 {
+                    FRHIVertexShaderRef VertexShader;
+                    if (Batch.bSkinned)
+                    {
+                        TFixedVector<FString, 1> Def{"SKINNED_VERTEX"};
+                        VertexShader = FShaderLibrary::GetVertexShader("ShadowMapping.vert", Def);
+                    }
+                    else
+                    {
+                        VertexShader = FShaderLibrary::GetVertexShader("ShadowMapping.vert");
+                    }
+                    
                     FGraphicsPipelineDesc Desc; Desc
                         .SetDebugName("Spot Shadow Pass")
                         .SetRenderState(RenderState)
@@ -1156,9 +1176,7 @@ namespace Lumina
         RenderGraph.AddPass(RG_Raster, FRGEvent("Cascaded Shadow Map Pass"), Descriptor, [&](ICommandList& CmdList)
         {
             LUMINA_PROFILE_SECTION_COLORED("Cascaded Shadow Map Pass", tracy::Color::DeepPink2);
-        
-            FRHIVertexShaderRef VertexShader = FShaderLibrary::GetVertexShader("ShadowMapping.vert");
-        
+            
             FRenderState RenderState; RenderState
                 .SetDepthStencilState(FDepthStencilState()
                     .SetDepthFunc(EComparisonFunc::LessOrEqual))
@@ -1178,6 +1196,18 @@ namespace Lumina
             
             for (const FMeshDrawCommand& Batch : DrawCommands)
             {
+                
+                FRHIVertexShaderRef VertexShader;
+                if (Batch.bSkinned)
+                {
+                    TFixedVector<FString, 1> Def{"SKINNED_VERTEX"};
+                    VertexShader = FShaderLibrary::GetVertexShader("ShadowMapping.vert", Def);
+                }
+                else
+                {
+                    VertexShader = FShaderLibrary::GetVertexShader("ShadowMapping.vert");
+                }
+                
                 FGraphicsPipelineDesc Desc; Desc
                     .SetDebugName("Cascaded Shadow Maps")
                     .SetRenderState(RenderState)
@@ -1247,7 +1277,6 @@ namespace Lumina
             FDepthStencilState DepthState; DepthState
                 .SetDepthFunc(EComparisonFunc::Equal)
                 .DisableDepthWrite();
-
             
             FRenderState RenderState;
             RenderState.SetRasterState(RasterState);

@@ -150,6 +150,7 @@ namespace Lumina
         
         WorldEditorTool = nullptr;
         ConsoleLogTool = nullptr;
+        ImGui::SetCurrentContext(nullptr);
     }
 
     void FEditorUI::OnStartFrame(const FUpdateContext& UpdateContext)

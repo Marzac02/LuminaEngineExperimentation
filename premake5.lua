@@ -1,12 +1,21 @@
 workspace "Lumina"
-	configurations { "Debug", "Development", "Shipping" }
+	language "C++"
 	targetdir "Build"
 	startproject "Editor"
 	conformancemode "On"
-
-	language "C++"
 	cppdialect "C++latest"
 	staticruntime "Off"
+    warnings "Default"
+
+    configurations 
+    { 
+        "Debug",
+        "DebugEditor",
+        "Development",
+        "DevelopmentEditor",
+        "Shipping",
+    }
+
 
 	flags  
 	{
@@ -33,15 +42,6 @@ workspace "Lumina"
     	"TRACY_ON_DEMAND",
 	}
 
-	filter "action:vs"
-	
-	filter "language:C++ or language:C"
-		architecture "x86_64"
-
-        
-    filter "architecture:x86_64"
-        defines { "LUMINA_PLATFORM_CPU_X86" }
-
 	buildoptions 
     {
 		"/Zm2000",
@@ -56,7 +56,11 @@ workspace "Lumina"
         "4267", -- "Precision loss warnings"
 	}
 
-    warnings "Default"
+    filter "language:C++ or language:C"
+		architecture "x86_64"
+        
+    filter "architecture:x86_64"
+        defines { "LUMINA_PLATFORM_CPU_X86" }
 
     filter "system:windows"
         systemversion "latest"
@@ -71,12 +75,15 @@ workspace "Lumina"
             "/we4238"
         }
 
-    filter "system:linux"
-        defines { "LE_PLATFORM_LINUX" }
-        buildoptions { "-march=native" }
+    filter {}
+    
+    filter "configurations:Debug or configurations:Development or configurations:Shipping"
+        defines { "WITH_EDITOR=NOT_IN_USE" }
 
-    -- Debug Configuration
-    filter "configurations:Debug"
+    filter "configurations:DebugEditor or configurations:DevelopmentEditor"
+        defines { "WITH_EDITOR=IN_USE" }
+
+    filter "configurations:Debug or configurations:DebugEditor"
         optimize "Debug"
         symbols "On"
         runtime "Debug"
@@ -85,18 +92,13 @@ workspace "Lumina"
         flags { "NoRuntimeChecks" }
         linktimeoptimization "Off"
 
-
-    -- Release Configuration (Developer build with symbols)
-    filter "configurations:Development"
+    filter "configurations:Development or configurations:DevelopmentEditor"
         optimize "Speed"
         symbols "On"
         runtime "Release"
         defines { "NDEBUG", "LE_DEVELOPMENT", "LUMINA_DEVELOPMENT", "SOL_ALL_SAFETIES_ON", }
         linktimeoptimization "on"
 
-
-
-    -- Shipping Configuration (Maximum optimization, no symbols)
     filter "configurations:Shipping"
         optimize "Full"
         symbols "Off"
@@ -104,9 +106,18 @@ workspace "Lumina"
         defines { "NDEBUG", "LE_SHIPPING", "LUMINA_SHIPPING" }
         removedefines { "TRACY_ENABLE" }
         linktimeoptimization "on"
-        
-
+    
     filter {}
+
+    group "Engine"
+		include "Lumina"
+	group ""
+
+	group "Applications"
+		include "Lumina/Applications/LuminaEditor"
+		include "Lumina/Applications/Reflector"
+		include "Lumina/Applications/Sandbox"
+	group ""
 
 	group "ThirdParty"
         include "Lumina/Engine/ThirdParty/EA"
@@ -128,14 +139,4 @@ workspace "Lumina"
         include "Lumina/Engine/ThirdParty/json"
         include "Lumina/Engine/ThirdParty/fastgltf"
         include "Lumina/Engine/ThirdParty/OpenFBX"
-	group ""
-
-	group "Engine"
-		include "Lumina"
-	group ""
-
-	group "Applications"
-		include "Lumina/Applications/LuminaEditor"
-		include "Lumina/Applications/Reflector"
-		include "Lumina/Applications/Sandbox"
 	group ""

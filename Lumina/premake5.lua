@@ -1,4 +1,4 @@
-include(os.getenv("LUMINA_DIR") .. "/Dependencies.lua")
+include(os.getenv("LUMINA_DIR") .. "/Dependencies")
 
 project "Lumina"
     kind "SharedLib"
@@ -7,6 +7,7 @@ project "Lumina"
     enableunitybuild "On"
     targetdir ("%{LuminaEngineDirectory}/Binaries/" .. outputdir)
     objdir ("%{LuminaEngineDirectory}/Intermediates/Obj/" .. outputdir .. "/%{prj.name}")
+    --location(ProjectFilesDir)
 
     pchheader "pch.h"
     pchsource "Engine/Source/pch.cpp"
@@ -90,7 +91,7 @@ project "Lumina"
         "GFSDK_Aftermath_Lib",
     }
 
-    filter "configurations:Debug"
+    filter "configurations:Debug or configurations:DebugEditor"
         removelinks { "shaderc_combined" }
         links { "shaderc_combinedd" }
         

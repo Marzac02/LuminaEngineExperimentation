@@ -4,6 +4,7 @@ project "RPMalloc"
 	enableunitybuild "On"
     targetdir ("%{wks.location}/Binaries/" .. outputdir)
     objdir ("%{wks.location}/Intermediates/Obj/" .. outputdir .. "/%{prj.name}")    
+    location(ProjectFilesDir)
 
 	files
 	{

@@ -1,4 +1,4 @@
-include(os.getenv("LUMINA_DIR") .. "/Dependencies.lua")
+include(os.getenv("LUMINA_DIR") .. "/Dependencies")
 
 project "Editor"
 	kind "ConsoleApp"
@@ -7,6 +7,7 @@ project "Editor"
     targetdir ("%{wks.location}/Binaries/" .. outputdir)
     objdir ("%{wks.location}/Intermediates/Obj/" .. outputdir .. "/%{prj.name}")   
 	dependson { "Lumina", "ImGui", "EA", "Tracy", "lua54" }
+    --location(ProjectFilesDir)
 
 	
     libdirs
@@ -16,7 +17,7 @@ project "Editor"
     }
 
 	links
-	 {
+	{
 		"Lumina",
 		"ImGui",
     	"EA",

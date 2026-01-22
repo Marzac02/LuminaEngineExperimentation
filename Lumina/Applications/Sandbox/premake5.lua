@@ -1,14 +1,11 @@
-include(os.getenv("LUMINA_DIR") .. "/Dependencies.lua")
-
+include(os.getenv("LUMINA_DIR") .. "/Dependencies")
 
 project "Sandbox"
 	kind "ConsoleApp"
-
-	outputdir = "%{cfg.buildcfg}-%{cfg.system}-%{cfg.architecture}"
-    
     targetdir ("%{wks.location}/Binaries/" .. outputdir)
     objdir ("%{wks.location}/Intermediates/Obj/" .. outputdir .. "/%{prj.name}")   
-	
+	location(ProjectFilesDir)
+
 	defines
 	{ 
 		"_SILENCE_ALL_MS_EXT_DEPRECATION_WARNINGS",

@@ -6,11 +6,7 @@
 #pragma shader_stage(vertex)
 
 #include "Includes/SceneGlobals.glsl"
-
-layout(location = 0) in vec3 inPosition;      // RGB32_FLOAT
-layout(location = 1) in uint inNormal;        // R32_UINT (packed 10:10:10:2)
-layout(location = 2) in uvec2 inUV;           // RG16_UINT
-layout(location = 3) in vec4 inColor;         // RGBA8_UNORM
+#include "Includes/VertexInputs.glsl"
 
 layout(location = 0) out vec3 outWorldPos;
 layout(location = 1) out vec3 outLightPos;
@@ -22,9 +18,27 @@ layout(push_constant) uniform PushConstants
 
 void main()
 {
+    vec3 Position = inPosition;
+
     FLight Light = LightData.Lights[LightIndex];
     mat4 ModelMatrix = GetModelMatrix(gl_InstanceIndex);
-    vec4 vWorldPos = ModelMatrix * vec4(inPosition, 1.0);
+
+    #ifdef SKINNED_VERTEX
+    vec4 Weights = vec4(inJointWeights) / 255.0;
+
+    FInstanceData Instance = GetInstanceData(gl_InstanceIndex);
+    uint BoneOffset = Instance.BoneOffset;
+    
+    mat4 SkinMatrix =
+    Bones.BoneMatrices[BoneOffset + inJointIndices.x] * Weights.x +
+    Bones.BoneMatrices[BoneOffset + inJointIndices.y] * Weights.y +
+    Bones.BoneMatrices[BoneOffset + inJointIndices.z] * Weights.z +
+    Bones.BoneMatrices[BoneOffset + inJointIndices.w] * Weights.w;
+
+    Position = (SkinMatrix * vec4(inPosition, 1.0)).xyz;
+    #endif
+
+    vec4 vWorldPos = ModelMatrix * vec4(Position, 1.0);
     
     outWorldPos = vWorldPos.xyz;
     outLightPos = Light.Position;
