@@ -100,9 +100,7 @@ namespace Lumina::Memory
         rpmalloc_global_statistics(&stats);
         return stats.unmapped_total;
     }
-
-    LUMINA_API NODISCARD SIZE_T GetActualAlignment(size_t Alignment);
-
+    
     LUMINA_API NODISCARD void* Malloc(size_t Size, size_t Alignment = DEFAULT_ALIGNMENT);
     
     LUMINA_API NODISCARD void* Realloc(void* Memory, size_t NewSize, size_t OriginalAlignment = DEFAULT_ALIGNMENT);

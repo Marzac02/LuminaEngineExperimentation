@@ -36,7 +36,7 @@ namespace Lumina
         void OnStartFrame(const FUpdateContext& UpdateContext) override;
         void OnEndFrame(const FUpdateContext& UpdateContext, FRenderGraph& RenderGraph) override;
 
-        void DrawRenderDebugInformationWindow(bool* bOpen, const FUpdateContext& Context) override;
+        void DrawRenderDebugInformationWindow(bool* bOpen, const FUpdateContext& InContext) override;
 
         /** An ImTextureID in this context is castable to a VkDescriptorSet. */
         LUMINA_API ImTextureID GetOrCreateImTexture(FStringView Path) override;

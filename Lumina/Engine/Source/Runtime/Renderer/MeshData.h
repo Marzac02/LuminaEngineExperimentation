@@ -109,9 +109,9 @@ namespace Lumina
             eastl::get<eastl::vector<FSkinnedVertex>>(Vertices)[Index].JointWeights = Weights;
         }
         
-        void SetJointIndicesAt(size_t Index, glm::u8vec4 Indices)
+        void SetJointIndicesAt(size_t Index, glm::u8vec4 InIndices)
         {
-            eastl::get<eastl::vector<FSkinnedVertex>>(Vertices)[Index].JointIndices = Indices;
+            eastl::get<eastl::vector<FSkinnedVertex>>(Vertices)[Index].JointIndices = InIndices;
         }
         
         glm::vec3 GetPositionAt(size_t Index) const

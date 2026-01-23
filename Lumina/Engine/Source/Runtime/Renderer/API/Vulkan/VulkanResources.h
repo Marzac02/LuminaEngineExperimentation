@@ -151,7 +151,7 @@ namespace Lumina
         ~FVulkanBuffer() override;
         LE_NO_COPYMOVE(FVulkanBuffer);
 
-        void* GetAPIResourceImpl(EAPIResourceType Type) override
+        void* GetAPIResourceImpl(EAPIResourceType) override
         {
             return Buffer;
         }
@@ -198,7 +198,7 @@ namespace Lumina
 
         const FSamplerDesc& GetDesc() const override { return Desc; }
 
-        void* GetAPIResourceImpl(EAPIResourceType Type) override { return Sampler; }
+        void* GetAPIResourceImpl(EAPIResourceType) override { return Sampler; }
 
         
     private:
@@ -281,7 +281,7 @@ namespace Lumina
         ~FVulkanImage() override;
         LE_NO_COPYMOVE(FVulkanImage);
 
-        void* GetAPIResourceImpl(EAPIResourceType Type) override;
+        void* GetAPIResourceImpl(EAPIResourceType) override;
 
         VkImage GetImage() const { return Image; }
         void* GetRHIView(EFormat Format, FTextureSubresourceSet Subresources, EImageDimension Dimension, bool bReadyOnlyDSV) override;
@@ -510,7 +510,7 @@ namespace Lumina
         RENDER_RESOURCE(RTT_InputLayout)
 
         FVulkanInputLayout(const FVertexAttributeDesc* InAttributeDesc, uint32 AttributeCount);
-        void* GetAPIResourceImpl(EAPIResourceType Type) override;
+        void* GetAPIResourceImpl(EAPIResourceType) override;
         
         
         TFixedVector<FVertexAttributeDesc, 4> InputDesc;
@@ -536,7 +536,7 @@ namespace Lumina
         bool Bake();
         const FBindingLayoutDesc* GetDesc() const override { return bBindless ? nullptr : &Desc; }
         const FBindlessLayoutDesc* GetBindlessDesc() const override { return bBindless ? &BindlessDesc : nullptr; }
-        void* GetAPIResourceImpl(EAPIResourceType Type) override;
+        void* GetAPIResourceImpl(EAPIResourceType) override;
         
         bool                                            bBindless = false;
         FBindingLayoutDesc                              Desc;
@@ -559,7 +559,7 @@ namespace Lumina
 
         const FBindingSetDesc* GetDesc() const override { return &Desc; }
         FRHIBindingLayout* GetLayout() const override { return Layout; }
-        void* GetAPIResourceImpl(EAPIResourceType Type) override;
+        void* GetAPIResourceImpl(EAPIResourceType) override;
         
         
         TFixedVector<FRHIBufferRef, 2>              DynamicBuffers;
@@ -587,7 +587,7 @@ namespace Lumina
         uint32_t GetCapacity() const override { return Capacity; }
 
         uint32_t GetFirstDescriptorIndexInHeap() const override { return 0; }
-        void* GetAPIResourceImpl(EAPIResourceType Type) override;
+        void* GetAPIResourceImpl(EAPIResourceType) override;
         
         TRefCountPtr<FVulkanBindingLayout> Layout;
         uint32 Capacity = 0;
@@ -627,7 +627,7 @@ namespace Lumina
         FVulkanGraphicsPipeline(FVulkanDevice* InDevice, const FGraphicsPipelineDesc& InDesc, const FRenderPassDesc& RenderPassDesc);
 
         const FGraphicsPipelineDesc& GetDesc() const override { return Desc; }
-        void* GetAPIResourceImpl(EAPIResourceType Type) override;
+        void* GetAPIResourceImpl(EAPIResourceType InType) override;
     
     private:
 
@@ -644,7 +644,7 @@ namespace Lumina
         FVulkanComputePipeline(FVulkanDevice* InDevice, const FComputePipelineDesc& InDesc);
 
         const FComputePipelineDesc& GetDesc() const override { return Desc; }
-        void* GetAPIResourceImpl(EAPIResourceType Type) override;
+        void* GetAPIResourceImpl(EAPIResourceType InType) override;
     
     private:
 

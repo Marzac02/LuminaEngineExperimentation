@@ -462,15 +462,15 @@ namespace Lumina
             return;
         }
 
-        int32 LoaderIndex = FObjectPackageIndex(Object->LoaderIndex).GetArrayIndex();
+        int32 FoundLoaderIndex = FObjectPackageIndex(Object->LoaderIndex).GetArrayIndex();
 
-        if (LoaderIndex < 0 || std::cmp_greater_equal(LoaderIndex, ExportTable.size()))
+        if (FoundLoaderIndex < 0 || std::cmp_greater_equal(FoundLoaderIndex, ExportTable.size()))
         {
-            LOG_ERROR("Invalid loader index {} for object {}", LoaderIndex, Object->GetName());
+            LOG_ERROR("Invalid loader index {} for object {}", FoundLoaderIndex, Object->GetName());
             return;
         }
 
-        FObjectExport& Export = ExportTable[LoaderIndex];
+        FObjectExport& Export = ExportTable[FoundLoaderIndex];
 
         if (!Loader)
         {

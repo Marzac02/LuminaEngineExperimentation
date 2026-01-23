@@ -14,6 +14,7 @@ workspace "Lumina"
     targetdir (LuminaConfig.GetTargetDirectory())
     objdir (LuminaConfig.GetObjDirectory())
     enableunitybuild "Off"
+    fastuptodate "On"
 
     configurations 
     { 
@@ -29,13 +30,6 @@ workspace "Lumina"
     }
 
     defaultplatform ("Editor")
-
-	flags  
-	{
-		"MultiProcessorCompile",
-        "NoIncrementalLink",
-        "ShadowedVariables",
-	}
 		
 	defines
 	{
@@ -101,28 +95,28 @@ workspace "Lumina"
         defines { "WITH_EDITOR=1" }
 
     filter "configurations:Debug"
-        optimize "Debug"
+        linktimeoptimization "Off"
+        incrementallink "On"
+        optimize "Off"
         symbols "On"
         runtime "Debug"
-        editandcontinue "Off"
-        defines { "LE_DEBUG", "LUMINA_DEBUG", "_DEBUG", "SOL_ALL_SAFETIES_ON", }
-        flags { "NoRuntimeChecks" }
-        linktimeoptimization "Off"
+        editandcontinue "On"
+        defines { "LE_DEBUG", "LUMINA_DEBUG", "_DEBUG", "SOL_ALL_SAFETIES_ON", "DEBUG", }
 
     filter "configurations:Development"
         optimize "Speed"
         symbols "On"
         runtime "Release"
+        linktimeoptimization "On"
         defines { "NDEBUG", "LE_DEVELOPMENT", "LUMINA_DEVELOPMENT", "SOL_ALL_SAFETIES_ON", }
-        linktimeoptimization "on"
 
     filter "configurations:Shipping"
+        linktimeoptimization "On"
         optimize "Full"
         symbols "Off"
         runtime "Release"
         defines { "NDEBUG", "LE_SHIPPING", "LUMINA_SHIPPING" }
         removedefines { "TRACY_ENABLE" }
-        linktimeoptimization "on"
     
     filter {}
 

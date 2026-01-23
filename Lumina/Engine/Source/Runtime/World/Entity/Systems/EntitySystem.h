@@ -57,5 +57,4 @@ namespace Lumina
 
 
 #define ENTITY_SYSTEM( ... )\
-static const FUpdatePriorityList PriorityList; \
 virtual const FUpdatePriorityList* GetRequiredUpdatePriorities() override { static const FUpdatePriorityList PriorityList = FUpdatePriorityList(__VA_ARGS__); return &PriorityList; }

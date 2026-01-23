@@ -1,8 +1,6 @@
 project "EA"
 	kind "StaticLib"
-	language "C++"
-	enableunitybuild "On"
-    
+	language "C++" 
 
 	files
 	{

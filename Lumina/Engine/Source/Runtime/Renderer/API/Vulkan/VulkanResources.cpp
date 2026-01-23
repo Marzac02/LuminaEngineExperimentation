@@ -811,7 +811,7 @@ namespace Lumina
         }
     }
 
-    void* FVulkanImage::GetAPIResourceImpl(EAPIResourceType Type)
+    void* FVulkanImage::GetAPIResourceImpl(EAPIResourceType)
     {
         return Image;
     }
@@ -1084,7 +1084,7 @@ namespace Lumina
         }
     }
 
-    void* FVulkanInputLayout::GetAPIResourceImpl(EAPIResourceType Type)
+    void* FVulkanInputLayout::GetAPIResourceImpl(EAPIResourceType)
     {
         return nullptr;
     }
@@ -1250,10 +1250,8 @@ namespace Lumina
         
     }
 
-    void* FVulkanBindingLayout::GetAPIResourceImpl(EAPIResourceType Type)
+    void* FVulkanBindingLayout::GetAPIResourceImpl(EAPIResourceType)
     {
-        (void)Type;
-        
         return DescriptorSetLayout;
     }
 
@@ -1492,7 +1490,7 @@ namespace Lumina
         vkDestroyDescriptorPool(Device->GetDevice(), DescriptorPool, VK_ALLOC_CALLBACK);
     }
 
-    void* FVulkanBindingSet::GetAPIResourceImpl(EAPIResourceType InType)
+    void* FVulkanBindingSet::GetAPIResourceImpl(EAPIResourceType)
     {
         return DescriptorSet;
     }
@@ -1526,7 +1524,7 @@ namespace Lumina
         vkDestroyDescriptorPool(Device->GetDevice(), DescriptorPool, VK_ALLOC_CALLBACK);
     }
 
-    void* FVulkanDescriptorTable::GetAPIResourceImpl(EAPIResourceType Type)
+    void* FVulkanDescriptorTable::GetAPIResourceImpl(EAPIResourceType)
     {
         return nullptr;
     }
@@ -1746,9 +1744,9 @@ namespace Lumina
 
     }
 
-    void* FVulkanGraphicsPipeline::GetAPIResourceImpl(EAPIResourceType Type)
+    void* FVulkanGraphicsPipeline::GetAPIResourceImpl(EAPIResourceType InType)
     {
-        switch (Type)
+        switch (InType)
         {
             case EAPIResourceType::Pipeline:        return Pipeline;
             case EAPIResourceType::PipelineLayout:  return PipelineLayout;
@@ -1779,9 +1777,9 @@ namespace Lumina
         static_cast<FVulkanRenderContext*>(GRenderContext)->SetVulkanObjectName(Desc.DebugName, VK_OBJECT_TYPE_PIPELINE, (uintptr_t)Pipeline);
     }
 
-    void* FVulkanComputePipeline::GetAPIResourceImpl(EAPIResourceType Type)
+    void* FVulkanComputePipeline::GetAPIResourceImpl(EAPIResourceType InType)
     {
-        switch (Type)
+        switch (InType)
         {
             case EAPIResourceType::Pipeline:        return Pipeline;
             case EAPIResourceType::PipelineLayout:  return PipelineLayout;

@@ -41,6 +41,13 @@ project "Lumina"
         "%{LuminaConfig.EngineDirectory}/External/ShaderC",
     }
 
+    fatalwarnings
+    {
+        "4456",
+        "4457",
+        "4458",
+    }
+
     links
     {
         "GLFW",
@@ -80,10 +87,10 @@ project "Lumina"
         
         
     filter "files:Engine/ThirdParty/**.cpp"
-        flags { "NoPCH" }
+        enablepch "Off"
     filter {}
 
     filter "files:Engine/ThirdParty/**.c"
-        flags { "NoPCH" }
+        enablepch "Off"
         language "C"
     filter {}

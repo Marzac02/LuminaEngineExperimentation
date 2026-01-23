@@ -252,7 +252,7 @@ namespace Lumina
 		ToDelete.clear();
     }
 
-	void FVulkanImGuiRender::DrawRenderDebugInformationWindow(bool* bOpen, const FUpdateContext& Context)
+	void FVulkanImGuiRender::DrawRenderDebugInformationWindow(bool* bOpen, const FUpdateContext&)
 	{
 		ImGui::SetNextWindowSize(ImVec2(1400, 950), ImGuiCond_FirstUseEver);
 		if (!ImGui::Begin("Vulkan Render Diagnostics", bOpen, ImGuiWindowFlags_MenuBar))

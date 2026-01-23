@@ -4,6 +4,7 @@
 #include "Core/LuminaMacros.h"
 #include "Core/Assertions/Assert.h"
 #include "Core/Profiler/Profile.h"
+#include "Core/Templates/Align.h"
 
 //#undef LUMINA_RPMALLOC
 
@@ -18,7 +19,6 @@ namespace Lumina
         
         PANIC("{}", pMessage);
     }
-    
     
     struct FMalloc
     {
@@ -83,23 +83,17 @@ namespace Lumina
     {
         rpmalloc_thread_initialize();
     }
-
-    SIZE_T Memory::GetActualAlignment(size_t Alignment)
-    {
-        SIZE_T Align = (Alignment < 16) ? 16 : (Alignment);
-        return Align;
-    }
-
+    
     void* Memory::Malloc(size_t Size, size_t Alignment)
     {
-        void* pMemory = GMalloc->Malloc(Size, Alignment);
+        void* pMemory = GMalloc->Malloc(Size, Align<size_t>(Alignment, 16));
         LUMINA_PROFILE_ALLOC(pMemory, Size);
         return pMemory;
     }
 
     void* Memory::Realloc(void* Memory, size_t NewSize, size_t Alignment)
     {
-        return GMalloc->Realloc(Memory, NewSize, Alignment);
+        return GMalloc->Realloc(Memory, NewSize, Align<size_t>(Alignment, 16));
     }
 
     void Memory::Free(void*& Memory)

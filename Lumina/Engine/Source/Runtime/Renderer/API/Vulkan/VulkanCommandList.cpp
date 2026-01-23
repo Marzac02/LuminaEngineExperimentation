@@ -1708,7 +1708,7 @@ namespace Lumina
         StateTracker.RequireBufferState(VulkanBuffer, StateBits);
     }
 
-    void* FVulkanCommandList::GetAPIResourceImpl(EAPIResourceType Type)
+    void* FVulkanCommandList::GetAPIResourceImpl(EAPIResourceType)
     {
         return CurrentCommandBuffer->CommandBuffer;
     }

@@ -125,7 +125,7 @@ namespace Lumina
         void RequireBufferState(FRHIBuffer* Buffer, EResourceStates StateBits);
         
         
-        void* GetAPIResourceImpl(EAPIResourceType Type) override;
+        void* GetAPIResourceImpl(EAPIResourceType) override;
         const FCommandListInfo& GetCommandListInfo() const override { return Info; }
 
         FPendingCommandState& GetPendingCommandState() override { return PendingState; }
