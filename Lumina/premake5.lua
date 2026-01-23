@@ -5,7 +5,6 @@ project "Lumina"
     kind "SharedLib"
     rtti "off"
     staticruntime "Off"
-    enableunitybuild "On"
     pchheader "pch.h"
     pchsource "Engine/Source/pch.cpp"
     dependson { "Reflector", "EA", "ImGui", "Tracy", "GLFW" }
