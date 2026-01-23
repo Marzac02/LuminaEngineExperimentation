@@ -69,22 +69,23 @@ namespace Lumina::ClangUtils
         return Result;
     }
 
-    inline eastl::string GetHeaderPathForCursor(CXCursor cr)
+    inline eastl::string GetHeaderPathForCursor(const CXCursor& Cursor)
     {
-        CXFile pFile;
-        const CXSourceRange cursorRange = clang_getCursorExtent(cr);
-        clang_getExpansionLocation(clang_getRangeStart(cursorRange), &pFile, nullptr, nullptr, nullptr);
+        CXFile File = nullptr;
+        const CXSourceRange CursorRange = clang_getCursorExtent(Cursor);
+        clang_getExpansionLocation(clang_getRangeStart(CursorRange), &File, nullptr, nullptr, nullptr);
 
         eastl::string HeaderFilePath;
-        if (pFile != nullptr)
+        if (File != nullptr)
         {
-            CXString clangFilePath = clang_File_tryGetRealPathName(pFile);
-            HeaderFilePath = eastl::string(clang_getCString(clangFilePath));
-            clang_disposeString(clangFilePath);
+            CXString ClangFilePath = clang_getFileName(File);
+            HeaderFilePath = eastl::string(clang_getCString(ClangFilePath));
+            
+            clang_disposeString(ClangFilePath);
+            
+            eastl::replace(HeaderFilePath.begin(), HeaderFilePath.end(), '\\', '/');
+            HeaderFilePath.make_lower();
         }
-
-        eastl::replace(HeaderFilePath.begin(), HeaderFilePath.end(), '\\', '/');
-        HeaderFilePath.make_lower();
         
         return HeaderFilePath;
     }

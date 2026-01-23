@@ -1,216 +1,147 @@
 ﻿#include "ClangParser.h"
+
+#include <filesystem>
 #include <fstream>
+#include <print>
 #include <clang-c/Index.h>
 #include "EASTL/fixed_vector.h"
+#include "Reflector/ProjectSolution.h"
+#include "Reflector/ReflectionCore/ReflectedProject.h"
 #include "Visitors/ClangTranslationUnit.h"
 
 
 
 namespace Lumina::Reflection
 {
-
-    static const char* GIncludePaths[] =
+    bool FClangParser::Parse(FReflectedWorkspace* Workspace)
     {
-        "/Lumina/Engine/",
-        "/Lumina/Engine/Source",
-        "/Lumina/Engine/ThirdParty/",
-        "/Lumina/Engine/Source/Runtime",
-
-        // GLM can't be added to this list for manual reflect types.
-        "/Lumina/Engine/ThirdParty/spdlog/include",
-        "/Lumina/Engine/ThirdParty/GLFW/include",
-        "/Lumina/Engine/ThirdParty/imgui",
-        "/Lumina/Engine/ThirdParty/vk-bootstrap",
-        "/Lumina/Engine/ThirdParty/VulkanMemoryAllocator",
-        "/Lumina/Engine/ThirdParty/fastgltf/include",
-        "/Lumina/Engine/ThirdParty/stb_image",
-        "/Lumina/Engine/ThirdParty/meshoptimizer/src",
-        "/Lumina/Engine/ThirdParty/EnkiTS/src",
-        "/Lumina/Engine/ThirdParty/SPIRV-Reflect",
-        "/Lumina/Engine/ThirdParty/json",
-        "/Lumina/Engine/ThirdParty/entt/single_include",
-        "/Lumina/Engine/ThirdParty/EA/EASTL/include",
-        "/Lumina/Engine/ThirdParty/EA/EABase/include/Common",
-    };
-
-    static eastl::string ToLower(const eastl::string& Str)
-    {
-        eastl::string Lower;
-        Lower.resize(Str.size());
-        eastl::transform(Lower.begin(), Lower.end(), Lower.begin(), ::tolower);
-        return Lower;
-    }
+        CXTranslationUnit TranslationUnit = nullptr;
+        CXIndex ClangIndex = nullptr;
     
-    FClangParser::FClangParser()
-    {
-    }
+        ParsingContext.Workspace = Workspace;
+        
+        const eastl::string AmalgamationPath = std::filesystem::absolute("ReflectHeaders.gen.h").string().c_str();
 
-    bool FClangParser::Parse(const eastl::string& SolutionPath, eastl::vector<eastl::shared_ptr<FReflectedHeader>>& Headers, eastl::shared_ptr<FReflectedProject>& Project)
-    {
-        if (Project->TranslationUnit == nullptr)
+        std::ofstream AmalgamationFile(AmalgamationPath.c_str());
+        if (!AmalgamationFile.is_open())
         {
-            auto start = std::chrono::high_resolution_clock::now();
-    
-            ParsingContext.Solution = FProjectSolution(SolutionPath.c_str());
-            ParsingContext.Project = Project;
-    
-            const eastl::string ProjectReflectionDirectory = ParsingContext.Solution.GetParentPath() + "/Intermediates/Reflection/" + Project->Name;
-            
-            //for (const auto& Entry : std::filesystem::directory_iterator(ProjectReflectionDirectory.c_str()))
-            //{
-            //    std::error_code ec;
-            //    std::filesystem::remove_all(Entry, ec);
-            //    if (ec)
-            //    {
-            //        std::cout << "Failed to delete: " << Entry.path() << " (" << ec.message() << ")\n";
-            //    }
-            //}
-            
-            const eastl::string AmalgamationPath = ProjectReflectionDirectory + "/ReflectHeaders.gen.h";
-            
-            std::ofstream AmalgamationFile(AmalgamationPath.c_str());
-            AmalgamationFile << "#pragma once\n\n";
-
-            for (const eastl::shared_ptr<FReflectedHeader>& Header : Headers)
+            std::println("Failed to create amalgamation file");
+            return false;
+        }
+        AmalgamationFile << "#pragma once\n\n";
+        
+        eastl::vector<eastl::string> FullIncludePaths;
+        eastl::fixed_vector<const char*, 32> ClangArgs;
+        
+        eastl::string LuminaDirectory = std::getenv("LUMINA_DIR");
+        if (!LuminaDirectory.empty() && LuminaDirectory.back() == '/' )
+        {
+            LuminaDirectory.pop_back();
+        }
+        
+        for (const auto& Project : Workspace->ReflectedProjects)
+        {
+            for (const eastl::string& IncludeDir : Project->IncludeDirs)
             {
-                AmalgamationFile << "#include \"" << Header->HeaderPath.c_str() << "\"\n";
+                ClangArgs.emplace_back("-I");
+                if (IncludeDir.find("GLM") != eastl::string::npos)
+                {
+                    continue;
+                }
+                
+                ClangArgs.emplace_back(IncludeDir.c_str());
+            }
+            
+            for (auto& [Path, Header] : Project->Headers)
+            {
+                AmalgamationFile << "#include \"" << Path.c_str() << "\"\n";
+                ParsingContext.AllHeaders.emplace(Path, Header.get());
+                
+                ClangArgs.emplace_back("-include");
+                ClangArgs.emplace_back(Path.c_str());
                 ParsingContext.NumHeadersReflected++;
             }
+        }
     
-            AmalgamationFile.close();
-    
-            eastl::vector<eastl::string> FullIncludePaths;
-            eastl::fixed_vector<const char*, 32> clangArgs;
-    
-            eastl::string PrjPath = Project->ParentPath + "/Source/";
-            FullIncludePaths.push_back("-I" + PrjPath);
-            clangArgs.push_back(FullIncludePaths.back().c_str());
-    
-            eastl::string LuminaDirectory = std::getenv("LUMINA_DIR");
-            if (!LuminaDirectory.empty() && LuminaDirectory.back() == '/' )
-            {
-                LuminaDirectory.pop_back();
-            }
-        
-            for (const char* Path : GIncludePaths)
-            {
-                eastl::string FullPath = LuminaDirectory + Path;
-                FullIncludePaths.emplace_back("-I" + FullPath);
-                clangArgs.emplace_back(FullIncludePaths.back().c_str());
-                if (!std::filesystem::exists(FullPath.c_str()))
-                {
-                    ParsingContext.LogError("Invalid include path: %s", FullPath.c_str());
-                    return false;
-                }
-            }
-        
-            eastl::string ManualReflectPath;
-			ManualReflectPath.append(LuminaDirectory).append("/Lumina/Engine/Source/Runtime/Core/Object/ManualReflectTypes.h");
-			clangArgs.emplace_back("-include");
-            clangArgs.emplace_back(ManualReflectPath.c_str());
+        AmalgamationFile.close();
 
-            clangArgs.emplace_back("-x");
-            clangArgs.emplace_back("c++");
-            clangArgs.emplace_back("-std=c++23");
-            clangArgs.emplace_back("-O0");
+        eastl::string ManualReflectPath;
+		ManualReflectPath.append(LuminaDirectory).append("/Lumina/Engine/Source/Runtime/Core/Object/ManualReflectTypes.h");
+		ClangArgs.emplace_back("-include");
+        ClangArgs.emplace_back(ManualReflectPath.c_str());
         
-            clangArgs.emplace_back("-D");
-            clangArgs.emplace_back("REFLECTION_PARSER");
+        ClangArgs.emplace_back("-x");
+        ClangArgs.emplace_back("c++");
+        ClangArgs.emplace_back("-std=c++23");
+        ClangArgs.emplace_back("-O0");
+        ClangArgs.emplace_back("-D");
+        ClangArgs.emplace_back("REFLECTION_PARSER");
+        ClangArgs.emplace_back("-D");
+        ClangArgs.emplace_back("NDEBUG");
+        ClangArgs.emplace_back("-fsyntax-only");
+        ClangArgs.emplace_back("-fparse-all-comments");
+        ClangArgs.emplace_back("-fms-extensions");
+        ClangArgs.emplace_back("-fms-compatibility");
+        ClangArgs.emplace_back("-Wfatal-errors=0");
+        ClangArgs.emplace_back("-w");
+        ClangArgs.emplace_back("-ferror-limit=1000000000");
+        ClangArgs.emplace_back("-Wno-multichar");
+        ClangArgs.emplace_back("-Wno-deprecated-builtins");
+        ClangArgs.emplace_back("-Wno-unknown-warning-option");
+        ClangArgs.emplace_back("-Wno-return-type-c-linkage");
+        ClangArgs.emplace_back("-Wno-c++98-compat-pedantic");
+        ClangArgs.emplace_back("-Wno-gnu-folding-constant");
+        ClangArgs.emplace_back("-Wno-vla-extension-static-assert");
+        ClangArgs.emplace_back("-fno-spell-checking");
+        ClangArgs.emplace_back("-fno-delayed-template-parsing");
     
-            clangArgs.emplace_back("-D");
-            clangArgs.emplace_back("NDEBUG");
-    
-            clangArgs.emplace_back("-fsyntax-only");
-            clangArgs.emplace_back("-fparse-all-comments");
-            clangArgs.emplace_back("-fms-extensions");
-            clangArgs.emplace_back("-fms-compatibility");
-            clangArgs.emplace_back("-Wfatal-errors=0");
-            clangArgs.emplace_back("-w");
+        ClangIndex = clang_createIndex(0, 0);
         
-            clangArgs.emplace_back("-ferror-limit=1000000000");
+        constexpr uint32_t ClangOptions = 
+            CXTranslationUnit_DetailedPreprocessingRecord |
+            CXTranslationUnit_SkipFunctionBodies | 
+            CXTranslationUnit_KeepGoing;
         
-            clangArgs.emplace_back("-Wno-multichar");
-            clangArgs.emplace_back("-Wno-deprecated-builtins");
-            clangArgs.emplace_back("-Wno-unknown-warning-option");
-            clangArgs.emplace_back("-Wno-return-type-c-linkage");
-            clangArgs.emplace_back("-Wno-c++98-compat-pedantic");
-            clangArgs.emplace_back("-Wno-gnu-folding-constant");
-            clangArgs.emplace_back("-Wno-vla-extension-static-assert");
-            
-            // REMOVED: Don't use these, they will break parsing!
-            // clangArgs.emplace_back("-nostdinc");
-            // clangArgs.emplace_back("-nostdinc++"); 
-            // clangArgs.emplace_back("-nobuiltininc");
-    
-            clangArgs.emplace_back("-fno-spell-checking");
-            clangArgs.emplace_back("-fno-delayed-template-parsing");
-    
-            Project->ClangIndex = clang_createIndex(0, 0);
-            
-            constexpr uint32_t ClangOptions = 
-                CXTranslationUnit_DetailedPreprocessingRecord |
-                CXTranslationUnit_SkipFunctionBodies | 
-                CXTranslationUnit_KeepGoing |
-                CXTranslationUnit_IgnoreNonErrorsFromIncludedFiles;
+        CXErrorCode Result = clang_parseTranslationUnit2(
+            ClangIndex,
+            AmalgamationPath.c_str(),
+            ClangArgs.data(),
+            (int)ClangArgs.size(),
+            nullptr,
+            0,
+            ClangOptions,
+            &TranslationUnit);
         
-            CXErrorCode Result = clang_parseTranslationUnit2(
-                Project->ClangIndex,
-                AmalgamationPath.c_str(),
-                clangArgs.data(),
-                clangArgs.size(),
-                nullptr,
-                0,
-                ClangOptions,
-                &Project->TranslationUnit);
-    
-            auto end = std::chrono::high_resolution_clock::now();
-            std::chrono::duration<double> duration = end - start;
-            std::cout << "[Reflection] Parsed " << Project->Name.c_str() << " in " << duration.count() << "s\n";
+        CXCursor Cursor = clang_getTranslationUnitCursor(TranslationUnit);
+        if (clang_visitChildren(Cursor, VisitTranslationUnit, &ParsingContext) != 0)
+        {
+            std::println("A problem occured during translation unit parsing");
+        }
         
-            if (Result != CXError_Success)
+        if (Result != CXError_Success)
+        {
+            switch (Result)
             {
-                switch (Result)
-                {
-                case CXError_Failure:
-                    ParsingContext.LogError("Clang Unknown failure");
-                    break;
+            case CXError_Failure:
+                ParsingContext.LogError("Clang Unknown failure");
+                break;
     
-                case CXError_Crashed:
-                    ParsingContext.LogError("Clang crashed");
-                    break;
+            case CXError_Crashed:
+                ParsingContext.LogError("Clang crashed");
+                break;
     
-                case CXError_InvalidArguments:
-                    ParsingContext.LogError("Clang Invalid arguments");
-                    break;
+            case CXError_InvalidArguments:
+                ParsingContext.LogError("Clang Invalid arguments");
+                break;
     
-                case CXError_ASTReadError:
-                    ParsingContext.LogError("Clang AST read error");
-                    break;
-                }
-    
-                clang_disposeIndex(Project->ClangIndex);
-                return false;
+            case CXError_ASTReadError:
+                ParsingContext.LogError("Clang AST read error");
+                break;
             }
         }
         
-        ParsingContext.Project = Project;
-        CXCursor Cursor = clang_getTranslationUnitCursor(Project->TranslationUnit);
-        clang_visitChildren(Cursor, VisitTranslationUnit, &ParsingContext);
-        
+        std::filesystem::remove(AmalgamationPath.c_str());
+        clang_disposeIndex(ClangIndex);
         return true;
-    }
-
-    void FClangParser::Dispose(FReflectedProject& Project)
-    {
-        if (Project.TranslationUnit)
-        {
-            clang_disposeTranslationUnit(Project.TranslationUnit);
-            Project.TranslationUnit = nullptr;
-        }
-        if (Project.ClangIndex)
-        {
-            clang_disposeIndex(Project.ClangIndex);
-            Project.ClangIndex = nullptr;
-        }
     }
 }

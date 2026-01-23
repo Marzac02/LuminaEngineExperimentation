@@ -1,137 +1,127 @@
 
-
 #include <chrono>
-#include <filesystem>
-#include <iostream>
-
+#include <fstream>
+#include <print>
 #include "StringHash.h"
-#include "Reflector/TypeReflector.h"
+#include "nlohmann/json.hpp"
+#include "Reflector/ProjectSolution.h"
 #include "Reflector/Clang/ClangParser.h"
+#include "Reflector/CodeGeneration/CodeGenerator.h"
+#include "Reflector/ReflectionCore/ReflectedProject.h"
 
+
+using json = nlohmann::json;
+using namespace Lumina::Reflection;
+
+struct FScopeTimer
+{
+    using Clock = std::chrono::high_resolution_clock;
+
+    eastl::string_view Name;
+    Clock::time_point Start;
+
+    explicit FScopeTimer(eastl::string_view InName)
+        : Name(InName), Start(Clock::now())
+    {}
+
+    ~FScopeTimer()
+    {
+        auto End = Clock::now();
+        auto S  = std::chrono::duration_cast<std::chrono::seconds>(End - Start).count();
+
+        std::println("[PROFILE] {} {} s", Name.data(), S);
+    }
+};
 
 int main(int argc, char* argv[])
 {
+    FScopeTimer TotalTimer("Total Execution");
+    
     Lumina::FStringHash::Initialize();
-
-    eastl::string SolutionToReflect;
-
-    std::filesystem::path slnPath;
-
-    std::cout.setf(std::ios::fixed, std::ios::floatfield);
-    std::cout.precision(2);
-
-    std::cout << "===============================================\n";
-    std::cout << "Lumina Reflection Tool\n";
-    std::cout << "===============================================\n\n";
     
-    if (argc >= 2)
-    {
-        slnPath = argv[1];
-
-        if (!std::filesystem::exists(slnPath))
-        {
-            std::cerr << "Provided path does not exist: " << slnPath.generic_string().c_str() << "\n";
-            return 1;
-        }
-
-        std::cout << "Reflecting Solution: " << slnPath.generic_string().c_str() << "\n";
-        SolutionToReflect = slnPath.generic_string().c_str();
-    }
-    else
-    {
-        const char* LuminaDirectory = std::getenv("LUMINA_DIR");
-        if (!LuminaDirectory)
-        {
-            std::cerr << "Usage: " << (argc > 0 ? argv[0] : "Reflector.exe") 
-                      << " <path_to_solution_or_project_directory>\n";
-            std::cerr << "Or set LUMINA_DIR environment variable to point to Lumina root.\n";
-            return 1;
-        }
-
-        SolutionToReflect = LuminaDirectory;
-        SolutionToReflect += "\\Lumina.sln";
-
-        if (!std::filesystem::exists(SolutionToReflect.c_str()))
-        {
-            std::cerr << "Failed to find Lumina.sln at: " << SolutionToReflect.c_str() << "\n";
-            return 1;
-        }
-    }
-
+    std::println("===============================================");
+    std::println("======== Lumina Reflection Tool (LRT) =========");
+    std::println("===============================================");
     
-    if (SolutionToReflect.empty() || std::filesystem::path(SolutionToReflect.c_str()).extension() != ".sln")
+#if 0
+    
+    eastl::string InputFile = "H:/LuminaEngine/Reflection_Files.json";
+    
+#else
+    if (argc < 2)
     {
-        std::cout << "[WARNING] Specified path does not exist, or is not a solution file: " 
-                  << SolutionToReflect.c_str() << "\n";
+        std::println("Missing command line argument");
         return 1;
     }
     
-    Lumina::Reflection::FTypeReflector TypeReflector(SolutionToReflect);
-
-    double parseTime = 0.0;
+    eastl::string InputFile = argv[1];
+#endif
+    
+    std::ifstream File(InputFile.c_str());
+    if (!File.is_open())
     {
-        std::cout << "[Reflection] Starting Solution Parsing... " << SolutionToReflect.c_str() << "\n";
-        auto start = std::chrono::high_resolution_clock::now();
-
-        if (!TypeReflector.ParseSolution())
+        std::println("Failed to open file {}", InputFile.c_str());
+        return 1; 
+    }
+    
+    
+    json Data = json::parse(File);
+    
+    eastl::string WorkspaceName     = Data["WorkspaceName"].get<std::string>().c_str();
+    eastl::string WorkspacePath     = Data["WorkspacePath"].get<std::string>().c_str();
+    
+    FReflectedWorkspace Workspace(WorkspacePath.c_str());
+    
+    bool bAnyHeaderDirty = false;
+    
+    for (const auto& Project : Data["Projects"])
+    {
+        eastl::string ProjectName = Project["Name"].get<std::string>().c_str();
+        
+        auto ReflectedProject = eastl::make_unique<FReflectedProject>(&Workspace);
+        ReflectedProject->Name = eastl::move(ProjectName);
+        
+        for (const auto& IncludeDirJson : Project["IncludeDirs"])
         {
-            std::cerr << "[Reflection] Failed to parse solution.\n";
-            return 1;
+            eastl::string IncludeDir = IncludeDirJson.get<std::string>().c_str();
+            ReflectedProject->IncludeDirs.push_back(eastl::move(IncludeDir));
         }
-
-        auto end = std::chrono::high_resolution_clock::now();
-        std::chrono::duration<double> duration = end - start;
-        parseTime = duration.count();
-
-        std::cout << "[Reflection] Solution parsing completed in " << parseTime << " seconds.\n";
+        
+        for (const auto& ProjectFileJson : Project["Files"])
+        {
+            eastl::string ProjectFile = ProjectFileJson.get<std::string>().c_str();
+            ProjectFile.make_lower();
+            eastl::replace(ProjectFile.begin(), ProjectFile.end(), '\\', '/');
+            
+            auto ReflectedHeader = eastl::make_unique<FReflectedHeader>(ReflectedProject.get(), ProjectFile);
+            if (ReflectedHeader->bDirty)
+            {
+                bAnyHeaderDirty = true;
+            }
+            
+            Lumina::FStringHash HeaderHash(ProjectFile);
+            ReflectedProject->Headers.emplace(HeaderHash, eastl::move(ReflectedHeader));
+        }
+        
+        Workspace.AddReflectedProject(eastl::move(ReflectedProject));
     }
-
-    if (!TypeReflector.IsAnyProjectDirty())
+    
+    if (!bAnyHeaderDirty)
     {
-        std::cout << "[Reflection] Reflection not necessary, exiting";
-        std::exit(0);
+        std::println("Reflection not necessary");
+        return 0;
     }
-
-    std::cout << "\n";
     
-    Lumina::Reflection::FClangParser Parser;
+    FClangParser Parser;
+    Parser.Parse(&Workspace);
     
-    double buildTime = 0.0;
+    FCodeGenerator CodeGenerator(&Workspace, Parser.ParsingContext.ReflectionDatabase);
+    
+    for (eastl::unique_ptr<FReflectedProject>& Project : Workspace.ReflectedProjects)
     {
-        std::cout << "[Reflection] Starting Build...\n";
-        auto start = std::chrono::high_resolution_clock::now();
-
-        TypeReflector.Build(Parser);
-
-        auto end = std::chrono::high_resolution_clock::now();
-        std::chrono::duration<double> duration = end - start;
-        buildTime = duration.count();
-
-        std::cout << "[Reflection] Build completed in " << buildTime << " seconds.\n";
-    }
-
-    std::cout << "\n";
-
-    double GenTime = 0.0;
-    {
-        std::cout << "[Reflection] Starting Code Generation...\n";
-        auto start = std::chrono::high_resolution_clock::now();
-
-        TypeReflector.Generate(Parser);
-
-        auto end = std::chrono::high_resolution_clock::now();
-        std::chrono::duration<double> duration = end - start;
-        GenTime = duration.count();
-
-        std::cout << "[Reflection] Code Generation completed in " << GenTime << " seconds.\n";
+        CodeGenerator.GenerateCodeForProject(Project.get());
     }
     
-    std::cout << "\n";
-    
-    std::cout << "===============================================\n";
-    std::cout << "Total Time: " << (parseTime + buildTime + GenTime) << " seconds\n";
-    std::cout << "===============================================\n";
-
 
     Lumina::FStringHash::Shutdown();
     

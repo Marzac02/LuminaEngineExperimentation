@@ -7,14 +7,11 @@ namespace Lumina::Reflection
     {
     public:
 
-        FClangParser();
+        FClangParser() = default;
 
-        bool Parse(const eastl::string& SolutionPath, eastl::vector<eastl::shared_ptr<FReflectedHeader>>& Headers, eastl::shared_ptr<FReflectedProject>& Project);
-        void Dispose(FReflectedProject& Project);
+        bool Parse(FReflectedWorkspace* Workspace);
         
         FClangParserContext ParsingContext;
-    
-    private:
-
+        
     };
 }

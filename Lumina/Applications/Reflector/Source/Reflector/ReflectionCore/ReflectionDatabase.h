@@ -1,10 +1,7 @@
 ﻿#pragma once
 
-#include <iostream>
-
 #include "StringHash.h"
 #include "EASTL/hash_map.h"
-#include "Reflector/TypeReflector.h"
 #include "Reflector/Types/ReflectedType.h"
 
 namespace Lumina::Reflection
@@ -14,9 +11,8 @@ namespace Lumina::Reflection
     public:
 
         FReflectionDatabase() = default;
-        ~FReflectionDatabase();
+        ~FReflectionDatabase() = default;
 
-        void AddReflectedProject(const eastl::shared_ptr<FReflectedProject>& Project);
         void AddReflectedType(const eastl::shared_ptr<FReflectedType>& Type);
 
         bool IsTypeRegistered(const FStringHash& Str) const;
@@ -34,7 +30,6 @@ namespace Lumina::Reflection
         template<typename T>
         eastl::shared_ptr<T> GetReflectedType(const FStringHash& TypeName) const;
 
-        eastl::vector<eastl::shared_ptr<FReflectedProject>>                             ReflectedProjects;
         eastl::hash_map<FStringHash, eastl::vector<eastl::shared_ptr<FReflectedType>>>  ReflectedTypes;
         eastl::hash_map<FStringHash, eastl::shared_ptr<FReflectedType>>                 TypeHashMap;
         

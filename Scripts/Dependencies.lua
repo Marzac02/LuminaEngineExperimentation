@@ -1,3 +1,10 @@
+premake.api.register 
+{
+    name = "enablereflection",
+    scope = "project",
+    kind = "boolean",
+}
+
 LuminaConfig = LuminaConfig or {}
 LuminaConfig.PublicIncludes         = LuminaConfig.PublicIncludes or {}
 
@@ -33,6 +40,10 @@ end
 
 function LuminaConfig.ThirdPartyPath(Subpath)
     return path.join(LuminaConfig.EngineDirectory, "Lumina/Engine/ThirdParty", Subpath)
+end
+
+function LuminaConfig.GetCPPFilesInDirectory(Path)
+    return os.matchfiles(path.join(Path, "**.cpp"))
 end
 
 function LuminaConfig.Execute(Command, ...)
@@ -86,12 +97,9 @@ function LuminaConfig.MakeDirectory(Path)
     return "{MKDIR} " .. Quote(Path)
 end
 
-function LuminaConfig.RunReflection(Path)
+function LuminaConfig.RunReflection()
 
-    local ReflectorEXE = path.join(LuminaConfig.EngineDirectory, "Binaries", LuminaConfig.OutputDirectory, "Reflector.exe")
-
-    return string.format('"%s" "%s"', ReflectorEXE, Path)
-
+    return path.join(LuminaConfig.EngineDirectory, "Scripts/ReflectionRunner.bat")
 end
 
 LuminaConfig.AddPublicIncludeDirectory("Source")

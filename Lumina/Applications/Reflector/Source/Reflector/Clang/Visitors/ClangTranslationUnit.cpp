@@ -21,22 +21,26 @@ namespace Lumina::Reflection
         FClangParserContext* ParserContext = (FClangParserContext*)ClientData;
         
         eastl::string FilePath = ClangUtils::GetHeaderPathForCursor(Cursor);
-        FStringHash Hash = FStringHash(FilePath);
-
-        auto Iter = ParserContext->Project->HeaderHashMap.find(Hash);
-        if (Iter == ParserContext->Project->HeaderHashMap.end())
+        if (FilePath.empty())
+        {
+            return CXChildVisit_Continue;
+        }
+        
+        FStringHash Hash(FilePath);
+        auto Itr = ParserContext->AllHeaders.find(Hash);
+        if (Itr == ParserContext->AllHeaders.end())
         {
             return CXChildVisit_Continue;
         }
         
         GTranslationUnitsParsed++;
         
-        ParserContext->ReflectedHeader = Iter->second;
+        ParserContext->ReflectedHeader = Itr->second;
         
         CXCursorKind CursorKind = clang_getCursorKind(Cursor);
         eastl::string CursorName = ClangUtils::GetCursorDisplayName(Cursor);
         
-        switch (CursorKind)  // NOLINT(clang-diagnostic-switch-enum)
+        switch (CursorKind)
         {
             case (CXCursor_MacroExpansion):
                 {

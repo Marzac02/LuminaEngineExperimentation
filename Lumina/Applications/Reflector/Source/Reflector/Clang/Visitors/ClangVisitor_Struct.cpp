@@ -31,18 +31,10 @@ namespace Lumina::Reflection::Visitor
         eastl::string TypeSpelling;
         ClangUtils::GetQualifiedNameForType(FieldQualType, TypeSpelling);
         EPropertyTypeFlags PropFlags = GetCoreTypeFromName(TypeSpelling.c_str());
-
         
         // Is not a core type.
         if (PropFlags == EPropertyTypeFlags::None)
         {
-            // Try finding it with the current namespace scope.
-            FStringHash TestHash = FStringHash(Context->CurrentNamespace + "::" + TypeSpelling);
-            if (Context->ReflectionDatabase.IsTypeRegistered(TestHash))
-            {
-                TypeSpelling = (Context->CurrentNamespace + "::" + TypeSpelling);
-            }
-            
             if (FieldQualType->isEnumeralType())
             {
                 PropFlags = EPropertyTypeFlags::Enum;
@@ -87,13 +79,6 @@ namespace Lumina::Reflection::Visitor
         // Is not a core type.
         if (PropFlags == EPropertyTypeFlags::None)
         {
-            // Try finding it with the current namespace scope.
-            FStringHash TestHash = FStringHash(Context->CurrentNamespace + "::" + FieldName);
-            if (Context->ReflectionDatabase.IsTypeRegistered(TestHash))
-            {
-                FieldName = (Context->CurrentNamespace + "::" + FieldName);
-            }
-
             if (FieldQualType->isEnumeralType())
             {
                 PropFlags = EPropertyTypeFlags::Enum;
@@ -210,10 +195,6 @@ namespace Lumina::Reflection::Visitor
                 {
                     CXType UnderlyingType = clang_getEnumDeclIntegerType(EnumCursor);
                     FFieldInfo SubType = CreateSubFieldInfo(Context, UnderlyingType, FieldInfo);
-                    if (!SubType.Validate(Context))
-                    {
-                        return false;
-                    }
 
                     SubType.Name = FieldInfo.Name + "_Inner";
                     SubType.PropertyFlags.emplace_back("PF_SubField");
@@ -229,11 +210,7 @@ namespace Lumina::Reflection::Visitor
                 const CXType ArgType = clang_Type_getTemplateArgumentAsType(FieldInfo.Type, 0);
                 FFieldInfo ParamFieldInfo = CreateSubFieldInfo(Context, ArgType, FieldInfo);
                 ParamFieldInfo.Name = FieldInfo.Name; // Replace the empty template property name with the parent.
-                if (!ParamFieldInfo.Validate(Context))
-                {
-                    return false;
-                }
-                
+
                 NewProperty = CreateProperty<FReflectedObjectProperty>(ParamFieldInfo);
             }
             break;
@@ -244,11 +221,7 @@ namespace Lumina::Reflection::Visitor
 
                 const CXType ArgType = clang_Type_getTemplateArgumentAsType(FieldInfo.Type, 0);
                 FFieldInfo ParamFieldInfo = CreateSubFieldInfo(Context, ArgType, FieldInfo);
-                if (!ParamFieldInfo.Validate(Context))
-                {
-                    return false;
-                }
-                
+
                 ParamFieldInfo.Name = FieldInfo.Name + "_Inner";
                 ParamFieldInfo.PropertyFlags.emplace_back("PF_SubField");
                 
@@ -322,10 +295,6 @@ namespace Lumina::Reflection::Visitor
                 }
 
                 FFieldInfo FieldInfo = CreateFieldInfo(Context, Cursor);
-                if (!FieldInfo.Validate(Context))
-                {
-                    return CXChildVisit_Continue;
-                }
                 
                 eastl::shared_ptr<FReflectedProperty> NewProperty;
                 CreatePropertyForType(Context, Type, NewProperty, FieldInfo);
@@ -380,7 +349,7 @@ namespace Lumina::Reflection::Visitor
         eastl::shared_ptr<FReflectedStruct> ReflectedStruct = Context->ReflectionDatabase.GetOrCreateReflectedType<FReflectedStruct>(FStringHash(FullyQualifiedCursorName));
         ReflectedStruct->DisplayName = CursorName;
         ReflectedStruct->GenerateMetadata(Macro.MacroContents);
-        ReflectedStruct->Project = Context->Project->Name;
+        ReflectedStruct->Header = Context->ReflectedHeader;
         ReflectedStruct->Type = FReflectedType::EType::Structure;
         ReflectedStruct->GeneratedBodyLineNumber = GeneratedBody.LineNumber;
         ReflectedStruct->LineNumber = ClangUtils::GetCursorLineNumber(Cursor);
@@ -396,10 +365,7 @@ namespace Lumina::Reflection::Visitor
         Context->ParentReflectedType = ReflectedStruct.get();
         Context->LastReflectedType = ReflectedStruct.get();
 
-        if (!Context->bInitialPass)
-        {
-            clang_visitChildren(Cursor, VisitContents<FReflectedStruct>, Context);
-        }
+        clang_visitChildren(Cursor, VisitContents<FReflectedStruct>, Context);
         
         Context->ParentReflectedType = PreviousType;
         Context->ReflectionDatabase.AddReflectedType(ReflectedStruct);
@@ -434,7 +400,7 @@ namespace Lumina::Reflection::Visitor
         
         eastl::shared_ptr<FReflectedClass> ReflectedClass = Context->ReflectionDatabase.GetOrCreateReflectedType<FReflectedClass>(FStringHash(FullyQualifiedCursorName));
         ReflectedClass->DisplayName = CursorName;
-        ReflectedClass->Project = Context->Project->Name;
+        ReflectedClass->Header = Context->ReflectedHeader;
         ReflectedClass->Type = FReflectedType::EType::Class;
         ReflectedClass->GeneratedBodyLineNumber = GeneratedBody.LineNumber;
         ReflectedClass->LineNumber = ClangUtils::GetCursorLineNumber(Cursor);
@@ -445,16 +411,12 @@ namespace Lumina::Reflection::Visitor
         {
             ReflectedClass->Namespace = Context->CurrentNamespace;
         }
-    
-
+        
         FReflectedType* PreviousType = Context->ParentReflectedType;
         Context->ParentReflectedType = ReflectedClass.get();
         Context->LastReflectedType = ReflectedClass.get();
 
-        if (!Context->bInitialPass)
-        {
-            clang_visitChildren(Cursor, VisitContents<FReflectedClass>, Context);
-        }
+        clang_visitChildren(Cursor, VisitContents<FReflectedClass>, Context);
         
         Context->ParentReflectedType = PreviousType;
         Context->ReflectionDatabase.AddReflectedType(ReflectedClass);

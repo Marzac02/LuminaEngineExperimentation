@@ -1,12 +1,13 @@
 ﻿#pragma once
 #include "EASTL/hash_map.h"
 #include "EASTL/queue.h"
-#include "Reflector/TypeReflector.h"
 #include "Reflector/ReflectionCore/ReflectionDatabase.h"
 #include "Reflector/ReflectionCore/ReflectionMacro.h"
 
 namespace Lumina::Reflection
 {
+    class FReflectedWorkspace;
+
     class FClangParserContext
     {
     public:
@@ -14,7 +15,6 @@ namespace Lumina::Reflection
         FClangParserContext()
             : ParentReflectedType(nullptr)
             , LastReflectedType(nullptr)
-            , Solution("")
         {}
         
         ~FClangParserContext() = default;
@@ -52,10 +52,10 @@ namespace Lumina::Reflection
         mutable eastl::string                                       ErrorMessage;
         mutable eastl::string                                       WarningMessage;
         
-        FProjectSolution                                            Solution;
-        eastl::shared_ptr<FReflectedProject>                        Project = nullptr;
-        eastl::shared_ptr<FReflectedHeader>                         ReflectedHeader = nullptr;
+        FReflectedWorkspace*                                        Workspace = nullptr;
+        FReflectedHeader*                                           ReflectedHeader = nullptr;
         
+        eastl::hash_map<FStringHash, FReflectedHeader*>             AllHeaders;
         eastl::hash_map<uint64_t, eastl::vector<FReflectionMacro>>    ReflectionMacros;
         eastl::hash_map<uint64_t, eastl::queue<FReflectionMacro>>     GeneratedBodyMacros;
         
@@ -63,9 +63,6 @@ namespace Lumina::Reflection
         eastl::string                                               CurrentNamespace;
                                                                     
         uint32_t                                                    NumHeadersReflected = 0;
-
-        bool                                                        bInitialPass = true;
-        
     };
 
     template <typename T>

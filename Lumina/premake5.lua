@@ -9,8 +9,7 @@ project "Lumina"
     pchheader "pch.h"
     pchsource "Engine/Source/pch.cpp"
     dependson { "Reflector", "EA", "ImGui", "Tracy", "GLFW" }
-    
-
+    enablereflection "true"
 
     defines
     {
@@ -67,7 +66,7 @@ project "Lumina"
 
     prebuildcommands 
     {
-        LuminaConfig.RunReflection("%{wks.location}Lumina.sln")
+        LuminaConfig.RunReflection()
     }
     
     postbuildcommands

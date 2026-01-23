@@ -2,6 +2,8 @@ project "Editor"
 	kind "ConsoleApp"
     rtti "off"
 	dependson { "Reflector", "Lumina", "ImGui", "EA", "Tracy", "lua54" }
+	enablereflection "true"
+
 	
     libdirs
     {

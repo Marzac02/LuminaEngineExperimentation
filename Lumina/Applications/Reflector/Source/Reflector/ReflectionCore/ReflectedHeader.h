@@ -1,22 +1,21 @@
 ﻿#pragma once
 #include "EASTL/string.h"
-#include "EASTL/vector.h"
 
 
 namespace Lumina::Reflection
 {
+    class FReflectedProject;
+
     class FReflectedHeader
     {
     public:
-
-        FReflectedHeader() {}
         
-        FReflectedHeader(const eastl::string& Path);
-
-        bool Parse();
+        FReflectedHeader(FReflectedProject* InProject, const eastl::string& Path);
         
-        eastl::string             FileName;
-        eastl::string             HeaderPath;
-        uint8_t                   bSkipCodeGen:1 = false;
+        eastl::string               FileName;
+        eastl::string               HeaderPath;
+        FReflectedProject*          Project;
+        
+        bool                        bDirty = false;
     };
 }

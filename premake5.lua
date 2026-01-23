@@ -1,5 +1,7 @@
 
 include "Scripts/Dependencies"
+require "Scripts/Actions/Reflection"
+
 
 workspace "Lumina"
 	language "C++"
@@ -11,6 +13,7 @@ workspace "Lumina"
     warnings "Default"
     targetdir (LuminaConfig.GetTargetDirectory())
     objdir (LuminaConfig.GetObjDirectory())
+    enableunitybuild "On"
 
     configurations 
     { 

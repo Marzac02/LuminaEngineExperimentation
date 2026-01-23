@@ -1,10 +1,10 @@
 ﻿#pragma once
 
+#include "MaterialInterface.h"
 #include "Containers/Array.h"
 #include "Core/Object/Object.h"
-#include "Core/Object/ObjectMacros.h"
 #include "Core/Object/ObjectHandleTyped.h"
-#include "MaterialInterface.h"
+#include "Core/Object/ObjectMacros.h"
 #include "Renderer/MaterialTypes.h"
 #include "Renderer/RenderResource.h"
 #include "Material.generated.h"

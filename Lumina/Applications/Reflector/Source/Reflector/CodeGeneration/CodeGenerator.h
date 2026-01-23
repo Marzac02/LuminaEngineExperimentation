@@ -3,21 +3,19 @@
 
 namespace Lumina::Reflection
 {
+    class FReflectedWorkspace;
+
     class FCodeGenerator
     {
     public:
 
-        FCodeGenerator(const FProjectSolution& SlnPath, const FReflectionDatabase& Database);
-
-
-        void GenerateCodeForSolution();
-        void GenerateCodeForProject(const eastl::shared_ptr<FReflectedProject>& Project);
+        FCodeGenerator(FReflectedWorkspace* InWorkspace, const FReflectionDatabase& Database);
+        
+        void GenerateCodeForProject(const FReflectedProject* Project);
 
         void GenerateReflectionCodeForHeader(const FReflectedHeader& Header);
         void GenerateReflectionCodeForSource(const FReflectedHeader& Header);
-
-        void SetProject(const eastl::shared_ptr<FReflectedProject>& Project) { CurrentProject = Project; }
-
+    
     private:
 
         void GenerateCodeHeader(eastl::string& Stream, const FReflectedHeader& Header);
@@ -27,8 +25,8 @@ namespace Lumina::Reflection
     private:
 
         
-        eastl::shared_ptr<FReflectedProject>    CurrentProject;
-        FProjectSolution                        Solution;
+        const FReflectedProject*                CurrentProject = nullptr;
+        FReflectedWorkspace*                    Workspace;
         const FReflectionDatabase*              ReflectionDatabase;
         
         

@@ -3,13 +3,12 @@
 
 namespace Lumina::Reflection
 {
-    FProjectSolution::FProjectSolution(const std::filesystem::path& ReflectionPath)
+    FReflectedWorkspace::FReflectedWorkspace(const std::filesystem::path& ReflectionPath)
         : Path(ReflectionPath.string().c_str())
-        , ParentPath(ReflectionPath.parent_path().string().c_str())
     {
     }
 
-    void FProjectSolution::AddReflectedProject(eastl::shared_ptr<FReflectedProject>&& Project)
+    void FReflectedWorkspace::AddReflectedProject(eastl::unique_ptr<FReflectedProject>&& Project)
     {
         ReflectedProjects.push_back(eastl::move(Project));
     }

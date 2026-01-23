@@ -2,6 +2,7 @@
 #include <fstream>
 #include <filesystem>
 
+#include "Reflector/ProjectSolution.h"
 #include "Reflector/Clang/Utils.h"
 #include "Reflector/ReflectionCore/ReflectedHeader.h"
 #include "Reflector/ReflectionCore/ReflectedProject.h"
@@ -12,20 +13,10 @@
 
 #define STREAM_INITIAL_BUFFER_SIZE 10'240 // 10 KiB
 
-namespace eastl
-{
-    static std::ostream& operator<<(std::ostream& os, const eastl::string& str)
-    {
-        os.write(str.c_str(), str.size());
-        return os;
-    }
-}
-
 static bool IsManualReflectFile(const eastl::string& HeaderID)
 {
     return HeaderID.find("manualreflecttypes") != eastl::string::npos;
 }
-    
 
 static void GenerateFileWarning(eastl::string& Stream)
 {
@@ -37,47 +28,46 @@ static void GenerateFileWarning(eastl::string& Stream)
 
 namespace Lumina::Reflection
 {
-    
-    FCodeGenerator::FCodeGenerator(const FProjectSolution& SlnPath, const FReflectionDatabase& Database)
-        : Solution(SlnPath)
+    FCodeGenerator::FCodeGenerator(FReflectedWorkspace* InWorkspace, const FReflectionDatabase& Database)
+        : Workspace(InWorkspace)
         , ReflectionDatabase(&Database)
     {
     }
-
-    void FCodeGenerator::GenerateCodeForSolution()
+    
+    void FCodeGenerator::GenerateCodeForProject(const FReflectedProject* Project)
     {
-        for (const eastl::shared_ptr<FReflectedProject>& Project : ReflectionDatabase->ReflectedProjects)
-        {
-            SetProject(Project);
-            GenerateCodeForProject(Project);    
-        }
-    }
+        CurrentProject = Project;
 
-    void FCodeGenerator::GenerateCodeForProject(const eastl::shared_ptr<FReflectedProject>& Project)
-    {
         eastl::string FinalOutput;
         FinalOutput += "#include \"pch.h\"\n";
         
-        for (const eastl::shared_ptr<FReflectedHeader>& Header : Project->Headers)
+        bool bAnyHeaderDirty = false;
+        for (const auto& [Name, Header] : Project->Headers)
         {
             if (ReflectionDatabase->ReflectedTypes.find(FStringHash(Header->HeaderPath)) == ReflectionDatabase->ReflectedTypes.end())
             {
                 continue;
             }
+            
+            if (Header->bDirty)
+            {
+                bAnyHeaderDirty = true;
+            }
 
             FinalOutput += "#include \"" + Header->FileName + ".generated.cpp\"" + "\n";
-            
-            if (Header->bSkipCodeGen)
-            {
-                continue;
-            }
             
             GenerateReflectionCodeForHeader(*Header);
             
             GenerateReflectionCodeForSource(*Header);
         }
+        
+        if (!bAnyHeaderDirty)
+        {
+            std::println("Code generation not necessary");
+            return;
+        }
 
-        eastl::string ReflectionDataPath = Solution.GetParentPath() + R"(\Intermediates\Reflection\)" + CurrentProject->Name + R"(\)" + "ReflectionUnity.gen.cpp";
+        eastl::string ReflectionDataPath = Workspace->GetPath() + R"(\Intermediates\Reflection\)" + CurrentProject->Name + R"(\)" + "ReflectionUnity.gen.cpp";
         std::filesystem::path outputPath(ReflectionDataPath.c_str());
         std::filesystem::create_directories(outputPath.parent_path());
         
@@ -97,7 +87,7 @@ namespace Lumina::Reflection
 
         GenerateCodeHeader(Stream, Header);
         
-        eastl::string OutFileName = Solution.GetParentPath() + R"(\Intermediates\Reflection\)" + CurrentProject->Name + R"(\)" + Header.FileName + ".generated.h";
+        eastl::string OutFileName = Workspace->GetPath() + R"(\Intermediates\Reflection\)" + CurrentProject->Name + R"(\)" + Header.FileName + ".generated.h";
         std::filesystem::path outputPath(OutFileName.c_str());
         std::filesystem::create_directories(outputPath.parent_path());
         
@@ -117,7 +107,7 @@ namespace Lumina::Reflection
 
         GenerateCodeSource(Stream, Header);
         
-        eastl::string OutFileName = Solution.GetParentPath() + R"(\Intermediates\Reflection\)" + CurrentProject->Name + R"(\)" + Header.FileName + ".generated.cpp";
+        eastl::string OutFileName = Workspace->GetPath() + R"(\Intermediates\Reflection\)" + CurrentProject->Name + R"(\)" + Header.FileName + ".generated.cpp";
         std::filesystem::path outputPath(OutFileName.c_str());
         std::filesystem::create_directories(outputPath.parent_path());
         
@@ -146,7 +136,7 @@ namespace Lumina::Reflection
         GenerateFileWarning(Stream);
 
         std::filesystem::path FullHeaderPath = Header.HeaderPath.c_str();
-        std::filesystem::path SolutionRoot = Solution.GetParentPath().c_str();
+        std::filesystem::path SolutionRoot = Workspace->GetPath().c_str();
         std::filesystem::path RelativeHeaderPath = std::filesystem::relative(FullHeaderPath, SolutionRoot);
 
         Stream += "#include \"Runtime/Core/Object/ObjectMacros.h\"\n";
@@ -247,7 +237,7 @@ namespace Lumina::Reflection
                 {
                     if (const eastl::shared_ptr<FReflectedType>& PropType = ReflectionDatabase->GetReflectedType<FReflectedType>(FStringHash(Property->TypeName)))
                     {
-                        eastl::string PropProjectAPI = PropType->Project + "_api";
+                        eastl::string PropProjectAPI = PropType->Header->Project->Name + "_api";
                         PropProjectAPI.make_upper();
                     
                         if (PropProjectAPI != "LUMINA_API")

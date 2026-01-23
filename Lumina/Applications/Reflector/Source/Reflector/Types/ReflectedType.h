@@ -1,25 +1,18 @@
 ﻿#pragma once
-#include <clang-c/Index.h>
-
-#include "StringHash.h"
-#include "EASTL/hash_map.h"
 #include "EASTL/shared_ptr.h"
 #include "EASTL/string.h"
 #include "EASTL/vector.h"
 #include "Reflector/Utils/MetadataUtils.h"
 
-namespace Lumina
-{
-    class FReflectedFunction;
-}
-
 namespace Lumina::Reflection
 {
+    class FReflectedHeader;
     class FReflectedProject;
 }
 
 namespace Lumina
 {
+    class FReflectedFunction;
     class FReflectedProperty;
 }
 
@@ -126,7 +119,7 @@ namespace Lumina::Reflection
         eastl::vector<eastl::shared_ptr<FReflectedProperty>>    Props;
         eastl::vector<eastl::shared_ptr<FReflectedFunction>>    Functions;
         eastl::vector<FMetadataPair>                            Metadata;
-        eastl::string                                           Project;
+        FReflectedHeader*                                       Header;
         eastl::string                                           HeaderID;
         eastl::string                                           DisplayName;
         eastl::string                                           QualifiedName;

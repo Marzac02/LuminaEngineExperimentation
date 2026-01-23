@@ -6,7 +6,6 @@
 
 namespace glm
 {
-    
     REFLECT()
     struct vec2
     {

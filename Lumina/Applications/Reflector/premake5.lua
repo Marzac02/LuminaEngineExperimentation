@@ -3,10 +3,10 @@ project "Reflector"
     
 	configmap
 	{
-		["Debug"] 			= "Development",
-		["DebugGame"]		= "Development",
-		["DevelopmentGame"] = "Development",
-		["Shipping"]		= "Development",
+		["Debug"] 				= "Development",
+		["DebugEditor"]			= "Development",
+		["DevelopmentEditor"] 	= "Development",
+		["Shipping"]			= "Development",
 	}
 
 	disablewarnings
@@ -27,7 +27,8 @@ project "Reflector"
 	}
 
 	links
-	{	  	
+	{
+		"NlohmannJson",
 	  	"clangBasic.lib",
 	  	"clangLex.lib",
 	  	"clangAST.lib",
@@ -65,6 +66,7 @@ project "Reflector"
 		"Source",
 		LuminaConfig.EnginePath("External/LLVM/include/"),
 		LuminaConfig.ThirdPartyPath("xxhash"),
+		LuminaConfig.ThirdPartyPath("json"),
 		LuminaConfig.ThirdPartyPath("EA/EASTL/include"),
 		LuminaConfig.ThirdPartyPath("EA/EABase/include/Common"),
 	}

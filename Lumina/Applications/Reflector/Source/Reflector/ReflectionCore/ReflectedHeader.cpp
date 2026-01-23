@@ -1,47 +1,35 @@
 ﻿#include "ReflectedHeader.h"
 #include <filesystem>
-#include <fstream>
-#include "Reflector/ReflectionConfig.h"
+#include <print>
+#include "ReflectedProject.h"
+#include "Reflector/ProjectSolution.h"
 
 namespace Lumina::Reflection
 {
-    
-    FReflectedHeader::FReflectedHeader(const eastl::string& Path)
+    FReflectedHeader::FReflectedHeader(FReflectedProject* InProject, const eastl::string& Path)
         : HeaderPath(Path)
+        , Project(InProject)
     {
         std::filesystem::path FilesystemPath = Path.c_str();
         FileName = FilesystemPath.stem().string().c_str();
-    }
-
-    bool FReflectedHeader::Parse()
-    {
-        std::ifstream HeaderFile(HeaderPath.c_str(), std::ios::in | std::ios::binary | std::ios::ate);
-        if (!HeaderFile.is_open())
+        
+        const eastl::string& WorkspacePath = InProject->Workspace->GetPath();
+        eastl::string ProjectReflectionPath = WorkspacePath + "/Intermediates/Reflection/" + InProject->Name;
+        eastl::string PossibleReflectedHeaderPath = ProjectReflectionPath + "/" + FileName + ".generated.h";
+        
+        bool bReflectionFileExists = std::filesystem::exists(PossibleReflectedHeaderPath.c_str());
+        if (!bReflectionFileExists)
         {
-            return false;
+            bDirty = true;
+            return;
         }
-
-        std::streamsize FileSize = HeaderFile.tellg();
-        if (FileSize <= 0)
+        
+        auto LastWrite = std::filesystem::last_write_time(FilesystemPath);
+        auto LastReflectionWrite = std::filesystem::last_write_time(PossibleReflectedHeaderPath.c_str());
+        
+        if (LastWrite > LastReflectionWrite)
         {
-            return false;
+            bDirty = true;
         }
-
-        HeaderFile.seekg(0, std::ios::beg);
-        eastl::string FileData(FileSize, '\0');
-        if (!HeaderFile.read(FileData.data(), FileSize))
-        {
-            return false;
-        }
-
-        // Search for any of the macro strings directly in the buffer
-        for (uint32_t i = 0; i < (uint32_t)EReflectionMacro::Size; ++i)
-        {
-            if (FileData.find(ReflectionEnumToString(static_cast<EReflectionMacro>(i))) != eastl::string::npos)
-            {
-                return true;
-            }
-        }
-        return false;
     }
 }

@@ -1,6 +1,7 @@
 project "ImGui"
 	kind "StaticLib"
 	warnings "off"
+	enableunitybuild "Off"
     
 
 	includedirs

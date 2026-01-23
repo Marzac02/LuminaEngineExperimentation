@@ -2,6 +2,7 @@
 #include "Functions/ReflectedFunction.h"
 #include "Properties/ReflectedProperty.h"
 #include "Reflector/Clang/Utils.h"
+#include "Reflector/ReflectionCore/ReflectedProject.h"
 
 
 namespace Lumina::Reflection
@@ -60,7 +61,7 @@ namespace Lumina::Reflection
     {
         Stream += "enum class " + DisplayName + " : uint8;\n";
 
-        eastl::string ProjectAPI = Project + "_api";
+        eastl::string ProjectAPI = Header->Project->Name + "_api";
         ProjectAPI.make_upper();
 
         if (ProjectAPI == "LUMINA_API")
@@ -194,7 +195,7 @@ namespace Lumina::Reflection
         {
             Stream += "\tclass " + DisplayName + ";\n";
         }
-        eastl::string ProjectAPI = Project + "_api";
+        eastl::string ProjectAPI = Header->Project->Name + "_api";
         ProjectAPI.make_upper();
 
         if (ProjectAPI == "LUMINA_API")
@@ -406,7 +407,7 @@ namespace Lumina::Reflection
 
     void FReflectedClass::DefineInitialHeader(eastl::string& Stream, const eastl::string& FileID)
     {
-        eastl::string LowerProject = Project;
+        eastl::string LowerProject = Header->Project->Name;
         LowerProject.make_lower();
         
         eastl::string PackageName = "/Script/";
@@ -416,7 +417,7 @@ namespace Lumina::Reflection
         }
         else
         {
-            PackageName += Project;
+            PackageName += Header->Project->Name;
         }
         
 

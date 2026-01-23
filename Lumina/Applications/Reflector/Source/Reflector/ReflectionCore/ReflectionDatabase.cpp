@@ -3,16 +3,6 @@
 
 namespace Lumina::Reflection
 {
-    FReflectionDatabase::~FReflectionDatabase()
-    {
-        
-    }
-
-    void FReflectionDatabase::AddReflectedProject(const eastl::shared_ptr<FReflectedProject>& Project)
-    {
-        ReflectedProjects.push_back(Project);
-    }
-
     void FReflectionDatabase::AddReflectedType(const eastl::shared_ptr<FReflectedType>& Type)
     {
         if(Type == nullptr || Type->DisplayName.empty())
