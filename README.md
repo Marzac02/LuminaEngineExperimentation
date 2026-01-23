@@ -118,7 +118,7 @@ Performance profiling - Built-in Lua script profiling with Tracy
 
 4. **Build and run Editor**
    - Select `Development` or `Debug` configuration (Debug will be vastly slower)
-   - **Note** You will see two different platforms, `Game` and `Editor`, it does not matter which you select for the Editor, because they will both be mapped to Editor. This is purely for engine configuration for runtime.
+   - **Note** You will see two different platforms, `Game` and `Editor`, by default this will be set to `Editor` and it's important that you do not change it while building the editor, as it will not compile.
    - Press F5 or click Build -> Run
 
 5. **Start developing**
