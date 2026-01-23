@@ -8,8 +8,6 @@
 #define LUMINA_VERSION_PATCH 0
 #define LUMINA_VERSION_NUM 0010
 
-#define WITH_DEVELOPMENT_TOOLS 1
-
 
 #ifdef  _MSC_VER
 #pragma warning (push)

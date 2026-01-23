@@ -7,6 +7,8 @@
 
 namespace Lumina
 {
+	struct FWindowSpecs;
+
 	enum class LUMINA_API EApplicationFlags : uint32
 	{
 		DevelopmentTools =		1 << 0,
@@ -48,6 +50,7 @@ namespace Lumina
 	protected:
 
 		virtual FEngine* CreateEngine() = 0;
+		virtual FWindowSpecs& GetWindowSpecs() const = 0;
 		
 	private:
 

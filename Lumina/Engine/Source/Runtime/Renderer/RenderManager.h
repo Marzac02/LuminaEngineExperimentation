@@ -29,7 +29,7 @@ namespace Lumina
         void SwapchainResized(glm::vec2 NewSize);
 
 
-        #if WITH_DEVELOPMENT_TOOLS
+        #if WITH_EDITOR
         IImGuiRenderer* GetImGuiRenderer() const { return ImGuiRenderer; }
         #endif
 
@@ -37,7 +37,7 @@ namespace Lumina
         
     private:
 
-        #if WITH_DEVELOPMENT_TOOLS
+        #if WITH_EDITOR
         IImGuiRenderer*     ImGuiRenderer = nullptr;
         #endif
         

@@ -92,7 +92,7 @@ namespace Lumina
 			glfwSetErrorCallback(GLFWErrorCallback);
 			
 			glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-			glfwWindowHint(GLFW_TITLEBAR, false);
+			glfwWindowHint(GLFW_TITLEBAR, Specs.bShowTitlebar);
 			//glfwWindowHint(GLFW_DECORATED, GLFW_FALSE);
 			
 			Window = glfwCreateWindow(800, 400, Specs.Title.c_str(), nullptr, nullptr);
@@ -199,7 +199,6 @@ namespace Lumina
 		glfwSetWindowSize(Window, X, Y);
 	}
 	
-
 	bool FWindow::ShouldClose() const
 	{
 		return glfwWindowShouldClose(Window);

@@ -19,8 +19,11 @@ namespace Lumina
     public:
         bool Init() override;
         bool Shutdown() override;
+        
+        #if WITH_EDITOR
         IDevelopmentToolUI* CreateDevelopmentTools() override;
-    
+        #endif
+        
         void LoadProject(FStringView Path);
         
         FORCEINLINE NODISCARD FStringView GetProjectName() const { return ProjectName; }
@@ -59,6 +62,7 @@ namespace Lumina
         bool ShouldExit() const override;        
         void CreateProject();
         void OpenProject();
+        FWindowSpecs& GetWindowSpecs() const override;
 
         void RenderDeveloperTools(const FUpdateContext& UpdateContext) override;
         

@@ -18,7 +18,7 @@ namespace Lumina
         
         GRenderContext->Initialize(FRenderContextDesc{true});
         
-        #if WITH_DEVELOPMENT_TOOLS
+        #if WITH_EDITOR
         ImGuiRenderer = Memory::New<FVulkanImGuiRender>();
         ImGuiRenderer->Initialize();
         #endif
@@ -26,8 +26,8 @@ namespace Lumina
 
     void FRenderManager::Deinitialize()
     {
-        #if WITH_DEVELOPMENT_TOOLS
-
+        
+        #if WITH_EDITOR
         ImGuiRenderer->Deinitialize();
         Memory::Delete(ImGuiRenderer);
         ImGuiRenderer = nullptr;
@@ -45,7 +45,7 @@ namespace Lumina
         
         GRenderContext->FrameStart(UpdateContext, CurrentFrameIndex);
 
-        #if WITH_DEVELOPMENT_TOOLS
+        #if WITH_EDITOR
         ImGuiRenderer->StartFrame(UpdateContext);
         #endif
     }
@@ -54,7 +54,7 @@ namespace Lumina
     {
         LUMINA_PROFILE_SCOPE();
         
-        #if WITH_DEVELOPMENT_TOOLS
+        #if WITH_EDITOR
         ImGuiRenderer->EndFrame(UpdateContext, RenderGraph);
         #endif
 

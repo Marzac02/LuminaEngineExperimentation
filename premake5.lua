@@ -13,16 +13,23 @@ workspace "Lumina"
     warnings "Default"
     targetdir (LuminaConfig.GetTargetDirectory())
     objdir (LuminaConfig.GetObjDirectory())
-    enableunitybuild "On"
+    enableunitybuild "Off"
 
     configurations 
     { 
         "Debug",
-        "DebugEditor",
         "Development",
-        "DevelopmentEditor",
         "Shipping",
     }
+
+    platforms
+    {
+        "Editor",
+        "Game",
+    }
+
+    defaultplatform ("Editor")
+
 
 	flags  
 	{
@@ -84,13 +91,13 @@ workspace "Lumina"
 
     filter {}
     
-    filter "configurations:Debug or configurations:Development or configurations:Shipping"
-        defines { "WITH_EDITOR=NOT_IN_USE" }
+    filter "platforms:Game"
+        defines { "WITH_EDITOR=0" }
 
-    filter "configurations:DebugEditor or configurations:DevelopmentEditor"
-        defines { "WITH_EDITOR=IN_USE" }
+    filter "platforms:Editor"
+        defines { "WITH_EDITOR=1" }
 
-    filter "configurations:Debug or configurations:DebugEditor"
+    filter "configurations:Debug"
         optimize "Debug"
         symbols "On"
         runtime "Debug"
@@ -99,7 +106,7 @@ workspace "Lumina"
         flags { "NoRuntimeChecks" }
         linktimeoptimization "Off"
 
-    filter "configurations:Development or configurations:DevelopmentEditor"
+    filter "configurations:Development"
         optimize "Speed"
         symbols "On"
         runtime "Release"

@@ -1,6 +1,7 @@
 project "Sandbox"
 	kind "ConsoleApp"
-	location(ProjectFilesDir)
+	rtti "off"
+	dependson { "Reflector", "Lumina", "ImGui", "EA", "Tracy", "lua54" }
 
 	defines
 	{ 
@@ -11,6 +12,11 @@ project "Sandbox"
 		"TRACY_IMPORTS",
 	}
 
+	libdirs
+	{
+		"%{LuminaConfig.EngineDirectory}/Lumina/Engine/ThirdParty/lua/",
+	}
+
 	links
 	 {
 		"Lumina",
@@ -18,18 +24,18 @@ project "Sandbox"
     	"EA",
     	"EnkiTS",
 		"Tracy",
+		"lua54",
 	 }
 	 
 	files
 	{
 		"Source/**.h",
 		"Source/**.cpp",
-        "%{wks.location}/Intermediates/Reflection/Sandbox/**.cpp",
+		--LuminaConfig.GetReflectionUnityFile()
 	}
 
 	includedirs
 	{
-	    "Source",
 	    LuminaConfig.GetPublicIncludeDirectories()
 	}
 	 

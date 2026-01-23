@@ -107,12 +107,9 @@ namespace Lumina
 
     bool FApplication::CreateApplicationWindow()
     {
-        FWindowSpecs AppWindowSpecs;
-        AppWindowSpecs.Title = ApplicationName.c_str();
-
         (void)FWindow::OnWindowResized.AddMember(this, &FApplication::WindowResized);
         
-        MainWindow = FWindow::Create(AppWindowSpecs);
+        MainWindow = FWindow::Create(GetWindowSpecs());
         MainWindow->Init();
         
         Windowing::SetPrimaryWindowHandle(MainWindow);

@@ -1,6 +1,5 @@
 ﻿#pragma once
 
-#include "Lumina.h"
 #include "Core/UpdateContext.h"
 #include "Module/API.h"
 #include "Subsystems/Subsystem.h"
@@ -38,7 +37,7 @@ namespace Lumina
         
         LUMINA_API void SetEngineViewportSize(const glm::uvec2& InSize);
 
-        #if WITH_DEVELOPMENT_TOOLS
+        #if WITH_EDITOR
         LUMINA_API virtual IDevelopmentToolUI* CreateDevelopmentTools() = 0;
         LUMINA_API virtual void DrawDevelopmentTools();
         LUMINA_API IDevelopmentToolUI* GetDevelopmentToolsUI() const { return DeveloperToolUI; }
@@ -67,7 +66,7 @@ namespace Lumina
         
         FUpdateContext          UpdateContext;
 
-        #if WITH_DEVELOPMENT_TOOLS
+        #if WITH_EDITOR
         IDevelopmentToolUI*     DeveloperToolUI =       nullptr;
         #endif
 

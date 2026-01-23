@@ -63,9 +63,6 @@ enum class EName : uint32
 #endif
 #define DETAIL_USING_FIRST_(x, y) x
 
-#define IN_USE 1
-#define NOT_IN_USE 0
-
 #define STRINGIFY_DETAIL(x) #x
 #define STRINGIFY(x) STRINGIFY_DETAIL(x)
 

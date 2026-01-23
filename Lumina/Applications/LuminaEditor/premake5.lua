@@ -3,6 +3,7 @@ project "Editor"
     rtti "off"
 	dependson { "Reflector", "Lumina", "ImGui", "EA", "Tracy", "lua54" }
 	enablereflection "true"
+	removeplatforms { "Game" }
 
 	
     libdirs
@@ -23,8 +24,8 @@ project "Editor"
 	 
 	files
 	{
-		"Source/**.cpp",
 		"Source/**.h",
+		"Source/**.cpp",
 		
 		LuminaConfig.GetReflectionUnityFile()
 	}

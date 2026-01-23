@@ -44,12 +44,12 @@ namespace Lumina
     {
         return FEngine::Shutdown();
     }
-
+    #if WITH_EDITOR
     IDevelopmentToolUI* FEditorEngine::CreateDevelopmentTools()
     {
         return Memory::New<FEditorUI>();
     }
-
+    #endif
     void FEditorEngine::LoadProject(FStringView Path)
     {
         namespace FS = FileSystem;
@@ -163,6 +163,13 @@ namespace Lumina
     void LuminaEditor::OpenProject()
     {
         
+    }
+
+    FWindowSpecs& LuminaEditor::GetWindowSpecs() const
+    {
+        FWindowSpecs AppWindowSpecs;
+        AppWindowSpecs.Title = ApplicationName.c_str();
+        return AppWindowSpecs;
     }
 
     void LuminaEditor::RenderDeveloperTools(const FUpdateContext& UpdateContext)

@@ -1,7 +1,5 @@
 #pragma once
 
-#include "Events/Event.h"
-
 namespace Lumina
 {
     struct FWindowSpecs
@@ -9,5 +7,6 @@ namespace Lumina
         FString Title = "Lumina";
         glm::uvec2 Extent = glm::uvec2(0);
         bool bFullscreen = false;
+        bool bShowTitlebar = false;
     };
 }

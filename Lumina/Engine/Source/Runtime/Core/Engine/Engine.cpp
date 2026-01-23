@@ -63,7 +63,7 @@ namespace Lumina
         
         UpdateContext.SubsystemManager = &EngineSubsystems;
 
-        #if WITH_DEVELOPMENT_TOOLS
+        #if USING(WITH_EDITOR)
         DeveloperToolUI = CreateDevelopmentTools();
         DeveloperToolUI->Initialize(UpdateContext);
         GApp->GetEventProcessor().RegisterEventHandler(DeveloperToolUI);
@@ -85,7 +85,7 @@ namespace Lumina
         //-------------------------------------------------------------------------
 
 
-        #if WITH_DEVELOPMENT_TOOLS
+        #if WITH_EDITOR
         DeveloperToolUI->Deinitialize(UpdateContext);
         delete DeveloperToolUI;
         #endif
@@ -135,7 +135,7 @@ namespace Lumina
                 
                 RenderManager->FrameStart(UpdateContext);
 
-                #if WITH_DEVELOPMENT_TOOLS
+                #if USING(WITH_EDITOR)
                 DeveloperToolUI->StartFrame(UpdateContext);
                 DeveloperToolUI->Update(UpdateContext);
                 #endif
@@ -152,7 +152,7 @@ namespace Lumina
                 UpdateContext.UpdateStage = EUpdateStage::PrePhysics;
 
 
-                #if WITH_DEVELOPMENT_TOOLS
+                #if USING(WITH_EDITOR)
                 DeveloperToolUI->Update(UpdateContext);
                 #endif
                 
@@ -168,7 +168,7 @@ namespace Lumina
                 UpdateContext.UpdateStage = EUpdateStage::DuringPhysics;
 
 
-                #if WITH_DEVELOPMENT_TOOLS
+                #if USING(WITH_EDITOR)
                 DeveloperToolUI->Update(UpdateContext);
                 #endif
                 
@@ -184,7 +184,7 @@ namespace Lumina
                 UpdateContext.UpdateStage = EUpdateStage::PostPhysics;
 
 
-                #if WITH_DEVELOPMENT_TOOLS
+                #if USING(WITH_EDITOR)
                 DeveloperToolUI->Update(UpdateContext);
                 #endif
 
@@ -199,7 +199,7 @@ namespace Lumina
                 LUMINA_PROFILE_SECTION_COLORED("Paused", tracy::Color::Purple);
                 UpdateContext.UpdateStage = EUpdateStage::Paused;
 
-                #if WITH_DEVELOPMENT_TOOLS
+                #if USING(WITH_EDITOR)
                 DeveloperToolUI->Update(UpdateContext);
                 #endif
 
@@ -216,14 +216,14 @@ namespace Lumina
                 LUMINA_PROFILE_SECTION_COLORED("Frame-End", tracy::Color::Coral);
                 UpdateContext.UpdateStage = EUpdateStage::FrameEnd;
 
-                #if WITH_DEVELOPMENT_TOOLS
+                #if USING(WITH_EDITOR)
                 DeveloperToolUI->Update(UpdateContext);
                 #endif
 
                 WorldManager->UpdateWorlds(UpdateContext);
                 WorldManager->RenderWorlds(RenderGraph);
                 
-                #if WITH_DEVELOPMENT_TOOLS
+                #if USING(WITH_EDITOR)
                 DeveloperToolUI->EndFrame(UpdateContext);
                 #endif
                 
@@ -268,7 +268,7 @@ namespace Lumina
         return true;
     }
 
-    #if WITH_DEVELOPMENT_TOOLS
+    #if WITH_EDITOR
     void FEngine::DrawDevelopmentTools()
     {
         if (GApp->HasAnyFlags(EApplicationFlags::DevelopmentTools))
