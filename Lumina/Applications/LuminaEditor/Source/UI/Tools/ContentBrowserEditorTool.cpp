@@ -2,14 +2,9 @@
 
 #include "EditorToolContext.h"
 #include "LuminaEditor.h"
-#include "Assets/AssetManager/AssetManager.h"
 #include "Assets/AssetRegistry/AssetRegistry.h"
 #include "Assets/Factories/Factory.h"
-#include "Core/Engine/Engine.h"
-#include "Core/Object/ObjectIterator.h"
 #include "Core/Object/Package/Package.h"
-#include "Core/Object/Package/Thumbnail/PackageThumbnail.h"
-#include "Core/Windows/Window.h"
 #include "EASTL/sort.h"
 #include "FileSystem/FileSystem.h"
 #include "Paths/Paths.h"
@@ -19,9 +14,38 @@
 #include "TaskSystem/TaskSystem.h"
 #include "TaskSystem/ThreadedCallback.h"
 #include "Tools/Dialogs/Dialogs.h"
-#include "Tools/Import/ImportHelpers.h"
 #include "Tools/UI/ImGui/ImGuiFonts.h"
 #include "Tools/UI/ImGui/ImGuiX.h"
+#include <string.h>
+#include <cstdarg>
+#include <filesystem>
+#include <format>
+#include <iterator>
+#include <string>
+#include <Assets/AssetRegistry/AssetData.h>
+#include <Containers/Array.h>
+#include <Containers/Function.h>
+#include <Containers/String.h>
+#include <Core/LuminaCommonTypes.h>
+#include <Core/Math/Hash/Hash.h>
+#include <Core/Object/Class.h>
+#include <Core/Object/Object.h>
+#include <Core/Object/ObjectCore.h>
+#include <Core/Templates/LuminaTemplate.h>
+#include <Core/UpdateContext.h>
+#include <Events/Event.h>
+#include <FileSystem/FileInfo.h>
+#include <Memory/SmartPtr.h>
+#include <Platform/Filesystem/DirectoryWatcher.h>
+#include <Platform/GenericPlatform.h>
+#include <Platform/Platform.h>
+#include <Tools/UI/ImGui/ImGuiDesignIcons.h>
+#include <Tools/UI/ImGui/Widgets/TileViewWidget.h>
+#include <Tools/UI/ImGui/Widgets/TreeListView.h>
+#include <EASTL/any.h>
+#include <entt/entt.hpp>
+#include <imgui.h>
+#include <imgui_internal.h>
 
 namespace Lumina
 {
@@ -73,8 +97,6 @@ namespace Lumina
 
     void FContentBrowserEditorTool::OnInitialize()
     {
-        using namespace Import::Textures;
-
         (void)FAssetRegistry::Get().GetOnAssetRegistryUpdated().AddMember(this, &FContentBrowserEditorTool::RefreshContentBrowser);
         (void)GEditorEngine->GetProjectLoadedDelegate().AddMember(this, &FContentBrowserEditorTool::OnProjectLoaded);
 

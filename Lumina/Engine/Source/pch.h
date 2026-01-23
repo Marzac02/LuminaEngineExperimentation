@@ -87,6 +87,7 @@
 #include <entt/entt.hpp>
 #include <sol/sol.hpp>
 #include <spdlog/spdlog.h>
+#include <xxhash.h>
 
 #if defined(LE_DEBUG) && !defined(JPH_ENABLE_ASSERTS)
 #define JPH_ENABLE_ASSERTS

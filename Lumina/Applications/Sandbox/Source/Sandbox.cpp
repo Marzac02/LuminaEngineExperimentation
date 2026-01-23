@@ -1,10 +1,18 @@
 
 #include "Sandbox.h"
-#include "Assets/AssetManager/AssetManager.h"
 #include "Core/Application/ApplicationGlobalState.h"
-#include "Core/Module/ModuleManager.h"
-#include "Core/Object/Class.h"
 #include "Core/Windows/Window.h"
+#include <Core/Windows/WindowTypes.h>
+#if LE_PLATFORM_WINDOWS
+#include <Windows.h>
+#endif
+#include <cstdlib>
+#include <Core/Application/Application.h>
+#include <Core/Engine/Engine.h>
+#include <Core/Object/ObjectBase.h>
+#include <Core/UpdateContext.h>
+#include <Memory/Memory.h>
+#include <spdlog/details/windows_include.h>
 
 using namespace Lumina;
 
@@ -41,7 +49,7 @@ void FSandbox::Shutdown()
 {
 }
 
-FWindowSpecs& FSandbox::GetWindowSpecs() const
+FWindowSpecs FSandbox::GetWindowSpecs() const
 {
 	FWindowSpecs AppWindowSpecs;
 	AppWindowSpecs.Title = ApplicationName.c_str();

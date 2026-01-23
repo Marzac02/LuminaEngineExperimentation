@@ -1,13 +1,30 @@
 #include "LuminaEditor.h"
-#include "Config/Config.h"
 #include "Core/Application/ApplicationGlobalState.h"
 #include "Core/Module/ModuleManager.h"
 #include "Core/Windows/Window.h"
 #include "FileSystem/FileSystem.h"
 #include "Paths/Paths.h"
-#include "Renderer/RenderResource.h"
 #include "Scripting/Lua/Scripting.h"
 #include "UI/EditorUI.h"
+#ifdef LE_PLATFORM_WINDOWS
+#include <Windows.h>
+#endif
+#include <cstdlib>
+#include <Assets/AssetRegistry/AssetRegistry.h>
+#include <Containers/String.h>
+#include <Core/Application/Application.h>
+#include <Core/Engine/Engine.h>
+#include <Core/Module/ModuleInterface.h>
+#include <Core/Object/ObjectBase.h>
+#include <Core/Templates/Optional.h>
+#include <Core/UpdateContext.h>
+#include <Core/Windows/WindowTypes.h>
+#include <FileSystem/NativeFileSystem.h>
+#include <Log/Log.h>
+#include <Memory/Memory.h>
+#include <Tools/UI/DevelopmentToolUI.h>
+#include <entt/entt.hpp>
+#include <spdlog/details/windows_include.h>
 
 namespace Lumina
 {

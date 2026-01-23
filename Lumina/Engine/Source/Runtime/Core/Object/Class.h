@@ -174,9 +174,7 @@ namespace Lumina
         DEFINE_CLASS_FACTORY(CClass)
 
         using FactoryFunctionType = CObject*(*)(void*);
-        
-        FactoryFunctionType FactoryFunction;
-        
+                
         CClass() = default;
 
         // Begin Internal Use Only Constructors 
@@ -202,7 +200,8 @@ namespace Lumina
 
         mutable int32   ClassUnique = 0;
 
-        
+        FactoryFunctionType FactoryFunction = nullptr;
+
     protected:
 
         LUMINA_API CObject* CreateDefaultObject();

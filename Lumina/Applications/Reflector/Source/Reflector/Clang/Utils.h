@@ -1,9 +1,16 @@
 #pragma once
 
-#include <print>
-#include <clang/AST/Ast.h>
 #include <clang-c/Index.h>
 #include "xxhash.h"
+#include <string.h>
+#include <cstdint>
+#include <clang-c/CXFile.h>
+#include <clang-c/CXSourceLocation.h>
+#include <clang-c/CXString.h>
+#include <clang/AST/Decl.h>
+#include <clang/AST/Type.h>
+#include <EASTL/algorithm.h>
+#include <EASTL/string.h>
 
 
 namespace Lumina::ClangUtils

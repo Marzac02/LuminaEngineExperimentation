@@ -29,7 +29,7 @@ public:
 	Lumina::FEngine* CreateEngine() override;
 	bool Initialize(int argc, char** argv) override;
 	void Shutdown() override;
-	Lumina::FWindowSpecs& GetWindowSpecs() const override;
+	Lumina::FWindowSpecs GetWindowSpecs() const override;
 
 private:
 	bool ShouldExit() const override;

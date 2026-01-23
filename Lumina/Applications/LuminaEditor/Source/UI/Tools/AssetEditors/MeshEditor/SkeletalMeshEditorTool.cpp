@@ -1,19 +1,38 @@
 ﻿#include "SkeletalMeshEditorTool.h"
 
-#include "ImGuiDrawUtils.h"
 #include "Assets/AssetTypes/Mesh/SkeletalMesh/SkeletalMesh.h"
 #include "assets/assettypes/mesh/skeleton/skeleton.h"
 #include "Core/Object/Cast.h"
-#include "glm/glm.hpp"
-#include "glm/gtx/string_cast.hpp"
 #include "Tools/UI/ImGui/ImGuiFonts.h"
-#include "Tools/UI/ImGui/ImGuiX.h"
 #include "world/entity/components/environmentcomponent.h"
 #include "World/Entity/Components/LightComponent.h"
 #include "World/Entity/Components/SkeletalMeshComponent.h"
-#include "World/Entity/Components/StaticMeshComponent.h"
 #include "world/entity/components/velocitycomponent.h"
-#include "World/Scene/RenderScene/SceneRenderTypes.h"
+#include <cstdint>
+#include <UI/Tools/AssetEditors/AssetEditorTool.h>
+#include <UI/Tools/EditorTool.h>
+#include <Lumina.h>
+#include <Containers/Array.h>
+#include <Containers/String.h>
+#include <Core/Math/AABB.h>
+#include <Core/Math/Color.h>
+#include <Core/Math/Math.h>
+#include <Core/Math/Transform.h>
+#include <Core/Object/Object.h>
+#include <Core/Object/ObjectCore.h>
+#include <Core/UpdateContext.h>
+#include <Platform/GenericPlatform.h>
+#include <Renderer/MeshData.h>
+#include <Renderer/Vertex.h>
+#include <Tools/UI/ImGui/ImGuiDesignIcons.h>
+#include <World/Entity/Components/TransformComponent.h>
+#include <World/World.h>
+#include <EASTL/string.h>
+#include <glm/fwd.hpp>
+#include <glm/gtx/string_cast.hpp>
+#include <imgui.h>
+#include <ImGuizmo.h>
+#include <imgui_internal.h>
 
 
 namespace Lumina

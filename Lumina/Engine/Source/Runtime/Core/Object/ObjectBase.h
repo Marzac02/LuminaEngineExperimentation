@@ -5,6 +5,11 @@
 #include <sol/sol.hpp>
 #include "Initializer/ObjectInitializer.h"
 #include "Module/API.h"
+#include <Containers/String.h>
+#include <Core/LuminaMacros.h>
+#include <Core/Assertions/Assert.h>
+#include <Containers/Name.h>
+#include <Platform/GenericPlatform.h>
 
 namespace Lumina
 {

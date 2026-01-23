@@ -1,15 +1,24 @@
 #include "CoreTypeCustomization.h"
 #include "imgui.h"
 #include "LuminaEditor.h"
-#include "Assets/AssetTypes/Textures/Texture.h"
 #include "Core/Engine/Engine.h"
 #include "Core/Object/Class.h"
-#include "Core/Object/Package/Thumbnail/PackageThumbnail.h"
 #include "Core/Reflection/Type/Properties/ObjectProperty.h"
 #include "Paths/Paths.h"
 #include "Tools/UI/ImGui/ImGuiDesignIcons.h"
 #include "Tools/UI/ImGui/ImGuiX.h"
 #include "UI/EditorUI.h"
+#include <Assets/AssetRegistry/AssetData.h>
+#include <Assets/AssetRegistry/AssetRegistry.h>
+#include <Containers/Array.h>
+#include <Containers/String.h>
+#include <Core/Object/Object.h>
+#include <Core/Object/ObjectCore.h>
+#include <Core/Object/ObjectHandleTyped.h>
+#include <Core/Reflection/PropertyCustomization/PropertyCustomization.h>
+#include <Core/Templates/Optional.h>
+#include <Memory/SmartPtr.h>
+#include <imgui_internal.h>
 
 namespace Lumina
 {

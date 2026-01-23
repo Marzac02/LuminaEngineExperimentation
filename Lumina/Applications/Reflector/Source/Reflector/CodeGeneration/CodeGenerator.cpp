@@ -1,14 +1,19 @@
 #include "CodeGenerator.h"
-#include <fstream>
-#include <filesystem>
-
 #include "Reflector/ProjectSolution.h"
-#include "Reflector/Clang/Utils.h"
 #include "Reflector/ReflectionCore/ReflectedHeader.h"
 #include "Reflector/ReflectionCore/ReflectedProject.h"
 #include "Reflector/Types/Functions/ReflectedFunction.h"
 #include "Reflector/Types/Properties/ReflectedProperty.h"
 #include "Reflector/Utils/StringUtils.h"
+#include <EASTL/shared_ptr.h>
+#include <EASTL/string.h>
+#include <EASTL/vector.h>
+#include <filesystem>
+#include <fstream>
+#include <print>
+#include <Reflector/ReflectionCore/ReflectionDatabase.h>
+#include <Reflector/Types/ReflectedType.h>
+#include <StringHash.h>
 
 
 #define STREAM_INITIAL_BUFFER_SIZE 10'240 // 10 KiB

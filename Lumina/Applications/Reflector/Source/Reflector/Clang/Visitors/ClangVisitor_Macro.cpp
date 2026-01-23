@@ -1,8 +1,12 @@
-﻿#include "ClangVisitor.h"
-#include "eastl/fixed_hash_map.h"
-
+﻿#include "eastl/fixed_hash_map.h"
 #include "Reflector/Clang/ClangParserContext.h"
 #include "Reflector/Clang/Utils.h"
+#include <utility>
+#include <clang-c/CXSourceLocation.h>
+#include <clang-c/Index.h>
+#include <Reflector/ReflectionConfig.h>
+#include <Reflector/ReflectionCore/ReflectionMacro.h>
+#include <EASTL/string.h>
 
 namespace Lumina::Reflection::Visitor
 {
