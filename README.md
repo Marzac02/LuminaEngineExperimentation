@@ -117,7 +117,8 @@ Performance profiling - Built-in Lua script profiling with Tracy
    - Open `Lumina.sln` in Visual Studio
 
 4. **Build and run Editor**
-   - Select `DevelopmentEditor` or `DebugEditor` configuration (Debug will be vastly slower)
+   - Select `Development` or `Debug` configuration (Debug will be vastly slower)
+   - **Note** You will see two different platforms, `Game` and `Editor`, by default this will be set to `Editor` and it's important that you do not change it while building the editor, as it will not compile.
    - Press F5 or click Build -> Run
 
 5. **Start developing**
