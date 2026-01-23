@@ -29,6 +29,7 @@ project "Lumina"
     {
         "Engine/Source/**.cpp",
         "Engine/Source/**.h",
+        "Premake5.lua",
         LuminaConfig.GetReflectionUnityFile()
     }
 
@@ -81,10 +82,9 @@ project "Lumina"
         
     filter "files:Engine/ThirdParty/**.cpp"
         flags { "NoPCH" }
-    filter {} -- reset
+    filter {}
 
-    -- Disable PCH and force C language for third-party C files
     filter "files:Engine/ThirdParty/**.c"
         flags { "NoPCH" }
         language "C"
-    filter {} -- reset
+    filter {}

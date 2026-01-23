@@ -5,7 +5,6 @@ project "Editor"
 	enablereflection "true"
 	removeplatforms { "Game" }
 
-	
     libdirs
     {
         "%{LuminaConfig.EngineDirectory}/Lumina/Engine/ThirdParty/lua/",
@@ -20,13 +19,13 @@ project "Editor"
 		"Tracy",
 		"lua54",
 		"GFSDK_Aftermath_Lib",
-	 }
-	 
+	}
+
 	files
 	{
 		"Source/**.h",
 		"Source/**.cpp",
-		
+		"**.lua",
 		LuminaConfig.GetReflectionUnityFile()
 	}
 
