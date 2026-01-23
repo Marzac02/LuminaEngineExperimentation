@@ -50,7 +50,7 @@ namespace Lumina
 	protected:
 
 		virtual FEngine* CreateEngine() = 0;
-		virtual FWindowSpecs& GetWindowSpecs() const = 0;
+		virtual FWindowSpecs GetWindowSpecs() const = 0;
 		
 	private:
 

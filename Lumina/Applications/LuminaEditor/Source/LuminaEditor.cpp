@@ -165,7 +165,7 @@ namespace Lumina
         
     }
 
-    FWindowSpecs& LuminaEditor::GetWindowSpecs() const
+    FWindowSpecs LuminaEditor::GetWindowSpecs() const
     {
         FWindowSpecs AppWindowSpecs;
         AppWindowSpecs.Title = ApplicationName.c_str();

@@ -62,7 +62,7 @@ namespace Lumina
         bool ShouldExit() const override;        
         void CreateProject();
         void OpenProject();
-        FWindowSpecs& GetWindowSpecs() const override;
+        FWindowSpecs GetWindowSpecs() const override;
 
         void RenderDeveloperTools(const FUpdateContext& UpdateContext) override;
         
