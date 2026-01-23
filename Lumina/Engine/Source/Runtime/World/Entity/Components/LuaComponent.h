@@ -1,5 +1,6 @@
 ﻿#pragma once
 #include "Core/Object/ObjectMacros.h"
+#include "Core/UpdateStage.h"
 #include "sol/sol.hpp"
 #include "Scripting/ScriptTypes.h"
 #include "LuaComponent.generated.h"

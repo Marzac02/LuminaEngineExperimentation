@@ -117,12 +117,12 @@ Performance profiling - Built-in Lua script profiling with Tracy
    - Open `Lumina.sln` in Visual Studio
 
 4. **Build and run Editor**
-   - Select `Development` configuration
+   - Select `DevelopmentEditor` or `DebugEditor` configuration (Debug will be vastly slower)
    - Press F5 or click Build -> Run
 
 5. **Start developing**
    - Open the `Sandbox` project to experiment
-   - Or run `Tools/ProjectConfigurator.py` to create a new project
+   - (TEMPORARILY NOT-WORKING) Or run `Tools/ProjectConfigurator.py` to create a new project
 
 > [!TIP]
 >  **Missing v143 toolset?** Install it via Visual Studio Installer -> Individual Components -> MSVC v143 Build Tools
