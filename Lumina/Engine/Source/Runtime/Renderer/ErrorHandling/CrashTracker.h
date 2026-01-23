@@ -1,5 +1,6 @@
 ﻿#pragma once
-#include "Memory/SmartPtr.h"
+#include "Containers/Array.h"
+#include "Containers/String.h"
 
 namespace Lumina::RHI
 {

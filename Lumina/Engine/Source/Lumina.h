@@ -8,10 +8,14 @@
 #define LUMINA_VERSION_PATCH 0
 #define LUMINA_VERSION_NUM 0010
 
-
-#ifdef  _MSC_VER
-#pragma warning (push)
+#if defined(_WIN32) || defined(_WIN64)
+    #define DLL_EXPORT __declspec(dllexport)
+    #define DLL_IMPORT __declspec(dllimport)
+#elif defined(__GNUC__)
+    #define DLL_EXPORT __attribute__((visibility("default")))
+    #define DLL_IMPORT
 #endif
+
 
 // Pick an unsigned integer type big enough to hold N bytes
 template <size_t N>

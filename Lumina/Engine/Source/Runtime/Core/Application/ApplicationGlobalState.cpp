@@ -2,6 +2,7 @@
 #include "ApplicationGlobalState.h"
 
 #include "Containers/Name.h"
+#include "Core/Assertions/Assert.h"
 #include "Core/Threading/Thread.h"
 #include "Log/Log.h"
 #include "Memory/Memory.h"

@@ -1,8 +1,10 @@
 #pragma once
 
-#ifdef LUMINA_ENGINE
-    #define LUMINA_API __declspec(dllexport)
+#include "Lumina.h"
+
+#ifdef LUMINA_EXPORTS
+    #define LUMINA_API DLL_EXPORT
 #else
-    #define LUMINA_API __declspec(dllimport)
+    #define LUMINA_API DLL_IMPORT
 #endif
 

@@ -30,7 +30,6 @@ workspace "Lumina"
 
     defaultplatform ("Editor")
 
-
 	flags  
 	{
 		"MultiProcessorCompile",
@@ -69,6 +68,10 @@ workspace "Lumina"
         "4244", -- "Precision loss warnings"
         "4267", -- "Precision loss warnings"
 	}
+
+    filter "kind:SharedLib"
+        defines { "%{prj.name:upper()}_EXPORTS"}
+    filter {}
 
     filter "language:C++ or language:C"
 		architecture "x86_64"

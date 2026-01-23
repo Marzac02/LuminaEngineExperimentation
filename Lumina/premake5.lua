@@ -12,7 +12,6 @@ project "Lumina"
 
     defines
     {
-        "LUMINA_ENGINE",
         "EASTL_USER_DEFINED_ALLOCATOR=1",
         "GLFW_INCLUDE_NONE",
         "GLFW_STATIC",

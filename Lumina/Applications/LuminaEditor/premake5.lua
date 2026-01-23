@@ -16,6 +16,7 @@ project "Editor"
 		"Lumina",
 		"ImGui",
     	"EA",
+		"EnkiTS",
 		"Tracy",
 		"lua54",
 		"GFSDK_Aftermath_Lib",

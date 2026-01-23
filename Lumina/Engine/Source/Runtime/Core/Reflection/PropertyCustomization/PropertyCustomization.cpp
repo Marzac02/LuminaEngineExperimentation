@@ -2,6 +2,7 @@
 #include "PropertyCustomization.h"
 
 #include "imgui.h"
+#include "Core/Assertions/Assert.h"
 
 namespace Lumina
 {

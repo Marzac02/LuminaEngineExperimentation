@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Containers/Array.h"
+#include "Core/Assertions/Assert.h"
 #include "Core/Utils/NonCopyable.h"
 #include "Log/Log.h"
 #include "Memory/Memory.h"
@@ -26,10 +27,7 @@ namespace Lumina
     {
     public:
         
-        ~FSubsystemManager()
-        {
-            ASSERT(SubsystemLookup.empty());
-        }
+        ~FSubsystemManager();
 
         template<typename T, typename... Args>
         requires std::is_base_of_v<ISubsystem, T>

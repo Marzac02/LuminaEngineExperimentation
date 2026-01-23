@@ -1,6 +1,8 @@
 ﻿#include "pch.h"
 #include "VulkanCrashTracker.h"
 
+#include "Log/Log.h"
+
 namespace Lumina::RHI
 {
 #if defined(WITH_AFTERMATH)

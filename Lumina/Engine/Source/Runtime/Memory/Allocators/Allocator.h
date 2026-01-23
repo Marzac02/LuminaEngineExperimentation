@@ -1,5 +1,6 @@
 #pragma once
 
+#include "Core/Assertions/Assert.h"
 #include "Memory/Memory.h"
 
 namespace Lumina

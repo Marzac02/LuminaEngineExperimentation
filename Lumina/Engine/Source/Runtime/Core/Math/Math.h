@@ -3,6 +3,7 @@
 #include "Module/API.h"
 #include <eastl/type_traits.h>
 #include <random>
+#include "Platform/Platform.h"
 #include "eastl/utility.h"
 #include <glm/glm.hpp>
 

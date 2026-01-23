@@ -2,6 +2,7 @@
 #include "TaskSystem.h"
 
 #include "Core/Threading/Thread.h"
+#include "Log/Log.h"
 #include "Memory/Memory.h"
 
 namespace Lumina

@@ -3,6 +3,8 @@
 #include <Jolt/Jolt.h>
 #include <Jolt/Physics/PhysicsSystem.h>
 #include <Jolt/Renderer/DebugRendererSimple.h>
+
+#include "Containers/String.h"
 #include "Jolt/Core/JobSystemThreadPool.h"
 #include "Jolt/Core/TempAllocator.h"
 
@@ -32,7 +34,7 @@ namespace Lumina::Physics
         TUniquePtr<JPH::JobSystemThreadPool> JobThreadPool;
         TUniquePtr<FJoltDebugRenderer> DebugRenderer;
 
-        FString LastErrorMessage = "";
+        FString LastErrorMessage;
     };
 
     

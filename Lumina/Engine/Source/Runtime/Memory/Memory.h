@@ -5,7 +5,6 @@
 #endif
 #include <rpmalloc.h>
 #include <utility>
-#include "Core/Assertions/Assert.h"
 #include <EASTL/type_traits.h>
 #include "Core/Math/Math.h"
 #include "Module/API.h"
@@ -15,10 +14,6 @@
 
 #define LUMINA_PROFILE_ALLOC(p, size) TracyCAllocS(p, size, 12)
 #define LUMINA_PROFILE_FREE(p) TracyCFreeS(p, 12)
-
-inline bool GIsMemorySystemInitialized = false;
-inline bool GIsMemorySystemShutdown = false;
-inline rpmalloc_config_t GrpmallocConfig;
 
 constexpr SIZE_T DEFAULT_ALIGNMENT = 16;
 
@@ -108,7 +103,7 @@ namespace Lumina::Memory
 
     LUMINA_API NODISCARD SIZE_T GetActualAlignment(size_t Alignment);
 
-    LUMINA_API NODISCARD void* Malloc(size_t size, size_t alignment = DEFAULT_ALIGNMENT);
+    LUMINA_API NODISCARD void* Malloc(size_t Size, size_t Alignment = DEFAULT_ALIGNMENT);
     
     LUMINA_API NODISCARD void* Realloc(void* Memory, size_t NewSize, size_t OriginalAlignment = DEFAULT_ALIGNMENT);
 
@@ -184,11 +179,12 @@ namespace Lumina::Memory
     template<typename T>
     void Delete(T* Type)
     {
-        if (Type != nullptr)
+        if constexpr (!eastl::is_trivially_destructible_v<T>)
         {
             Type->~T();
-            Free((void*&)Type);
         }
+        
+        Free((void*&)Type);
     }
 
     template< typename T >
