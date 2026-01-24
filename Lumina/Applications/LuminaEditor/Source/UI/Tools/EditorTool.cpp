@@ -3,11 +3,13 @@
 #include "imgui_internal.h"
 #include "ToolFlags.h"
 #include "EASTL/sort.h"
+#include "Thumbnails/ThumbnailManager.h"
 #include "Tools/UI/ImGui/ImGuiX.h"
 #include "World/WorldManager.h"
 #include "World/Entity/Components/CameraComponent.h"
 #include "World/Entity/Components/EditorComponent.h"
 #include "World/Entity/Components/InputComponent.h"
+#include "World/Entity/Components/StaticMeshComponent.h"
 #include "World/Entity/Components/VelocityComponent.h"
 #include "World/Entity/Systems/EditorEntityMovementSystem.h"
 
@@ -94,9 +96,21 @@ namespace Lumina
         World->GetEntityRegistry().emplace<FHideInSceneOutliner>(EditorEntity);
         World->GetEntityRegistry().emplace<FEditorComponent>(EditorEntity);
         World->GetEntityRegistry().emplace<SVelocityComponent>(EditorEntity).Speed = 50.0f;
-        World->GetEntityRegistry().get<STransformComponent>(EditorEntity).SetLocation(glm::vec3(0.0f, 0.0f, -2.5f));
+        World->GetEntityRegistry().get<STransformComponent>(EditorEntity).SetLocation(glm::vec3(0.0f, 1.25f, 3.25f));
 
         World->SetActiveCamera(EditorEntity);
+    }
+
+    entt::entity FEditorTool::CreateFloorPlane(float ScaleX, float ScaleY)
+    {
+        FTransform Transform;
+        Transform.Rotate({-90.0f, 0.0f, 0.0f});
+        Transform.Scale = glm::vec3(ScaleX, ScaleY, 1.0f);
+        entt::entity FloorEntity = World->ConstructEntity("FloorPlane", Transform);
+        World->GetEntityRegistry().emplace<FHideInSceneOutliner>(FloorEntity);
+        SStaticMeshComponent& MeshComponent = World->GetEntityRegistry().emplace<SStaticMeshComponent>(FloorEntity);
+        MeshComponent.StaticMesh = CThumbnailManager::Get().PlaneMesh;
+        return FloorEntity;
     }
 
     void FEditorTool::DrawMainToolbar(const FUpdateContext& UpdateContext)

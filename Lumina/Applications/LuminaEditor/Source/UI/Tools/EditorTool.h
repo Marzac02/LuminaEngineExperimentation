@@ -108,6 +108,9 @@ namespace Lumina
         /** Called to set up the world for the tool */
         virtual void SetupWorldForTool();
         
+        /** Creates a plane at world 0 */
+        virtual entt::entity CreateFloorPlane(float ScaleX = 10.0f, float ScaleY = 10.0f);
+        
         /** Called just before updating the world at each stage */
         virtual void WorldUpdate(const FUpdateContext& UpdateContext) { }
 

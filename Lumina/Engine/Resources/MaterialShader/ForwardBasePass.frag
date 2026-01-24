@@ -198,7 +198,7 @@ float ComputeShadowFactor(FLight Light, vec3 FragmentPos, float Bias)
     {
         for (int i = 0; i < NUM_CASCADES; ++i)
         {
-            ViewProjectionIndex = 0;//max(ViewProjectionIndex, int(step(LightData.CascadeSplits[i], ViewPosition.z)) * i);
+            ViewProjectionIndex = max(ViewProjectionIndex, int(step(LightData.CascadeSplits[i], ViewPosition.z)) * i);
         }
     }
 

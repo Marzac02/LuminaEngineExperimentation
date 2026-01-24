@@ -1,4 +1,7 @@
 ﻿#include "AnimationEditorTool.h"
+
+#include <glm/ext/scalar_common.hpp>
+
 #include "ImGuiDrawUtils.h"
 #include "implot.h"
 #include "Assets/AssetTypes/Mesh/Animation/Animation.h"
@@ -17,7 +20,7 @@
 namespace Lumina
 {
     static const char* MeshPropertiesName       = "MeshProperties";
-    static const char* SequencerName            = "SequencerName";
+    static const char* SequencerName            = "Sequencer";
 
     FAnimationEditorTool::FAnimationEditorTool(IEditorToolContext* Context, CObject* InAsset)
         : FAssetEditorTool(Context, InAsset->GetName().c_str(), InAsset, NewObject<CWorld>())
@@ -46,6 +49,8 @@ namespace Lumina
     {
         FEditorTool::SetupWorldForTool();
         
+        CreateFloorPlane();
+        
         DirectionalLightEntity = World->ConstructEntity("Directional Light");
         World->GetEntityRegistry().emplace<SDirectionalLightComponent>(DirectionalLightEntity);
         World->GetEntityRegistry().emplace<SEnvironmentComponent>(DirectionalLightEntity);
@@ -64,11 +69,9 @@ namespace Lumina
         World->GetEntityRegistry().get<SSimpleAnimationComponent>(MeshEntity).bPlaying = false;
         
         STransformComponent& MeshTransform = World->GetEntityRegistry().get<STransformComponent>(MeshEntity);
-        MeshTransform.SetLocation(glm::vec3(0.0f, 0.0f, 2.5));
-
         STransformComponent& EditorTransform = World->GetEntityRegistry().get<STransformComponent>(EditorEntity);
 
-        glm::quat Rotation = Math::FindLookAtRotation(MeshTransform.GetLocation(), EditorTransform.GetLocation());
+        glm::quat Rotation = Math::FindLookAtRotation(MeshTransform.GetLocation() + glm::vec3(0.0f, 0.85f, 0.0f), EditorTransform.GetLocation());
         EditorTransform.SetRotation(Rotation);
     }
 
@@ -190,7 +193,7 @@ namespace Lumina
         
         ImGui::SameLine();
         ImGui::SetNextItemWidth(100.0f);
-        ImGui::DragFloat(LE_ICON_ARROW_VERTICAL_LOCK " Play-Rate", &Playrate, 0.01f, 0.1f, 10.0f);
+        ImGui::SliderFloat(LE_ICON_ARROW_VERTICAL_LOCK " Play-Rate", &Playrate, 0.01f, 10.0f);
         
         ImGui::Separator();
         
@@ -202,7 +205,7 @@ namespace Lumina
         {
             if (ImGui::CollapsingHeader("Animation Channels", ImGuiTreeNodeFlags_DefaultOpen))
             {
-                for (int i = 0; i < AnimationResource->Channels.size(); ++i)
+                for (int i = 0; i < (int)AnimationResource->Channels.size(); ++i)
                 {
                     const FAnimationChannel& Channel = AnimationResource->Channels[i];
                     
@@ -270,7 +273,7 @@ namespace Lumina
                     
                     double CurrentTimeDouble = CurrentTime;
                     ImPlot::DragLineX(0, &CurrentTimeDouble, ImVec4(1, 1, 0, 1), 2.0f);
-                    CurrentTime = (float)CurrentTimeDouble;
+                    CurrentTime = glm::clamp((float)CurrentTimeDouble, 0.0f, Duration);
                     
                     switch (Channel.TargetPath)
                     {

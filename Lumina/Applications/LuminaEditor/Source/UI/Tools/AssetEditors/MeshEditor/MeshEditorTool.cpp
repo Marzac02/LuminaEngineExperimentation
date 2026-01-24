@@ -336,6 +336,8 @@ namespace Lumina
     {
         FEditorTool::SetupWorldForTool();
         
+        CreateFloorPlane();
+        
         DirectionalLightEntity = World->ConstructEntity("Directional Light");
         World->GetEntityRegistry().emplace<SDirectionalLightComponent>(DirectionalLightEntity);
         World->GetEntityRegistry().emplace<SEnvironmentComponent>(DirectionalLightEntity);
@@ -347,11 +349,10 @@ namespace Lumina
         MeshEntity = World->ConstructEntity("MeshEntity");
         World->GetEntityRegistry().emplace<SStaticMeshComponent>(MeshEntity).StaticMesh = StaticMesh;
         STransformComponent& MeshTransform = World->GetEntityRegistry().get<STransformComponent>(MeshEntity);
-        MeshTransform.SetLocation(glm::vec3(0.0f, 0.0f, 5.0));
 
         STransformComponent& EditorTransform = World->GetEntityRegistry().get<STransformComponent>(EditorEntity);
 
-        glm::quat Rotation = Math::FindLookAtRotation(MeshTransform.GetLocation(), EditorTransform.GetLocation());
+        glm::quat Rotation = Math::FindLookAtRotation(MeshTransform.GetLocation() + glm::vec3(0.0f, 0.85f, 0.0f), EditorTransform.GetLocation());
         EditorTransform.SetRotation(Rotation);
     }
 
