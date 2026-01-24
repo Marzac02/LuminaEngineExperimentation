@@ -177,32 +177,32 @@ namespace Lumina
 
     void FSystemContext::DrawDebugLine(const glm::vec3& Start, const glm::vec3& End, const glm::vec4& Color, float Thickness, float Duration)
     {
-        World->DrawLine(Start, End, Color, Thickness, Duration);
+        World->DrawLine(Start, End, Color, Thickness, true, Duration);
     }
 
     void FSystemContext::DrawDebugBox(const glm::vec3& Center, const glm::vec3& Extents, const glm::quat& Rotation, const glm::vec4& Color, float Thickness, float Duration)
     {
-        World->DrawBox(Center, Extents, Rotation, Color, Duration);
+        World->DrawBox(Center, Extents, Rotation, Color, true, Duration);
     }
 
     void FSystemContext::DrawDebugSphere(const glm::vec3& Center, float Radius, const glm::vec4& Color, uint8 Segments, float Thickness, float Duration)
     {
-        World->DrawSphere(Center, Radius, Color, Segments, Thickness, Duration);
+        World->DrawSphere(Center, Radius, Color, Segments, Thickness, true, Duration);
     }
 
     void FSystemContext::DrawDebugCone(const glm::vec3& Apex, const glm::vec3& Direction, float AngleRadians, float Length, const glm::vec4& Color, uint8 Segments, uint8 Stacks, float Thickness, float Duration)
     {
-        World->DrawCone(Apex, Direction, AngleRadians, Length, Color, Segments, Stacks, Thickness, Duration);
+        World->DrawCone(Apex, Direction, AngleRadians, Length, Color, Segments, Stacks, Thickness, true, Duration);
     }
 
     void FSystemContext::DrawFrustum(const glm::mat4& Matrix, float zNear, float zFar, const glm::vec4& Color, float Thickness, float Duration)
     {
-        World->DrawFrustum(Matrix, zNear, zFar, Color, Thickness, Duration);
+        World->DrawFrustum(Matrix, zNear, zFar, Color, Thickness, true, Duration);
     }
 
     void FSystemContext::DrawDebugArrow(const glm::vec3& Start, const glm::vec3& Direction, float Length, const glm::vec4& Color, float Thickness, float Duration, float HeadSize)
     {
-        World->DrawArrow(Start, Direction, Length, Color, Thickness, Duration, HeadSize);
+        World->DrawArrow(Start, Direction, Length, Color, Thickness, true, Duration, HeadSize);
     }
 
     entt::entity FSystemContext::Create(const FName& Name, const FTransform& Transform) const

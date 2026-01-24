@@ -25,9 +25,50 @@ namespace Lumina
     {
         CreateToolWindow(SkeletonPropertiesName, [&](bool bFocused)
         {
+            CSkeleton* Skeleton = GetAsset<CSkeleton>();
+            FSkeletonResource* SkeletonResource = Skeleton->GetSkeletonResource();
+
             ImGuiX::Font::PushFont(ImGuiX::Font::EFont::Large);
             ImGui::SeparatorText("Asset Details");
             ImGuiX::Font::PopFont();
+            
+            ImGui::Spacing();
+
+            ImGui::Text("Number of Bones: %i", SkeletonResource->GetNumBones());
+            ImGui::Text("Skeleton Name: %s", SkeletonResource->Name.ToString().c_str());
+            
+            ImGui::Spacing();
+            ImGuiX::Font::PushFont(ImGuiX::Font::EFont::Large);
+            ImGui::SeparatorText("Statistics");
+            ImGuiX::Font::PopFont();
+            
+            int32 NumRootBones = 0;
+            int32 MaxDepth = 0;
+            int32 TotalDepth = 0;
+            
+            for (const auto& Bone : SkeletonResource->Bones)
+            {
+                if (Bone.ParentIndex == -1)
+                {
+                    NumRootBones++;
+                }
+                
+                int32 Depth = 0;
+                int32 CurrentIndex = &Bone - SkeletonResource->Bones.data();
+                while (SkeletonResource->Bones[CurrentIndex].ParentIndex != -1)
+                {
+                    CurrentIndex = SkeletonResource->Bones[CurrentIndex].ParentIndex;
+                    Depth++;
+                }
+                MaxDepth = eastl::max(MaxDepth, Depth);
+                TotalDepth += Depth;
+            }
+            
+            float AvgDepth = SkeletonResource->GetNumBones() > 0 ? (float)TotalDepth / SkeletonResource->GetNumBones() : 0.0f;
+            
+            ImGui::Text("Root Bones: %i", NumRootBones);
+            ImGui::Text("Maximum Hierarchy Depth: %i", MaxDepth);
+            ImGui::Text("Average Bone Depth: %.2f", AvgDepth);
             
             ImGui::Spacing();
             PropertyTable.DrawTree();

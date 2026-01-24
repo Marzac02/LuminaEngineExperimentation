@@ -63,11 +63,11 @@ namespace Lumina
     	CreateFontFromFile(FontFile_Regular, size14, size16, ImGuiX::Font::EFont::Small, ImVec2(0, 2));
     	CreateFontFromFile(FontFile_Bold, size14, size16, ImGuiX::Font::EFont::SmallBold, ImVec2(0, 2));
 
-    	CreateFontFromFile(FontFile_Regular, size16, size18, ImGuiX::Font::EFont::Medium, ImVec2( 0, 2 ) );
-    	CreateFontFromFile(FontFile_Bold, size16, size18, ImGuiX::Font::EFont::MediumBold, ImVec2( 0, 2 ) );
+    	CreateFontFromFile(FontFile_Regular, size16, size18, ImGuiX::Font::EFont::Medium, ImVec2(0, 2));
+    	CreateFontFromFile(FontFile_Bold, size16, size18, ImGuiX::Font::EFont::MediumBold, ImVec2(0, 2));
 
-    	CreateFontFromFile(FontFile_Regular, size24, size24, ImGuiX::Font::EFont::Large, ImVec2( 0, 2 ) );
-    	CreateFontFromFile(FontFile_Bold, size24, size24, ImGuiX::Font::EFont::LargeBold, ImVec2( 0, 2 ) );
+    	CreateFontFromFile(FontFile_Regular, size24, size24, ImGuiX::Font::EFont::Large, ImVec2(0, 2));
+    	CreateFontFromFile(FontFile_Bold, size24, size24, ImGuiX::Font::EFont::LargeBold, ImVec2(0, 2));
 
     	io.Fonts->TexMinWidth = 4096;
 
