@@ -72,8 +72,6 @@ int main(int argc, char* argv[])
     
     FReflectedWorkspace Workspace(WorkspacePath.c_str());
     
-    bool bAnyHeaderDirty = false;
-    
     for (const auto& Project : Data["Projects"])
     {
         eastl::string ProjectName = Project["Name"].get<std::string>().c_str();
@@ -94,48 +92,20 @@ int main(int argc, char* argv[])
             eastl::replace(ProjectFile.begin(), ProjectFile.end(), '\\', '/');
             
             auto ReflectedHeader = eastl::make_unique<FReflectedHeader>(ReflectedProject.get(), ProjectFile);
-            if (ReflectedHeader->bDirty)
-            {
-                bAnyHeaderDirty = true;
-            }
-            
+
             Lumina::FStringHash HeaderHash(ProjectFile);
             ReflectedProject->Headers.emplace(HeaderHash, eastl::move(ReflectedHeader));
         }
         
         Workspace.AddReflectedProject(eastl::move(ReflectedProject));
     }
-    
-    if (!bAnyHeaderDirty)
-    {
-        std::println("Reflection not necessary");
-        return 0;
-    }
-    
+
     FClangParser Parser;
     Parser.Parse(&Workspace);
     
     FCodeGenerator CodeGenerator(&Workspace, Parser.ParsingContext.ReflectionDatabase);
     
-    for (eastl::unique_ptr<FReflectedProject>& Project : Workspace.ReflectedProjects)
-    {
-        CodeGenerator.GenerateCodeForProject(Project.get());
-    }
-
-    for (auto& Project : Workspace.ReflectedProjects)
-    {
-        for (auto& Header : Project->Headers)
-        {
-            try
-            {
-                std::filesystem::last_write_time(Header.second->HeaderPath.c_str(), Header.second->StartingFileTime);
-            }
-            catch (std::filesystem::filesystem_error& Error)
-            {
-                std::println("Failed to set last write time: {}", Error.what());
-            }
-        }
-    }
+    CodeGenerator.GenerateCode();
 
     Lumina::FStringHash::Shutdown();
     

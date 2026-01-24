@@ -313,7 +313,7 @@ namespace Lumina::Reflection
         Stream += "\treturn Registration_Info_CStruct_" + FriendlyName + ".InnerSingleton;\n";
         Stream += "}\n\n";
 
-        if (!IsManualReflectFile(eastl::string(HeaderID)))
+        if (!IsManualReflectFile(Header->HeaderPath))
         {
             Stream += "class Lumina::CStruct* " + QualifiedName + "::StaticStruct()\n";
             Stream += "{\n";

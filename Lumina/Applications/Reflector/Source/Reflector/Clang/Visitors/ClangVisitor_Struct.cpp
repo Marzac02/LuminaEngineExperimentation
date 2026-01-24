@@ -353,7 +353,6 @@ namespace Lumina::Reflection::Visitor
         ReflectedStruct->Type = FReflectedType::EType::Structure;
         ReflectedStruct->GeneratedBodyLineNumber = GeneratedBody.LineNumber;
         ReflectedStruct->LineNumber = ClangUtils::GetCursorLineNumber(Cursor);
-        ReflectedStruct->HeaderID = Context->ReflectedHeader->HeaderPath;
         ReflectedStruct->GenerateMetadata(Macro.MacroContents);
         
         if (!Context->CurrentNamespace.empty())
@@ -404,7 +403,6 @@ namespace Lumina::Reflection::Visitor
         ReflectedClass->Type = FReflectedType::EType::Class;
         ReflectedClass->GeneratedBodyLineNumber = GeneratedBody.LineNumber;
         ReflectedClass->LineNumber = ClangUtils::GetCursorLineNumber(Cursor);
-        ReflectedClass->HeaderID = Context->ReflectedHeader->HeaderPath;
         ReflectedClass->GenerateMetadata(Macro.MacroContents);
         
         if (!Context->CurrentNamespace.empty())

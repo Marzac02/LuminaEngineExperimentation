@@ -188,8 +188,11 @@ public: \
     IMPLEMENT_CLASS(Lumina, TClass) \
     static Lumina::FRegisterCompiledInInfo AutoInitialize_##TClass(&Construct_CClass_Lumina_##TClass, Lumina::TClass::StaticPackage(), TEXT(#TClass));
 
-#define METADATA_PARAMS(x, y)
-
+#if USING(WITH_EDITOR)
+    #define METADATA_PARAMS(X, Y) X, Y
+#else
+    #define METADATA_PARAMS(X, Y)
+#endif
 
 namespace LuminaAsserts_Private
 {

@@ -30,8 +30,9 @@ namespace Lumina::Reflection
         template<typename T>
         eastl::shared_ptr<T> GetReflectedType(const FStringHash& TypeName) const;
 
-        eastl::hash_map<FStringHash, eastl::vector<eastl::shared_ptr<FReflectedType>>>  ReflectedTypes;
-        eastl::hash_map<FStringHash, eastl::shared_ptr<FReflectedType>>                 TypeHashMap;
+        
+        eastl::hash_map<FReflectedHeader*, eastl::vector<eastl::shared_ptr<FReflectedType>>>    ReflectedTypes;
+        eastl::hash_map<FStringHash, eastl::shared_ptr<FReflectedType>>                         TypeHashMap;
         
     };
 

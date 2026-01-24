@@ -69,8 +69,8 @@ function LuminaConfig.ProjectPath(Subpath)
     return path.join("%{prj.location}", Subpath)
 end
 
-function LuminaConfig.GetReflectionUnityFile()
-    return path.join(LuminaConfig.ReflectionDirectory, "ReflectionUnity.gen.cpp")
+function LuminaConfig.GetReflectionFiles()
+    return path.join(LuminaConfig.ReflectionDirectory, "**.cpp")
 end
 
 function LuminaConfig.AddPublicIncludeDirectory(Path)

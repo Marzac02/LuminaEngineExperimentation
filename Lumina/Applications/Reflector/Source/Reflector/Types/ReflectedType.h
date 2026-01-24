@@ -120,7 +120,6 @@ namespace Lumina::Reflection
         eastl::vector<eastl::shared_ptr<FReflectedFunction>>    Functions;
         eastl::vector<FMetadataPair>                            Metadata;
         FReflectedHeader*                                       Header;
-        eastl::string                                           HeaderID;
         eastl::string                                           DisplayName;
         eastl::string                                           QualifiedName;
         eastl::string                                           Namespace;

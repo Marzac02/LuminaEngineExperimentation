@@ -39,60 +39,29 @@ namespace Lumina::Reflection
     {
     }
     
-    void FCodeGenerator::GenerateCodeForProject(const FReflectedProject* Project)
+    void FCodeGenerator::GenerateCode()
     {
-        CurrentProject = Project;
-
-        eastl::string FinalOutput;
-        FinalOutput += "#include \"pch.h\"\n";
-        
-        bool bAnyHeaderDirty = false;
-        for (const auto& [Name, Header] : Project->Headers)
+        for (const auto& [Header, _] : ReflectionDatabase->ReflectedTypes)
         {
-            if (ReflectionDatabase->ReflectedTypes.find(FStringHash(Header->HeaderPath)) == ReflectionDatabase->ReflectedTypes.end())
+            if (!Header->bDirty)
             {
                 continue;
             }
             
-            if (Header->bDirty)
-            {
-                bAnyHeaderDirty = true;
-            }
-
-            FinalOutput += "#include \"" + Header->FileName + ".generated.cpp\"" + "\n";
+            GenerateReflectionCodeForHeader(Header);
             
-            GenerateReflectionCodeForHeader(*Header);
-            
-            GenerateReflectionCodeForSource(*Header);
-        }
-        
-        if (!bAnyHeaderDirty)
-        {
-            std::println("Code generation not necessary");
-            return;
-        }
-
-        eastl::string ReflectionDataPath = Workspace->GetPath() + R"(\Intermediates\Reflection\)" + CurrentProject->Name + R"(\)" + "ReflectionUnity.gen.cpp";
-        std::filesystem::path outputPath(ReflectionDataPath.c_str());
-        std::filesystem::create_directories(outputPath.parent_path());
-        
-        std::ofstream OutputFile(ReflectionDataPath.c_str());
-
-        if (OutputFile.is_open())
-        {
-            OutputFile.write(FinalOutput.c_str(), FinalOutput.size());
-            OutputFile.close();
+            GenerateReflectionCodeForSource(Header);
         }
     }
 
-    void FCodeGenerator::GenerateReflectionCodeForHeader(const FReflectedHeader& Header)
+    void FCodeGenerator::GenerateReflectionCodeForHeader(FReflectedHeader* Header)
     {
         eastl::string Stream;
         Stream.reserve(STREAM_INITIAL_BUFFER_SIZE);
 
         GenerateCodeHeader(Stream, Header);
         
-        eastl::string OutFileName = Workspace->GetPath() + R"(\Intermediates\Reflection\)" + CurrentProject->Name + R"(\)" + Header.FileName + ".generated.h";
+        eastl::string OutFileName = Workspace->GetPath() + R"(\Intermediates\Reflection\)" + Header->Project->Name + R"(\)" + Header->FileName + ".generated.h";
         std::filesystem::path outputPath(OutFileName.c_str());
         std::filesystem::create_directories(outputPath.parent_path());
         
@@ -105,14 +74,14 @@ namespace Lumina::Reflection
         }
     }
 
-    void FCodeGenerator::GenerateReflectionCodeForSource(const FReflectedHeader& Header)
+    void FCodeGenerator::GenerateReflectionCodeForSource(FReflectedHeader* Header)
     {
         eastl::string Stream;
         Stream.reserve(STREAM_INITIAL_BUFFER_SIZE);
 
         GenerateCodeSource(Stream, Header);
         
-        eastl::string OutFileName = Workspace->GetPath() + R"(\Intermediates\Reflection\)" + CurrentProject->Name + R"(\)" + Header.FileName + ".generated.cpp";
+        eastl::string OutFileName = Workspace->GetPath() + R"(\Intermediates\Reflection\)" + Header->Project->Name + R"(\)" + Header->FileName + ".generated.cpp";
         std::filesystem::path outputPath(OutFileName.c_str());
         std::filesystem::create_directories(outputPath.parent_path());
         
@@ -132,15 +101,14 @@ namespace Lumina::Reflection
         FileID = StringUtils::ReplaceAllOccurrences(FileID, "-", "_");
     }
 
-    void FCodeGenerator::GenerateCodeHeader(eastl::string& Stream, const FReflectedHeader& Header)
+    void FCodeGenerator::GenerateCodeHeader(eastl::string& Stream, FReflectedHeader* Header)
     {
-
-        const eastl::vector<eastl::shared_ptr<FReflectedType>>& ReflectedTypes = ReflectionDatabase->ReflectedTypes.at(FStringHash(Header.HeaderPath));
+        const eastl::vector<eastl::shared_ptr<FReflectedType>>& ReflectedTypes = ReflectionDatabase->ReflectedTypes.at(Header);
 
         Stream += "#pragma once\n\n";
         GenerateFileWarning(Stream);
 
-        std::filesystem::path FullHeaderPath = Header.HeaderPath.c_str();
+        std::filesystem::path FullHeaderPath = Header->HeaderPath.c_str();
         std::filesystem::path SolutionRoot = Workspace->GetPath().c_str();
         std::filesystem::path RelativeHeaderPath = std::filesystem::relative(FullHeaderPath, SolutionRoot);
 
@@ -149,7 +117,7 @@ namespace Lumina::Reflection
 
         Stream += "\n\n";
         
-        eastl::string FileID = Header.HeaderPath;
+        eastl::string FileID = Header->HeaderPath;
         
         size_t SlashPos = FileID.find_first_of("/\\");
         if (SlashPos != eastl::string::npos)
@@ -184,15 +152,15 @@ namespace Lumina::Reflection
         Stream += "\t #define CURRENT_FILE_ID " + FileID + "\n";
     }
 
-    void FCodeGenerator::GenerateCodeSource(eastl::string& Stream, const FReflectedHeader& Header)
+    void FCodeGenerator::GenerateCodeSource(eastl::string& Stream, FReflectedHeader* Header)
     {
         Stream.clear();
         
-        auto TypeIt = ReflectionDatabase->ReflectedTypes.find(FStringHash(Header.HeaderPath));
+        auto TypeIt = ReflectionDatabase->ReflectedTypes.find(Header);
         const eastl::vector<eastl::shared_ptr<FReflectedType>>& ReflectedTypes = TypeIt->second;
     
         // Generate unique FileID from Header path
-        eastl::string FileID = Header.HeaderPath;
+        eastl::string FileID = Header->HeaderPath;
         size_t SlashPos = FileID.find_first_of("/\\");
         if (SlashPos != eastl::string::npos)
         {
@@ -207,12 +175,12 @@ namespace Lumina::Reflection
         
         Stream += "#include \"pch.h\"\n";
         Stream += "#include \"";
-        Stream += Header.HeaderPath + "\"\n";
+        Stream += Header->HeaderPath + "\"\n";
         Stream += "#include \"World/Entity/Components/Component.h\"\n";
         Stream += "#include \"Runtime/Core/Object/Class.h\"\n";
         Stream += "\n\n";
 
-        eastl::string ProjectAPI = CurrentProject->Name + "_api";
+        eastl::string ProjectAPI = Header->Project->Name + "_api";
         ProjectAPI.make_upper();
         // Cross-module references
         Stream += "// Begin Cross-Module References\n";

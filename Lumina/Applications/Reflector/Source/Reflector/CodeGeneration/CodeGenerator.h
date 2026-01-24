@@ -11,24 +11,20 @@ namespace Lumina::Reflection
 
         FCodeGenerator(FReflectedWorkspace* InWorkspace, const FReflectionDatabase& Database);
         
-        void GenerateCodeForProject(const FReflectedProject* Project);
+        void GenerateCode();
 
-        void GenerateReflectionCodeForHeader(const FReflectedHeader& Header);
-        void GenerateReflectionCodeForSource(const FReflectedHeader& Header);
+        void GenerateReflectionCodeForHeader(FReflectedHeader* Header);
+        void GenerateReflectionCodeForSource(FReflectedHeader* Header);
     
     private:
 
-        void GenerateCodeHeader(eastl::string& Stream, const FReflectedHeader& Header);
-        void GenerateCodeSource(eastl::string& Stream, const FReflectedHeader& Header);
+        void GenerateCodeHeader(eastl::string& Stream, FReflectedHeader* Header);
+        void GenerateCodeSource(eastl::string& Stream, FReflectedHeader* Header);
 
 
     private:
-
         
-        const FReflectedProject*                CurrentProject = nullptr;
         FReflectedWorkspace*                    Workspace;
         const FReflectionDatabase*              ReflectionDatabase;
-        
-        
     };
 }

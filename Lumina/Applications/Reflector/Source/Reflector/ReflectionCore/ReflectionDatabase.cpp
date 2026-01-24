@@ -1,6 +1,5 @@
 ﻿#include "ReflectionDatabase.h"
 
-
 namespace Lumina::Reflection
 {
     void FReflectionDatabase::AddReflectedType(const eastl::shared_ptr<FReflectedType>& Type)
@@ -11,18 +10,16 @@ namespace Lumina::Reflection
         }
 
         FStringHash NameHash = FStringHash(Type->QualifiedName);
-        FStringHash PathHash = FStringHash(Type->HeaderID);
 
         if (IsTypeRegistered(NameHash))
         {
             return;
         }
         
-        eastl::vector<eastl::shared_ptr<FReflectedType>>* TypeVector = &ReflectedTypes[PathHash];
-        TypeVector->push_back(Type);
+        auto& TypeVector = ReflectedTypes[Type->Header];
+        TypeVector.push_back(Type);
         
         TypeHashMap.insert_or_assign(NameHash, Type);
-        
     }
 
     bool FReflectionDatabase::IsTypeRegistered(const FStringHash& Str) const

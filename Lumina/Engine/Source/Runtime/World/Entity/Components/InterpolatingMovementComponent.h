@@ -1,6 +1,7 @@
 ﻿#pragma once
 
 #include <glm/glm.hpp>
+#include "Core/Math/Transform.h"
 #include "Core/Math/Sine.h"
 #include "InterpolatingMovementComponent.generated.h"
 

@@ -26,7 +26,7 @@ project "Lumina"
         "Engine/Source/**.cpp",
         "Engine/Source/**.h",
         "Premake5.lua",
-        LuminaConfig.GetReflectionUnityFile()
+        LuminaConfig.GetReflectionFiles()
     }
 
     includedirs(LuminaConfig.GetPublicIncludeDirectories())

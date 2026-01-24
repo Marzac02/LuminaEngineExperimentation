@@ -44,7 +44,7 @@ namespace Lumina::Reflection
             for (const eastl::string& IncludeDir : Project->IncludeDirs)
             {
                 ClangArgs.emplace_back("-I");
-                if (IncludeDir.find("GLM") != eastl::string::npos)
+                if (IncludeDir.find("GLM") != eastl::string::npos || IncludeDir.find("glm") != eastl::string::npos)
                 {
                     continue;
                 }

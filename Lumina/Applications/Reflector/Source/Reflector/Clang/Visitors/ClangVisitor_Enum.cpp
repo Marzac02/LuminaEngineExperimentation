@@ -79,7 +79,6 @@ namespace Lumina::Reflection::Visitor
         ReflectedEnum->Header = Context->ReflectedHeader;
         ReflectedEnum->Type = FReflectedType::EType::Enum;
         ReflectedEnum->LineNumber = ClangUtils::GetCursorLineNumber(Cursor);
-        ReflectedEnum->HeaderID = Context->ReflectedHeader->HeaderPath;
         ReflectedEnum->GenerateMetadata(Macro.MacroContents);
 
         if (!Context->CurrentNamespace.empty())

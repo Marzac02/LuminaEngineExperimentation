@@ -27,7 +27,7 @@ project "Editor"
 		"Source/**.h",
 		"Source/**.cpp",
 		"**.lua",
-		LuminaConfig.GetReflectionUnityFile()
+		LuminaConfig.GetReflectionFiles()
 	}
 
 	includedirs
