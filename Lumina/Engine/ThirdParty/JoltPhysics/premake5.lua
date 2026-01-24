@@ -15,6 +15,7 @@ project "JoltPhysics"
 	{
 		"**.h",
 		"**.cpp",
+		"**.lua",
 	}
 
 	includedirs

@@ -6,4 +6,5 @@ project "NlohmannJson"
 	files
 	{
 		"**.hpp",
+		"**.lua",
 	}

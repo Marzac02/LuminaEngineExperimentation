@@ -2,7 +2,7 @@ project "ImGui"
 	kind "StaticLib"
 	warnings "off"
 	enableunitybuild "Off"
-    
+
 
 	includedirs
 	{
@@ -35,5 +35,6 @@ project "ImGui"
 		"backends/imgui_impl_vulkan.cpp",
         "imgui_tables.cpp",
 		"ImGuizmo.h",
-		"ImGuizmo.cpp"
-	}
+		"ImGuizmo.cpp",
+        "**.lua",
+    }

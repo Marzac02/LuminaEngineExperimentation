@@ -32,6 +32,7 @@ project "Sandbox"
 		"Source/**.h",
 		"Source/**.cpp",
 		--LuminaConfig.GetReflectionUnityFile()
+		"**.lua",
 	}
 
 	includedirs

@@ -58,6 +58,7 @@ project "Reflector"
 		LuminaConfig.ThirdPartyPath("EA/**.h"),
 		LuminaConfig.ThirdPartyPath("EA/**.cpp"),
 		LuminaConfig.ThirdPartyPath("xxhash/**.c"),
+		"**.lua",
 	}
 
 

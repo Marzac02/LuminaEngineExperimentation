@@ -7,6 +7,7 @@ project "XXHash"
 	{
 		"**.h",
 		"**.c",
+		"**.lua",
 	}
 
 	includedirs

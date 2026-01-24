@@ -7,6 +7,7 @@ project "Volk"
 	{
 		"**.h",
 		"**.c",
+		"**.lua",
 	}
 
 	includedirs

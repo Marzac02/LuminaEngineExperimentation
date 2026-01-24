@@ -7,6 +7,7 @@ project "VKBootstrap"
 	{
 		"**.cpp",
 		"**.h",
+		"**.lua",
 	}
 
 	includedirs

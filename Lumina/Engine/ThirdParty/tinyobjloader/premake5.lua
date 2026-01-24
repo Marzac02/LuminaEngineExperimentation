@@ -7,6 +7,7 @@ project "TinyOBJLoader"
 	{
 		"**.cc",
 		"**.h",
+		"**.lua",
 	}
 
 	includedirs

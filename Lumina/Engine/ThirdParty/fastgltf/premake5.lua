@@ -9,6 +9,7 @@ project "FastGLTF"
 		"**.hpp",
 		"**.h",
 		"**.cpp",
+		"**.lua",
 	}
 
 	includedirs

@@ -1,7 +1,6 @@
 
-include "Scripts/Dependencies"
-require "Scripts/Actions/Reflection"
-
+include "BuildScripts/Dependencies"
+include "BuildScripts/Actions/Reflection"
 
 workspace "Lumina"
 	language "C++"
@@ -47,12 +46,6 @@ workspace "Lumina"
         "TRACY_ENABLE",
     	"TRACY_CALLSTACK",
     	"TRACY_ON_DEMAND",
-	}
-
-	buildoptions 
-    {
-		"/Zm2000",
-        "/bigobj"
 	}
 
 	disablewarnings
@@ -151,3 +144,7 @@ workspace "Lumina"
         include "Lumina/Engine/ThirdParty/fastgltf"
         include "Lumina/Engine/ThirdParty/OpenFBX"
 	group ""
+
+    group "Build"
+        include "BuildScripts"
+    group ""

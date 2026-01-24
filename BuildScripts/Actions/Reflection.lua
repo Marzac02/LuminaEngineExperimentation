@@ -1,4 +1,5 @@
 
+include "BuildScripts/Logger"
 
 premake.modules.lua = {}
 local m = premake.modules.lua
@@ -91,13 +92,13 @@ newaction
         local ReflectionDirectory = path.join(os.getenv("LUMINA_DIR"), "Binaries", "Development-windows-x86_64", "Reflector.exe")
         local CmdLine = ReflectionDirectory .. " " .. path.getabsolute("Reflection_Files.json")
 
-        local result = os.execute(CmdLine)
+        local Result = os.execute(CmdLine)
     
-        if result == 0 or result == true then
-            print("Reflection completed successfully!")
+        if Result == 0 or Result == true then
+            Logger.Success("Reflection completed successfully!")
             os.remove("Reflection_Files.json")
         else
-            print("Reflection failed - keeping JSON file for debugging")
+            Logger.Error("Reflection failed - keeping JSON file for debugging")
         end
     end,
 

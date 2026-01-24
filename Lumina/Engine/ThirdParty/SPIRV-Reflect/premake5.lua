@@ -7,6 +7,7 @@ project "SPIRV-Reflect"
 	{
 		"**.h",
 		"**.c",
+		"**.lua",
 	}
 	
 	includedirs

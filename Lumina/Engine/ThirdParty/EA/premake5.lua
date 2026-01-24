@@ -5,7 +5,8 @@ project "EA"
 	files
 	{
 		"**.h",
-		"**.cpp"
+		"**.cpp",
+		"**.lua",
 	}
 	
 	includedirs

@@ -6,4 +6,5 @@ project "VMA"
 	files
 	{
 		"**.h",
+		"**.lua",
 	}

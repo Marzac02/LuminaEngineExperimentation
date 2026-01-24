@@ -7,6 +7,7 @@ project "MeshOptimizer"
 	{
 		"src/**.cpp",
 		"src/**.h",
+		"**.lua",
 	}
 
 	includedirs

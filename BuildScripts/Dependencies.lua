@@ -124,7 +124,7 @@ LuminaConfig.AddPublicIncludeDirectory(LuminaConfig.EnginePath("Lumina/Engine/Th
 LuminaConfig.AddPublicIncludeDirectory(LuminaConfig.EnginePath("Lumina/Engine/ThirdParty/EnkiTS/src"))
 LuminaConfig.AddPublicIncludeDirectory(LuminaConfig.EnginePath("Lumina/Engine/ThirdParty/SPIRV-Reflect"))
 LuminaConfig.AddPublicIncludeDirectory(LuminaConfig.EnginePath("Lumina/Engine/ThirdParty/json"))
-LuminaConfig.AddPublicIncludeDirectory(LuminaConfig.EnginePath("Lumina/Engine/ThirdParty/entt/single_include"))
+LuminaConfig.AddPublicIncludeDirectory(LuminaConfig.EnginePath("Lumina/Engine/ThirdParty/entt"))
 LuminaConfig.AddPublicIncludeDirectory(LuminaConfig.EnginePath("Lumina/Engine/ThirdParty/EA/EASTL/include"))
 LuminaConfig.AddPublicIncludeDirectory(LuminaConfig.EnginePath("Lumina/Engine/ThirdParty/EA/EABase/include/Common"))
 LuminaConfig.AddPublicIncludeDirectory(LuminaConfig.EnginePath("Lumina/Engine/ThirdParty/rpmalloc"))

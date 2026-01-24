@@ -5,5 +5,6 @@ project "Sol2"
 
 	files
 	{
-		"include/src/**.hpp",
+		"include/sol/**.hpp",
+		"**.lua",
 	}

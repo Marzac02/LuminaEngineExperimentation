@@ -8,6 +8,7 @@ project "OpenFBX"
 		"**.h",
 		"**.cpp",
 		"**.c",
+		"**.lua",
 	}
 
 	includedirs

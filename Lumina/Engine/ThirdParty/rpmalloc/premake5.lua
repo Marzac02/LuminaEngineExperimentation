@@ -7,6 +7,7 @@ project "RPMalloc"
 	{
 		"**.h",
 		"**.c",
+		"**.lua",
 	}
 
 	includedirs

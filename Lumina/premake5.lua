@@ -1,6 +1,3 @@
-
-include "Scripts/Dependencies"
-
 project "Lumina"
     kind "SharedLib"
     rtti "off"

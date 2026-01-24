@@ -7,4 +7,5 @@ project "EnkiTS"
 	{
 		"src/**.h",
 		"src/**.cpp",
+		"**.lua",
 	}

@@ -12,6 +12,7 @@ project "Tracy"
 	files
 	{
 		"public/TracyClient.cpp",
+		"**.lua",
 	}
 	
 	includedirs

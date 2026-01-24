@@ -227,7 +227,7 @@ def main():
     print_header()
     
     # Change to project root
-    if os.path.basename(os.getcwd()) == "Scripts":
+    if os.path.basename(os.getcwd()) == "BuildScripts":
         os.chdir('../')
         print_info(f"Working directory: {os.getcwd()}\n")
     

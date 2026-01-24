@@ -23,6 +23,7 @@ project "GLFW"
 		"src/platform.c",
 		"src/vulkan.c",
 		"src/window.c",
+		"**.lua",
 	}
 
 	filter "system:linux"

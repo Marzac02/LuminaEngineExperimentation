@@ -266,7 +266,7 @@ def main():
         dropbox_url = "https://www.dropbox.com/scl/fi/suigjbqj75pzcpxcqm6hv/External.7z?rlkey=ebu8kiw4gswtvj5mclg6wa1lu&st=68ybsxy2&dl=0"
         archive_file = "External.7z"
         extract_location = "."
-        generation_script = Path("Scripts") / "GenerateProjectFiles.py"
+        generation_script = Path("BuildScripts") / "GenerateProjectFiles.py"
         
         total_steps = 4
         
