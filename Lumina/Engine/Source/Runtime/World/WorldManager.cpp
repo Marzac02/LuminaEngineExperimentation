@@ -7,7 +7,6 @@ namespace Lumina
 {
     void FWorldManager::Initialize()
     {
-        
     }
 
     void FWorldManager::Deinitialize()

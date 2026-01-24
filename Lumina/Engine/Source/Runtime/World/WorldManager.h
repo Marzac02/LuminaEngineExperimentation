@@ -4,7 +4,6 @@
 #include "Core/Object/ObjectHandleTyped.h"
 #include "Subsystems/Subsystem.h"
 
-
 namespace Lumina
 {
     enum class EWorldType : uint8;

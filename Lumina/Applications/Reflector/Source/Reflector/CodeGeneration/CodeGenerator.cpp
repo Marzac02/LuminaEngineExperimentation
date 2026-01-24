@@ -41,16 +41,46 @@ namespace Lumina::Reflection
     
     void FCodeGenerator::GenerateCode()
     {
+        eastl::hash_map<FReflectedProject*, eastl::string> ProjectOutputs;
+        eastl::hash_set<FReflectedProject*> DirtyProjects;
+        
         for (const auto& [Header, _] : ReflectionDatabase->ReflectedTypes)
         {
+            auto& Output = ProjectOutputs[Header->Project];
+            if (Output.empty())
+            {
+                Output += "#include \"pch.h\"\n";
+            }
+
+            Output += "#include \"" + Header->FileName + ".generated.cpp\"\n";
+
             if (!Header->bDirty)
             {
                 continue;
             }
             
+            DirtyProjects.insert(Header->Project);
+            
             GenerateReflectionCodeForHeader(Header);
             
             GenerateReflectionCodeForSource(Header);
+        }
+
+        for (auto& DirtyProject : DirtyProjects)
+        {
+            const eastl::string& Output = ProjectOutputs[DirtyProject];
+            
+            eastl::string ReflectionDataPath = Workspace->GetPath() + R"(\Intermediates\Reflection\)" + DirtyProject->Name + R"(\)" + "ReflectionUnity.gen.cpp";
+            std::filesystem::path outputPath(ReflectionDataPath.c_str());
+            std::filesystem::create_directories(outputPath.parent_path());
+        
+            std::ofstream OutputFile(ReflectionDataPath.c_str());
+
+            if (OutputFile.is_open())
+            {
+                OutputFile.write(Output.c_str(), (std::streamsize)Output.size());
+                OutputFile.close();
+            }
         }
     }
 

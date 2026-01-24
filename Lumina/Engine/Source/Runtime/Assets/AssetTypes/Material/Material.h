@@ -9,7 +9,6 @@
 #include "Renderer/RenderResource.h"
 #include "Material.generated.h"
 
-
 namespace Lumina
 {
     class CTexture;
