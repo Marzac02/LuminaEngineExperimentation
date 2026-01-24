@@ -5,7 +5,6 @@ include "BuildScripts/Actions/Reflection"
 workspace "Lumina"
 	language "C++"
 	targetdir "Build"
-	startproject "Editor"
 	conformancemode "On"
 	cppdialect "C++latest"
 	staticruntime "Off"
@@ -14,6 +13,7 @@ workspace "Lumina"
     objdir (LuminaConfig.GetObjDirectory())
     enableunitybuild "Off"
     fastuptodate "On"
+	startproject "Editor"
 
     configurations 
     { 
