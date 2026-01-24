@@ -107,45 +107,6 @@ namespace Lumina::Reflection
         return true;
     }
     
-    void FClangParserContext::LogError(const char* ErrorFormat, ...) const
-    {
-        char MessageBuffer[1024];
-        char FinalBuffer[1100];
-
-        va_list args;
-        va_start(args, ErrorFormat);
-        (void)vsnprintf(MessageBuffer, sizeof(MessageBuffer), ErrorFormat, args);
-        va_end(args);
-
-        (void)snprintf(FinalBuffer, sizeof(FinalBuffer), "[Reflection] [ERROR]: %s", MessageBuffer);
-
-        ErrorMessage = FinalBuffer;
-    }
-
-    void FClangParserContext::LogWarning(char const* ErrorFormat, ...) const
-    {
-        char MessageBuffer[1024];
-        char FinalBuffer[1100];
-
-        va_list args;
-        va_start(args, ErrorFormat);
-        (void)vsnprintf(MessageBuffer, sizeof(MessageBuffer), ErrorFormat, args);
-        va_end(args);
-
-        (void)snprintf(FinalBuffer, sizeof(FinalBuffer), "[Reflection] - WARN: %s", MessageBuffer);
-
-        WarningMessage = FinalBuffer;
-    }
-
-    void FClangParserContext::FlushLogs()
-    {
-        std::cout << "\033[31m" << ErrorMessage.c_str() << "\033[0m\n";
-        ErrorMessage.clear();
-
-        std::cout << "\033[31m" << WarningMessage.c_str() << "\033[0m\n";
-        WarningMessage.clear();
-    }
-    
     void FClangParserContext::PushNamespace(const eastl::string& Namespace)
     {
         NamespaceStack.push_back(Namespace);

@@ -1,5 +1,4 @@
 ﻿#include "ClangVisitor.h"
-
 #include "EASTL/shared_ptr.h"
 #include "Reflector/Clang/ClangParserContext.h"
 #include "Reflector/Clang/Utils.h"
@@ -12,413 +11,433 @@
 #include "Reflector/Types/Properties/ReflectedObjectProperty.h"
 #include "Reflector/Types/Properties/ReflectedStringProperty.h"
 #include "Reflector/Types/Properties/ReflectedStructProperty.h"
+#include <EASTL/optional.h>
+#include <EASTL/string.h>
+#include <Reflector/Types/ReflectedType.h>
+#include <clang-c/CXString.h>
+#include <clang-c/Index.h>
+#include <clang/AST/Type.h>
+#include <spdlog/spdlog.h>
 
 namespace Lumina::Reflection::Visitor
 {
 
-    static FFieldInfo CreateFieldInfo(FClangParserContext* Context, const CXCursor& Cursor)
-    {
-        eastl::string CursorName = ClangUtils::GetCursorDisplayName(Cursor);
+	static eastl::optional<FFieldInfo> CreateFieldInfo(FClangParserContext* Context, const CXCursor& Cursor)
+	{
+		eastl::string CursorName = ClangUtils::GetCursorDisplayName(Cursor);
 
-        CXType FieldType = clang_getCursorType(Cursor);
-        clang::QualType FieldQualType = ClangUtils::GetQualType(FieldType);
-        if (FieldQualType.isNull())
-        {
-            Context->LogError("Failed to qualify typename for member: %s in class: %s", CursorName.c_str(), Context->ParentReflectedType->GetTypeName().c_str());
-            return FFieldInfo();
-        }
+		CXType FieldType = clang_getCursorType(Cursor);
+		clang::QualType FieldQualType = ClangUtils::GetQualType(FieldType);
+		if (FieldQualType.isNull())
+		{
+			spdlog::error("Failed to qualify typename for member: {} in class: {}", CursorName.c_str(), Context->ParentReflectedType->GetTypeName().c_str());
+			return eastl::nullopt;
+		}
 
-        eastl::string TypeSpelling;
-        ClangUtils::GetQualifiedNameForType(FieldQualType, TypeSpelling);
-        EPropertyTypeFlags PropFlags = GetCoreTypeFromName(TypeSpelling.c_str());
-        
-        // Is not a core type.
-        if (PropFlags == EPropertyTypeFlags::None)
-        {
-            if (FieldQualType->isEnumeralType())
-            {
-                PropFlags = EPropertyTypeFlags::Enum;
-            }
-            else if (FieldQualType->isStructureType())
-            {
-                PropFlags = EPropertyTypeFlags::Struct;
-            }
-            else if (FieldQualType->isPointerType())
-            {
-                Context->LogError("[%s] Object properties as pointers are *NOT* supported, use TObjectPtr instead", CursorName.c_str());
-                Context->FlushLogs();
-                return FFieldInfo();
-            }
-        }
+		eastl::string TypeSpelling;
+		ClangUtils::GetQualifiedNameForType(FieldQualType, TypeSpelling);
+		EPropertyTypeFlags PropFlags = GetCoreTypeFromName(TypeSpelling.c_str());
 
-        FFieldInfo Info;
-        Info.Flags = PropFlags;
-        Info.Type = FieldType;
-        Info.Name = CursorName;
-        Info.TypeName = TypeSpelling;
-        Info.RawFieldType = FieldQualType.getAsString().c_str();
+		// Is not a core type.
+		if (PropFlags == EPropertyTypeFlags::None)
+		{
+			if (FieldQualType->isEnumeralType())
+			{
+				PropFlags = EPropertyTypeFlags::Enum;
+			}
+			else if (FieldQualType->isStructureType())
+			{
+				PropFlags = EPropertyTypeFlags::Struct;
+			}
+			else if (FieldQualType->isPointerType())
+			{
+				spdlog::error("{}, Object properties as pointer are not supported, use TObjectPtr instead", CursorName.c_str());
+				return eastl::nullopt;
+			}
+		}
 
-        return Info;
-    }
+		FFieldInfo Info;
+		Info.Flags = PropFlags;
+		Info.Type = FieldType;
+		Info.Name = CursorName;
+		Info.TypeName = TypeSpelling;
+		Info.RawFieldType = FieldQualType.getAsString().c_str();
 
-    static FFieldInfo CreateSubFieldInfo(FClangParserContext* Context, const CXType& FieldType, const FFieldInfo& ParentField)
-    {
-        clang::QualType FieldQualType = ClangUtils::GetQualType(FieldType);
-        if (FieldQualType.isNull())
-        {
-            Context->LogError("Failed to qualify typename for member: %s in class: %s", ParentField.Name.c_str(), Context->ParentReflectedType->GetTypeName().c_str());
-            Context->FlushLogs();
-            return FFieldInfo();
-        }
-        
-        eastl::string FieldName; 
-        ClangUtils::GetQualifiedNameForType(FieldQualType, FieldName);
-        
-        EPropertyTypeFlags PropFlags = GetCoreTypeFromName(FieldName.c_str());
+		return Info;
+	}
 
-        // Is not a core type.
-        if (PropFlags == EPropertyTypeFlags::None)
-        {
-            if (FieldQualType->isEnumeralType())
-            {
-                PropFlags = EPropertyTypeFlags::Enum;
-            }
-            else if (FieldQualType->isStructureType())
-            {
-                PropFlags = EPropertyTypeFlags::Struct;
-            }
-            else if (FieldQualType->isPointerType())
-            {
-                Context->LogError("[%s] Object properties as pointers are *NOT* supported, use TObjectPtr instead", FieldName.c_str());
-                Context->FlushLogs();
-            }
-        }
-        
-        FFieldInfo Info;
-        Info.Flags = PropFlags;
-        Info.Type = FieldType;
-        Info.TypeName = FieldName;
-        Info.RawFieldType = ParentField.RawFieldType;
-        return Info;
-    }
-    
-    template<typename T>
-    eastl::shared_ptr<T> CreateProperty(const FFieldInfo& Info)
-    {
-        eastl::shared_ptr<T> New = eastl::make_shared<T>();
-        New->Name = Info.Name;
-        New->TypeName = Info.TypeName;
-        New->RawTypeName = Info.RawFieldType;
-        return New;
-    }
+	static eastl::optional<FFieldInfo> CreateSubFieldInfo(FClangParserContext* Context, const CXType& FieldType, const FFieldInfo& ParentField)
+	{
+		clang::QualType FieldQualType = ClangUtils::GetQualType(FieldType);
+		if (FieldQualType.isNull())
+		{
+			spdlog::error("Failed to qualify typename for member: {} in class: {}", ParentField.Name.c_str(), Context->ParentReflectedType->GetTypeName().c_str());
+			return eastl::nullopt;
+		}
 
-    static bool CreatePropertyForType(FClangParserContext* Context, FReflectedStruct* Struct, eastl::shared_ptr<FReflectedProperty>& NewProperty, const FFieldInfo& FieldInfo)
-    {
-        switch (FieldInfo.Flags)
-        {
-        case EPropertyTypeFlags::UInt8:
-            {
-                NewProperty = CreateProperty<FReflectedUInt8Property>(FieldInfo);
-            }
-            break;
-        case EPropertyTypeFlags::UInt16:
-            {
-                NewProperty = CreateProperty<FReflectedUInt16Property>(FieldInfo);
-            }
-            break;
-        case EPropertyTypeFlags::UInt32:
-            {
-                NewProperty = CreateProperty<FReflectedUInt32Property>(FieldInfo);
-            }
-            break;
-        case EPropertyTypeFlags::UInt64:
-            {
-                NewProperty = CreateProperty<FReflectedUInt64Property>(FieldInfo);
-            }
-            break;
-        case EPropertyTypeFlags::Int8:
-            {
-                NewProperty = CreateProperty<FReflectedInt8Property>(FieldInfo);
-            }
-            break;
-        case EPropertyTypeFlags::Int16:
-            {
-                NewProperty = CreateProperty<FReflectedInt16Property>(FieldInfo);
-            }
-            break;
-        case EPropertyTypeFlags::Int32:
-            {
-                NewProperty = CreateProperty<FReflectedInt32Property>(FieldInfo);
-            }
-            break;
-        case EPropertyTypeFlags::Int64:
-            {
-                NewProperty = CreateProperty<FReflectedInt64Property>(FieldInfo);
-            }
-            break;
-        case EPropertyTypeFlags::Float:
-            {
-                NewProperty = CreateProperty<FReflectedFloatProperty>(FieldInfo);
-            }
-            break;
-        case EPropertyTypeFlags::Double:
-            {
-                NewProperty = CreateProperty<FReflectedDoubleProperty>(FieldInfo);
-            }
-            break;
-        case EPropertyTypeFlags::Bool:
-            {
-                NewProperty = CreateProperty<FReflectedBoolProperty>(FieldInfo);
-            }
-            break;
-        case EPropertyTypeFlags::String:
-            {
-                NewProperty = CreateProperty<FReflectedStringProperty>(FieldInfo);
-            }
-            break;
-        case EPropertyTypeFlags::Name:
-            {
-                NewProperty = CreateProperty<FReflectedNameProperty>(FieldInfo);
-            }
-            break;
-        case EPropertyTypeFlags::Struct:
-            {
-                NewProperty = CreateProperty<FReflectedStructProperty>(FieldInfo);
-            }
-            break;
-        case EPropertyTypeFlags::Enum:
-            {
-                NewProperty = CreateProperty<FReflectedEnumProperty>(FieldInfo);
-                const CXCursor EnumCursor = clang_getTypeDeclaration(FieldInfo.Type);
+		eastl::string FieldName;
+		ClangUtils::GetQualifiedNameForType(FieldQualType, FieldName);
 
-                if (clang_getCursorKind(EnumCursor) == CXCursor_EnumDecl)
-                {
-                    CXType UnderlyingType = clang_getEnumDeclIntegerType(EnumCursor);
-                    FFieldInfo SubType = CreateSubFieldInfo(Context, UnderlyingType, FieldInfo);
+		EPropertyTypeFlags PropFlags = GetCoreTypeFromName(FieldName.c_str());
 
-                    SubType.Name = FieldInfo.Name + "_Inner";
-                    SubType.PropertyFlags.emplace_back("PF_SubField");
+		// Is not a core type.
+		if (PropFlags == EPropertyTypeFlags::None)
+		{
+			if (FieldQualType->isEnumeralType())
+			{
+				PropFlags = EPropertyTypeFlags::Enum;
+			}
+			else if (FieldQualType->isStructureType())
+			{
+				PropFlags = EPropertyTypeFlags::Struct;
+			}
+			else if (FieldQualType->isPointerType())
+			{
+				spdlog::error("[{}] Object properties as pointers are *NOT* supported, use TObjectPtr instead", FieldName.c_str());
+				return eastl::nullopt;
+			}
+		}
 
-                    eastl::shared_ptr<FReflectedProperty> FieldProperty;
-                    CreatePropertyForType(Context, Struct, FieldProperty, SubType);
-                    FieldProperty->bInner = true;
-                }
-            }
-            break;
-        case EPropertyTypeFlags::Object:
-            {
-                const CXType ArgType = clang_Type_getTemplateArgumentAsType(FieldInfo.Type, 0);
-                FFieldInfo ParamFieldInfo = CreateSubFieldInfo(Context, ArgType, FieldInfo);
-                ParamFieldInfo.Name = FieldInfo.Name; // Replace the empty template property name with the parent.
+		FFieldInfo Info;
+		Info.Flags = PropFlags;
+		Info.Type = FieldType;
+		Info.TypeName = FieldName;
+		Info.RawFieldType = ParentField.RawFieldType;
+		return Info;
+	}
 
-                NewProperty = CreateProperty<FReflectedObjectProperty>(ParamFieldInfo);
-            }
-            break;
-        case EPropertyTypeFlags::Vector:
-            {
-                auto ArrayProperty = CreateProperty<FReflectedArrayProperty>(FieldInfo);
-                NewProperty = ArrayProperty;
+	template<typename T>
+	eastl::shared_ptr<T> CreateProperty(const FFieldInfo& Info)
+	{
+		eastl::shared_ptr<T> New = eastl::make_shared<T>();
+		New->Name = Info.Name;
+		New->TypeName = Info.TypeName;
+		New->RawTypeName = Info.RawFieldType;
+		return New;
+	}
 
-                const CXType ArgType = clang_Type_getTemplateArgumentAsType(FieldInfo.Type, 0);
-                FFieldInfo ParamFieldInfo = CreateSubFieldInfo(Context, ArgType, FieldInfo);
+	static bool CreatePropertyForType(FClangParserContext* Context, FReflectedStruct* Struct, eastl::shared_ptr<FReflectedProperty>& NewProperty, const FFieldInfo& FieldInfo)
+	{
+		switch (FieldInfo.Flags)
+		{
+		case EPropertyTypeFlags::UInt8:
+		{
+			NewProperty = CreateProperty<FReflectedUInt8Property>(FieldInfo);
+		}
+		break;
+		case EPropertyTypeFlags::UInt16:
+		{
+			NewProperty = CreateProperty<FReflectedUInt16Property>(FieldInfo);
+		}
+		break;
+		case EPropertyTypeFlags::UInt32:
+		{
+			NewProperty = CreateProperty<FReflectedUInt32Property>(FieldInfo);
+		}
+		break;
+		case EPropertyTypeFlags::UInt64:
+		{
+			NewProperty = CreateProperty<FReflectedUInt64Property>(FieldInfo);
+		}
+		break;
+		case EPropertyTypeFlags::Int8:
+		{
+			NewProperty = CreateProperty<FReflectedInt8Property>(FieldInfo);
+		}
+		break;
+		case EPropertyTypeFlags::Int16:
+		{
+			NewProperty = CreateProperty<FReflectedInt16Property>(FieldInfo);
+		}
+		break;
+		case EPropertyTypeFlags::Int32:
+		{
+			NewProperty = CreateProperty<FReflectedInt32Property>(FieldInfo);
+		}
+		break;
+		case EPropertyTypeFlags::Int64:
+		{
+			NewProperty = CreateProperty<FReflectedInt64Property>(FieldInfo);
+		}
+		break;
+		case EPropertyTypeFlags::Float:
+		{
+			NewProperty = CreateProperty<FReflectedFloatProperty>(FieldInfo);
+		}
+		break;
+		case EPropertyTypeFlags::Double:
+		{
+			NewProperty = CreateProperty<FReflectedDoubleProperty>(FieldInfo);
+		}
+		break;
+		case EPropertyTypeFlags::Bool:
+		{
+			NewProperty = CreateProperty<FReflectedBoolProperty>(FieldInfo);
+		}
+		break;
+		case EPropertyTypeFlags::String:
+		{
+			NewProperty = CreateProperty<FReflectedStringProperty>(FieldInfo);
+		}
+		break;
+		case EPropertyTypeFlags::Name:
+		{
+			NewProperty = CreateProperty<FReflectedNameProperty>(FieldInfo);
+		}
+		break;
+		case EPropertyTypeFlags::Struct:
+		{
+			NewProperty = CreateProperty<FReflectedStructProperty>(FieldInfo);
+		}
+		break;
+		case EPropertyTypeFlags::Enum:
+		{
+			NewProperty = CreateProperty<FReflectedEnumProperty>(FieldInfo);
+			const CXCursor EnumCursor = clang_getTypeDeclaration(FieldInfo.Type);
 
-                ParamFieldInfo.Name = FieldInfo.Name + "_Inner";
-                ParamFieldInfo.PropertyFlags.emplace_back("PF_SubField");
-                
-                eastl::shared_ptr<FReflectedProperty> FieldProperty;
-                CreatePropertyForType(Context, Struct, FieldProperty, ParamFieldInfo);
-                if (FieldProperty == nullptr)
-                {
-                    Context->LogError("Failed to create property for array. %s [%s]", FieldInfo.Name.c_str(), ParamFieldInfo.Name.c_str());
-                    Context->FlushLogs();
-                    return false;
-                }
+			if (clang_getCursorKind(EnumCursor) == CXCursor_EnumDecl)
+			{
+				CXType UnderlyingType = clang_getEnumDeclIntegerType(EnumCursor);
+				eastl::optional<FFieldInfo> SubType = CreateSubFieldInfo(Context, UnderlyingType, FieldInfo);
+				if (!SubType.has_value())
+				{
+					return false;
+				}
 
-                ArrayProperty->ElementTypeName = clang_getCString(clang_getTypeSpelling(ArgType));
-                
-                FieldProperty->bInner = true; // This property "belongs" to the array.
-            }
-            break;
-        default:
-            {
-                
-            }
-            break;
-        }
+				SubType->Name = FieldInfo.Name + "_Inner";
+				SubType->PropertyFlags.emplace_back("PF_SubField");
 
-        if (NewProperty != nullptr)
-        {
-            Struct->PushProperty(NewProperty);
-        }
+				eastl::shared_ptr<FReflectedProperty> FieldProperty;
+				CreatePropertyForType(Context, Struct, FieldProperty, SubType.value());
+				FieldProperty->bInner = true;
+			}
+		}
+		break;
+		case EPropertyTypeFlags::Object:
+		{
+			const CXType ArgType = clang_Type_getTemplateArgumentAsType(FieldInfo.Type, 0);
+			eastl::optional<FFieldInfo> ParamFieldInfo = CreateSubFieldInfo(Context, ArgType, FieldInfo);
+			if (!ParamFieldInfo.has_value())
+			{
+				return false;
+			}
 
-        return NewProperty != nullptr;
-        
-    }
+			ParamFieldInfo->Name = FieldInfo.Name; // Replace the empty template property name with the parent.
+
+			NewProperty = CreateProperty<FReflectedObjectProperty>(ParamFieldInfo.value());
+		}
+		break;
+		case EPropertyTypeFlags::Vector:
+		{
+			auto ArrayProperty = CreateProperty<FReflectedArrayProperty>(FieldInfo);
+			NewProperty = ArrayProperty;
+
+			const CXType ArgType = clang_Type_getTemplateArgumentAsType(FieldInfo.Type, 0);
+			eastl::optional<FFieldInfo> ParamFieldInfo = CreateSubFieldInfo(Context, ArgType, FieldInfo);
+			if (!ParamFieldInfo.has_value())
+			{
+				return false;
+			}
+
+			ParamFieldInfo->Name = FieldInfo.Name + "_Inner";
+			ParamFieldInfo->PropertyFlags.emplace_back("PF_SubField");
+
+			eastl::shared_ptr<FReflectedProperty> FieldProperty;
+			CreatePropertyForType(Context, Struct, FieldProperty, ParamFieldInfo.value());
+			if (FieldProperty == nullptr)
+			{
+				spdlog::error("Failed to create property for array. {} [{}]", FieldInfo.Name.c_str(), ParamFieldInfo->Name.c_str());
+				return false;
+			}
+
+			ArrayProperty->ElementTypeName = clang_getCString(clang_getTypeSpelling(ArgType));
+
+			FieldProperty->bInner = true; // This property "belongs" to the array.
+		}
+		break;
+		default:
+		{
+
+		}
+		break;
+		}
+
+		if (NewProperty != nullptr)
+		{
+			Struct->PushProperty(NewProperty);
+		}
+
+		return NewProperty != nullptr;
+
+	}
 
 
-    static bool CreateFunctionForType(const CXCursor& Cursor, FClangParserContext* Context, FReflectedStruct* Struct, eastl::shared_ptr<FReflectedFunction>& NewFunction)
-    {
-        NewFunction = eastl::make_shared<FReflectedFunction>();
-        NewFunction->Outer = Struct->DisplayName;
-        NewFunction->Name = ClangUtils::GetCursorSpelling(Cursor);
-        Struct->PushFunction(NewFunction);
+	static bool CreateFunctionForType(const CXCursor& Cursor, FClangParserContext* Context, FReflectedStruct* Struct, eastl::shared_ptr<FReflectedFunction>& NewFunction)
+	{
+		NewFunction = eastl::make_shared<FReflectedFunction>();
+		NewFunction->Outer = Struct->DisplayName;
+		NewFunction->Name = ClangUtils::GetCursorSpelling(Cursor);
+		Struct->PushFunction(NewFunction);
 
-        return NewFunction != nullptr;
-    }
+		return NewFunction != nullptr;
+	}
 
-    template<typename TVisitType>
-    static CXChildVisitResult VisitContents(CXCursor Cursor, CXCursor parent, CXClientData pClientData)
-    {
-        FClangParserContext* Context = (FClangParserContext*)pClientData;
-        eastl::string CursorName = ClangUtils::GetCursorDisplayName(Cursor);
-        CXCursorKind Kind = clang_getCursorKind(Cursor);
-        TVisitType* Type = Context->GetParentReflectedType<TVisitType>();
+	template<typename TVisitType>
+	static CXChildVisitResult VisitContents(CXCursor Cursor, CXCursor parent, CXClientData pClientData)
+	{
+		FClangParserContext* Context = (FClangParserContext*)pClientData;
+		eastl::string CursorName = ClangUtils::GetCursorDisplayName(Cursor);
+		CXCursorKind Kind = clang_getCursorKind(Cursor);
+		TVisitType* Type = Context->GetParentReflectedType<TVisitType>();
 
-        
 
-        switch (Kind)
-        {
-        case(CXCursor_CXXBaseSpecifier):
-            {
-                if (Type->Parent.empty())
-                {
-                    Type->Parent = CursorName;
-                }
-            }
-            break;
-        case(CXCursor_FieldDecl):
-            {
-                FReflectionMacro Macro;
-                if(!Context->TryFindMacroForCursor(Context->ReflectedHeader->HeaderPath, Cursor, Macro))
-                {
-                    return CXChildVisit_Continue;
-                }
 
-                FFieldInfo FieldInfo = CreateFieldInfo(Context, Cursor);
-                
-                eastl::shared_ptr<FReflectedProperty> NewProperty;
-                CreatePropertyForType(Context, Type, NewProperty, FieldInfo);
-                NewProperty->GenerateMetadata(Macro.MacroContents);
-                
-            }
-            break;
-        case(CXCursor_CXXMethod):
-            {
-                FReflectionMacro Macro;
-                if(!Context->TryFindMacroForCursor(Context->ReflectedHeader->HeaderPath, Cursor, Macro))
-                {
-                    return CXChildVisit_Continue;
-                }
+		switch (Kind)
+		{
+		case(CXCursor_CXXBaseSpecifier):
+		{
+			if (Type->Parent.empty())
+			{
+				Type->Parent = CursorName;
+			}
+		}
+		break;
+		case(CXCursor_FieldDecl):
+		{
+			FReflectionMacro Macro;
+			if (!Context->TryFindMacroForCursor(Context->ReflectedHeader->HeaderPath, Cursor, Macro))
+			{
+				return CXChildVisit_Continue;
+			}
 
-                eastl::shared_ptr<FReflectedFunction> NewFunction;
-                CreateFunctionForType(Cursor, Context, Type, NewFunction);
-                NewFunction->GenerateMetadata(Macro.MacroContents);
-            }
-            break;
-        }
-        
-        return CXChildVisit_Continue;
+			eastl::optional<FFieldInfo> FieldInfo = CreateFieldInfo(Context, Cursor);
+			if (!FieldInfo.has_value())
+			{
+				return CXChildVisit_Continue;
+			}
 
-    }
-    
-    CXChildVisitResult VisitStructure(CXCursor Cursor, CXCursor Parent, FClangParserContext* Context)
-    {
-        eastl::string CursorName = ClangUtils::GetCursorDisplayName(Cursor);
+			eastl::shared_ptr<FReflectedProperty> NewProperty;
+			CreatePropertyForType(Context, Type, NewProperty, FieldInfo.value());
+			NewProperty->GenerateMetadata(Macro.MacroContents);
+		}
+		break;
+		case(CXCursor_CXXMethod):
+		{
+			FReflectionMacro Macro;
+			if (!Context->TryFindMacroForCursor(Context->ReflectedHeader->HeaderPath, Cursor, Macro))
+			{
+				return CXChildVisit_Continue;
+			}
 
-        eastl::string FullyQualifiedCursorName;
-        CXType Type = clang_getCursorType(Cursor);
-        void* Data = Type.data[0];
-        
-        if (!ClangUtils::GetQualifiedNameForType(clang::QualType::getFromOpaquePtr(Data), FullyQualifiedCursorName))
-        {
-            return CXChildVisit_Break;
-        }
-        
-        FReflectionMacro Macro;
-        if (!Context->TryFindMacroForCursor(Context->ReflectedHeader->HeaderPath, Cursor, Macro))
-        {
-            return CXChildVisit_Continue;
-        }
+			eastl::shared_ptr<FReflectedFunction> NewFunction;
+			CreateFunctionForType(Cursor, Context, Type, NewFunction);
+			NewFunction->GenerateMetadata(Macro.MacroContents);
+		}
+		break;
+		}
 
-        FReflectionMacro GeneratedBody;
-        if (!Context->TryFindGeneratedBodyMacro(Context->ReflectedHeader->HeaderPath, Cursor, GeneratedBody))
-        {
-            return CXChildVisit_Break;
-        }
-        
-        eastl::shared_ptr<FReflectedStruct> ReflectedStruct = Context->ReflectionDatabase.GetOrCreateReflectedType<FReflectedStruct>(FStringHash(FullyQualifiedCursorName));
-        ReflectedStruct->DisplayName = CursorName;
-        ReflectedStruct->GenerateMetadata(Macro.MacroContents);
-        ReflectedStruct->Header = Context->ReflectedHeader;
-        ReflectedStruct->Type = FReflectedType::EType::Structure;
-        ReflectedStruct->GeneratedBodyLineNumber = GeneratedBody.LineNumber;
-        ReflectedStruct->LineNumber = ClangUtils::GetCursorLineNumber(Cursor);
-        ReflectedStruct->GenerateMetadata(Macro.MacroContents);
-        
-        if (!Context->CurrentNamespace.empty())
-        {
-            ReflectedStruct->Namespace = Context->CurrentNamespace;
-        }
-        
-        FReflectedType* PreviousType = Context->ParentReflectedType;
-        Context->ParentReflectedType = ReflectedStruct.get();
-        Context->LastReflectedType = ReflectedStruct.get();
+		return CXChildVisit_Continue;
 
-        clang_visitChildren(Cursor, VisitContents<FReflectedStruct>, Context);
-        
-        Context->ParentReflectedType = PreviousType;
-        Context->ReflectionDatabase.AddReflectedType(ReflectedStruct);
-        
-        return CXChildVisit_Recurse;
-    }
+	}
 
-    CXChildVisitResult VisitClass(CXCursor Cursor, CXCursor Parent, FClangParserContext* Context)
-    {
-        eastl::string CursorName = ClangUtils::GetCursorDisplayName(Cursor);
+	CXChildVisitResult VisitStructure(CXCursor Cursor, CXCursor Parent, FClangParserContext* Context)
+	{
+		eastl::string CursorName = ClangUtils::GetCursorDisplayName(Cursor);
 
-        eastl::string FullyQualifiedCursorName;
-        CXType Type = clang_getCursorType(Cursor);
-        void* Data = Type.data[0];
-        
-        if (!ClangUtils::GetQualifiedNameForType(clang::QualType::getFromOpaquePtr(Data), FullyQualifiedCursorName))
-        {
-            return CXChildVisit_Break;
-        }
-        
-        FReflectionMacro Macro;
-        if (!Context->TryFindMacroForCursor(Context->ReflectedHeader->HeaderPath, Cursor, Macro))
-        {
-            return CXChildVisit_Continue;
-        }
-        
-        FReflectionMacro GeneratedBody;
-        if (!Context->TryFindGeneratedBodyMacro(Context->ReflectedHeader->HeaderPath, Cursor, GeneratedBody))
-        {
-            return CXChildVisit_Break;
-        }
-        
-        eastl::shared_ptr<FReflectedClass> ReflectedClass = Context->ReflectionDatabase.GetOrCreateReflectedType<FReflectedClass>(FStringHash(FullyQualifiedCursorName));
-        ReflectedClass->DisplayName = CursorName;
-        ReflectedClass->Header = Context->ReflectedHeader;
-        ReflectedClass->Type = FReflectedType::EType::Class;
-        ReflectedClass->GeneratedBodyLineNumber = GeneratedBody.LineNumber;
-        ReflectedClass->LineNumber = ClangUtils::GetCursorLineNumber(Cursor);
-        ReflectedClass->GenerateMetadata(Macro.MacroContents);
-        
-        if (!Context->CurrentNamespace.empty())
-        {
-            ReflectedClass->Namespace = Context->CurrentNamespace;
-        }
-        
-        FReflectedType* PreviousType = Context->ParentReflectedType;
-        Context->ParentReflectedType = ReflectedClass.get();
-        Context->LastReflectedType = ReflectedClass.get();
+		eastl::string FullyQualifiedCursorName;
+		CXType Type = clang_getCursorType(Cursor);
+		void* Data = Type.data[0];
 
-        clang_visitChildren(Cursor, VisitContents<FReflectedClass>, Context);
-        
-        Context->ParentReflectedType = PreviousType;
-        Context->ReflectionDatabase.AddReflectedType(ReflectedClass);
-        
-        return CXChildVisit_Recurse;
-    }
+		if (!ClangUtils::GetQualifiedNameForType(clang::QualType::getFromOpaquePtr(Data), FullyQualifiedCursorName))
+		{
+			return CXChildVisit_Break;
+		}
+
+		FReflectionMacro Macro;
+		if (!Context->TryFindMacroForCursor(Context->ReflectedHeader->HeaderPath, Cursor, Macro))
+		{
+			return CXChildVisit_Continue;
+		}
+
+		FReflectionMacro GeneratedBody;
+		if (!Context->TryFindGeneratedBodyMacro(Context->ReflectedHeader->HeaderPath, Cursor, GeneratedBody))
+		{
+			return CXChildVisit_Break;
+		}
+
+		eastl::shared_ptr<FReflectedStruct> ReflectedStruct = Context->ReflectionDatabase.GetOrCreateReflectedType<FReflectedStruct>(FStringHash(FullyQualifiedCursorName));
+		ReflectedStruct->DisplayName = CursorName;
+		ReflectedStruct->GenerateMetadata(Macro.MacroContents);
+		ReflectedStruct->Header = Context->ReflectedHeader;
+		ReflectedStruct->Type = FReflectedType::EType::Structure;
+		ReflectedStruct->GeneratedBodyLineNumber = GeneratedBody.LineNumber;
+		ReflectedStruct->LineNumber = ClangUtils::GetCursorLineNumber(Cursor);
+		ReflectedStruct->GenerateMetadata(Macro.MacroContents);
+
+		if (!Context->CurrentNamespace.empty())
+		{
+			ReflectedStruct->Namespace = Context->CurrentNamespace;
+		}
+
+		FReflectedType* PreviousType = Context->ParentReflectedType;
+		Context->ParentReflectedType = ReflectedStruct.get();
+		Context->LastReflectedType = ReflectedStruct.get();
+
+		clang_visitChildren(Cursor, VisitContents<FReflectedStruct>, Context);
+
+		Context->ParentReflectedType = PreviousType;
+		Context->ReflectionDatabase.AddReflectedType(ReflectedStruct);
+
+		return CXChildVisit_Recurse;
+	}
+
+	CXChildVisitResult VisitClass(CXCursor Cursor, CXCursor Parent, FClangParserContext* Context)
+	{
+		eastl::string CursorName = ClangUtils::GetCursorDisplayName(Cursor);
+
+		eastl::string FullyQualifiedCursorName;
+		CXType Type = clang_getCursorType(Cursor);
+		void* Data = Type.data[0];
+
+		if (!ClangUtils::GetQualifiedNameForType(clang::QualType::getFromOpaquePtr(Data), FullyQualifiedCursorName))
+		{
+			return CXChildVisit_Break;
+		}
+
+		FReflectionMacro Macro;
+		if (!Context->TryFindMacroForCursor(Context->ReflectedHeader->HeaderPath, Cursor, Macro))
+		{
+			return CXChildVisit_Continue;
+		}
+
+		FReflectionMacro GeneratedBody;
+		if (!Context->TryFindGeneratedBodyMacro(Context->ReflectedHeader->HeaderPath, Cursor, GeneratedBody))
+		{
+			return CXChildVisit_Break;
+		}
+
+		eastl::shared_ptr<FReflectedClass> ReflectedClass = Context->ReflectionDatabase.GetOrCreateReflectedType<FReflectedClass>(FStringHash(FullyQualifiedCursorName));
+		ReflectedClass->DisplayName = CursorName;
+		ReflectedClass->Header = Context->ReflectedHeader;
+		ReflectedClass->Type = FReflectedType::EType::Class;
+		ReflectedClass->GeneratedBodyLineNumber = GeneratedBody.LineNumber;
+		ReflectedClass->LineNumber = ClangUtils::GetCursorLineNumber(Cursor);
+		ReflectedClass->GenerateMetadata(Macro.MacroContents);
+
+		if (!Context->CurrentNamespace.empty())
+		{
+			ReflectedClass->Namespace = Context->CurrentNamespace;
+		}
+
+		FReflectedType* PreviousType = Context->ParentReflectedType;
+		Context->ParentReflectedType = ReflectedClass.get();
+		Context->LastReflectedType = ReflectedClass.get();
+
+		clang_visitChildren(Cursor, VisitContents<FReflectedClass>, Context);
+
+		Context->ParentReflectedType = PreviousType;
+		Context->ReflectionDatabase.AddReflectedType(ReflectedClass);
+
+		return CXChildVisit_Recurse;
+	}
 }

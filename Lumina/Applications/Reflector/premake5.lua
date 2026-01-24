@@ -68,6 +68,7 @@ project "Reflector"
 		LuminaConfig.EnginePath("External/LLVM/include/"),
 		LuminaConfig.ThirdPartyPath("xxhash"),
 		LuminaConfig.ThirdPartyPath("json"),
+		LuminaConfig.ThirdPartyPath("spdlog/include"),
 		LuminaConfig.ThirdPartyPath("EA/EASTL/include"),
 		LuminaConfig.ThirdPartyPath("EA/EABase/include/Common"),
 	}

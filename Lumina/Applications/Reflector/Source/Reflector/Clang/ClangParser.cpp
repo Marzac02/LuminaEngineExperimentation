@@ -1,5 +1,5 @@
 ﻿#include "ClangParser.h"
-
+#include <spdlog/spdlog.h>
 #include <filesystem>
 #include <fstream>
 #include <print>
@@ -113,7 +113,7 @@ namespace Lumina::Reflection
         CXCursor Cursor = clang_getTranslationUnitCursor(TranslationUnit);
         if (clang_visitChildren(Cursor, VisitTranslationUnit, &ParsingContext) != 0)
         {
-            std::println("A problem occured during translation unit parsing");
+            spdlog::error("A problem occured during translation unit parsing");
         }
         
         if (Result != CXError_Success)
@@ -121,25 +121,25 @@ namespace Lumina::Reflection
             switch (Result)
             {
             case CXError_Failure:
-                ParsingContext.LogError("Clang Unknown failure");
+                spdlog::error("Clang Unknown failure");
                 break;
     
             case CXError_Crashed:
-                ParsingContext.LogError("Clang crashed");
+                spdlog::error("Clang crashed");
                 break;
     
             case CXError_InvalidArguments:
-                ParsingContext.LogError("Clang Invalid arguments");
+                spdlog::error("Clang Invalid arguments");
                 break;
     
             case CXError_ASTReadError:
-                ParsingContext.LogError("Clang AST read error");
+                spdlog::error("Clang AST read error");
                 break;
             }
         }
         
         std::filesystem::remove(AmalgamationPath.c_str());
         clang_disposeIndex(ClangIndex);
-        return true;
+        return Result == CXError_Success;
     }
 }

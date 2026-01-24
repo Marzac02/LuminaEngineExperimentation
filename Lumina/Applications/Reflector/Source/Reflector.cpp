@@ -1,5 +1,3 @@
-
-#include <chrono>
 #include <fstream>
 #include <print>
 #include "StringHash.h"
@@ -8,40 +6,19 @@
 #include "Reflector/Clang/ClangParser.h"
 #include "Reflector/CodeGeneration/CodeGenerator.h"
 #include "Reflector/ReflectionCore/ReflectedProject.h"
+#include <spdlog/spdlog.h>
 
 
 using json = nlohmann::json;
 using namespace Lumina::Reflection;
 
-struct FScopeTimer
-{
-    using Clock = std::chrono::high_resolution_clock;
-
-    eastl::string_view Name;
-    Clock::time_point Start;
-
-    explicit FScopeTimer(eastl::string_view InName)
-        : Name(InName), Start(Clock::now())
-    {}
-
-    ~FScopeTimer()
-    {
-        auto End = Clock::now();
-        auto S  = std::chrono::duration_cast<std::chrono::seconds>(End - Start).count();
-
-        std::println("[PROFILE] {} {} s", Name.data(), S);
-    }
-};
-
 int main(int argc, char* argv[])
-{
-    FScopeTimer TotalTimer("Total Execution");
-    
+{    
     Lumina::FStringHash::Initialize();
     
-    std::println("===============================================");
-    std::println("======== Lumina Reflection Tool (LRT) =========");
-    std::println("===============================================");
+    spdlog::info("===============================================");
+    spdlog::info("======== Lumina Reflection Tool (LRT) =========");
+    spdlog::info("===============================================");
     
 #if 0
     
@@ -50,7 +27,7 @@ int main(int argc, char* argv[])
 #else
     if (argc < 2)
     {
-        std::println("Missing command line argument");
+        spdlog::error("Missing command line argument, please specify a json file.");
         return 1;
     }
     
@@ -60,7 +37,7 @@ int main(int argc, char* argv[])
     std::ifstream File(InputFile.c_str());
     if (!File.is_open())
     {
-        std::println("Failed to open file {}", InputFile.c_str());
+        spdlog::error("Failed to open file {}", InputFile.c_str());
         return 1; 
     }
     
@@ -101,7 +78,12 @@ int main(int argc, char* argv[])
     }
 
     FClangParser Parser;
-    Parser.Parse(&Workspace);
+    bool bParseResult = Parser.Parse(&Workspace);
+
+    if (!bParseResult)
+    {
+        return 1;
+    }
     
     FCodeGenerator CodeGenerator(&Workspace, Parser.ParsingContext.ReflectionDatabase);
     

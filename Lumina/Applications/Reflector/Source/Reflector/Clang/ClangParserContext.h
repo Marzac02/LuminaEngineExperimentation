@@ -30,11 +30,6 @@ namespace Lumina::Reflection
 
         bool TryFindGeneratedBodyMacro(const eastl::string& HeaderID, const CXCursor& Cursor, FReflectionMacro& Macro);
 
-        void LogError(char const* ErrorFormat, ...) const;
-        void LogWarning(char const* ErrorFormat, ...) const;
-        void FlushLogs();
-
-        bool HasError() const { return !ErrorMessage.empty(); }
 
 
         void PushNamespace(const eastl::string& Namespace);
@@ -48,16 +43,14 @@ namespace Lumina::Reflection
         FReflectedType*                                             LastReflectedType;
                                                                     
         FReflectionDatabase                                         ReflectionDatabase;
-        
-        mutable eastl::string                                       ErrorMessage;
-        mutable eastl::string                                       WarningMessage;
+       
         
         FReflectedWorkspace*                                        Workspace = nullptr;
         FReflectedHeader*                                           ReflectedHeader = nullptr;
         
-        eastl::hash_map<FStringHash, FReflectedHeader*>             AllHeaders;
-        eastl::hash_map<uint64_t, eastl::vector<FReflectionMacro>>    ReflectionMacros;
-        eastl::hash_map<uint64_t, eastl::queue<FReflectionMacro>>     GeneratedBodyMacros;
+        eastl::hash_map<FStringHash, FReflectedHeader*>                 AllHeaders;
+        eastl::hash_map<uint64_t, eastl::vector<FReflectionMacro>>      ReflectionMacros;
+        eastl::hash_map<uint64_t, eastl::queue<FReflectionMacro>>       GeneratedBodyMacros;
         
         eastl::vector<eastl::string>                                NamespaceStack;
         eastl::string                                               CurrentNamespace;

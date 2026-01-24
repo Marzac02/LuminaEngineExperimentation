@@ -4,6 +4,7 @@
 namespace Lumina::Reflection
 {
     class FReflectedWorkspace;
+    class FReflectedDatabase;
 
     class FCodeGenerator
     {
