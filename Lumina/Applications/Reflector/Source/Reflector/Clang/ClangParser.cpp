@@ -25,7 +25,7 @@ namespace Lumina::Reflection
         std::ofstream AmalgamationFile(AmalgamationPath.c_str());
         if (!AmalgamationFile.is_open())
         {
-            std::println("Failed to create amalgamation file");
+            spdlog::error("Failed to create amalgamation file");
             return false;
         }
         AmalgamationFile << "#pragma once\n\n";
@@ -43,12 +43,12 @@ namespace Lumina::Reflection
         {
             for (const eastl::string& IncludeDir : Project->IncludeDirs)
             {
-                ClangArgs.emplace_back("-I");
                 if (IncludeDir.find("GLM") != eastl::string::npos || IncludeDir.find("glm") != eastl::string::npos)
                 {
                     continue;
                 }
                 
+                ClangArgs.emplace_back("-I");
                 ClangArgs.emplace_back(IncludeDir.c_str());
             }
             
@@ -56,18 +56,18 @@ namespace Lumina::Reflection
             {
                 AmalgamationFile << "#include \"" << Path.c_str() << "\"\n";
                 ParsingContext.AllHeaders.emplace(Path, Header.get());
-                
-                ClangArgs.emplace_back("-include");
-                ClangArgs.emplace_back(Path.c_str());
+                // @TODO For some reason enabling this breaks the manualreflecttypes.
+                //ClangArgs.emplace_back("-include");
+                //ClangArgs.emplace_back(Path.c_str());
                 ParsingContext.NumHeadersReflected++;
             }
         }
     
-        AmalgamationFile.close();
-
+        AmalgamationFile.close();   
+        
         eastl::string ManualReflectPath;
-		ManualReflectPath.append(LuminaDirectory).append("/Lumina/Engine/Source/Runtime/Core/Object/ManualReflectTypes.h");
-		ClangArgs.emplace_back("-include");
+        ManualReflectPath.append(LuminaDirectory).append("/Lumina/Engine/Source/Runtime/Core/Object/ManualReflectTypes.h");
+        ClangArgs.emplace_back("-include");
         ClangArgs.emplace_back(ManualReflectPath.c_str());
         
         ClangArgs.emplace_back("-x");
