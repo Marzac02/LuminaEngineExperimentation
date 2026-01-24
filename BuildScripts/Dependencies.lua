@@ -99,7 +99,7 @@ end
 
 function LuminaConfig.RunReflection()
 
-    return path.join(LuminaConfig.EngineDirectory, "Scripts/ReflectionRunner.bat")
+    return path.join(LuminaConfig.EngineDirectory, "BuildScripts/ReflectionRunner.bat")
 end
 
 LuminaConfig.AddPublicIncludeDirectory("Source")
