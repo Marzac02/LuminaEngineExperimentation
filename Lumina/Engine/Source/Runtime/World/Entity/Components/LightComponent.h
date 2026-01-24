@@ -1,13 +1,12 @@
 #pragma once
 
-#include "RenderComponent.h"
 #include "glm/glm.hpp"
 #include "LightComponent.generated.h"
 
 namespace Lumina
 {
     REFLECT(Component)
-    struct LUMINA_API SPointLightComponent : SRenderComponent
+    struct LUMINA_API SPointLightComponent
     {
         GENERATED_BODY()
         
@@ -28,7 +27,7 @@ namespace Lumina
     };
 
     REFLECT(Component)
-    struct LUMINA_API SSpotLightComponent : SRenderComponent
+    struct LUMINA_API SSpotLightComponent
     {
         GENERATED_BODY()
 
@@ -71,7 +70,7 @@ namespace Lumina
 
 
     REFLECT(Component)
-    struct LUMINA_API SDirectionalLightComponent : SRenderComponent
+    struct LUMINA_API SDirectionalLightComponent
     {
         GENERATED_BODY()
 

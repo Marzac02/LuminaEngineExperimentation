@@ -2000,6 +2000,7 @@ namespace eastl
 			Hash::HashCombine(hash, State.ProgrammableSamplePositionsEnable);
 			Hash::HashCombine(hash, State.ConservativeRasterEnable);
 			Hash::HashCombine(hash, State.QuadFillEnable);
+			Hash::HashCombine(hash, State.LineWidth);
 
 			for (size_t i = 0; i < 16; ++i)
 			{

@@ -1,23 +1,22 @@
 #pragma once
-#include "RenderComponent.h"
 #include "Renderer/Vertex.h"
-#include <glm/gtx/quaternion.hpp>
-#include <Renderer/ViewVolume.h>
 
 namespace Lumina
 {   
-    struct LUMINA_API FLineBatcherComponent : SRenderComponent
+    struct LUMINA_API FLineBatcherComponent
     {
         struct FLineInstance
         {
             uint32 StartVertexIndex;
             float RemainingLifetime;
+            float Thickness;
+            bool bDepthTest;
         };
 
         TVector<FSimpleElementVertex> Vertices;
         TVector<FLineInstance> Lines;
 
-        void DrawLine(const glm::vec3& Start, const glm::vec3& End, const glm::vec4& Color, float Thickness = 1.0f, float Duration = -1.0f)
+        void DrawLine(const glm::vec3& Start, const glm::vec3& End, const glm::vec4& Color, float Thickness = 1.0f, bool bDepthTest = true, float Duration = -1.0f)
         {
             if (Vertices.capacity() < Vertices.size() + 2)
             {
@@ -44,6 +43,8 @@ namespace Lumina
             {
                 .StartVertexIndex  = StartVertexIndex,
                 .RemainingLifetime = Duration,
+                .Thickness = Thickness,
+                .bDepthTest = bDepthTest,
             });
         }
         

@@ -391,12 +391,12 @@ namespace Lumina
         });
     }
 
-    void CWorld::DrawLine(const glm::vec3& Start, const glm::vec3& End, const glm::vec4& Color, float Thickness, float Duration)
+    void CWorld::DrawLine(const glm::vec3& Start, const glm::vec3& End, const glm::vec4& Color, float Thickness, bool bDepthTest, float Duration)
     {
         FLineBatcherComponent& Batcher = GetOrCreateLineBatcher();
         
         float ActualDuration = eastl::max<float>(static_cast<float>(GetWorldDeltaTime()) + LE_KINDA_SORTA_SMALL_NUMBER, Duration);
-        Batcher.DrawLine(Start, End, Color, Thickness, ActualDuration);
+        Batcher.DrawLine(Start, End, Color, Thickness, bDepthTest, ActualDuration);
     }
     
     TOptional<FRayResult> CWorld::CastRay(const FRayCastSettings& Settings)
@@ -415,18 +415,18 @@ namespace Lumina
             if (Result.has_value())
             {
                 FRayResult RayResult = Result.value();
-                DrawLine(Settings.Start, RayResult.Location, FColor(Settings.DebugMissColor), 1.0f, Settings.DebugDuration);
+                DrawLine(Settings.Start, RayResult.Location, FColor(Settings.DebugMissColor), 1.0f, true, Settings.DebugDuration);
                 
                 glm::vec3 NormalEnd = RayResult.Location + RayResult.Normal * 0.5f;
-                DrawLine(RayResult.Location, NormalEnd, FColor::Blue, 1.0f, Settings.DebugDuration);
+                DrawLine(RayResult.Location, NormalEnd, FColor::Blue, 1.0f,true, Settings.DebugDuration);
                 
-                DrawBox(RayResult.Location, glm::vec3(0.05f), glm::quat(1.0f, 0.0f, 0.0f, 0.0f), FColor::Yellow, 1.0, Settings.DebugDuration);
+                DrawBox(RayResult.Location, glm::vec3(0.05f), glm::quat(1.0f, 0.0f, 0.0f, 0.0f), FColor::Yellow, 1.0, true, Settings.DebugDuration);
                 
-                DrawLine(RayResult.Location, Settings.End, FColor(Settings.DebugHitColor), 1.0f, Settings.DebugDuration);
+                DrawLine(RayResult.Location, Settings.End, FColor(Settings.DebugHitColor), 1.0f, true, Settings.DebugDuration);
             }
             else
             {
-                DrawLine(Settings.Start, Settings.End, FColor(Settings.DebugMissColor), 1.0f, Settings.DebugDuration);
+                DrawLine(Settings.Start, Settings.End, FColor(Settings.DebugMissColor), 1.0f, true, Settings.DebugDuration);
             }
         }
         

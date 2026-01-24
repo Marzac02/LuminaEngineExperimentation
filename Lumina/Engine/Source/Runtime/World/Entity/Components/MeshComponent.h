@@ -1,7 +1,6 @@
 #pragma once
 
 #include "Module/API.h"
-#include "RenderComponent.h"
 #include "Assets/AssetTypes/Material/MaterialInterface.h"
 #include "Core/Object/ObjectHandleTyped.h"
 #include "World/Scene/RenderScene/MeshBatch.h"
@@ -12,7 +11,7 @@ namespace Lumina
     class CMaterialInterface;
     
     REFLECT()
-    struct LUMINA_API SMeshComponent : SRenderComponent
+    struct LUMINA_API SMeshComponent
     {
         GENERATED_BODY()
         

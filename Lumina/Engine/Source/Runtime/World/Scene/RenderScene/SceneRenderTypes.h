@@ -27,7 +27,7 @@
 #define VERIFY_SSBO_ALIGNMENT(Type) \
 static_assert(sizeof(Type) % 16 == 0, #Type " must be 16-byte aligned");
 
-constexpr int NumCascades = 2;
+constexpr int NumCascades = 3;
 constexpr int ClusterGridSizeX = 16;
 constexpr int ClusterGridSizeY = 9;
 constexpr int ClusterGridSizeZ = 24;

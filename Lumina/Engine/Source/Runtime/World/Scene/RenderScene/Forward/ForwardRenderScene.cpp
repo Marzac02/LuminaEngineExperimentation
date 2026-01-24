@@ -342,27 +342,28 @@ namespace Lumina
                 const FViewVolume& ViewVolume = SceneViewport->GetViewVolume();
                 
                 float NearClip          = ViewVolume.GetNear();
-                float FarClip           = 80.0f;
-                                        
-                float ClipRange         = FarClip - NearClip;
-        
-                FLight Light;
+
+                FLight Light            = {};
                 Light.Flags             = LIGHT_TYPE_DIRECTIONAL;
                 Light.Color             = PackColor(glm::vec4(DirectionalLightComponent.Color, 1.0));
                 Light.Intensity         = DirectionalLightComponent.Intensity;
                 Light.Direction         = glm::normalize(DirectionalLightComponent.Direction);
                 LightData.SunDirection  = Light.Direction;
-                Light.Radius            = ClipRange;
                 
-                
-                glm::mat4 ViewProjection        = glm::perspective(glm::radians(ViewVolume.GetFOV()), ViewVolume.GetAspectRatio(), NearClip, FarClip);
-                glm::mat4 ViewProjectionMatrix  = ViewProjection * ViewVolume.GetViewMatrix();
-                
-                glm::vec3 FrustumCorners[8];
-                FFrustum::ComputeFrustumCorners(ViewProjectionMatrix, FrustumCorners);
-                
+                LightData.CascadeSplits[0] = 10.0f;
+                LightData.CascadeSplits[1] = 20.0f;
+                LightData.CascadeSplits[2] = 40.0f;
+
                 for (int i = 0; i < NumCascades; ++i)
                 {
+                    float CascadeFar = LightData.CascadeSplits[i];
+                    
+                    glm::mat4 ViewProjection        = glm::perspective(glm::radians(ViewVolume.GetFOV()), ViewVolume.GetAspectRatio(), NearClip, CascadeFar);
+                    glm::mat4 ViewProjectionMatrix  = ViewProjection * ViewVolume.GetViewMatrix();
+                    
+                    glm::vec3 FrustumCorners[8];
+                    FFrustum::ComputeFrustumCorners(ViewProjectionMatrix, FrustumCorners);
+                    
                     glm::vec3 FrustumCenter = std::reduce(std::begin(FrustumCorners), std::end(FrustumCorners)) / 8.0f;
                     glm::mat4 LightView     = glm::lookAt(FrustumCenter + Light.Direction, FrustumCenter, FViewVolume::UpAxis);
                     
@@ -554,10 +555,9 @@ namespace Lumina
         }
         
         //========================================================================================================================
-        
         {
             LUMINA_PROFILE_SECTION("Batched Line Processing");
-
+        
             auto View = World->GetEntityRegistry().view<FLineBatcherComponent>();
             View.each([&](FLineBatcherComponent& LineBatcherComponent)
             {
@@ -580,28 +580,88 @@ namespace Lumina
                 NewLines.reserve(LineBatcherComponent.Lines.size());
                 NewVertices.reserve(LineBatcherComponent.Vertices.size());
         
-                uint32 CurrentVertexIndex = 0;
+                struct FLineWithVertices
+                {
+                    FLineBatcherComponent::FLineInstance Line;
+                    FSimpleElementVertex Vertex0;
+                    FSimpleElementVertex Vertex1;
+                };
+                
+                TVector<FLineWithVertices> AliveLinesWithVertices;
+                AliveLinesWithVertices.reserve(LineBatcherComponent.Lines.size());
+                
                 for (const FLineBatcherComponent::FLineInstance& Line : LineBatcherComponent.Lines)
                 {
                     if (Line.RemainingLifetime > 0.0f)
                     {
-                        FLineBatcherComponent::FLineInstance NewLine = Line;
-                        NewLine.StartVertexIndex = CurrentVertexIndex;
-                        NewLines.emplace_back(NewLine);
-        
-                        NewVertices.emplace_back(LineBatcherComponent.Vertices[Line.StartVertexIndex]);
-                        NewVertices.emplace_back(LineBatcherComponent.Vertices[Line.StartVertexIndex + 1]);
-                        
-                        CurrentVertexIndex += 2;
+                        FLineWithVertices LineData;
+                        LineData.Line = Line;
+                        LineData.Vertex0 = LineBatcherComponent.Vertices[Line.StartVertexIndex];
+                        LineData.Vertex1 = LineBatcherComponent.Vertices[Line.StartVertexIndex + 1];
+                        AliveLinesWithVertices.emplace_back(LineData);
                     }
+                }
+                
+                eastl::sort(AliveLinesWithVertices.begin(), AliveLinesWithVertices.end(), [](const FLineWithVertices& A, const FLineWithVertices& B)
+                {
+                    if (A.Line.bDepthTest != B.Line.bDepthTest)
+                    {
+                        return A.Line.bDepthTest < B.Line.bDepthTest;
+                    }
+                    return A.Line.Thickness < B.Line.Thickness;
+                });
+                
+                uint32 CurrentVertexIndex = 0;
+                for (const FLineWithVertices& LineData : AliveLinesWithVertices)
+                {
+                    FLineBatcherComponent::FLineInstance NewLine = LineData.Line;
+                    NewLine.StartVertexIndex = CurrentVertexIndex;
+                    NewLines.emplace_back(NewLine);
+        
+                    NewVertices.emplace_back(LineData.Vertex0);
+                    NewVertices.emplace_back(LineData.Vertex1);
+                    
+                    CurrentVertexIndex += 2;
                 }
         
                 LineBatcherComponent.Lines      = std::move(NewLines);
                 LineBatcherComponent.Vertices   = std::move(NewVertices);
-        
+                
                 if (!LineBatcherComponent.Vertices.empty())
                 {
                     SimpleVertices = LineBatcherComponent.Vertices;
+            
+                    LineBatches.clear();
+            
+                    if (!LineBatcherComponent.Lines.empty())
+                    {
+                        FLineBatch CurrentBatch;
+                        CurrentBatch.StartVertex = 0;
+                        CurrentBatch.VertexCount = 2;
+                        CurrentBatch.Thickness = LineBatcherComponent.Lines[0].Thickness;
+                        CurrentBatch.bDepthTest = LineBatcherComponent.Lines[0].bDepthTest;
+                
+                        for (size_t i = 1; i < LineBatcherComponent.Lines.size(); ++i)
+                        {
+                            const auto& Line = LineBatcherComponent.Lines[i];
+                    
+                            if (Line.Thickness == CurrentBatch.Thickness && Line.bDepthTest == CurrentBatch.bDepthTest)
+                            {
+                                CurrentBatch.VertexCount += 2;
+                            }
+                            else
+                            {
+                                LineBatches.emplace_back(CurrentBatch);
+                        
+                                CurrentBatch.StartVertex = Line.StartVertexIndex;
+                                CurrentBatch.VertexCount = 2;
+                                CurrentBatch.Thickness = Line.Thickness;
+                                CurrentBatch.bDepthTest = Line.bDepthTest;
+                            }
+                        }
+                
+                        LineBatches.emplace_back(CurrentBatch);
+                    }
                 }
             });
         }
@@ -1371,73 +1431,86 @@ namespace Lumina
 
     void FForwardRenderScene::BatchedLineDraw(FRenderGraph& RenderGraph)
     {
-        if (SimpleVertices.empty())
+        if (SimpleVertices.empty() || LineBatches.empty())
         {
             return;
-		}
-
+        }
+    
         FRGPassDescriptor* Descriptor = RenderGraph.AllocDescriptor();
         RenderGraph.AddPass(RG_Raster, FRGEvent("Batched Line Draw"), Descriptor, [&](ICommandList& CmdList)
         {
             LUMINA_PROFILE_SECTION_COLORED("Batched Line Draw", tracy::Color::Red2);
-
+    
             FRHIVertexShaderRef VertexShader = FShaderLibrary::GetVertexShader("SimpleElement.vert");
             FRHIPixelShaderRef PixelShader = FShaderLibrary::GetPixelShader("SimpleElement.frag");
             if (!VertexShader || !PixelShader)
             {
                 return;
             }
-
+    
             FRenderPassDesc::FAttachment RenderTarget;
             RenderTarget.SetImage(HDRRenderTarget);
             if (!DrawCommands.empty())
             {
                 RenderTarget.SetLoadOp(ERenderLoadOp::Load);
             }
-
+    
             FRenderPassDesc::FAttachment Depth; Depth
                 .SetImage(DepthAttachment)
                 .SetLoadOp(ERenderLoadOp::Load);
-
+    
             FRenderPassDesc RenderPass; RenderPass
                 .AddColorAttachment(RenderTarget)
                 .SetDepthAttachment(Depth)
                 .SetRenderArea(HDRRenderTarget->GetExtent());
-            
-            FRasterState RasterState; RasterState
-                .SetLineWidth(3.5f)
-                .EnableDepthClip();
-
-            FDepthStencilState DepthState; DepthState
-                .SetDepthFunc(EComparisonFunc::Greater)
-                .EnableDepthWrite()
-                .EnableDepthTest();
-
-            FRenderState RenderState; RenderState
-                .SetRasterState(RasterState)
-                .SetDepthStencilState(DepthState);
-            
-            FGraphicsPipelineDesc Desc; Desc
-                .SetDebugName("Batched Line Draw")
-                .SetPrimType(EPrimitiveType::LineList)
-                .SetRenderState(RenderState)
-                .SetInputLayout(SimpleVertexLayoutInput)
-                .AddBindingLayout(BindingLayout)
-                .AddBindingLayout(BasePassLayout)
-                .SetVertexShader(VertexShader)
-                .SetPixelShader(PixelShader);
-
-            FGraphicsState GraphicsState; GraphicsState
-                .SetRenderPass(RenderPass)
-                .AddVertexBuffer(FVertexBufferBinding{SimpleVertexBuffer})
-                .SetViewportState(MakeViewportStateFromImage(HDRRenderTarget))
-                .SetPipeline(GRenderContext->CreateGraphicsPipeline(Desc, RenderPass))
-                .AddBindingSet(BindingSet)
-                .AddBindingSet(BasePassSet);
-
-            CmdList.SetGraphicsState(GraphicsState);
-            CmdList.Draw(SimpleVertices.size(), 1, 0, 0);
-            
+    
+            FVertexBufferBinding VertexBinding{SimpleVertexBuffer};
+            FViewportState ViewportState = MakeViewportStateFromImage(HDRRenderTarget);
+    
+            for (const FLineBatch& Batch : LineBatches)
+            {
+                FRasterState RasterState; RasterState
+                    .SetLineWidth(Batch.Thickness)
+                    .EnableDepthClip();
+    
+                FDepthStencilState DepthState; DepthState
+                    .SetDepthFunc(EComparisonFunc::Greater)
+                    .EnableDepthWrite();
+                
+                if (Batch.bDepthTest)
+                {
+                    DepthState.EnableDepthTest();
+                }
+                else
+                {
+                    DepthState.DisableDepthTest();
+                }
+    
+                FRenderState RenderState; RenderState
+                    .SetRasterState(RasterState)
+                    .SetDepthStencilState(DepthState);
+                
+                FGraphicsPipelineDesc Desc; Desc
+                    .SetDebugName("Batched Line Draw")
+                    .SetPrimType(EPrimitiveType::LineList)
+                    .SetRenderState(RenderState)
+                    .SetInputLayout(SimpleVertexLayoutInput)
+                    .AddBindingLayout(BindingLayout)
+                    .AddBindingLayout(BasePassLayout)
+                    .SetVertexShader(VertexShader)
+                    .SetPixelShader(PixelShader);
+    
+                FGraphicsState GraphicsState; GraphicsState
+                    .SetRenderPass(RenderPass)
+                    .AddVertexBuffer(VertexBinding)
+                    .SetViewportState(ViewportState)
+                    .SetPipeline(GRenderContext->CreateGraphicsPipeline(Desc, RenderPass))
+                    .AddBindingSet(BindingSet)
+                    .AddBindingSet(BasePassSet);
+    
+                CmdList.SetGraphicsState(GraphicsState);
+                CmdList.Draw(Batch.VertexCount, 1, Batch.StartVertex, 0);
+            }
         });
     }
 

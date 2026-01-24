@@ -114,8 +114,9 @@ namespace Lumina
     void FEditorUI::Initialize(const FUpdateContext& UpdateContext)
     {
         ImGuiContext* Context = GetEngineSystem<FRenderManager>().GetImGuiRenderer()->GetImGuiContext();
+        ImPlotContext* PlotContext = GetEngineSystem<FRenderManager>().GetImGuiRenderer()->GetImPlotContext();
         ImGui::SetCurrentContext(Context);
-        ImPlot::CreateContext();
+        ImPlot::SetCurrentContext(PlotContext);
         
         PropertyCustomizationRegistry = Memory::New<FPropertyCustomizationRegistry>();
         PropertyCustomizationRegistry->RegisterPropertyCustomization(TBaseStructure<glm::vec2>::Get()->GetName(), []

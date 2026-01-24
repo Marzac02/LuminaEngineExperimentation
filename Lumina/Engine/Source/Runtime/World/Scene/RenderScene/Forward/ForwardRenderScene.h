@@ -113,6 +113,17 @@ namespace Lumina
         
         FRHITypedVertexBuffer<FSimpleElementVertex> SimpleVertexBuffer;
         TVector<FSimpleElementVertex>               SimpleVertices;
+        
+        struct FLineBatch
+        {
+            uint32 StartVertex;
+            uint32 VertexCount;
+            float Thickness;
+            bool bDepthTest;
+        };
+
+        TVector<FLineBatch> LineBatches;
+        
         FRHIBindingLayoutRef                        SimplePassLayout;
 
         FRHIBufferRef                               CullDataBuffer;

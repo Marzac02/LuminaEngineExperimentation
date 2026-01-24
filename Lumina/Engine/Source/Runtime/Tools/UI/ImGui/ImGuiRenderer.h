@@ -5,6 +5,8 @@
 #include "Renderer/RenderResource.h"
 #include "Subsystems/Subsystem.h"
 
+struct ImPlotContext;
+
 namespace Lumina
 {
     class FRenderGraph;
@@ -35,10 +37,12 @@ namespace Lumina
         virtual void DrawRenderDebugInformationWindow(bool* bOpen, const FUpdateContext& Context) = 0;
         
         LUMINA_API ImGuiContext* GetImGuiContext() const { return Context; }
+        LUMINA_API ImPlotContext* GetImPlotContext() const { return ImPlotContext; }
         
     protected:
 
         ImGuiContext* Context = nullptr;
+        ImPlotContext* ImPlotContext = nullptr; 
         
     };
 }

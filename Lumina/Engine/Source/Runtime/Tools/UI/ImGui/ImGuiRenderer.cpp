@@ -10,6 +10,8 @@
 #include "TaskSystem/TaskSystem.h"
 #include "Tools/UI/Notification/ImGuiNotifications.h"
 #include <imgui.h>
+
+#include "implot.h"
 #include "Paths/Paths.h"
 
 namespace Lumina
@@ -19,6 +21,7 @@ namespace Lumina
         IMGUI_CHECKVERSION();
 		
         Context = ImGui::CreateContext();
+    	ImPlotContext = ImPlot::CreateContext();
 		
 		FString FontFile_Regular = Paths::GetEngineFontDirectory() + "/Lexend/Lexend-Regular.ttf";
 		FString FontFile_Bold = Paths::GetEngineFontDirectory() + "/Lexend/Lexend-Bold.ttf";

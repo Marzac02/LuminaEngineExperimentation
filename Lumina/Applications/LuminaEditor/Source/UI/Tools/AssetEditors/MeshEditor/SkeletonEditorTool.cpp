@@ -129,7 +129,6 @@ namespace Lumina
         Skeleton->ComputeBindPoseSkinningMatrices(MeshComponent.BoneTransforms);
         
         STransformComponent& MeshTransform = World->GetEntityRegistry().get<STransformComponent>(MeshEntity);
-
         STransformComponent& EditorTransform = World->GetEntityRegistry().get<STransformComponent>(EditorEntity);
 
         glm::quat Rotation = Math::FindLookAtRotation(MeshTransform.GetLocation() + glm::vec3(0.0f, 0.85f, 0.0f), EditorTransform.GetLocation());
@@ -231,12 +230,12 @@ namespace Lumina
         const FSkeletonResource::FBoneInfo& Bone = SkeletonResource->GetBone(BoneIndex);
         glm::vec3 BonePosition = glm::vec3(WorldTransforms[BoneIndex][3]);
     
-        DrawWorld->DrawSphere(BonePosition, 0.05f, FColor::Red, 8);
+        DrawWorld->DrawSphere(BonePosition, 0.025f, FColor::Red, 8, 1.0f, false);
     
         if (Bone.ParentIndex != INDEX_NONE)
         {
             glm::vec3 ParentPosition = glm::vec3(WorldTransforms[Bone.ParentIndex][3]);
-            DrawWorld->DrawLine(ParentPosition, BonePosition, FColor::Green);
+            DrawWorld->DrawLine(ParentPosition, BonePosition, FColor::Green, 10.0f, false);
         }
     
         TVector<int32> Children = SkeletonResource->GetChildBones(BoneIndex);

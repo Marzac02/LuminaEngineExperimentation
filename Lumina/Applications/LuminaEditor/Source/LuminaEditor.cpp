@@ -61,12 +61,12 @@ namespace Lumina
     {
         return FEngine::Shutdown();
     }
-    #if WITH_EDITOR
+    
     IDevelopmentToolUI* FEditorEngine::CreateDevelopmentTools()
     {
         return Memory::New<FEditorUI>();
     }
-    #endif
+    
     void FEditorEngine::LoadProject(FStringView Path)
     {
         namespace FS = FileSystem;
