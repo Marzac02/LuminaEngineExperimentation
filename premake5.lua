@@ -13,6 +13,7 @@ workspace "Lumina"
     objdir (LuminaConfig.GetObjDirectory())
     enableunitybuild "Off"
     fastuptodate "On"
+    multiprocessorcompile "On"
 	startproject "Editor"
 
     configurations 
@@ -70,13 +71,11 @@ workspace "Lumina"
         systemversion "latest"
         defines { "LE_PLATFORM_WINDOWS" }
         buildoptions 
-        { 
-            "/EHsc",
+        {
             "/Zc:preprocessor",
-            "/MP",
             "/Zc:inline",
             "/Zc:__cplusplus",
-            "/we4238"
+            "/bigobj"
         }
 
     filter {}

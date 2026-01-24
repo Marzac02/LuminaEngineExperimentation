@@ -78,8 +78,6 @@ namespace Lumina::Reflection
         ClangArgs.emplace_back("REFLECTION_PARSER");
         ClangArgs.emplace_back("-D");
         ClangArgs.emplace_back("NDEBUG");
-        ClangArgs.emplace_back("-fsyntax-only");
-        ClangArgs.emplace_back("-fparse-all-comments");
         ClangArgs.emplace_back("-fms-extensions");
         ClangArgs.emplace_back("-fms-compatibility");
         ClangArgs.emplace_back("-Wfatal-errors=0");

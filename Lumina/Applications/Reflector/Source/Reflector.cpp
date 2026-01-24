@@ -121,7 +121,21 @@ int main(int argc, char* argv[])
     {
         CodeGenerator.GenerateCodeForProject(Project.get());
     }
-    
+
+    for (auto& Project : Workspace.ReflectedProjects)
+    {
+        for (auto& Header : Project->Headers)
+        {
+            try
+            {
+                std::filesystem::last_write_time(Header.second->HeaderPath.c_str(), Header.second->StartingFileTime);
+            }
+            catch (std::filesystem::filesystem_error& Error)
+            {
+                std::println("Failed to set last write time: {}", Error.what());
+            }
+        }
+    }
 
     Lumina::FStringHash::Shutdown();
     

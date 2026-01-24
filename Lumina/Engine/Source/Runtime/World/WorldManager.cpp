@@ -1,6 +1,5 @@
 ﻿#include "pch.h"
 #include "WorldManager.h"
-#include <fastgltf/types.hpp>
 #include "Core/Profiler/Profile.h"
 
 

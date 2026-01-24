@@ -1,6 +1,5 @@
 ﻿#include "ReflectedHeader.h"
 #include <filesystem>
-#include <print>
 #include "ReflectedProject.h"
 #include "Reflector/ProjectSolution.h"
 
@@ -24,10 +23,10 @@ namespace Lumina::Reflection
             return;
         }
         
-        auto LastWrite = std::filesystem::last_write_time(FilesystemPath);
+        StartingFileTime = std::filesystem::last_write_time(FilesystemPath);
         auto LastReflectionWrite = std::filesystem::last_write_time(PossibleReflectedHeaderPath.c_str());
         
-        if (LastWrite > LastReflectionWrite)
+        if (StartingFileTime > LastReflectionWrite)
         {
             bDirty = true;
         }

@@ -1,9 +1,5 @@
 #pragma once
 
-#if defined(LE_PLATFORM_WINDOWS)
-#include <windows.h>
-#endif
-
 // ===================
 // Standard Library
 // ===================
@@ -88,8 +84,4 @@
 #include <sol/sol.hpp>
 #include <spdlog/spdlog.h>
 #include <xxhash.h>
-
-#if defined(LE_DEBUG) && !defined(JPH_ENABLE_ASSERTS)
-#define JPH_ENABLE_ASSERTS
-#endif
 #include <Jolt/Jolt.h>
