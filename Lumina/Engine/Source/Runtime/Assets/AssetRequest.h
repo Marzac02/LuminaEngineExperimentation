@@ -16,9 +16,10 @@ namespace Lumina
         friend class FAssetManager;
 
         
-        FAssetRequest(const FFixedString& InPath, const FGuid& GUID)
+        FAssetRequest(const FFixedString& InPath, const FGuid& GUID, const FTaskHandle& InTask)
             : AssetPath(InPath)
             , RequestedGUID(GUID)
+            , Task(InTask)
             , PendingObject(nullptr)
         {
         }
@@ -26,6 +27,7 @@ namespace Lumina
         FStringView GetAssetPath() const { return AssetPath; }
         CObject* GetPendingObject() const { return PendingObject; }
         void AddListener(const TFunction<void(CObject*)>& Functor) { Listeners.push_back(Functor); }
+        void Wait() const { return Task->Wait(); }
     
     private:
 
@@ -36,6 +38,7 @@ namespace Lumina
         TVector<TFunction<void(CObject*)>>  Listeners;
         FFixedString                        AssetPath;
         FGuid                               RequestedGUID;
+        FTaskHandle                         Task;
         CObject*                            PendingObject;
     };
     

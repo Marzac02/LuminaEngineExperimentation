@@ -4,6 +4,7 @@
 #include "Core/Object/Class.h"
 #include "Core/Object/Object.h"
 #include "Core/Object/ObjectHandleTyped.h"
+#include "Core/Object/Package/Thumbnail/PackageThumbnail.h"
 #include "Core/Serialization/Package/PackageSaver.h"
 #include "Memory/SmartPtr.h"
 
@@ -204,6 +205,13 @@ namespace Lumina
         DECLARE_CLASS(Lumina, CPackage, CObject, "" /** Intentionally empty */, LUMINA_API)
         DEFINE_CLASS_FACTORY(CPackage)
         
+        enum class ELoadState
+        {
+            Unloaded,
+            Loading,
+            Loaded,
+            Failed
+        };
 
         void OnDestroy() override;
         bool Rename(const FName& NewName, CPackage* NewPackage) override;
@@ -272,12 +280,11 @@ namespace Lumina
         LUMINA_API NODISCARD bool FullyLoad();
 
         LUMINA_API CObject* FindObjectInPackage(const FName& Name);
-
         
         LUMINA_API NODISCARD CObject* IndexToObject(const FObjectPackageIndex& Index);
 
         /** Returns the thumbnail data for this package */
-        LUMINA_API NODISCARD TSharedPtr<FPackageThumbnail> GetPackageThumbnail() const { return PackageThumbnail; }
+        LUMINA_API NODISCARD FPackageThumbnail* GetPackageThumbnail();
 
         LUMINA_API NODISCARD FFixedString GetPackagePath() const;
         
@@ -299,9 +306,13 @@ namespace Lumina
         TVector<FObjectImport>           ImportTable;
         TVector<FObjectExport>           ExportTable;
         
-        TSharedPtr<FPackageThumbnail>    PackageThumbnail;
-        
         int64       ExportIndex = 0;
+        
+    private:
+        
+        TAtomic<ELoadState>             LoadState{ELoadState::Unloaded};
+        mutable FMutex                  ThumbnailMutex;
+        TUniquePtr<FPackageThumbnail>   PackageThumbnail;
     };
     
 }

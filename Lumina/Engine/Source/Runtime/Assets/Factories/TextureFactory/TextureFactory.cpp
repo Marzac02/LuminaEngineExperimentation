@@ -4,6 +4,7 @@
 #include "Assets/AssetTypes/Textures/Texture.h"
 #include "Core/Engine/Engine.h"
 #include "Core/Object/Package/Package.h"
+#include "Core/Object/Package/Thumbnail/PackageThumbnail.h"
 #include "Paths/Paths.h"
 #include "Platform/Filesystem/FileHelper.h"
 #include "Renderer/RenderContext.h"
@@ -17,6 +18,83 @@ namespace Lumina
     CObject* CTextureFactory::CreateNew(const FName& Name, CPackage* Package)
     {
         return NewObject<CTexture>(Package, Name);
+    }
+    
+    static void CreatePackageThumbnail(CTexture* Texture)
+    {
+        FRHICommandListRef CommandList = GRenderContext->CreateCommandList(FCommandListInfo::Graphics());
+        CommandList->Open();
+    
+        FRHIStagingImageRef StagingImage = GRenderContext->CreateStagingImage(Texture->TextureResource->ImageDescription, ERHIAccess::HostRead);
+        CommandList->CopyImage(Texture->TextureResource->RHIImage, FTextureSlice(), StagingImage, FTextureSlice());
+    
+        CommandList->Close();
+        GRenderContext->ExecuteCommandList(CommandList);
+    
+        size_t RowPitch = 0;
+        void* MappedMemory = GRenderContext->MapStagingTexture(StagingImage, FTextureSlice(), ERHIAccess::HostRead, &RowPitch);
+        if (!MappedMemory)
+        {
+            return;
+        }
+    
+        const uint32 SourceWidth  = Texture->TextureResource->RHIImage->GetDescription().Extent.x;
+        const uint32 SourceHeight = Texture->TextureResource->RHIImage->GetDescription().Extent.y;
+        
+        CPackage* AssetPackage = Texture->GetPackage();
+    
+        constexpr uint32 ThumbWidth = 256;
+        constexpr uint32 ThumbHeight = 256;
+        
+        AssetPackage->GetPackageThumbnail()->ImageWidth = ThumbWidth;
+        AssetPackage->GetPackageThumbnail()->ImageHeight = ThumbHeight;
+
+        constexpr size_t BytesPerPixel = 4;
+        constexpr size_t TotalBytes = ThumbWidth * ThumbHeight * BytesPerPixel;
+        
+        AssetPackage->GetPackageThumbnail()->ImageData.resize(TotalBytes);
+        
+        const uint8* SourceData = static_cast<const uint8*>(MappedMemory);
+        uint8* DestData = AssetPackage->GetPackageThumbnail()->ImageData.data();
+        
+        const float ScaleX = static_cast<float>(SourceWidth) / ThumbWidth;
+        const float ScaleY = static_cast<float>(SourceHeight) / ThumbHeight;
+        
+        for (uint32 DestY = 0; DestY < ThumbHeight; ++DestY)
+        {
+            for (uint32 DestX = 0; DestX < ThumbWidth; ++DestX)
+            {
+                const float SrcX = DestX * ScaleX;
+                const float SrcY = DestY * ScaleY;
+
+                const uint32 X0 = static_cast<uint32>(SrcX);
+                const uint32 Y0 = static_cast<uint32>(SrcY);
+                const uint32 X1 = Math::Min(X0 + 1, SourceWidth - 1);
+                const uint32 Y1 = Math::Min(Y0 + 1, SourceHeight - 1);
+
+                const float FracX = SrcX - X0;
+                const float FracY = SrcY - Y0;
+
+                const uint8* P00 = SourceData + (Y0 * RowPitch) + (X0 * BytesPerPixel);
+                const uint8* P10 = SourceData + (Y0 * RowPitch) + (X1 * BytesPerPixel);
+                const uint8* P01 = SourceData + (Y1 * RowPitch) + (X0 * BytesPerPixel);
+                const uint8* P11 = SourceData + (Y1 * RowPitch) + (X1 * BytesPerPixel);
+
+                const uint32 FlippedDestY = ThumbHeight - 1 - DestY;
+                uint8* DestPixel = DestData + (FlippedDestY * ThumbWidth + DestX) * BytesPerPixel;
+
+                for (uint32 Channel = 0; Channel < BytesPerPixel; ++Channel)
+                {
+                    const float Top     = Math::Lerp(static_cast<float>(P00[Channel]), static_cast<float>(P10[Channel]), FracX);
+                    const float Bottom  = Math::Lerp(static_cast<float>(P01[Channel]), static_cast<float>(P11[Channel]), FracX);
+                    const float Result  = Math::Lerp(Top, Bottom, FracY);
+    
+                    DestPixel[Channel] = static_cast<uint8>(Result + 0.5f);
+                }
+            }
+        }
+        
+        GRenderContext->UnMapStagingTexture(StagingImage);
     }
     
     void CTextureFactory::TryImport(const FFixedString& RawPath, const FFixedString& DestinationPath, const eastl::any& ImportSettings)
@@ -63,8 +141,7 @@ namespace Lumina
         
         CommandList->WriteImage(RHIImage, 0, 0, Pixels.data(), BaseRowPitch, 1);
         CommandList->CopyImage(RHIImage, FTextureSlice(), StagingImage, FTextureSlice());
-
-        // Intentionally starting at one to skip the first mip (base).
+        
         for (uint8 i = 1; i < ImageDescription.NumMips; ++i)
         {
             LUMINA_PROFILE_SECTION_COLORED("Process Mip", tracy::Color::Yellow4);
@@ -110,8 +187,6 @@ namespace Lumina
             CommandList->CopyImage(RHIImage, FTextureSlice().SetMipLevel(i), StagingImage, FTextureSlice().SetMipLevel(i));
         }
         
-        
-
         CommandList->Close();
         GRenderContext->ExecuteCommandList(CommandList, ECommandQueue::Compute);
         
@@ -147,6 +222,8 @@ namespace Lumina
         }
 
         GRenderContext->UnMapStagingTexture(StagingImage);
+        
+        CreatePackageThumbnail(NewTexture);
 
         CPackage* NewPackage = NewTexture->GetPackage();
         CPackage::SavePackage(NewPackage, NewPackage->GetPackagePath());

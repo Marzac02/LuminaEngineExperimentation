@@ -7,18 +7,19 @@ namespace Lumina::Import::Mesh
 {
     void OptimizeNewlyImportedMesh(FMeshResource& MeshResource)
     {
+        size_t NumVertices = MeshResource.GetNumVertices();
         for (FGeometrySurface& Section : MeshResource.GeometrySurfaces)
         {
-            meshopt_optimizeVertexCache(&MeshResource.Indices[Section.StartIndex], &MeshResource.Indices[Section.StartIndex], Section.IndexCount, MeshResource.GetNumVertices());
+            meshopt_optimizeVertexCache(&MeshResource.Indices[Section.StartIndex], &MeshResource.Indices[Section.StartIndex], Section.IndexCount, NumVertices);
                 
             // Reorder indices for overdraw, balancing overdraw and vertex cache efficiency.
             // Allow up to 5% worse ACMR to get more reordering opportunities for overdraw.
             constexpr float Threshold = 1.05f;
-            meshopt_optimizeOverdraw(&MeshResource.Indices[Section.StartIndex], &MeshResource.Indices[Section.StartIndex], Section.IndexCount, static_cast<float*>(MeshResource.GetVertexData()), MeshResource.GetNumVertices(), MeshResource.GetVertexTypeSize(), Threshold);
+            meshopt_optimizeOverdraw(&MeshResource.Indices[Section.StartIndex], &MeshResource.Indices[Section.StartIndex], Section.IndexCount, static_cast<float*>(MeshResource.GetVertexData()), NumVertices, MeshResource.GetVertexTypeSize(), Threshold);
         }
         
         // Vertex fetch optimization should go last as it depends on the final index order
-        meshopt_optimizeVertexFetch(MeshResource.GetVertexData(), MeshResource.Indices.data(), MeshResource.Indices.size(), MeshResource.GetVertexData(), MeshResource.GetNumVertices(), MeshResource.GetVertexTypeSize());
+        meshopt_optimizeVertexFetch(MeshResource.GetVertexData(), MeshResource.Indices.data(), MeshResource.Indices.size(), MeshResource.GetVertexData(), NumVertices, MeshResource.GetVertexTypeSize());
     }
 
     void GenerateShadowBuffers(FMeshResource& MeshResource)

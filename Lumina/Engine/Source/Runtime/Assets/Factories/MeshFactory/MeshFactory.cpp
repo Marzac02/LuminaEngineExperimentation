@@ -614,13 +614,14 @@ namespace Lumina
                 TexturePath.append_convert(ParentPath.data(), ParentPath.length()).append("/").append_convert(Texture.RelativePath);
                 FStringView TextureFileName = FileSystem::FileName(TexturePath, true);
                 
-                FFixedString TextureDestination;
-                TextureDestination.append(DestinationPath).append("/").append_convert(TextureFileName.data(), TextureFileName.length());
-                CPackage::AddPackageExt(TextureDestination);
+                
+                size_t LastSlashPos = DestinationPath.find_last_of('/');
+                FFixedString QualifiedPath = DestinationPath.substr(0, LastSlashPos + 1).append("/").append_convert(TextureFileName.data(), TextureFileName.length());
 
-                if (!FindObject<CPackage>(TextureDestination))
+                if (!FindObject<CPackage>(QualifiedPath))
                 {
-                    TextureFactory->Import(TexturePath, TextureDestination);
+                    CPackage::AddPackageExt(QualifiedPath);
+                    TextureFactory->Import(TexturePath, QualifiedPath);
                 }
             });
         }

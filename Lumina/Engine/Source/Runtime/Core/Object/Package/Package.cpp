@@ -94,8 +94,6 @@ namespace Lumina
 
         CPackage* Package = NewObject<CPackage>(nullptr, ObjectName);
         Package->AddToRoot();
-
-        Package->PackageThumbnail = MakeShared<FPackageThumbnail>();
         
         LOG_INFO("Created Package: \"{}\"", Path);
         
@@ -190,6 +188,7 @@ namespace Lumina
         FAssetRegistry::Get().AssetDeleted(AssetGUID);
 
         FileSystem::Remove(PackageToDestroy->GetPackagePath());
+        
         return true;
     }
 
@@ -257,52 +256,71 @@ namespace Lumina
     {
         LUMINA_PROFILE_SCOPE();
 
+        auto Start = std::chrono::high_resolution_clock::now();
+
         FFixedString ObjectName = SanitizeObjectName(Path);
         
+        bool bIsLoaderThread = false;
+        
         CPackage* Package = FindObject<CPackage>(ObjectName);
-        if (Package)
+        if (!Package)
         {
-            // Package is already loaded.
-            return Package;
+            Package = NewObject<CPackage>(nullptr, ObjectName);
+            Package->LoadState.store(ELoadState::Loading, std::memory_order_relaxed);
+            bIsLoaderThread = true;
         }
+        
+        if (!bIsLoaderThread)
+        {
+            ELoadState State;
+            while ((State = Package->LoadState.load(std::memory_order_acquire)) == ELoadState::Loading)
+            {
+                std::atomic_wait(&Package->LoadState, State);
+            }
+            
+            return (State == ELoadState::Loaded) ? Package : nullptr;
+        }
+        
+        bool bSuccess = false;
         
         TVector<uint8> FileBinary;
-        if (!FileSystem::ReadFile(FileBinary, Path))
+        if (FileSystem::ReadFile(FileBinary, Path))
         {
-            return nullptr;
+            Package->CreateLoader(FileBinary);
+        
+            FPackageLoader& Reader = *static_cast<FPackageLoader*>(Package->Loader.get());
+        
+            FPackageHeader PackageHeader;
+            Reader << PackageHeader;
+
+            if (PackageHeader.Tag == PACKAGE_FILE_TAG)
+            {
+                Reader.Seek(PackageHeader.ImportTableOffset);
+                Reader << Package->ImportTable;
+        
+                Reader.Seek(PackageHeader.ExportTableOffset);
+                Reader << Package->ExportTable;
+        
+                int64 SizeBefore = Reader.Tell();
+                Reader.Seek(PackageHeader.ThumbnailDataOffset);
+        
+                Package->GetPackageThumbnail()->Serialize(Reader);
+
+                Reader.Seek(SizeBefore);
+        
+                auto End = std::chrono::high_resolution_clock::now();
+                auto Duration = std::chrono::duration_cast<std::chrono::milliseconds>(End - Start);
+                
+                bSuccess = true;
+                LOG_INFO("Loaded Package: \"{}\" - ( [{}] Exports | [{}] Imports | [{}] Bytes | [{}] ms)", Package->GetName(), Package->ExportTable.size(), Package->ImportTable.size(), Package->Loader->TotalSize(), Duration);
+            }
         }
         
-        Package = NewObject<CPackage>(nullptr, ObjectName);
-        Package->CreateLoader(FileBinary);
+        Package->LoadState.store(bSuccess ? ELoadState::Loaded : ELoadState::Failed, std::memory_order_release);
         
-        FPackageLoader& Reader = *static_cast<FPackageLoader*>(Package->Loader.get());
+        std::atomic_notify_all(&Package->LoadState);
         
-        FPackageHeader PackageHeader;
-        Reader << PackageHeader;
-
-        if (PackageHeader.Tag != PACKAGE_FILE_TAG)
-        {
-            LOG_ERROR("Failed to load package, invalid data was given");
-            Package->Loader.reset();
-            return nullptr;
-        }
-
-        Reader.Seek(PackageHeader.ImportTableOffset);
-        Reader << Package->ImportTable;
-        
-        Reader.Seek(PackageHeader.ExportTableOffset);
-        Reader << Package->ExportTable;
-        
-        int64 SizeBefore = Reader.Tell();
-        Reader.Seek(PackageHeader.ThumbnailDataOffset);
-        
-        Package->PackageThumbnail = MakeShared<FPackageThumbnail>();
-        Package->PackageThumbnail->Serialize(Reader);
-
-        Reader.Seek(SizeBefore);
-        
-        LOG_INFO("Loaded Package: \"{}\" - ( [{}] Exports | [{}] Imports | [{}] Bytes)", Package->GetName(), Package->ExportTable.size(), Package->ImportTable.size(), Package->Loader->TotalSize());
-
+        Package->AddToRoot();
         return Package;
     }
 
@@ -338,12 +356,7 @@ namespace Lumina
         Header.ExportCount = static_cast<int32>(Package->ExportTable.size());
 
         Header.ThumbnailDataOffset = Writer.Tell();
-        if (!Package->PackageThumbnail)
-        {
-            Package->PackageThumbnail = MakeShared<FPackageThumbnail>();
-        }
-        
-        Package->PackageThumbnail->Serialize(Writer);
+        Package->GetPackageThumbnail()->Serialize(Writer);
         
         Writer.Seek(0);
         Writer << Header;
@@ -640,6 +653,18 @@ namespace Lumina
         }
         
         return nullptr;
+    }
+
+    FPackageThumbnail* CPackage::GetPackageThumbnail()
+    {
+        FScopeLock Lock(ThumbnailMutex);
+        
+        if (PackageThumbnail == nullptr)
+        {
+            PackageThumbnail = MakeUnique<FPackageThumbnail>();
+        }
+        
+        return PackageThumbnail.get();
     }
 
     FFixedString CPackage::GetPackagePath() const

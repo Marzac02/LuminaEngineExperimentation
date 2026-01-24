@@ -32,7 +32,6 @@ namespace Lumina
         
         if (bAlreadyInQueue)
         {
-            FlushAsyncLoading();
             return FindObject<CObject>(ActiveRequest->RequestedGUID);
         }
         
@@ -57,7 +56,7 @@ namespace Lumina
 
     void FAssetManager::FlushAsyncLoading()
     {
-        GTaskSystem->WaitForAll();
+        
     }
 
     TSharedPtr<FAssetRequest> FAssetManager::CreateOrFindAssetRequest(const FFixedString& InAssetPath, const FGuid& GUID, bool& bAlreadyInQueue)
@@ -76,7 +75,7 @@ namespace Lumina
         }
 
         bAlreadyInQueue = false;
-        TSharedPtr<FAssetRequest> NewRequest = MakeShared<FAssetRequest>(InAssetPath, GUID);
+        TSharedPtr<FAssetRequest> NewRequest = MakeShared<FAssetRequest>(InAssetPath, GUID, nullptr);
         return ActiveRequests.emplace_back(NewRequest);
     }
 
@@ -87,7 +86,6 @@ namespace Lumina
             FAssetManager*              Manager;
             TSharedPtr<FAssetRequest>   Request;
             FCompletionActionDelete     Deleter;
-
 
             FAssetTask(FAssetManager* InManager, const TSharedPtr<FAssetRequest>& InRequest)
                 : ITaskSet(1)
@@ -106,7 +104,7 @@ namespace Lumina
         };
 
         auto* Task = Memory::New<FAssetTask>(this, Request);
-
+        
         GTaskSystem->ScheduleTask(Task);
     }
     

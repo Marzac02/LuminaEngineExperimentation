@@ -1,20 +1,33 @@
 ﻿#pragma once
 #include "Containers/Array.h"
 #include "Core/Serialization/Archiver.h"
-#include "Renderer/RenderResource.h"
 #include "Platform/GenericPlatform.h"
+#include "Renderer/RenderResource.h"
 
 namespace Lumina
 {
     struct FPackageThumbnail
     {
+        enum class EState : uint8
+        {
+            None,        // No request issued
+            Requested,   // Async task enqueued
+            Loading,     // GPU upload in progress
+            Loaded,
+            Failed
+        };
+        
         uint32 ImageWidth = 0;
         uint32 ImageHeight = 0;
         TVector<uint8> ImageData;
-
         FRHIImageRef LoadedImage;
 
-        bool bDirty = true;
+        TAtomic<EState> LoadState{EState::None};
+        
+        bool IsReadyForRender() const
+        {
+            return LoadState.load(std::memory_order_acquire) == EState::Loaded;
+        }
         
         void Serialize(FArchive& Ar)
         {

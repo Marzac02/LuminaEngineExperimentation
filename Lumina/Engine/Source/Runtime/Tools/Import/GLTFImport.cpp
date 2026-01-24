@@ -80,6 +80,7 @@ namespace Lumina::Import::Mesh::GLTF
         }
         
         const fastgltf::Asset& Asset = ExpectedAsset.Value();
+        float ImportScale = 0.01f * ImportOptions.Scale;
         
         FStringView Name = FileSystem::FileName(FilePath, true);
         
@@ -127,6 +128,7 @@ namespace Lumina::Import::Mesh::GLTF
                     {
                         if (Channel.path == fastgltf::AnimationPath::Translation)
                         {
+                            Value *= ImportScale;
                             AnimChannel.Translations.push_back(Value);
                         }
                         else
@@ -255,9 +257,6 @@ namespace Lumina::Import::Mesh::GLTF
             
             SeenMeshes.emplace(Mesh.name.c_str());
             
-            TUniquePtr<FMeshResource> NewResource = MakeUnique<FMeshResource>();
-            NewResource->GeometrySurfaces.reserve(Mesh.primitives.size());
-            
             FFixedString MeshName;
             if (Mesh.name.empty())
             {
@@ -268,10 +267,15 @@ namespace Lumina::Import::Mesh::GLTF
                 MeshName.append_convert(Mesh.name);
             }
             
-            NewResource->Name = MeshName;
-
-            SIZE_T IndexCount = 0;
-
+            auto StaticMesh = MakeUnique<FMeshResource>();
+            StaticMesh->Vertices = TVector<FVertex>();
+            StaticMesh->Name = FString(MeshName) + "_Mesh";
+        
+            auto SkinnedMesh = MakeUnique<FMeshResource>();
+            SkinnedMesh->Vertices = TVector<FSkinnedVertex>();
+            SkinnedMesh->bSkinnedMesh = true;
+            SkinnedMesh->Name = FString(MeshName) + "_SkeletalMesh";
+            
             
             for (auto& Material : Asset.materials)
             {
@@ -293,10 +297,22 @@ namespace Lumina::Import::Mesh::GLTF
                 }
             }
             
+            FMeshResource* NewResource = nullptr;
             for (auto& Primitive : Mesh.primitives)
             {
+                auto Joints = Primitive.findAttribute("JOINTS_0");
+                auto Weights = Primitive.findAttribute("WEIGHTS_0");
+                if (Joints != Primitive.attributes.end() && Weights != Primitive.attributes.end())
+                {
+                    NewResource = SkinnedMesh.get();
+                }
+                else
+                {
+                    NewResource = StaticMesh.get();
+                }
+                
                 FGeometrySurface NewSurface;
-                NewSurface.StartIndex = (uint32)IndexCount;
+                NewSurface.StartIndex = (uint32)NewResource->GetNumIndices();
                 
                 FFixedString PrimitiveName;
                 if (Mesh.name.empty())
@@ -315,109 +331,94 @@ namespace Lumina::Import::Mesh::GLTF
                     NewSurface.MaterialIndex = (int16)Primitive.materialIndex.value();
                 }
                 
-                auto Joints = Primitive.findAttribute("JOINTS_0");
-                auto Weights = Primitive.findAttribute("WEIGHTS_0");
-                if (Joints != Primitive.attributes.end() && Weights != Primitive.attributes.end())
-                {
-                    NewResource->Vertices = TVector<FSkinnedVertex>();
-                    NewResource->bSkinnedMesh = true;
-                }
-                else
-                {
-                    NewResource->Vertices = TVector<FVertex>();
-                }
-                
+                SIZE_T InitialIndex = NewResource->GetNumIndices();
                 SIZE_T InitialVert = NewResource->GetNumVertices();
-            
-                const fastgltf::Accessor& IndexAccessor = Asset.accessors[Primitive.indicesAccessor.value()];
-                NewResource->Indices.reserve(NewResource->Indices.size() + IndexAccessor.count);
-            
-                fastgltf::iterateAccessor<uint32>(Asset, IndexAccessor, [&](uint32 Index)
-                {
-                    NewResource->Indices.push_back(Index);
-                    NewSurface.IndexCount++;
-                    IndexCount++;
-                });
-            
-                const fastgltf::Accessor& PosAccessor = Asset.accessors[Primitive.findAttribute("POSITION")->second];
+                SIZE_T VertexCount = Asset.accessors[Primitive.findAttribute("POSITION")->second].count;
+
                 eastl::visit([&](auto& Vector)
                 {
-                    Vector.resize(NewResource->GetNumVertices() + PosAccessor.count);
+                    Vector.resize(InitialVert + VertexCount);
                 }, NewResource->Vertices);
-            
-                // Initialize all vertices with defaults
+                
                 for (size_t i = InitialVert; i < NewResource->GetNumVertices(); ++i)
                 {
                     NewResource->SetNormalAt(i, PackNormal(FViewVolume::UpAxis));
                     NewResource->SetUVAt(i, glm::u16vec2(0, 0));
                     NewResource->SetColorAt(i, 0xFFFFFFFF);
+                    if (NewResource->IsSkinnedMesh())
+                    {
+                        NewResource->SetJointIndicesAt(i, glm::u8vec4(0));
+                        NewResource->SetJointWeightsAt(i, glm::u8vec4(0));
+                    }
+                }
+                
+                const fastgltf::Accessor& PosAccessor = Asset.accessors[Primitive.findAttribute("POSITION")->second];
+                fastgltf::iterateAccessorWithIndex<glm::vec3>(Asset, PosAccessor, [&](glm::vec3 Value, size_t Index)
+                {
+                    Value *= ImportScale;
+                    NewResource->SetPositionAt(InitialVert + Index, Value);
+                });
+                
+                const fastgltf::Accessor& IndexAccessor = Asset.accessors[Primitive.indicesAccessor.value()];
+                NewResource->Indices.reserve(InitialIndex + IndexAccessor.count);
+
+                fastgltf::iterateAccessor<uint32>(Asset, IndexAccessor, [&](uint32 Index)
+                {
+                    NewResource->Indices.push_back(InitialVert + Index);
+                });
+                
+                auto Normals = Primitive.findAttribute("NORMAL");
+                if (Normals != Primitive.attributes.end())
+                {
+                    fastgltf::iterateAccessorWithIndex<glm::vec3>(Asset, Asset.accessors[Normals->second], [&](glm::vec3 Value, size_t Index)
+                    {
+                        NewResource->SetNormalAt(InitialVert + Index, PackNormal(glm::normalize(Value)));
+                    });
+                }
+                
+                auto UV = Primitive.findAttribute("TEXCOORD_0");
+                if (UV != Primitive.attributes.end())
+                {
+                    fastgltf::iterateAccessorWithIndex<glm::vec2>(Asset, Asset.accessors[UV->second], [&](glm::vec2 Value, size_t Index)
+                    {
+                        if (ImportOptions.bFlipUVs)
+                        {
+                            Value.y = 1.0f - Value.y;
+                        }
+
+                        glm::u16vec2 VertexUV;
+                        VertexUV.x = (uint16)(glm::clamp(Value.x, 0.0f, 1.0f) * 65535.0f);
+                        VertexUV.y = (uint16)(glm::clamp(Value.y, 0.0f, 1.0f) * 65535.0f);
+                        NewResource->SetUVAt(InitialVert + Index, VertexUV);
+                    });
+                }
+                
+                auto Colors = Primitive.findAttribute("COLOR_0");
+                if (Colors != Primitive.attributes.end())
+                {
+                    fastgltf::iterateAccessorWithIndex<glm::vec4>(Asset, Asset.accessors[Colors->second], [&](glm::vec4 Value, size_t Index)
+                    {
+                        NewResource->SetColorAt(InitialVert + Index, PackColor(Value));
+                    });
                 }
                 
                 if (Joints != Primitive.attributes.end())
                 {
-                    fastgltf::iterateAccessorWithIndex<glm::u8vec4>(Asset, Asset.accessors[Joints->second], [&](glm::u8vec4 v, size_t Index)
+                    fastgltf::iterateAccessorWithIndex<glm::u8vec4>(Asset, Asset.accessors[Joints->second], [&](glm::u8vec4 Value, size_t Index)
                     {
-                        NewResource->SetJointIndicesAt(InitialVert + Index, v);
-                        LOG_INFO("Joints {0}", glm::to_string(v));
+                        NewResource->SetJointIndicesAt(InitialVert + Index, Value);
                     });
                 }
-                
+
                 if (Weights != Primitive.attributes.end())
                 {
-                    fastgltf::iterateAccessorWithIndex<glm::vec4>(Asset, Asset.accessors[Weights->second], [&](glm::vec4 v, size_t Index)
+                    fastgltf::iterateAccessorWithIndex<glm::vec4>(Asset, Asset.accessors[Weights->second], [&](glm::vec4 Value, size_t Index)
                     {
-                        glm::u8vec4 WeightBytes = glm::u8vec4(v * 255.0f);
-                        NewResource->SetJointWeightsAt(InitialVert + Index, WeightBytes);
-                        LOG_INFO("Weights {0}", glm::to_string(WeightBytes));
+                        NewResource->SetJointWeightsAt(InitialVert + Index, glm::u8vec4(Value * 255.0f));
                     });
                 }
                 
-            
-                // Load positions
-                fastgltf::iterateAccessorWithIndex<glm::vec3>(Asset, PosAccessor, [&](glm::vec3 V, size_t Index)
-                {
-                    NewResource->SetPositionAt(InitialVert + Index, V);
-                });
-            
-                // Load normals
-                auto normals = Primitive.findAttribute("NORMAL");
-                if (normals != Primitive.attributes.end())
-                {
-                    fastgltf::iterateAccessorWithIndex<glm::vec3>(Asset, Asset.accessors[normals->second], [&](glm::vec3 v, size_t index)
-                    {
-                        NewResource->SetNormalAt(InitialVert + index, PackNormal(glm::normalize(v)));
-                    });
-                }
-            
-                // Load UVs
-                auto uv = Primitive.findAttribute("TEXCOORD_0");
-                if (uv != Primitive.attributes.end())
-                {
-                    fastgltf::iterateAccessorWithIndex<glm::vec2>(Asset, Asset.accessors[uv->second], [&](glm::vec2 v, size_t index)
-                    {
-                        // Convert float UVs to uint16 (0.0-1.0 -> 0-65535)
-                        if (ImportOptions.bFlipUVs)
-                        {
-                            v.y = 1.0f - v.y;
-                        }
-                        
-                        glm::u16vec2 UV;
-                        UV.x = (uint16)(glm::clamp(v.x, 0.0f, 1.0f) * 65535.0f);
-                        UV.y = (uint16)(glm::clamp(v.y, 0.0f, 1.0f) * 65535.0f);
-                        NewResource->SetUVAt(InitialVert + index, UV);
-                    });
-                }
-            
-                // Load vertex colors
-                auto colors = Primitive.findAttribute("COLOR_0");
-                if (colors != Primitive.attributes.end())
-                {
-                    fastgltf::iterateAccessorWithIndex<glm::vec4>(Asset, Asset.accessors[colors->second], [&](glm::vec4 v, size_t index)
-                    {
-                        NewResource->SetColorAt(InitialVert + index, PackColor(v));
-                    });
-                }
-                
+                NewSurface.IndexCount = (uint32)NewResource->GetNumIndices() - NewSurface.StartIndex;
                 
                 NewResource->GeometrySurfaces.push_back(NewSurface);
             }
@@ -430,7 +431,14 @@ namespace Lumina::Import::Mesh::GLTF
             GenerateShadowBuffers(*NewResource);
             AnalyzeMeshStatistics(*NewResource, ImportData.MeshStatistics);
             
-            ImportData.Resources.push_back(eastl::move(NewResource));
+            if (StaticMesh->GetNumVertices())
+            {
+                ImportData.Resources.push_back(eastl::move(StaticMesh));
+            }
+            else
+            {
+                ImportData.Resources.push_back(eastl::move(SkinnedMesh));
+            }
         }
 
         return Move(ImportData);

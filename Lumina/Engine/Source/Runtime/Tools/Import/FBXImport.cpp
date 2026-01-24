@@ -55,7 +55,7 @@ namespace Lumina::Import::Mesh::FBX
         {
             const ofbx::AnimationStack* AnimationStack = FBXScene->getAnimationStack(i);
             auto AnimClip = MakeUnique<FAnimationResource>();
-            AnimClip->Name = FString(AnimationStack->name) + "_Anim";
+            AnimClip->Name = FString(AnimationStack->name) + "_Animation";
             
             const ofbx::AnimationLayer* Layer = AnimationStack->getLayer(0);
             if (Layer == nullptr)
@@ -79,8 +79,8 @@ namespace Lumina::Import::Mesh::FBX
                 }
                 
                 const ofbx::AnimationCurveNode* TranslationNode = Layer->getCurveNode(*Bone, "Lcl Translation");
-                const ofbx::AnimationCurveNode* RotationNode = Layer->getCurveNode(*Bone, "Lcl Rotation");
-                const ofbx::AnimationCurveNode* ScaleNode = Layer->getCurveNode(*Bone, "Lcl Scale");
+                const ofbx::AnimationCurveNode* RotationNode    = Layer->getCurveNode(*Bone, "Lcl Rotation");
+                const ofbx::AnimationCurveNode* ScaleNode       = Layer->getCurveNode(*Bone, "Lcl Scale");
                 
                 if (!TranslationNode && !RotationNode && !ScaleNode)
                 {
@@ -386,12 +386,12 @@ namespace Lumina::Import::Mesh::FBX
         
         auto StaticMesh = MakeUnique<FMeshResource>();
         StaticMesh->Vertices = TVector<FVertex>();
-        StaticMesh->Name = FileName;
+        StaticMesh->Name = FString(FileName) + "_Mesh";
         
         auto SkinnedMesh = MakeUnique<FMeshResource>();
         SkinnedMesh->Vertices = TVector<FSkinnedVertex>();
         SkinnedMesh->bSkinnedMesh = true;
-        SkinnedMesh->Name = FileName;
+        SkinnedMesh->Name = FString(FileName) + "_SkeletalMesh";
 
         MeshGroups[false]   = Move(StaticMesh);
         MeshGroups[true]    = Move(SkinnedMesh);

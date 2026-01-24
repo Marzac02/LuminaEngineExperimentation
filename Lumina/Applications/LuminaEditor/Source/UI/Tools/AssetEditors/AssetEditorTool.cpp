@@ -90,17 +90,16 @@ namespace Lumina
         constexpr uint32 ThumbWidth = 256;
         constexpr uint32 ThumbHeight = 256;
         
-        AssetPackage->PackageThumbnail->ImageWidth = ThumbWidth;
-        AssetPackage->PackageThumbnail->ImageHeight = ThumbHeight;
+        AssetPackage->GetPackageThumbnail()->ImageWidth = ThumbWidth;
+        AssetPackage->GetPackageThumbnail()->ImageHeight = ThumbHeight;
 
         constexpr size_t BytesPerPixel = 4;
         constexpr size_t TotalBytes = ThumbWidth * ThumbHeight * BytesPerPixel;
         
-        AssetPackage->PackageThumbnail->ImageData.resize(TotalBytes);
-        AssetPackage->PackageThumbnail->bDirty = true;
+        AssetPackage->GetPackageThumbnail()->ImageData.resize(TotalBytes);
         
         const uint8* SourceData = static_cast<const uint8*>(MappedMemory);
-        uint8* DestData = AssetPackage->PackageThumbnail->ImageData.data();
+        uint8* DestData = AssetPackage->GetPackageThumbnail()->ImageData.data();
         
         // Downsample with bilinear filtering
         const float ScaleX = static_cast<float>(SourceWidth) / ThumbWidth;

@@ -82,18 +82,24 @@ namespace Lumina
         return *ThumbnailManagerSingleton;
     }
 
-    void CThumbnailManager::TryLoadThumbnailsForPackage(const FString& PackagePath)
+    void CThumbnailManager::AsyncLoadThumbnailsForPackage(const FName& Package)
     {
-        FString ActualPackagePath = PackagePath;
-        //if (!Paths::HasExtension(ActualPackagePath, "lasset"))
-        //{
-        //    Paths::AddPackageExtension(ActualPackagePath);
-        //}
-        if (CPackage* Package = CPackage::LoadPackage(ActualPackagePath))
+        Task::AsyncTask(1, 1, [this, Package](uint32, uint32, uint32)
         {
-            TSharedPtr<FPackageThumbnail> Thumbnail = Package->GetPackageThumbnail();
-        
-            if (!Thumbnail->bDirty || Thumbnail->ImageData.empty())
+            CPackage* MaybePackage = CPackage::LoadPackage(Package.c_str());
+            if (MaybePackage == nullptr)
+            {
+                return;
+            }
+            
+            FPackageThumbnail* Thumbnail = MaybePackage->GetPackageThumbnail();
+            if (Thumbnail->ImageData.empty())
+            {
+                return;
+            }
+            
+            FPackageThumbnail::EState Expected = FPackageThumbnail::EState::None;
+            if (!Thumbnail->LoadState.compare_exchange_strong(Expected, FPackageThumbnail::EState::Loading, std::memory_order_acquire))
             {
                 return;
             }
@@ -104,40 +110,61 @@ namespace Lumina
             ImageDesc.Format = EFormat::RGBA8_UNORM;
             ImageDesc.Flags.SetFlag(EImageCreateFlags::ShaderResource);
             FRHIImageRef Image = GRenderContext->CreateImage(ImageDesc);
-        
-            FRHICommandListRef CommandList = GRenderContext->CreateCommandList(FCommandListInfo::Compute());
+            
+            FRHICommandListRef CommandList = GRenderContext->CreateCommandList(FCommandListInfo::Transfer());
             CommandList->Open();
-            CommandList->BeginTrackingImageState(Image, AllSubresources, EResourceStates::CopyDest);
             
             const uint8 BytesPerPixel = RHI::Format::BytesPerBlock(ImageDesc.Format);
-            const uint32 RowBytes = ImageDesc.Extent.y * BytesPerPixel;
+            const uint32 RowBytes = ImageDesc.Extent.x * BytesPerPixel;
             
             TVector<uint8> FlippedData(Thumbnail->ImageData.size());
-            Task::ParallelFor(ImageDesc.Extent.y, [&](uint32 Y)
-            {
-                const uint32 FlippedY = 255 - Y;
-                Memory::Memcpy(FlippedData.data() + (FlippedY * RowBytes), Thumbnail->ImageData.data() + (Y * RowBytes), RowBytes);
-            });
+            uint8* Destination = FlippedData.data();
+            const uint8* Source = Thumbnail->ImageData.data();
 
+            for (uint32 y = 0; y < ImageDesc.Extent.y; ++y)
+            {
+                const uint32 FlippedY = ImageDesc.Extent.y - 1 - y;
+                Memory::Memcpy(Destination + FlippedY * RowBytes, Source + y * RowBytes, RowBytes);
+            }
+    
             const uint32 RowPitch = RowBytes;
             constexpr uint32 DepthPitch = 0;
-        
+            
+            CommandList->BeginTrackingImageState(Image, AllSubresources, EResourceStates::Unknown);
             CommandList->WriteImage(Image, 0, 0, FlippedData.data(), RowPitch, DepthPitch);
-
             CommandList->SetPermanentImageState(Image, EResourceStates::ShaderResource);
-            CommandList->CommitBarriers();
             
             CommandList->Close();
-        
-            GRenderContext->ExecuteCommandList(CommandList, ECommandQueue::Compute);
-        
+            GRenderContext->ExecuteCommandList(CommandList, ECommandQueue::Transfer);
+            
             Thumbnail->LoadedImage = Image;
-            Thumbnail->bDirty = false;
-        }
+            Thumbnail->LoadState.store(FPackageThumbnail::EState::Loaded, std::memory_order_release);
+
+            FScopeLock Lock(ThumbnailLock);
+            Thumbnails.emplace(Package, Thumbnail);
+            
+        });
     }
 
-    FPackageThumbnail* CThumbnailManager::GetThumbnailForPackage(CPackage* Package)
+    FPackageThumbnail* CThumbnailManager::GetThumbnailForPackage(const FName& Package)
     {
-        return Package->GetPackageThumbnail().get();
+        {
+            FScopeLock Lock(ThumbnailLock);
+            auto It = Thumbnails.find(Package);
+            if (It != Thumbnails.end())
+            {
+                FPackageThumbnail* CachedThumbnail = It->second;
+                if (CachedThumbnail && CachedThumbnail->IsReadyForRender())
+                {
+                    return CachedThumbnail;
+                }
+                
+                return nullptr;
+            }
+        }
+    
+        AsyncLoadThumbnailsForPackage(Package);
+    
+        return nullptr;
     }
 }

@@ -47,6 +47,9 @@
 #include <imgui.h>
 #include <imgui_internal.h>
 
+#include "Core/Object/Package/Thumbnail/PackageThumbnail.h"
+#include "Thumbnails/ThumbnailManager.h"
+
 namespace Lumina
 {
 
@@ -154,13 +157,24 @@ namespace Lumina
             FContentBrowserTileViewItem* ContentItem = static_cast<FContentBrowserTileViewItem*>(Item);
             
             ImVec4 TintColor = ImVec4(1.0f, 1.0f, 1.0f, 1.0f);
-
-            ImTextureRef ImTexture = ImGuiX::ToImTextureRef(Paths::GetEngineResourceDirectory() + "/Textures/File.png");
             
+            
+            ImTextureRef ImTexture;
             if (ContentItem->IsDirectory())
             {
                 ImTexture = ImGuiX::ToImTextureRef(Paths::GetEngineResourceDirectory() + "/Textures/Folder.png");
                 TintColor = ImVec4(1.0f, 0.9f, 0.6f, 1.0f);
+            }
+            else
+            {
+                if (FPackageThumbnail* MaybeThumbnail = CThumbnailManager::Get().GetThumbnailForPackage(ContentItem->GetVirtualPath()))
+                {
+                    ImTexture = ImGuiX::ToImTextureRef(MaybeThumbnail->LoadedImage);
+                }
+                else
+                {
+                    ImTexture = ImGuiX::ToImTextureRef(Paths::GetEngineResourceDirectory() + "/Textures/File.png");
+                }
             }
             
             ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.16f, 0.16f, 0.17f, 1.0f)); 
