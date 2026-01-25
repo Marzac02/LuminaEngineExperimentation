@@ -96,7 +96,7 @@ newaction
     
         if Result == 0 or Result == true then
             Logger.Success("Reflection completed successfully!")
-            os.remove("Reflection_Files.json")
+            --os.remove("Reflection_Files.json")
         else
             Logger.Error("Reflection failed - keeping JSON file for debugging")
         end

@@ -45,7 +45,7 @@ function Logger.Warning(Message)
 end
 
 function Logger.Error(Message)
-    Logger.Error(Logger.Colors.Red, Message)
+    Logger.Log(Logger.Colors.Red, Message)
 end
 
 

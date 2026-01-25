@@ -1,0 +1,519 @@
+#pragma once
+
+#include "Containers/Name.h"
+#include "Containers/String.h"
+#include "Core/Object/ObjectHandle.h"
+#include "Core/Templates/CanBulkSerialize.h"
+#include "Core/Templates/IsSigned.h"
+#include "Core/Versioning/CoreVersion.h"
+#include "glm/glm.hpp"
+#include <glm/gtc/quaternion.hpp>
+
+#include "EASTL/bit.h"
+#include "Log/Log.h"
+#include "Types/BitFlags.h"
+
+namespace Lumina
+{
+    class FField;
+}
+
+enum class EArchiverFlags : uint8
+{
+    None        = 0,
+    Reading     = 1,
+    Writing     = 2,
+    Compress    = 3,
+    Encrypt     = 4,
+    NoFields    = 5,
+};
+
+namespace Lumina
+{
+    class CObject;
+
+    class FArchive
+    {
+    public:
+    
+        FArchive() = default;
+        FArchive(const FArchive&) = delete;
+        FArchive& operator=(const FArchive& ArchiveToCopy) = delete;
+        virtual ~FArchive() = default;
+
+    
+        virtual void Seek(int64 InPos) { }
+        virtual int64 Tell() { return 0; }
+        virtual int64 TotalSize() { return 0; }
+
+        virtual void Serialize(void* V, int64 Length) {}
+
+        // Set, remove, and check flags
+        FORCEINLINE void SetFlag(EArchiverFlags Flag) { Flags.SetFlag(Flag); }
+        FORCEINLINE void RemoveFlag(EArchiverFlags Flag) { Flags.ClearFlag(Flag); }
+        FORCEINLINE bool HasFlag(EArchiverFlags Flag) const { return Flags.IsFlagSet(Flag); }
+
+        /** Is this archiver writing to a buffer */
+        FORCEINLINE bool virtual IsWriting() const { return HasFlag(EArchiverFlags::Writing); }
+
+        /** Is this archiver reading from a buffer, not to be mistaken with reading from a class.
+         * As this is used to write to a class, whilst reading from a buffer.
+         * */
+        FORCEINLINE bool virtual IsReading() const { return HasFlag(EArchiverFlags::Reading); }
+
+        FORCEINLINE void SetHasError(bool bIsError) { bHasError = bIsError; }
+        FORCEINLINE virtual bool HasError() const { return bHasError; }
+
+        FORCEINLINE static FPackageFileVersion GetEngineVersion()
+        {
+            return GPackageFileLuminaVersion;
+        }
+    
+        /** Returns the maximum size of data that this archive is allowed to serialize. */
+        FORCEINLINE size_t GetMaxSerializeSize() const { return ArMaxSerializeSize; }
+
+        
+        virtual FArchive& operator<<(CObject*& Value)
+        {
+            LOG_ERROR("Serializing CObjects is not supported by this archive.");
+            return *this;
+        }
+
+        virtual FArchive& operator<<(FObjectHandle& Value)
+        {
+            LOG_ERROR("Serializing CObjects is not supported by this archive.");
+            return *this;
+        }
+
+        virtual FArchive& operator<<(FField*& Value)
+        {
+            LOG_ERROR("Serializing FFields is not supported by this archive.");
+            return *this;
+        }
+    
+        virtual FArchive& operator<<(uint8& Value)
+        {
+            Serialize(&Value, 1);
+            return *this;
+        }
+
+        virtual FArchive& operator<<(int8& Value)
+        {
+            Serialize(&Value, 1);
+            return *this;
+        }
+    
+        virtual FArchive& operator<<(uint16& Value)
+        {
+            ByteOrderSerialize(Value);
+            return *this;
+        }
+    
+        virtual FArchive& operator<<(int16& Value)
+        {
+            ByteOrderSerialize(reinterpret_cast<uint16&>(Value));
+            return *this;
+        }
+    
+        virtual FArchive& operator<<(uint32& Value)
+        {
+            ByteOrderSerialize(Value);
+            return *this;
+        }
+    
+        virtual FArchive& operator<<(int32& Value)
+        {
+            ByteOrderSerialize(reinterpret_cast<uint32&>(Value));
+            return *this;
+        }
+
+        virtual FArchive& operator<<( bool& D)
+        {
+            SerializeBool(D);
+            return *this;
+        }
+
+        virtual FArchive& operator<<(float& Value)
+        {
+            static_assert(sizeof(float) == sizeof(uint32), "Unexpected float size");
+            uint32 Temp = std::bit_cast<uint32>(Value);
+            ByteOrderSerialize(Temp);
+            Value = std::bit_cast<float>(Temp);
+            return *this;
+        }
+
+        virtual FArchive& operator<<(double& Value)
+        {
+            static_assert(sizeof(double) == sizeof(uint64), "Unexpected double size");
+            uint64 Temp = std::bit_cast<uint64>(Value);
+            ByteOrderSerialize(Temp);
+            Value = std::bit_cast<double>(Temp);
+            return *this;
+        }
+
+
+        virtual FArchive& operator<<(uint64& Value)
+        {
+            ByteOrderSerialize(Value);
+            return *this;
+        }
+
+        virtual FArchive& operator<<(int64& Value)
+        {
+            ByteOrderSerialize(reinterpret_cast<uint64&>(Value));
+            return *this;
+        }
+
+        virtual void SerializeBool(bool& D);
+        
+        virtual FArchive& operator<<(FString& Str)
+        {
+            if (IsReading())
+            {
+                size_t SaveNum = 0;
+                *this << SaveNum;
+            
+                if (SaveNum > GetMaxSerializeSize())
+                {
+                    SetHasError(true);
+                    LOG_ERROR("Archiver is corrupted, string is too large! (Size: {0}, Max: {1})", SaveNum, GetMaxSerializeSize());
+                    return *this;
+                }
+            
+                if (SaveNum)
+                {
+                    Str.clear();
+                    Str.shrink_to_fit();
+                    Str.resize(SaveNum);
+                    Serialize(Str.data(), SaveNum);
+                }
+                else
+                {
+                    Str.clear();
+                }
+            }
+            else
+            {
+                size_t SaveNum = Str.size();
+                *this << SaveNum;
+
+                if (SaveNum)
+                {
+                    Serialize(Str.data(), SaveNum);
+                }
+            }
+        
+            return *this;
+        }
+
+        virtual FArchive& operator<<(FName& Name)
+        {
+            if (IsReading())
+            {
+                FString LoadedString;
+                *this << LoadedString;
+                Name = FName(LoadedString);
+            }
+            else
+            {
+                FString SavedString(Name.c_str());
+                *this << SavedString;
+            }
+
+            return *this;
+        }
+
+        //-------------------------------------------------------------------------
+        // Serialization for containers.
+        //-------------------------------------------------------------------------
+
+        template<typename ValueType>
+        FArchive& operator << (TVector<ValueType>& Array)
+        {
+            size_t SerializeNum = IsReading() ? 0 : Array.size();
+            *this << SerializeNum;
+        
+            if (SerializeNum == 0)
+            {
+                // if we are loading, then we have to reset the size to 0, in case it isn't currently 0
+                if (IsReading())
+                {
+                    Array.clear();
+                    Array.shrink_to_fit();
+                }
+            
+                return *this;
+            }
+        
+            if (SerializeNum > GetMaxSerializeSize())
+            {
+                SetHasError(true);
+                LOG_ERROR("Archiver is corrupted, attempted to serialize {} array elements. Max is: {}", SerializeNum, GetMaxSerializeSize());
+                return *this;
+            }
+            
+            // If we don't need to perform per-item serialization, just read it in bulk
+            if constexpr (sizeof(ValueType) == 1 || TCanBulkSerialize<ValueType>::value)
+            {
+                if (IsReading())
+                {
+                    Array.clear();
+                    Array.resize(SerializeNum);
+                    Array.shrink_to_fit();
+                }
+            
+                Serialize(Array.data(), SerializeNum * sizeof(ValueType));
+            }
+            else
+            {
+                if (IsReading())
+                {
+                    Array.clear();
+                    Array.resize(SerializeNum);
+                    Array.shrink_to_fit();
+                }
+
+                for (size_t i = 0; i < SerializeNum; i++)
+                {
+                    *this << Array[i];
+                }
+            }
+
+            return *this;
+        }
+        
+        template<typename K, typename V>
+        FArchive& operator << (TPair<K, V>& Pair)
+        {
+            *this << Pair.first;
+            *this << Pair.second;
+            
+            return *this;
+        }
+        
+        template<typename K, typename V>
+        FArchive& operator<<(THashMap<K, V>& Map)
+        {
+            uint32 Count;
+
+            if (IsWriting())
+            {
+                Count = static_cast<uint32>(Map.size());
+                *this << Count;
+
+                for (TPair<K, V> Pair : Map)
+                {
+                    *this << Pair;
+                }
+            }
+            else
+            {
+                *this << Count;
+                Map.clear();
+                Map.reserve(Count);
+
+                for (uint32 i = 0; i < Count; ++i)
+                {
+                    TPair<K, V> Pair;
+                    *this << Pair;
+                    Map.emplace(Pair.first, std::move(Pair.second));
+                }
+            }
+
+            return *this;
+        }
+        
+        template<typename EnumType>
+        FORCEINLINE FArchive& operator<<(EnumType& Value)
+        requires (eastl::is_enum_v<EnumType>)
+        {
+            using Underlying = eastl::underlying_type_t<EnumType>;
+            return *this << reinterpret_cast<Underlying&>(Value);
+        }
+
+    private:
+    
+        template<typename T>
+        FArchive& ByteOrderSerialize(T& Value)
+        {
+            static_assert(!TIsSigned<T>::Value, "To reduce the number of template instances, cast 'Value' to a uint16&, uint32& or uint64& prior to the call or use ByteOrderSerialize(void*, int32).");
+        
+            Serialize(&Value, sizeof(T));
+            return *this;
+        }
+
+
+
+    private:
+
+        TBitFlags<EArchiverFlags> Flags;
+        uint8 bHasError:1 = false;
+        size_t ArMaxSerializeSize = INT32_MAX;
+
+    };
+
+    inline void FArchive::SerializeBool(bool& D)
+    {
+        uint32 OldBoolValue;
+
+        OldBoolValue = D ? 1 : 0;
+        Serialize(&OldBoolValue, sizeof(OldBoolValue));
+
+        if (OldBoolValue > 1)
+        {
+            LOG_ERROR("Invalid boolean encountered while reading archive - stream is most likely corrupted.");
+
+            SetHasError(true);
+        }
+        D = !!OldBoolValue;
+    }
+
+    // GLM Vector Types
+    inline FArchive& operator<<(FArchive& Ar, glm::vec2& v)
+    {
+        Ar << v.x << v.y;
+        return Ar;
+    }
+
+    inline FArchive& operator<<(FArchive& Ar, glm::vec3& v)
+    {
+        Ar << v.x << v.y << v.z;
+        return Ar;
+    }
+
+    inline FArchive& operator<<(FArchive& Ar, glm::vec4& v)
+    {
+        Ar << v.x << v.y << v.z << v.w;
+        return Ar;
+    }
+
+    // GLM Integer Vector Types
+    inline FArchive& operator<<(FArchive& Ar, glm::ivec2& v)
+    {
+        Ar << v.x << v.y;
+        return Ar;
+    }
+
+    inline FArchive& operator<<(FArchive& Ar, glm::ivec3& v)
+    {
+        Ar << v.x << v.y << v.z;
+        return Ar;
+    }
+
+    inline FArchive& operator<<(FArchive& Ar, glm::ivec4& v)
+    {
+        Ar << v.x << v.y << v.z << v.w;
+        return Ar;
+    }
+
+    // GLM Unsigned Integer Vector Types
+    inline FArchive& operator<<(FArchive& Ar, glm::uvec2& v)
+    {
+        Ar << v.x << v.y;
+        return Ar;
+    }
+
+    inline FArchive& operator<<(FArchive& Ar, glm::uvec3& v)
+    {
+        Ar << v.x << v.y << v.z;
+        return Ar;
+    }
+
+    inline FArchive& operator<<(FArchive& Ar, glm::uvec4& v)
+    {
+        Ar << v.x << v.y << v.z << v.w;
+        return Ar;
+    }
+    
+    // GLM 8-bit Unsigned Integer Vector Types
+    inline FArchive& operator<<(FArchive& Ar, glm::u8vec2& v)
+    {
+        Ar << v.x << v.y;
+        return Ar;
+    }
+
+    inline FArchive& operator<<(FArchive& Ar, glm::u8vec3& v)
+    {
+        Ar << v.x << v.y << v.z;
+        return Ar;
+    }
+    
+    inline FArchive& operator<<(FArchive& Ar, glm::u8vec4& v)
+    {
+        Ar << v.x << v.y << v.z << v.w;
+        return Ar;
+    }
+    
+    // GLM 16-bit Unsigned Integer Vector Types
+    inline FArchive& operator<<(FArchive& Ar, glm::u16vec2& v)
+    {
+        Ar << v.x << v.y;
+        return Ar;
+    }
+
+    inline FArchive& operator<<(FArchive& Ar, glm::u16vec3& v)
+    {
+        Ar << v.x << v.y << v.z;
+        return Ar;
+    }
+
+    inline FArchive& operator<<(FArchive& Ar, glm::u16vec4& v)
+    {
+        Ar << v.x << v.y << v.z << v.w;
+        return Ar;
+    }
+
+    // GLM Matrix Types
+    inline FArchive& operator<<(FArchive& Ar, glm::mat2& m)
+    {
+        Ar << m[0] << m[1];
+        return Ar;
+    }
+
+    inline FArchive& operator<<(FArchive& Ar, glm::mat3& m)
+    {
+        Ar << m[0] << m[1] << m[2];
+        return Ar;
+    }
+
+    inline FArchive& operator<<(FArchive& Ar, glm::mat4& m)
+    {
+        Ar << m[0] << m[1] << m[2] << m[3];
+        return Ar;
+    }
+
+    // GLM Quaternion
+    inline FArchive& operator<<(FArchive& Ar, glm::quat& q)
+    {
+        Ar << q.x << q.y << q.z << q.w;
+        return Ar;
+    }
+
+    inline FArchive& operator << (FArchive& Ar, FBitFlags& Data)
+    {
+        Ar << Data.Flags;
+        return Ar;
+    }
+    
+    
+}
+
+
+
+
+
+// Example usage for a custom struct
+#if 0
+struct MyStruct
+{
+    int x;
+    float y;
+    FString name;
+
+    friend FArchive& operator<<(FArchive& archive, MyStruct& s)
+    {
+        archive << s.x << s.y << s.name;
+        return archive;
+    }
+};
+#endif

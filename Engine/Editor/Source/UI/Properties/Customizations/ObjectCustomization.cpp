@@ -1,0 +1,205 @@
+#include "CoreTypeCustomization.h"
+#include "imgui.h"
+#include "Core/Engine/Engine.h"
+#include "Core/Object/Class.h"
+#include "Core/Reflection/Type/Properties/ObjectProperty.h"
+#include "Paths/Paths.h"
+#include "Tools/UI/ImGui/ImGuiDesignIcons.h"
+#include "Tools/UI/ImGui/ImGuiX.h"
+#include "UI/EditorUI.h"
+#include <Assets/AssetRegistry/AssetData.h>
+#include <Assets/AssetRegistry/AssetRegistry.h>
+#include <Containers/Array.h>
+#include <Containers/String.h>
+#include <Core/Object/Object.h>
+#include <Core/Object/ObjectCore.h>
+#include <Core/Object/ObjectHandleTyped.h>
+#include <Core/Reflection/PropertyCustomization/PropertyCustomization.h>
+#include <Core/Templates/Optional.h>
+#include <Memory/SmartPtr.h>
+#include <imgui_internal.h>
+#include <LuminaEditor.h>
+
+namespace Lumina
+{
+    static constexpr ImVec2 GButtonSize(42, 0);
+
+    EPropertyChangeOp FCObjectPropertyCustomization::DrawProperty(TSharedPtr<FPropertyHandle> Property)
+    {
+        FObjectProperty* ObjectProperty = static_cast<FObjectProperty*>(Property->Property);
+        
+        bool bWasChanged = false;
+
+        ImGui::PushItemWidth(ImGui::GetContentRegionAvail().x);
+
+        ImGui::PushID(this);
+        if (ImGui::BeginChild("OP", ImVec2(-1, 0), ImGuiChildFlags_AutoResizeY, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse))
+        {
+            const auto& Style = ImGui::GetStyle();
+
+            TObjectPtr<CObject> HardObject = Object.Lock();
+
+            const char* Label = HardObject.IsValid() ? Object.Get()->GetName().c_str() : "<None>";
+            ImGui::BeginDisabled(Object == nullptr);
+
+            TOptional<ImTextureRef> ButtonTexture;
+            if (Object.IsValid())
+            {
+                //FString FullPath = Paths::ResolveVirtualPath(Object.Get()->GetPathName());
+                //CThumbnailManager::Get().TryLoadThumbnailsForPackage(FullPath);
+                //if (FRHIImage* Image = CThumbnailManager::GetThumbnailForPackage(Object.Get()->GetPackage())->LoadedImage)
+                //{
+                //    ButtonTexture = ImGuiX::ToImTextureRef(Image);
+                //}
+            }
+
+
+            if (!ButtonTexture.has_value())
+            {
+                ButtonTexture = ImGuiX::ToImTextureRef(Paths::GetEngineResourceDirectory() + "/Textures/SkeletalMeshIcon.png");
+            }
+
+            
+            ImGui::ImageButton(Label, ButtonTexture.value(), ImVec2(64, 64));
+            ImGui::EndDisabled();
+
+            if (ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))
+            {
+                if (HardObject)
+                {
+                    static_cast<FEditorUI*>(GEditorEngine->GetDevelopmentToolsUI())->OpenAssetEditor(HardObject->GetGUID());
+                }
+            }
+
+            ImGui::SameLine();
+
+            ImGui::BeginGroup();
+
+            float const ComboArrowWidth = ImGui::GetFrameHeight();
+            float const TotalPathWidgetWidth = ImGui::GetContentRegionAvail().x;
+            float const TextWidgetWidth = TotalPathWidgetWidth - ComboArrowWidth;
+
+            ImGui::SetNextItemWidth(TextWidgetWidth);
+            
+            const bool bHasObject = Object != nullptr;
+
+            FFixedString PathString = bHasObject ? Object.Get()->GetName().c_str() : "<None>";
+        
+            ImGui::PushStyleColor(ImGuiCol_Text, bHasObject ? ImVec4(0.6f, 0.6f, 0.6f, 1.0f) : ImVec4(1.0f, 0.19f, 0.19f, 1.0f));
+        
+            ImGui::InputText("##ObjectPathText", PathString.data(), PathString.max_size(), ImGuiInputTextFlags_AutoSelectAll | ImGuiInputTextFlags_ReadOnly);
+        
+            ImGuiX::ItemTooltip(PathString.c_str());
+        
+            ImGui::PopStyleColor();
+
+            const ImVec2 ComboDropDownSize = ImMax(ImVec2(200, 200), ImVec2(TextWidgetWidth, 300.0f));
+
+            ImGui::SameLine(0, 0);
+        
+            bool bComboOpen = ImGui::BeginCombo("##ObjectPath", "", ImGuiComboFlags_HeightLarge | ImGuiComboFlags_PopupAlignLeft | ImGuiComboFlags_NoPreview);
+
+            if (bComboOpen)
+            {
+                const float CursorPosYPostFilter = ImGui::GetCursorPosY();
+                const float FilterHeight = CursorPosYPostFilter;
+
+                SearchFilter.Draw("##Search", ComboDropDownSize.x - 30.0f);
+                if (!SearchFilter.IsActive())
+                {
+                    ImDrawList* DrawList = ImGui::GetWindowDrawList();
+                    ImVec2 TextPos = ImGui::GetItemRectMin();
+                    TextPos.x += Style.FramePadding.x + 2.0f;
+                    TextPos.y += Style.FramePadding.y;
+                    DrawList->AddText(TextPos, IM_COL32(100, 100, 110, 255), LE_ICON_FILE_SEARCH " Search Assets...");
+                }
+                
+                ImGui::SameLine();
+                ImGui::Button(LE_ICON_FILTER, ImVec2(30.0f, 0.0f));
+                ImGui::SetNextWindowSizeConstraints(ImVec2(200, 200), ComboDropDownSize);
+
+                if (ImGui::BeginChild("##OptList", ComboDropDownSize, false, ImGuiChildFlags_NavFlattened))
+                {
+                    TVector<FAssetData*> Assets = FAssetRegistry::Get().FindByPredicate([&](const FAssetData& Data)
+                    {
+                        CClass* DataClass = FindObject<CClass>(Data.AssetClass);
+                        CClass* PropertyClass = ObjectProperty->GetPropertyClass();
+                        return DataClass->IsChildOf(PropertyClass);
+                    });
+                    
+                    for (const FAssetData* Asset : Assets)
+                    {
+                        if (!SearchFilter.PassFilter(Asset->AssetName.c_str()))
+                        {
+                            continue;
+                        }
+                        
+                        FFixedString SelectableLabel;
+                        SelectableLabel.append(LE_ICON_FILE).append(" ").append(Asset->AssetName.c_str());
+                        if (ImGui::Selectable(SelectableLabel.c_str()))
+                        {
+                            Object = LoadObject<CObject>(Asset->AssetGUID);
+                            ImGui::CloseCurrentPopup();
+                        
+                            bWasChanged = true;
+                        }
+                    }
+                }
+                
+                ImGui::EndChild();
+                ImGui::EndCombo();
+            }
+        
+            ImGui::BeginDisabled(Object == nullptr);
+            if (ImGui::Button(LE_ICON_CONTENT_COPY "##Copy", GButtonSize))
+            {
+                ImGui::SetClipboardText(HardObject->GetName().c_str());
+            }
+
+            ImGui::SameLine();
+
+            if (ImGui::Button(LE_ICON_COG "##Options", GButtonSize))
+            {
+                
+            }
+
+            ImGui::SameLine();
+        
+            ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.6f, 0.2f, 0.2f, 1.0f));
+            ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.7f, 0.25f, 0.25f, 1.0f));
+            ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.5f, 0.15f, 0.15f, 1.0f));
+
+            if (ImGui::Button(LE_ICON_CLOSE_CIRCLE "##Clear", GButtonSize))
+            {
+                Object.Reset();
+                bWasChanged = true;
+            }
+        
+            ImGui::PopStyleColor(3);
+
+
+            ImGui::EndDisabled();
+            ImGui::EndGroup();
+        }
+        ImGui::EndChild();
+
+        ImGui::PopID();
+
+        ImGui::PopItemWidth();
+        
+        return bWasChanged ? EPropertyChangeOp::Updated : EPropertyChangeOp::None;
+    }
+
+    void FCObjectPropertyCustomization::UpdatePropertyValue(TSharedPtr<FPropertyHandle> Property)
+    {
+        TObjectPtr<CObject> Value = Object.Lock();
+        Property->Property->SetValue(Property->ContainerPtr, Value, Property->Index);
+    }
+
+    void FCObjectPropertyCustomization::HandleExternalUpdate(TSharedPtr<FPropertyHandle> Property)
+    {
+        TObjectPtr<CObject> Value;
+        Property->Property->GetValue(Property->ContainerPtr, &Value, Property->Index);
+        Object = Value;
+    }
+}

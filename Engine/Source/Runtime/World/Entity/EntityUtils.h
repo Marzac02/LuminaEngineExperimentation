@@ -1,0 +1,156 @@
+﻿#pragma once
+#include "Components/RelationshipComponent.h"
+#include "Core/Serialization/Archiver.h"
+#include "Registry/EntityRegistry.h"
+
+namespace Lumina
+{
+    class CStruct;
+}
+
+namespace Lumina::ECS::Utils
+{
+    RUNTIME_API bool SerializeEntity(FArchive& Ar, FEntityRegistry& Registry, entt::entity& Entity);
+    RUNTIME_API bool SerializeRegistry(FArchive& Ar, FEntityRegistry& Registry);
+    RUNTIME_API bool EntityHasTag(const FName& Tag, FEntityRegistry& Registry, entt::entity Entity);
+    RUNTIME_API void ReparentEntity(FEntityRegistry& Registry, entt::entity Child, entt::entity Parent);
+    RUNTIME_API void DestroyEntityHierarchy(FEntityRegistry& Registry, entt::entity Entity);
+    RUNTIME_API void DetachImmediateChildren(FEntityRegistry& Registry, entt::entity Entity);
+    RUNTIME_API void RemoveFromParent(FEntityRegistry& Registry, entt::entity Child);
+    RUNTIME_API void AddToParent(FEntityRegistry& Registry, entt::entity Child, entt::entity Parent);
+    RUNTIME_API bool IsDescendantOf(FEntityRegistry& Registry, entt::entity Potential, entt::entity Ancestor);
+    RUNTIME_API bool IsChild(FEntityRegistry& Registry, entt::entity Entity);
+    RUNTIME_API bool IsParent(FEntityRegistry& Registry, entt::entity Entity);
+    RUNTIME_API size_t GetChildCount(FEntityRegistry& Registry, entt::entity Parent);
+    RUNTIME_API size_t GetSiblingIndex(FEntityRegistry& Registry, entt::entity Entity);
+    RUNTIME_API void CollectDescendants(FEntityRegistry& Registry, entt::entity Entity, TVector<entt::entity>& OutDescendants);
+    RUNTIME_API void CollectChildren(FEntityRegistry& Registry, entt::entity Entity, TVector<entt::entity>& OutChildren);
+    
+    NODISCARD RUNTIME_API entt::id_type GetTypeID(const sol::table& Data);
+    NODISCARD RUNTIME_API entt::id_type GetTypeID(const sol::userdata& Data);
+    NODISCARD RUNTIME_API entt::id_type GetTypeID(FStringView Name);
+    NODISCARD RUNTIME_API entt::id_type GetTypeID(const CStruct* Type);
+
+    template<typename T>
+    NODISCARD entt::id_type DeduceType(T&& Obj)
+    {
+        switch (Obj.get_type())
+        {
+            case sol::type::number:     return Obj.template as<entt::id_type>();
+            case sol::type::table:      return GetTypeID(Obj.template as<sol::table>());
+            case sol::type::userdata:   return GetTypeID(Obj.template as<sol::userdata>());
+            case sol::type::string:     return GetTypeID(Obj.template as<const char*>());
+        }
+
+        UNREACHABLE();
+        return entt::id_type{};
+    }
+    
+    NODISCARD RUNTIME_API THashSet<entt::id_type> CollectTypes(const sol::variadic_args& Args);
+
+    NODISCARD RUNTIME_API THashSet<entt::id_type> CollectTypes(const sol::table& Args);
+
+    template<typename ... TArgs>
+    entt::meta_any InvokeMetaFunc(const entt::meta_type& MetaType, entt::id_type FunctionID, TArgs&&... Args)
+    {
+        LUMINA_PROFILE_SCOPE();
+        if (!MetaType)
+        {
+            return entt::meta_any{};
+        }
+
+        auto&& F = MetaType.func(FunctionID);
+        if (!F)
+        {
+            return entt::meta_any{};
+        }
+        
+        return F.invoke({}, Forward<TArgs>(Args)...);
+    }
+
+    template<typename ... TArgs>
+    auto InvokeMetaFunc(const entt::id_type& TypeID, entt::id_type FunctionID, TArgs&&... Args)
+    {
+        return InvokeMetaFunc(entt::resolve(TypeID), FunctionID, Forward<TArgs>(Args)...);
+    }
+    
+    RUNTIME_API inline auto GetSharedMetaCtxHandle()
+    {
+        return entt::locator<entt::meta_ctx>::handle();
+    }
+
+    void SetMetaContext(auto SharedCtx)
+    {
+        entt::locator<entt::meta_ctx>::reset(SharedCtx);
+    }
+
+    template<typename TFunc>
+    requires(eastl::is_invocable_v<TFunc, void*, entt::basic_sparse_set<>&, entt::meta_type>)
+    void ForEachComponent(TFunc&& Func, FEntityRegistry& Registry, entt::entity Entity)
+    {
+        for (auto&& [ID, Storage] : Registry.storage())
+        {
+            if (Storage.contains(Entity))
+            {
+                entt::meta_type MetaType = entt::resolve(Storage.info());
+                eastl::invoke(Func, Storage.value(Entity), Storage, MetaType);
+            }
+        }
+    }
+    
+    template<typename TFunc>
+    void ForEachChild(entt::registry& Registry, entt::entity Parent, TFunc&& Func)
+    {
+        FRelationshipComponent* ParentRelationship = Registry.try_get<FRelationshipComponent>(Parent);
+        if (!ParentRelationship || ParentRelationship->First == entt::null)
+        {
+            return;
+        }
+
+        entt::entity Current = ParentRelationship->First;
+        while (Current != entt::null)
+        {
+            entt::entity Next = entt::null;
+            if (FRelationshipComponent* CurrentRelationship = Registry.try_get<FRelationshipComponent>(Current))
+            {
+                Next = CurrentRelationship->Next;
+            }
+
+            eastl::invoke(Func, Current);
+
+            Current = Next;
+        }
+    }
+    
+    template<typename TFunc>
+    void ForEachDescendant(entt::registry& Registry, entt::entity Parent, TFunc&& Func)
+    {
+        ForEachChild(Registry, Parent, [&](entt::entity Child)
+        {
+            eastl::invoke(Func, Child);
+            ForEachDescendant(Registry, Child, Func);
+        });
+    }
+    
+    template<typename TFunc>
+    void ForEachAncestor(entt::registry& Registry, entt::entity Entity, TFunc&& Func)
+    {
+        FRelationshipComponent* Relationship = Registry.try_get<FRelationshipComponent>(Entity);
+        while (Relationship && Relationship->Parent != entt::null)
+        {
+            eastl::invoke(Func, Relationship->Parent);
+            Relationship = Registry.try_get<FRelationshipComponent>(Relationship->Parent);
+        }
+    }
+    
+    
+    
+    inline FArchive& operator << (FArchive& Ar, entt::entity& Entity)
+    {
+        uint32 UintEntity = static_cast<uint32>(Entity);
+        Ar << UintEntity;
+        Entity = static_cast<entt::entity>(UintEntity);
+        
+        return Ar;
+    }
+}

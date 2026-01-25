@@ -1,0 +1,379 @@
+#include "pch.h"
+
+#include "ObjectBase.h"
+
+#include <utility>
+
+#include "Class.h"
+#include "DeferredRegistry.h"
+#include "Lumina.h"
+#include "ObjectAllocator.h"
+#include "ObjectArray.h"
+#include "ObjectHash.h"
+#include "Core/Console/ConsoleVariable.h"
+#include "EASTL/sort.h"
+#include "Log/Log.h"
+#include "Memory/Memory.h"
+#include "Package/Package.h"
+
+
+
+namespace Lumina
+{
+
+    static TConsoleVar MaxCObjectCount("Core.CObject.MaxCount", 100'000, "Maximum number of allowed CObjects");
+    
+    RUNTIME_API FCObjectArray GObjectArray;
+
+
+    /** Objects that will not be destroyed */
+    static THashSet<TObjectPtr<CObjectBase>> GRootedObjects;
+    static FMutex RootMutex;
+
+    struct FPendingRegistrantInfo
+    {
+        static TVector<CObjectBase*>& Get()
+        {
+            static TVector<CObjectBase*> PendingRegistrantInfo;
+            return PendingRegistrantInfo;
+        }
+    };
+    
+    struct FPendingRegistrant
+    {
+        CObjectBase*        Object;
+        FPendingRegistrant* Next;
+    };
+
+    static FPendingRegistrant* GFirstPendingRegistrant = nullptr;
+    static FPendingRegistrant* GLastPendingRegistrant = nullptr;
+
+
+    //-----------------------------------------------------------------------------------------------
+    
+    CObjectBase::CObjectBase()
+        : ObjectFlags()
+        , InternalIndex(INDEX_NONE)
+    {
+    }
+
+    CObjectBase::~CObjectBase()
+    {
+        FObjectHashTables::Get().RemoveObject(this);
+        GObjectArray.DeallocateObject(InternalIndex);
+    }
+
+    void CObjectBase::ConstructInternal(const FObjectInitializer& OI)
+    {
+        NamePrivate = OI.Params.Name;
+        GUIDPrivate = OI.Params.Guid;
+        ClassPrivate = const_cast<CClass*>(OI.Params.Class);
+        PackagePrivate = OI.Package;
+
+        AddObject();
+    }
+
+    CObjectBase::CObjectBase(EObjectFlags InFlags)
+        : ObjectFlags(InFlags)
+        , InternalIndex(0)
+    {
+    }
+
+    CObjectBase::CObjectBase(CClass* InClass, EObjectFlags InFlags, CPackage* Package, FName InName, const FGuid& GUID)
+        : ObjectFlags(InFlags)
+        , ClassPrivate(InClass)
+        , PackagePrivate(Package)
+        , NamePrivate(Move(InName))
+        , GUIDPrivate(GUID)
+        , InternalIndex(0)
+    {
+    }
+
+    void CObjectBase::BeginRegister()
+    {
+        FPendingRegistrant* PendingRegistrant = new FPendingRegistrant{this, nullptr };
+        FPendingRegistrantInfo::Get().push_back(this);
+
+        if (GLastPendingRegistrant)
+        {
+            GLastPendingRegistrant->Next = PendingRegistrant;
+        }
+        else
+        {
+            ASSERT(!GFirstPendingRegistrant);
+            GFirstPendingRegistrant = PendingRegistrant;
+        }
+
+        GLastPendingRegistrant = PendingRegistrant;
+    }
+
+    void CObjectBase::FinishRegister(CClass* InClass, const TCHAR* InName)
+    {
+        ASSERT(ClassPrivate == nullptr);
+        ClassPrivate = InClass;
+
+        AddObject();
+        AddToRoot();
+    }
+    
+    void CObjectBase::ForceDestroyNow()
+    {
+        if (HasAnyFlag(OF_MarkedDestroy))
+        {
+            return;
+        }
+        
+        SetFlag(OF_MarkedDestroy);
+        
+        OnDestroy();
+        
+        GCObjectAllocator.FreeCObject(this);
+    }
+
+    void CObjectBase::ConditionalBeginDestroy()
+    {
+        if (HasAnyFlag(OF_MarkedDestroy))
+        {
+            return;
+        }
+        
+        if (!GObjectArray.IsReferencedByIndex(InternalIndex))
+        {
+            SetFlag(OF_MarkedDestroy);
+
+            OnDestroy();
+            
+            GCObjectAllocator.FreeCObject(this);
+        }
+    }
+
+    int32 CObjectBase::GetStrongRefCount() const
+    {
+        return GObjectArray.GetStrongRefCountByIndex(InternalIndex);
+    }
+
+    void CObjectBase::HandleNameChange(const FName& NewName, CPackage* NewPackage) noexcept
+    {
+        FObjectHashTables::Get().RemoveObject(this);
+        
+        NamePrivate = NewName;
+        
+        if (NewPackage != PackagePrivate && NewPackage != nullptr)
+        {
+            PackagePrivate = NewPackage;
+        }
+
+        FObjectHashTables::Get().AddObject(this);
+    }
+
+    void CObjectBase::AddToRoot()
+    {
+        FScopeLock Lock(RootMutex);
+        GRootedObjects.emplace(this);
+        SetFlag(OF_Rooted);
+    }
+
+    void CObjectBase::RemoveFromRoot()
+    {
+        FScopeLock Lock(RootMutex);
+        GRootedObjects.erase(this);
+        ClearFlags(OF_Rooted);
+    }
+
+    FFixedString CObjectBase::MakeDisplayName() const
+    {
+        return NamePrivate.c_str();
+    }
+
+    void CObjectBase::AddObject()
+    {
+        InternalIndex = GObjectArray.AllocateObject(this).Index;
+        FObjectHashTables::Get().AddObject(this);
+    }
+
+    //-----------------------------------------------------------------------------------------------
+    
+
+    static void DequeuePendingAutoRegistrations(TVector<FPendingRegistrant>& OutPending)
+    {
+        FPendingRegistrant* NextPendingRegistrant = GFirstPendingRegistrant;
+        GFirstPendingRegistrant = nullptr;
+        GLastPendingRegistrant = nullptr;
+        while(NextPendingRegistrant)
+        {
+            FPendingRegistrant* PendingRegistrant = NextPendingRegistrant;
+            OutPending.push_back(*PendingRegistrant);
+            NextPendingRegistrant = PendingRegistrant->Next;
+            Memory::Delete(PendingRegistrant);
+        }
+    }
+
+    static void ProcessRegistrants()
+    {
+        TVector<FPendingRegistrant> PendingRegistrants;
+        DequeuePendingAutoRegistrations(PendingRegistrants);
+
+        for (size_t Index = 0; Index < PendingRegistrants.size(); ++Index)
+        {
+            const FPendingRegistrant& PendingRegistrant = PendingRegistrants[Index];
+
+            CObjectForceRegistration(PendingRegistrant.Object);
+
+            // Register any new results.
+            DequeuePendingAutoRegistrations(PendingRegistrants);
+        }
+    }
+    
+    void CObjectForceRegistration(CObjectBase* Object)
+    {
+        TVector<CObjectBase*>& Pending = FPendingRegistrantInfo::Get();
+        int32 Index = VectorFindIndex(Pending, Object);
+        
+        if (Index != INDEX_NONE)
+        {
+            // Remove here so it doesn't happen twice.
+            Pending.erase(Pending.begin() + Index);
+            Object->FinishRegister(CClass::StaticClass(), TEXT(""));
+        }
+    }
+    
+    static void LoadAllCompiledInEnumsAndStructs()
+    {
+        FEnumDeferredRegistry& EnumRegistry = FEnumDeferredRegistry::Get();
+        FStructDeferredRegistry& StructRegistry = FStructDeferredRegistry::Get();
+
+        EnumRegistry.ProcessRegistrations();
+        StructRegistry.ProcessRegistrations();
+    }
+
+    void ProcessNewlyLoadedCObjects()
+    {
+        FClassDeferredRegistry& ClassRegistry = FClassDeferredRegistry::Get();
+        FEnumDeferredRegistry& EnumRegistry = FEnumDeferredRegistry::Get();
+        FStructDeferredRegistry& StructRegistry = FStructDeferredRegistry::Get();
+
+        while (GFirstPendingRegistrant 
+            || ClassRegistry.HasPendingRegistrations()
+            || EnumRegistry.HasPendingRegistrations()
+            || StructRegistry.HasPendingRegistrations())
+        {
+            ProcessRegistrants();
+            LoadAllCompiledInEnumsAndStructs();
+
+            if (ClassRegistry.HasPendingRegistrations())
+            {
+                TVector<CClass*> NewClasses;
+                ClassRegistry.ProcessRegistrations([&NewClasses](CClass& Class)
+                {
+                    NewClasses.push_back(&Class);
+                });
+
+                THashMap<const CClass*, int32> DepthMemo;
+
+                TFunction<int32(const CClass*)> GetClassDepth;
+                GetClassDepth = [&](const CClass* Cls) -> int32
+                {
+                    if (!Cls)
+                    {
+                        return 0;
+                    }
+
+                    int32& Memo = DepthMemo[Cls];
+                    if (Memo != 0)
+                    {
+                        return Memo;
+                    }
+
+                    Memo = 1 + GetClassDepth(Cls->GetSuperClass());
+                    return Memo;
+                };
+                
+                // Sort by class depth so that base classes come before derived ones
+                eastl::sort(NewClasses.begin(), NewClasses.end(), [&](const CClass* A, const CClass* B)
+                {
+                    return GetClassDepth(A) < GetClassDepth(B);
+                });
+
+                for (CClass* NewClass : NewClasses)
+                {
+                    NewClass->GetDefaultObject();
+                }
+            }
+        }
+        
+    }
+
+    void InitializeCObjectSystem()
+    {
+        GObjectArray.AllocateObjectPool(MaxCObjectCount.GetValue());
+    }
+
+    void ShutdownCObjectSystem()
+    {
+        GRootedObjects.clear();
+        
+        GObjectArray.Shutdown();
+        
+        FObjectHashTables::Get().Clear();
+    }
+
+
+    void RegisterCompiledInInfo(CClass*(*RegisterFn)(), const TCHAR* Package, const TCHAR* Name)
+    {
+        FClassDeferredRegistry::Get().AddRegistration(RegisterFn);
+    }
+
+    void RegisterCompiledInInfo(CEnum*(*RegisterFn)(), const FEnumRegisterCompiledInInfo& Info)
+    {
+        FEnumDeferredRegistry::Get().AddRegistration(RegisterFn);
+    }
+
+    void RegisterCompiledInInfo(CStruct*(*RegisterFn)(), const FStructRegisterCompiledInInfo& Info)
+    {
+        FStructDeferredRegistry::Get().AddRegistration(RegisterFn);
+    }
+
+    CEnum* GetStaticEnum(CEnum*(* RegisterFn)(), const TCHAR* Name)
+    {
+        return RegisterFn();
+    }
+
+    void RegisterCompiledInInfo(const FClassRegisterCompiledInInfo* Info, size_t NumClassInfo)
+    {
+        for (const FClassRegisterCompiledInInfo* It = Info; It != Info + NumClassInfo; ++It)
+        {
+            RegisterCompiledInInfo(It->RegisterFn, Info->Package, Info->Name);
+        }
+    }
+
+    void RegisterCompiledInInfo(const FEnumRegisterCompiledInInfo* EnumInfo, size_t NumEnumInfo, const FClassRegisterCompiledInInfo* ClassInfo, size_t NumClassInfo)
+    {
+        for (const FClassRegisterCompiledInInfo* It = ClassInfo; It != ClassInfo + NumClassInfo; ++It)
+        {
+            RegisterCompiledInInfo(It->RegisterFn, ClassInfo->Package, ClassInfo->Name);
+        }
+
+        for (const FEnumRegisterCompiledInInfo* It = EnumInfo; It != EnumInfo + NumEnumInfo; ++It)
+        {
+            RegisterCompiledInInfo(It->RegisterFn, *It);
+        }
+    }
+
+    void RegisterCompiledInInfo(const FEnumRegisterCompiledInInfo* EnumInfo, size_t NumEnumInfo, const FClassRegisterCompiledInInfo* ClassInfo, size_t NumClassInfo, const FStructRegisterCompiledInInfo* StructInfo, size_t NumStructInfo)
+    {
+        for (const FClassRegisterCompiledInInfo* It = ClassInfo; It != ClassInfo + NumClassInfo; ++It)
+        {
+            RegisterCompiledInInfo(It->RegisterFn, ClassInfo->Package, ClassInfo->Name);
+        }
+
+        for (const FEnumRegisterCompiledInInfo* It = EnumInfo; It != EnumInfo + NumEnumInfo; ++It)
+        {
+            RegisterCompiledInInfo(It->RegisterFn, *It);
+        }
+
+        for (const FStructRegisterCompiledInInfo* It = StructInfo; It != StructInfo + NumStructInfo; ++It)
+        {
+            RegisterCompiledInInfo(It->RegisterFn, *It);
+        }
+    }
+}
