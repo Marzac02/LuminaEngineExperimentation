@@ -13,7 +13,7 @@ namespace Lumina::Reflection
         FReflectionDatabase() = default;
         ~FReflectionDatabase() = default;
 
-        void AddReflectedType(const eastl::shared_ptr<FReflectedType>& Type);
+        void AddReflectedType(FReflectedType* Type);
 
         bool IsTypeRegistered(const FStringHash& Str) const;
 
@@ -21,18 +21,18 @@ namespace Lumina::Reflection
         
         template<typename T>
         requires(eastl::is_base_of_v<FReflectedType, T>)
-        eastl::shared_ptr<T> GetOrCreateReflectedType(const FStringHash& TypeName);
+        T* GetOrCreateReflectedType(const FStringHash& TypeName);
 
         template<typename T>
         requires(eastl::is_base_of_v<FReflectedType, T>)
-        eastl::shared_ptr<T> GetReflectedTypeChecked(const FStringHash& TypeName) const;
+        T* GetReflectedTypeChecked(const FStringHash& TypeName) const;
 
         template<typename T>
-        eastl::shared_ptr<T> GetReflectedType(const FStringHash& TypeName) const;
+        T* GetReflectedType(const FStringHash& TypeName) const;
 
         
-        eastl::hash_map<FReflectedHeader*, eastl::vector<eastl::shared_ptr<FReflectedType>>>    ReflectedTypes;
-        eastl::hash_map<FStringHash, eastl::shared_ptr<FReflectedType>>                         TypeHashMap;
+        eastl::hash_map<FReflectedHeader*, eastl::vector<eastl::unique_ptr<FReflectedType>>>    ReflectedTypes;
+        eastl::hash_map<FStringHash, FReflectedType*>                                           TypeHashMap;
         
     };
 
@@ -41,16 +41,16 @@ namespace Lumina::Reflection
 
     template <typename T>
     requires(eastl::is_base_of_v<FReflectedType, T>)
-    eastl::shared_ptr<T> FReflectionDatabase::GetOrCreateReflectedType(const FStringHash& TypeName)
+    T* FReflectionDatabase::GetOrCreateReflectedType(const FStringHash& TypeName)
     {
-        eastl::shared_ptr<T> ReturnValue;
+        T* ReturnValue;
         if (IsTypeRegistered(TypeName))
         {
-            ReturnValue = eastl::static_pointer_cast<T>(TypeHashMap.at(TypeName));
+            ReturnValue = static_cast<T*>(TypeHashMap.at(TypeName));
         }
         else
         {
-            ReturnValue = eastl::make_shared<T>();
+            ReturnValue = new T{};
         }
         ReturnValue->QualifiedName = TypeName.c_str();
 
@@ -58,24 +58,24 @@ namespace Lumina::Reflection
     }
 
     template <typename T> requires (eastl::is_base_of_v<FReflectedType, T>)
-    eastl::shared_ptr<T> FReflectionDatabase::GetReflectedTypeChecked(const FStringHash& TypeName) const
+    T* FReflectionDatabase::GetReflectedTypeChecked(const FStringHash& TypeName) const
     {
         if (!IsTypeRegistered(TypeName))
         {
             std::abort();
         }
         
-        return eastl::static_pointer_cast<T>(TypeHashMap.at(TypeName));
+        return static_cast<T*>(TypeHashMap.at(TypeName));
     }
 
     template <typename T>
-    eastl::shared_ptr<T> FReflectionDatabase::GetReflectedType(const FStringHash& TypeName) const
+    T* FReflectionDatabase::GetReflectedType(const FStringHash& TypeName) const
     {
         if (TypeHashMap.find(TypeName) == TypeHashMap.end())
         {
             return nullptr;
         }
 
-        return eastl::static_pointer_cast<T>(TypeHashMap.at(TypeName));
+        return static_cast<T*>(TypeHashMap.at(TypeName));
     }
 }

@@ -14,7 +14,7 @@ local Workspace = {}
 newaction 
 {
 	trigger = "Reflection",
-	description = "Builds necessary reflection info.",
+	description = "Builds necessary reflection info and packs into a json file.",
 
 	onStart = function()
         ProjectFiles = {}
@@ -69,14 +69,14 @@ newaction
     
     execute = function()
 
-        local data = {
+        local Data = {
             WorkspaceName = Workspace.name,
             WorkspacePath = _MAIN_SCRIPT_DIR,
             Projects = {}
         }
     
         for Name, ProjectData in pairs(ProjectFiles) do
-            table.insert(data.Projects, {
+            table.insert(Data.Projects, {
                 Name = Name,
                 IncludeDirs = ProjectData.IncludeDirs,
                 Files = ProjectData.Files
@@ -85,7 +85,7 @@ newaction
     
         local File = io.open("Reflection_Files.json", "w")
         if File then
-            File:write(json.encode(data))
+            File:write(json.encode(Data))
             File:close()
         end
 

@@ -15,10 +15,10 @@ namespace Lumina::Reflection
         FReflectedHeader(FReflectedProject* InProject, const eastl::string& Path);
         
         std::filesystem::file_time_type StartingFileTime;
-        eastl::string               FileName;
-        eastl::string               HeaderPath;
-        FReflectedProject*          Project;
-        
-        bool                        bDirty = false;
+        eastl::string                   FileName;
+        eastl::string                   HeaderPath;
+        FReflectedProject*              Project;
+                                        
+        bool                            bDirty = false;
     };
 }

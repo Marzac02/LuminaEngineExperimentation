@@ -2,7 +2,7 @@
 
 namespace Lumina::Reflection
 {
-    void FReflectionDatabase::AddReflectedType(const eastl::shared_ptr<FReflectedType>& Type)
+    void FReflectionDatabase::AddReflectedType(FReflectedType* Type)
     {
         if(Type == nullptr || Type->DisplayName.empty())
         {
@@ -17,7 +17,10 @@ namespace Lumina::Reflection
         }
         
         auto& TypeVector = ReflectedTypes[Type->Header];
-        TypeVector.push_back(Type);
+        
+        eastl::unique_ptr<FReflectedType> UniquePtr(Type);
+        
+        TypeVector.push_back(eastl::move(UniquePtr));
         
         TypeHashMap.insert_or_assign(NameHash, Type);
     }

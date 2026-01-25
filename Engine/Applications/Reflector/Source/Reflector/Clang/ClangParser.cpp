@@ -2,7 +2,6 @@
 #include <spdlog/spdlog.h>
 #include <filesystem>
 #include <fstream>
-#include <print>
 #include <clang-c/Index.h>
 #include "EASTL/fixed_vector.h"
 #include "Reflector/ProjectSolution.h"
@@ -30,8 +29,15 @@ namespace Lumina::Reflection
         }
         AmalgamationFile << "#pragma once\n\n";
         
-        eastl::vector<eastl::string> FullIncludePaths;
-        eastl::fixed_vector<const char*, 32> ClangArgs;
+        // Needed to keep dynamic args alive.
+        eastl::fixed_vector<eastl::string, 256, false>  ClangArgStorage;
+        eastl::fixed_vector<const char*, 256, false>    ClangArgs;
+        
+        auto AppendArg = [&](eastl::string Arg)
+        {
+            ClangArgStorage.emplace_back(eastl::move(Arg));
+            ClangArgs.emplace_back(ClangArgStorage.back().c_str());
+        };
         
         eastl::string LuminaDirectory = std::getenv("LUMINA_DIR");
         if (!LuminaDirectory.empty() && LuminaDirectory.back() == '/' )
@@ -41,6 +47,11 @@ namespace Lumina::Reflection
         
         for (const auto& Project : Workspace->ReflectedProjects)
         {
+            eastl::string APIDecl = "-D" + Project->Name + "_API=";
+            APIDecl.make_upper();
+            
+            AppendArg(eastl::move(APIDecl));
+            
             for (const eastl::string& IncludeDir : Project->IncludeDirs)
             {
                 if (IncludeDir.find("GLM") != eastl::string::npos || IncludeDir.find("glm") != eastl::string::npos)
@@ -48,8 +59,7 @@ namespace Lumina::Reflection
                     continue;
                 }
                 
-                ClangArgs.emplace_back("-I");
-                ClangArgs.emplace_back(IncludeDir.c_str());
+                AppendArg("-I" + IncludeDir);
             }
             
             for (auto& [Path, Header] : Project->Headers)
@@ -65,35 +75,29 @@ namespace Lumina::Reflection
     
         AmalgamationFile.close();   
         
-        eastl::string ManualReflectPath;
-        ManualReflectPath.append(LuminaDirectory).append("/Lumina/Engine/Source/Runtime/Core/Object/ManualReflectTypes.h");
-        ClangArgs.emplace_back("-include");
-        ClangArgs.emplace_back(ManualReflectPath.c_str());
+        eastl::string ManualReflectPath = "-include" + LuminaDirectory;
+        ManualReflectPath.append("/Lumina/Engine/Source/Runtime/Core/Object/ManualReflectTypes.h");
         
-        ClangArgs.emplace_back("-x");
-        ClangArgs.emplace_back("c++");
-        ClangArgs.emplace_back("-std=c++23");
-        ClangArgs.emplace_back("-O0");
-        ClangArgs.emplace_back("-D");
-        ClangArgs.emplace_back("REFLECTION_PARSER");
-        ClangArgs.emplace_back("-D");
-        ClangArgs.emplace_back("NDEBUG");
-        ClangArgs.emplace_back("-DRUNTIME_API=");
-        ClangArgs.emplace_back("-DEDITOR_API=");
-        ClangArgs.emplace_back("-fms-extensions");
-        ClangArgs.emplace_back("-fms-compatibility");
-        ClangArgs.emplace_back("-Wfatal-errors=0");
-        ClangArgs.emplace_back("-w");
-        ClangArgs.emplace_back("-ferror-limit=1000000000");
-        ClangArgs.emplace_back("-Wno-multichar");
-        ClangArgs.emplace_back("-Wno-deprecated-builtins");
-        ClangArgs.emplace_back("-Wno-unknown-warning-option");
-        ClangArgs.emplace_back("-Wno-return-type-c-linkage");
-        ClangArgs.emplace_back("-Wno-c++98-compat-pedantic");
-        ClangArgs.emplace_back("-Wno-gnu-folding-constant");
-        ClangArgs.emplace_back("-Wno-vla-extension-static-assert");
-        ClangArgs.emplace_back("-fno-spell-checking");
-        ClangArgs.emplace_back("-fno-delayed-template-parsing");
+        AppendArg(eastl::move(ManualReflectPath));
+        AppendArg("-x");
+        AppendArg("c++");
+        AppendArg("-std=c++23");
+        AppendArg("-O0");
+        AppendArg("-DREFLECTION_PARSER");
+        AppendArg("-DNDEBUG");
+        AppendArg("-fms-extensions");
+        AppendArg("-fms-compatibility");
+        AppendArg("-Wfatal-errors=0");
+        AppendArg("-ferror-limit=1000000000");
+        AppendArg("-Wno-multichar");
+        AppendArg("-Wno-deprecated-builtins");
+        AppendArg("-Wno-unknown-warning-option");
+        AppendArg("-Wno-return-type-c-linkage");
+        AppendArg("-Wno-c++98-compat-pedantic");
+        AppendArg("-Wno-gnu-folding-constant");
+        AppendArg("-Wno-vla-extension-static-assert");
+        AppendArg("-fno-spell-checking");
+        AppendArg("-fno-delayed-template-parsing");
     
         ClangIndex = clang_createIndex(0, 0);
         

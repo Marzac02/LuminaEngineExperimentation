@@ -74,7 +74,7 @@ namespace Lumina::Reflection::Visitor
             return CXChildVisit_Break;
         }
         
-        eastl::shared_ptr<FReflectedEnum> ReflectedEnum = Context->ReflectionDatabase.GetOrCreateReflectedType<FReflectedEnum>(FStringHash(FullyQualifiedName));
+        FReflectedEnum* ReflectedEnum = Context->ReflectionDatabase.GetOrCreateReflectedType<FReflectedEnum>(FStringHash(FullyQualifiedName));
         ReflectedEnum->DisplayName = CursorName;
         ReflectedEnum->Header = Context->ReflectedHeader;
         ReflectedEnum->Type = FReflectedType::EType::Enum;
@@ -88,7 +88,7 @@ namespace Lumina::Reflection::Visitor
         
         FReflectedType* PreviousParentType = Context->ParentReflectedType;
         
-        Context->ParentReflectedType = ReflectedEnum.get();
+        Context->ParentReflectedType = ReflectedEnum;
         clang_visitChildren(Cursor, VisitEnumContents, Context);
         Context->ParentReflectedType = PreviousParentType;
         

@@ -3,6 +3,8 @@
 #include "EASTL/string.h"
 #include "EASTL/vector.h"
 #include "Reflector/Utils/MetadataUtils.h"
+#include "Reflector/Types/Functions/ReflectedFunction.h"
+#include "Reflector/Types/Properties/ReflectedProperty.h"
 
 namespace Lumina::Reflection
 {
@@ -10,11 +12,6 @@ namespace Lumina::Reflection
     class FReflectedProject;
 }
 
-namespace Lumina
-{
-    class FReflectedFunction;
-    class FReflectedProperty;
-}
 
 /** This must reflect EPropertyTypeFlags found in ObjectCore.h */
 enum class EPropertyTypeFlags : uint64_t
@@ -116,8 +113,8 @@ namespace Lumina::Reflection
         
         void GenerateMetadata(const eastl::string& InMetadata);
 
-        eastl::vector<eastl::shared_ptr<FReflectedProperty>>    Props;
-        eastl::vector<eastl::shared_ptr<FReflectedFunction>>    Functions;
+        eastl::vector<eastl::unique_ptr<FReflectedProperty>>    Props;
+        eastl::vector<eastl::unique_ptr<FReflectedFunction>>    Functions;
         eastl::vector<FMetadataPair>                            Metadata;
         FReflectedHeader*                                       Header;
         eastl::string                                           DisplayName;
@@ -173,8 +170,8 @@ namespace Lumina::Reflection
             Type = EType::Structure;
         }
 
-        void PushProperty(const eastl::shared_ptr<FReflectedProperty>& NewProperty);
-        void PushFunction(const eastl::shared_ptr<FReflectedFunction>& NewFunction);
+        void PushProperty(eastl::unique_ptr<FReflectedProperty>&& NewProperty);
+        void PushFunction(eastl::unique_ptr<FReflectedFunction>&& NewFunction);
 
         eastl::string GetTypeName() const override { return "CStruct"; }
         

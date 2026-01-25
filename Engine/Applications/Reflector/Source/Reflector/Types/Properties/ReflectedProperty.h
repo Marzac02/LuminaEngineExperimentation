@@ -34,15 +34,15 @@ namespace Lumina
         virtual bool DeclareAccessors(eastl::string& Stream, const eastl::string& FileID);
         virtual bool DefineAccessors(eastl::string& Stream, Reflection::FReflectedType* ReflectedType);
 
+        eastl::vector<FMetadataPair>    Metadata;
         eastl::string                   RawTypeName;
         eastl::string                   TypeName;
         eastl::string                   Namespace;
         eastl::string                   Name;
         eastl::string                   Outer;
-        bool                            bInner = false;
-        eastl::vector<FMetadataPair>    Metadata;
-
         eastl::string                   GetterFunc;
         eastl::string                   SetterFunc;
+        
+        bool                            bInner = false;
     };
 }

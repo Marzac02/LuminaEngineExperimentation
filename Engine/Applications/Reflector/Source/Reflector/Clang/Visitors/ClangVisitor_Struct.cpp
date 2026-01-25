@@ -1,5 +1,4 @@
 ﻿#include "ClangVisitor.h"
-#include "EASTL/shared_ptr.h"
 #include "Reflector/Clang/ClangParserContext.h"
 #include "Reflector/Clang/Utils.h"
 #include "Reflector/ReflectionCore/ReflectionMacro.h"
@@ -107,17 +106,20 @@ namespace Lumina::Reflection::Visitor
 	}
 
 	template<typename T>
-	eastl::shared_ptr<T> CreateProperty(const FFieldInfo& Info)
+	eastl::unique_ptr<T> CreateProperty(const FFieldInfo& Info)
 	{
-		eastl::shared_ptr<T> New = eastl::make_shared<T>();
+		eastl::unique_ptr<T> New = eastl::make_unique<T>();
 		New->Name = Info.Name;
 		New->TypeName = Info.TypeName;
 		New->RawTypeName = Info.RawFieldType;
 		return New;
 	}
 
-	static bool CreatePropertyForType(FClangParserContext* Context, FReflectedStruct* Struct, eastl::shared_ptr<FReflectedProperty>& NewProperty, const FFieldInfo& FieldInfo)
+	static bool CreatePropertyForType(FClangParserContext* Context, FReflectedStruct* Struct, FReflectedProperty*& OutProperty, const FFieldInfo& FieldInfo)
 	{
+		OutProperty = nullptr;
+		
+		eastl::unique_ptr<FReflectedProperty> NewProperty;
 		switch (FieldInfo.Flags)
 		{
 		case EPropertyTypeFlags::UInt8:
@@ -207,7 +209,7 @@ namespace Lumina::Reflection::Visitor
 				SubType->Name = FieldInfo.Name + "_Inner";
 				SubType->PropertyFlags.emplace_back("PF_SubField");
 
-				eastl::shared_ptr<FReflectedProperty> FieldProperty;
+				FReflectedProperty* FieldProperty;
 				CreatePropertyForType(Context, Struct, FieldProperty, SubType.value());
 				FieldProperty->bInner = true;
 			}
@@ -230,7 +232,6 @@ namespace Lumina::Reflection::Visitor
 		case EPropertyTypeFlags::Vector:
 		{
 			auto ArrayProperty = CreateProperty<FReflectedArrayProperty>(FieldInfo);
-			NewProperty = ArrayProperty;
 
 			const CXType ArgType = clang_Type_getTemplateArgumentAsType(FieldInfo.Type, 0);
 			eastl::optional<FFieldInfo> ParamFieldInfo = CreateSubFieldInfo(Context, ArgType, FieldInfo);
@@ -242,7 +243,7 @@ namespace Lumina::Reflection::Visitor
 			ParamFieldInfo->Name = FieldInfo.Name + "_Inner";
 			ParamFieldInfo->PropertyFlags.emplace_back("PF_SubField");
 
-			eastl::shared_ptr<FReflectedProperty> FieldProperty;
+			FReflectedProperty* FieldProperty;
 			CreatePropertyForType(Context, Struct, FieldProperty, ParamFieldInfo.value());
 			if (FieldProperty == nullptr)
 			{
@@ -251,6 +252,7 @@ namespace Lumina::Reflection::Visitor
 			}
 
 			ArrayProperty->ElementTypeName = clang_getCString(clang_getTypeSpelling(ArgType));
+			NewProperty = eastl::move(ArrayProperty);
 
 			FieldProperty->bInner = true; // This property "belongs" to the array.
 		}
@@ -264,20 +266,24 @@ namespace Lumina::Reflection::Visitor
 
 		if (NewProperty != nullptr)
 		{
-			Struct->PushProperty(NewProperty);
+			OutProperty = NewProperty.get();
+			Struct->PushProperty(eastl::move(NewProperty));
 		}
 
 		return NewProperty != nullptr;
-
 	}
 
 
-	static bool CreateFunctionForType(const CXCursor& Cursor, FClangParserContext* Context, FReflectedStruct* Struct, eastl::shared_ptr<FReflectedFunction>& NewFunction)
+	static bool CreateFunctionForType(const CXCursor& Cursor, FClangParserContext* Context, FReflectedStruct* Struct, FReflectedFunction*& OutFunction)
 	{
-		NewFunction = eastl::make_shared<FReflectedFunction>();
+		OutFunction = nullptr;
+		
+		auto NewFunction = eastl::make_unique<FReflectedFunction>();
 		NewFunction->Outer = Struct->DisplayName;
 		NewFunction->Name = ClangUtils::GetCursorSpelling(Cursor);
-		Struct->PushFunction(NewFunction);
+		
+		OutFunction = NewFunction.get();
+		Struct->PushFunction(eastl::move(NewFunction));
 
 		return NewFunction != nullptr;
 	}
@@ -316,7 +322,7 @@ namespace Lumina::Reflection::Visitor
 				return CXChildVisit_Continue;
 			}
 
-			eastl::shared_ptr<FReflectedProperty> NewProperty;
+			FReflectedProperty* NewProperty;
 			CreatePropertyForType(Context, Type, NewProperty, FieldInfo.value());
 			NewProperty->GenerateMetadata(Macro.MacroContents);
 		}
@@ -329,7 +335,7 @@ namespace Lumina::Reflection::Visitor
 				return CXChildVisit_Continue;
 			}
 
-			eastl::shared_ptr<FReflectedFunction> NewFunction;
+			FReflectedFunction* NewFunction;
 			CreateFunctionForType(Cursor, Context, Type, NewFunction);
 			NewFunction->GenerateMetadata(Macro.MacroContents);
 		}
@@ -365,7 +371,7 @@ namespace Lumina::Reflection::Visitor
 			return CXChildVisit_Break;
 		}
 
-		eastl::shared_ptr<FReflectedStruct> ReflectedStruct = Context->ReflectionDatabase.GetOrCreateReflectedType<FReflectedStruct>(FStringHash(FullyQualifiedCursorName));
+		FReflectedStruct* ReflectedStruct = Context->ReflectionDatabase.GetOrCreateReflectedType<FReflectedStruct>(FStringHash(FullyQualifiedCursorName));
 		ReflectedStruct->DisplayName = CursorName;
 		ReflectedStruct->GenerateMetadata(Macro.MacroContents);
 		ReflectedStruct->Header = Context->ReflectedHeader;
@@ -380,8 +386,8 @@ namespace Lumina::Reflection::Visitor
 		}
 
 		FReflectedType* PreviousType = Context->ParentReflectedType;
-		Context->ParentReflectedType = ReflectedStruct.get();
-		Context->LastReflectedType = ReflectedStruct.get();
+		Context->ParentReflectedType = ReflectedStruct;
+		Context->LastReflectedType = ReflectedStruct;
 
 		clang_visitChildren(Cursor, VisitContents<FReflectedStruct>, Context);
 
@@ -416,7 +422,7 @@ namespace Lumina::Reflection::Visitor
 			return CXChildVisit_Break;
 		}
 
-		eastl::shared_ptr<FReflectedClass> ReflectedClass = Context->ReflectionDatabase.GetOrCreateReflectedType<FReflectedClass>(FStringHash(FullyQualifiedCursorName));
+		FReflectedClass* ReflectedClass = Context->ReflectionDatabase.GetOrCreateReflectedType<FReflectedClass>(FStringHash(FullyQualifiedCursorName));
 		ReflectedClass->DisplayName = CursorName;
 		ReflectedClass->Header = Context->ReflectedHeader;
 		ReflectedClass->Type = FReflectedType::EType::Class;
@@ -430,8 +436,8 @@ namespace Lumina::Reflection::Visitor
 		}
 
 		FReflectedType* PreviousType = Context->ParentReflectedType;
-		Context->ParentReflectedType = ReflectedClass.get();
-		Context->LastReflectedType = ReflectedClass.get();
+		Context->ParentReflectedType = ReflectedClass;
+		Context->LastReflectedType = ReflectedClass;
 
 		clang_visitChildren(Cursor, VisitContents<FReflectedClass>, Context);
 

@@ -152,7 +152,7 @@ namespace Lumina::Reflection
     {
     }
 
-    void FReflectedStruct::PushProperty(const eastl::shared_ptr<FReflectedProperty>& NewProperty)
+    void FReflectedStruct::PushProperty(eastl::unique_ptr<FReflectedProperty>&& NewProperty)
     {
         if (Namespace.empty())
         {
@@ -162,10 +162,10 @@ namespace Lumina::Reflection
         {
             NewProperty->Outer = Namespace + "::" + DisplayName;
         }
-        Props.push_back(NewProperty);
+        Props.push_back(eastl::move(NewProperty));
     }
 
-    void FReflectedStruct::PushFunction(const eastl::shared_ptr<FReflectedFunction>& NewFunction)
+    void FReflectedStruct::PushFunction(eastl::unique_ptr<FReflectedFunction>&& NewFunction)
     {
         if (Namespace.empty())
         {
@@ -175,7 +175,7 @@ namespace Lumina::Reflection
         {
             NewFunction->Outer = Namespace + "::" + DisplayName;
         }
-        Functions.push_back(NewFunction);
+        Functions.push_back(eastl::move(NewFunction));
     }
 
     void FReflectedStruct::DefineConstructionStatics(eastl::string& Stream)
@@ -258,7 +258,7 @@ namespace Lumina::Reflection
             Stream += "\t};\n";
         }   
 
-        for (const eastl::shared_ptr<FReflectedProperty>& Prop : Props)
+        for (const auto& Prop : Props)
         {
             if (Prop->Metadata.empty())
             {
@@ -277,7 +277,7 @@ namespace Lumina::Reflection
         
         Stream += "\n";
 
-        for (const eastl::shared_ptr<FReflectedProperty>& Prop : Props)
+        for (const auto& Prop : Props)
         {
             Stream += "\tstatic const Lumina::" + eastl::string(Prop->GetPropertyParamType()) + " " + Prop->Name + ";\n";
         }
@@ -323,12 +323,12 @@ namespace Lumina::Reflection
 
         if (!Props.empty())
         {
-            for (const eastl::shared_ptr<FReflectedProperty>& Prop : Props)
+            for (const auto& Prop : Props)
             {
                 Prop->DefineAccessors(Stream, this);
             }
             
-            for (const eastl::shared_ptr<FReflectedProperty>& Prop : Props)
+            for (const auto& Prop : Props)
             {
                 Stream += "const Lumina::" + eastl::string(Prop->GetPropertyParamType()) + " Construct_CStruct_" + FriendlyName + "_Statics::" + Prop->Name + " = ";
                 Prop->AppendDefinition(Stream);
@@ -477,7 +477,7 @@ namespace Lumina::Reflection
             Stream += "\t};\n";
         }
         
-        for (const eastl::shared_ptr<FReflectedProperty>& Prop : Props)
+        for (const auto& Prop : Props)
         {
             if (Prop->Metadata.empty())
             {
@@ -496,7 +496,7 @@ namespace Lumina::Reflection
 
         Stream += "\n";
         
-        for (const eastl::shared_ptr<FReflectedProperty>& Prop : Props)
+        for (const auto& Prop : Props)
         {
             Stream += "\tstatic const Lumina::" + eastl::string(Prop->GetPropertyParamType()) + " " + Prop->Name + ";\n";
         }
@@ -523,12 +523,12 @@ namespace Lumina::Reflection
         
         if (!Props.empty())
         {
-            for (const eastl::shared_ptr<FReflectedProperty>& Prop : Props)
+            for (const auto& Prop : Props)
             {
                 Prop->DefineAccessors(Stream, this);
             }
             
-            for (const eastl::shared_ptr<FReflectedProperty>& Prop : Props)
+            for (const auto& Prop : Props)
             {
                 Stream += "const Lumina::" + eastl::string(Prop->GetPropertyParamType()) + " Construct_CClass_" + Namespace + "_" + DisplayName + "_Statics::" + Prop->Name + " = ";
                 Prop->AppendDefinition(Stream);
@@ -538,7 +538,7 @@ namespace Lumina::Reflection
             Stream += "\n";
             Stream += "const Lumina::FPropertyParams* const Construct_CClass_" + Namespace + "_" + DisplayName + "_Statics::PropPointers[] = {\n";
         
-            for (const eastl::shared_ptr<FReflectedProperty>& Prop : Props)
+            for (const auto& Prop : Props)
             {
                 Stream += "\t(const Lumina::FPropertyParams*)&Construct_CClass_" + Namespace + "_" + DisplayName + "_Statics::" + Prop->Name + ",\n";
             }
