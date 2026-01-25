@@ -127,7 +127,7 @@ workspace "Lumina"
 		include "Engine/Applications/Sandbox"
 	group ""
 
-	group "ThirdParty"
+	group "Engine/ThirdParty"
         include "Engine/Source/ThirdParty/EA"
         include "Engine/Source/ThirdParty/EnTT"
 		include "Engine/Source/ThirdParty/glfw"
