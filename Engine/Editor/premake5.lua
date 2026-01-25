@@ -1,7 +1,6 @@
 project "Editor"
 	kind "SharedLib"
     rtti "off"
-	dependson { "Reflector", "ImGui", "EA", "Tracy", "lua54" }
 	enablereflection "true"
 	removeplatforms { "Game" }
 

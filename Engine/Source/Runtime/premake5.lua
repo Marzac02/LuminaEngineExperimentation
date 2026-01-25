@@ -4,7 +4,7 @@ project "Runtime"
     staticruntime "Off"
     pchheader "pch.h"
     pchsource "pch.cpp"
-    dependson { "Reflector", "EA", "ImGui", "Tracy", "GLFW" }
+    dependson { "Reflector" }
     enablereflection "true"
 
     defines
