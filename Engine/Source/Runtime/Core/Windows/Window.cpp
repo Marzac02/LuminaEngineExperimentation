@@ -80,7 +80,8 @@ namespace Lumina
 	
 	FWindow::~FWindow()
 	{
-		ASSERT(Window == nullptr);
+		glfwDestroyWindow(Window);
+		glfwTerminate();
 	}
 
 	void FWindow::Init()
@@ -92,7 +93,12 @@ namespace Lumina
 			glfwSetErrorCallback(GLFWErrorCallback);
 			
 			glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-			glfwWindowHint(GLFW_TITLEBAR, Specs.bShowTitlebar);
+#if WITH_EDITOR
+			glfwWindowHint(GLFW_TITLEBAR, false);
+#else
+			glfwWindowHint(GLFW_TITLEBAR, true);
+
+#endif
 			//glfwWindowHint(GLFW_DECORATED, GLFW_FALSE);
 			
 			Window = glfwCreateWindow(800, 400, Specs.Title.c_str(), nullptr, nullptr);
@@ -146,14 +152,6 @@ namespace Lumina
 			glfwSetDropCallback(Window, WindowDropCallback);
 			glfwSetWindowCloseCallback(Window, WindowCloseCallback);
 		}
-	}
-	
-	void FWindow::Shutdown()
-	{
-		glfwDestroyWindow(Window);
-		Window = nullptr;
-		
-		glfwTerminate();
 	}
 
 	void FWindow::ProcessMessages()
@@ -331,12 +329,7 @@ namespace Lumina
 	{
 		FApplication::RequestExit();
 	}
-
-	FWindow* FWindow::Create(const FWindowSpecs& InSpecs)
-	{
-		return Memory::New<FWindow>(InSpecs);
-	}
-
+	
 	namespace Windowing
 	{
 		FWindow* PrimaryWindow;

@@ -36,7 +36,6 @@ namespace Lumina
         
     private:
         
-        void LoadProjectDLL();
         void LoadProjectScripts();
         
     private:
@@ -49,30 +48,6 @@ namespace Lumina
         bool bHasLoadedProject = false;
     };
     
-
-    class EDITOR_API FLuminaEditor : public FApplication
-    {
-    public:
-    
-        FLuminaEditor();
-
-        bool Initialize(int argc, char** argv) override;
-        FEngine* CreateEngine() override;
-        
-        bool ShouldExit() const override;        
-        void CreateProject();
-        void OpenProject();
-        FWindowSpecs GetWindowSpecs() const override;
-
-        void RenderDeveloperTools(const FUpdateContext& UpdateContext) override;
-        
-        void Shutdown() override;
-    
-    private:
-        
-        
-    };
-
     
     
 }

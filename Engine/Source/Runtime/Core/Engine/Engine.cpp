@@ -46,8 +46,6 @@ namespace Lumina
         
         FCoreDelegates::OnPreEngineInit.BroadcastAndClear();
         
-        GEngine = this;
-        
         FConsoleRegistry::Get().LoadFromConfig();
         
         FTaskSystem::Initialize();
@@ -83,7 +81,6 @@ namespace Lumina
         //-------------------------------------------------------------------------
         // Shutdown core engine state.
         //-------------------------------------------------------------------------
-
 
         #if WITH_EDITOR
         DeveloperToolUI->Deinitialize(UpdateContext);
@@ -123,8 +120,6 @@ namespace Lumina
         
         if (!Windowing::GetPrimaryWindowHandle()->IsWindowMinimized())
         {
-            
-            
             // Frame Start
             //-------------------------------------------------------------------
             {
@@ -151,7 +146,6 @@ namespace Lumina
                 LUMINA_PROFILE_SECTION_COLORED("Pre-Physics", tracy::Color::Green);
                 UpdateContext.UpdateStage = EUpdateStage::PrePhysics;
 
-
                 #if USING(WITH_EDITOR)
                 DeveloperToolUI->Update(UpdateContext);
                 #endif
@@ -167,7 +161,6 @@ namespace Lumina
                 LUMINA_PROFILE_SECTION_COLORED("During-Physics", tracy::Color::Blue);
                 UpdateContext.UpdateStage = EUpdateStage::DuringPhysics;
 
-
                 #if USING(WITH_EDITOR)
                 DeveloperToolUI->Update(UpdateContext);
                 #endif
@@ -182,7 +175,6 @@ namespace Lumina
             {
                 LUMINA_PROFILE_SECTION_COLORED("Post-Physics", tracy::Color::Yellow);
                 UpdateContext.UpdateStage = EUpdateStage::PostPhysics;
-
 
                 #if USING(WITH_EDITOR)
                 DeveloperToolUI->Update(UpdateContext);
@@ -267,16 +259,6 @@ namespace Lumina
         
         return true;
     }
-
-    #if WITH_EDITOR
-    void FEngine::DrawDevelopmentTools()
-    {
-        if (GApp->HasAnyFlags(EApplicationFlags::DevelopmentTools))
-        {
-            GApp->RenderDeveloperTools(UpdateContext);
-        }
-    }
-    #endif
 
     entt::meta_ctx& FEngine::GetEngineMetaContext() const
     {

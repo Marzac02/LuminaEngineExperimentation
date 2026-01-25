@@ -1,6 +1,41 @@
 {
   "Projects": [
     {
+      "IncludeDirs": [
+        "H:/LuminaEngine/Engine/Editor/Source",
+        "H:/LuminaEngine/Engine/Source/Runtime",
+        "H:/LuminaEngine/Intermediates/Reflection/Runtime",
+        "H:/LuminaEngine/Intermediates/Reflection/Editor",
+        "H:/LuminaEngine/Engine/Source/ThirdParty",
+        "H:/LuminaEngine/Engine/Source/ThirdParty/spdlog/include",
+        "H:/LuminaEngine/Engine/Source/ThirdParty/GLFW/include",
+        "H:/LuminaEngine/Engine/Source/ThirdParty/GLM",
+        "H:/LuminaEngine/Engine/Source/ThirdParty/imgui",
+        "H:/LuminaEngine/Engine/Source/ThirdParty/vk-bootstrap",
+        "H:/LuminaEngine/Engine/Source/ThirdParty/VulkanMemoryAllocator",
+        "H:/LuminaEngine/Engine/Source/ThirdParty/fastgltf/include",
+        "H:/LuminaEngine/Engine/Source/ThirdParty/OpenFBX",
+        "H:/LuminaEngine/Engine/Source/ThirdParty/stb_image",
+        "H:/LuminaEngine/Engine/Source/ThirdParty/meshoptimizer/src",
+        "H:/LuminaEngine/Engine/Source/ThirdParty/vulkan",
+        "H:/LuminaEngine/Engine/Source/ThirdParty/shaderc",
+        "H:/LuminaEngine/Engine/Source/ThirdParty/volk",
+        "H:/LuminaEngine/Engine/Source/ThirdParty/EnkiTS/src",
+        "H:/LuminaEngine/Engine/Source/ThirdParty/SPIRV-Reflect",
+        "H:/LuminaEngine/Engine/Source/ThirdParty/json",
+        "H:/LuminaEngine/Engine/Source/ThirdParty/entt",
+        "H:/LuminaEngine/Engine/Source/ThirdParty/EA/EASTL/include",
+        "H:/LuminaEngine/Engine/Source/ThirdParty/EA/EABase/include/Common",
+        "H:/LuminaEngine/Engine/Source/ThirdParty/rpmalloc",
+        "H:/LuminaEngine/Engine/Source/ThirdParty/xxhash",
+        "H:/LuminaEngine/Engine/Source/ThirdParty/tracy/public",
+        "H:/LuminaEngine/Engine/Source/ThirdParty/RenderDoc",
+        "H:/LuminaEngine/Engine/Source/ThirdParty/concurrentqueue",
+        "H:/LuminaEngine/Engine/Source/ThirdParty/JoltPhysics",
+        "H:/LuminaEngine/Engine/Source/ThirdParty/sol2/include",
+        "H:/LuminaEngine/Engine/Source/ThirdParty/lua/include"
+      ],
+      "Name": "Editor",
       "Files": [
         "H:/LuminaEngine/Engine/Editor/Source/EditorAPI.h",
         "H:/LuminaEngine/Engine/Editor/Source/ImGuiDrawUtils.h",
@@ -50,12 +85,12 @@
         "H:/LuminaEngine/Engine/Editor/Source/imgui-node-editor/imgui_extra_math.h",
         "H:/LuminaEngine/Engine/Editor/Source/imgui-node-editor/imgui_node_editor.h",
         "H:/LuminaEngine/Engine/Editor/Source/imgui-node-editor/imgui_node_editor_internal.h"
-      ],
+      ]
+    },
+    {
       "IncludeDirs": [
-        "H:/LuminaEngine/Engine/Editor/Source",
         "H:/LuminaEngine/Engine/Source/Runtime",
         "H:/LuminaEngine/Intermediates/Reflection/Runtime",
-        "H:/LuminaEngine/Intermediates/Reflection/Editor",
         "H:/LuminaEngine/Engine/Source/ThirdParty",
         "H:/LuminaEngine/Engine/Source/ThirdParty/spdlog/include",
         "H:/LuminaEngine/Engine/Source/ThirdParty/GLFW/include",
@@ -85,9 +120,7 @@
         "H:/LuminaEngine/Engine/Source/ThirdParty/sol2/include",
         "H:/LuminaEngine/Engine/Source/ThirdParty/lua/include"
       ],
-      "Name": "Editor"
-    },
-    {
+      "Name": "Runtime",
       "Files": [
         "H:/LuminaEngine/Engine/Source/Runtime/Assets/AssetManager/AssetManager.h",
         "H:/LuminaEngine/Engine/Source/Runtime/Assets/AssetRegistry/AssetData.h",
@@ -383,40 +416,7 @@
         "H:/LuminaEngine/Engine/Source/Runtime/World/WorldManager.h",
         "H:/LuminaEngine/Engine/Source/Runtime/World/WorldTypes.h",
         "H:/LuminaEngine/Engine/Source/Runtime/pch.h"
-      ],
-      "IncludeDirs": [
-        "H:/LuminaEngine/Engine/Source/Runtime",
-        "H:/LuminaEngine/Intermediates/Reflection/Runtime",
-        "H:/LuminaEngine/Engine/Source/ThirdParty",
-        "H:/LuminaEngine/Engine/Source/ThirdParty/spdlog/include",
-        "H:/LuminaEngine/Engine/Source/ThirdParty/GLFW/include",
-        "H:/LuminaEngine/Engine/Source/ThirdParty/GLM",
-        "H:/LuminaEngine/Engine/Source/ThirdParty/imgui",
-        "H:/LuminaEngine/Engine/Source/ThirdParty/vk-bootstrap",
-        "H:/LuminaEngine/Engine/Source/ThirdParty/VulkanMemoryAllocator",
-        "H:/LuminaEngine/Engine/Source/ThirdParty/fastgltf/include",
-        "H:/LuminaEngine/Engine/Source/ThirdParty/OpenFBX",
-        "H:/LuminaEngine/Engine/Source/ThirdParty/stb_image",
-        "H:/LuminaEngine/Engine/Source/ThirdParty/meshoptimizer/src",
-        "H:/LuminaEngine/Engine/Source/ThirdParty/vulkan",
-        "H:/LuminaEngine/Engine/Source/ThirdParty/shaderc",
-        "H:/LuminaEngine/Engine/Source/ThirdParty/volk",
-        "H:/LuminaEngine/Engine/Source/ThirdParty/EnkiTS/src",
-        "H:/LuminaEngine/Engine/Source/ThirdParty/SPIRV-Reflect",
-        "H:/LuminaEngine/Engine/Source/ThirdParty/json",
-        "H:/LuminaEngine/Engine/Source/ThirdParty/entt",
-        "H:/LuminaEngine/Engine/Source/ThirdParty/EA/EASTL/include",
-        "H:/LuminaEngine/Engine/Source/ThirdParty/EA/EABase/include/Common",
-        "H:/LuminaEngine/Engine/Source/ThirdParty/rpmalloc",
-        "H:/LuminaEngine/Engine/Source/ThirdParty/xxhash",
-        "H:/LuminaEngine/Engine/Source/ThirdParty/tracy/public",
-        "H:/LuminaEngine/Engine/Source/ThirdParty/RenderDoc",
-        "H:/LuminaEngine/Engine/Source/ThirdParty/concurrentqueue",
-        "H:/LuminaEngine/Engine/Source/ThirdParty/JoltPhysics",
-        "H:/LuminaEngine/Engine/Source/ThirdParty/sol2/include",
-        "H:/LuminaEngine/Engine/Source/ThirdParty/lua/include"
-      ],
-      "Name": "Runtime"
+      ]
     }
   ],
   "WorkspacePath": "H:/LuminaEngine",

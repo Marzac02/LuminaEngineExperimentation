@@ -12,21 +12,17 @@
 namespace Lumina
 {
     RUNTIME_API FApplication* GApp;
-    FCommandLineParser FApplication::CommandLine;
-
-    FApplication::FApplication(const FString& InApplicationName, uint32 AppFlags)
-    {
-        ApplicationName = InApplicationName;
-        ApplicationFlags = AppFlags;
-        GApp = this;
-    }
+    FCommandLine FApplication::CommandLine;
 
     int32 FApplication::Run(int argc, char** argv)
     {
         LUMINA_PROFILE_SCOPE();
+        
+        ASSERT(GEngine);
+        
         CommandLine.Parse(argc, argv);
         
-        LOG_TRACE("Initializing Application: {0}", ApplicationName);
+        LOG_TRACE("Initializing Lumina");
         
         //---------------------------------------------------------------
         // Application initialization.
@@ -34,15 +30,9 @@ namespace Lumina
 
         PreInitStartup();
         CreateApplicationWindow();
-        CreateEngine();
+        GEngine->Init();
 
         EventProcessor.RegisterEventHandler(&FInputProcessor::Get());
-
-        if (!Initialize(argc, argv))
-        {
-            Shutdown();
-            return 1;
-        }
         
         //---------------------------------------------------------------
         // Core application loop.
@@ -61,37 +51,30 @@ namespace Lumina
 
             FInputProcessor::Get().EndFrame();
         }
-
         
         //---------------------------------------------------------------
         // Application shutdown.
         //--------------------------------------------------------------
 
-        LOG_TRACE("Shutting down application: {0}", ApplicationName.c_str());
-        
-        Shutdown();
+        LOG_TRACE("Shutting down Lumina");
         
         GEngine->Shutdown();
-        Memory::Delete(GEngine);
         
-        MainWindow->Shutdown();
-        Memory::Delete(MainWindow);
+        Shutdown();
         
         return 0;
     }
 
-    bool FApplication::HasAnyFlags(EApplicationFlags Flags)
+    void FApplication::Shutdown()
     {
-        return (ApplicationFlags & static_cast<uint32>(Flags)) != 0;
+        
     }
-
+    
     void FApplication::WindowResized(FWindow* Window, const glm::uvec2& Extent)
     {
         if (!Window->IsWindowMinimized())
         {
             GEngine->SetEngineViewportSize(Extent);
-
-            OnWindowResized(Window, Extent);
         }
     }
 
@@ -102,6 +85,8 @@ namespace Lumina
     
     void FApplication::PreInitStartup()
     {
+        InitializeCObjectSystem();
+        
         Paths::InitializePaths();
     }
 
@@ -109,18 +94,15 @@ namespace Lumina
     {
         (void)FWindow::OnWindowResized.AddMember(this, &FApplication::WindowResized);
         
-        MainWindow = FWindow::Create(GetWindowSpecs());
-        MainWindow->Init();
+        MainWindow = new FWindow(FWindowSpecs{});
         
         Windowing::SetPrimaryWindowHandle(MainWindow);
         
         return true;
     }
 
-    
-    bool FApplication::FatalError(const FString& Error)
+    bool FApplication::ShouldExit() const
     {
-        return false;
+        return MainWindow->ShouldClose() || bExitRequested;
     }
-    
 }

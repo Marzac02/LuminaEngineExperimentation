@@ -7,13 +7,13 @@
 
 namespace Lumina
 {
-    class FCommandLineParser
+    class FCommandLine
     {
     public:
     
-        FCommandLineParser() = default;
+        FCommandLine() = default;
     
-        FCommandLineParser(int argc, char* argv[])
+        FCommandLine(int argc, char* argv[])
         {
             Parse(argc, argv);
         }

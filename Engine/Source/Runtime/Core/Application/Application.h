@@ -27,54 +27,37 @@ namespace Lumina
 	{
 	public:
 
-		FApplication(const FString& InApplicationName = "Unnamed Application", uint32 AppFlags = 0);
+		FApplication() = default;
+		~FApplication() = default;
 		LE_NO_COPYMOVE(FApplication);
 		
 		int32 Run(int argc, char** argv);
 
-		virtual bool Initialize(int argc, char** argv) = 0;
-		virtual void Shutdown() = 0;
-
-		virtual void RenderDeveloperTools(const FUpdateContext& UpdateContext) { }
-
-		bool HasAnyFlags(EApplicationFlags Flags);
-
+		void Shutdown();
+		
 		void WindowResized(FWindow* Window, const glm::uvec2& Extent);
-		virtual void OnWindowResized(FWindow* Window, const glm::uvec2& Extent) { }
 
 		static void RequestExit();
 
 		FEventProcessor& GetEventProcessor() { return EventProcessor; }
 	
-	protected:
-
-		virtual FEngine* CreateEngine() = 0;
-		virtual FWindowSpecs GetWindowSpecs() const = 0;
-		
 	private:
 
 		void PreInitStartup();
 		bool CreateApplicationWindow();
-		bool FatalError(const FString& Error);
 		
-		virtual bool ShouldExit() const = 0;
+		bool ShouldExit() const;
 		
 	protected:
 
 		FEventProcessor				EventProcessor;
-		
-		
 		FWindow*					MainWindow = nullptr;
 		
-		FString ApplicationName =	"Unnamed Application";
-		
 		bool bExitRequested			= false;
-		
-		uint32						ApplicationFlags = 0;
-
+	
 	public:
 
-		static FCommandLineParser	CommandLine;
+		static FCommandLine	CommandLine;
 	};
 	
 	RUNTIME_API extern FApplication* GApp;

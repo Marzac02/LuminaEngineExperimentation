@@ -1,32 +1,45 @@
-﻿#include "LuminaEditor.h"
-#include "Core/Application/Application.h"
+﻿#include "Core/Application/Application.h"
 #include "Core/Application/ApplicationGlobalState.h"
+#include "Core/Windows/Window.h"
 
-static int GuardedMain(int argc, char** argv)
+#if WITH_EDITOR
+#include "LuminaEditor.h"
+#endif
+
+using namespace Lumina;
+
+
+int GuardedMain(int ArgC, char** ArgV)
 {
     int Result = 0;
     try
     {
-        Lumina::FApplicationGlobalState GlobalState;
-        Lumina::FApplication* App = Lumina::Memory::New<Lumina::FLuminaEditor>();
-        Result = App->Run(argc, argv);
+        FApplicationGlobalState GlobalState;
+        
+        FApplication Application = FApplication{};
+        GApp = &Application;
+        
+#if WITH_EDITOR
+        GEditorEngine = new FEditorEngine{};
+        GEngine = GEditorEngine;
+#else
+        GEngine = new FEngine{};
+#endif
+        
+        Result = Application.Run(ArgC, ArgV);
+        
+        delete GEngine;
+    }
+    catch (std::exception& Error)
+    {
+        LOG_ERROR("Fatal error: {}", Error.what());
+        return -1;
     }
     catch (...)
     {
-        
+        LOG_ERROR("Unknown fatal error");
+        return -1;
     }
 	
     return Result;
 }
-
-#if LE_PLATFORM_WINDOWS
-#ifndef WIN32_LEAN_AND_MEAN
-#define WIN32_LEAN_AND_MEAN
-#endif
-int APIENTRY WinMain(HINSTANCE hInst, HINSTANCE hInstPrev, PSTR cmdline, int cmdshow)
-{
-    return GuardedMain(__argc, __argv);
-}
-#endif
-
-DECLARE_MODULE_ALLOCATOR_OVERRIDES()

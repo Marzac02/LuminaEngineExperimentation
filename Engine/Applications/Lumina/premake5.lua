@@ -10,10 +10,14 @@ project "Lumina"
 		"TRACY_IMPORTS",
 	}
 
+	filter "platforms:Editor"
+		links "Editor"
+		includedirs { LuminaConfig.EnginePath("Engine/Editor/Source") }
+	filter {}
+
 	links
 	{
 		"Runtime",
-		"Editor",
 	}
 	 
 	files
@@ -30,7 +34,7 @@ project "Lumina"
 
 	includedirs
 	{
-        LuminaConfig.EnginePath("Engine/Editor/Source"),
+		"Source",
 	    LuminaConfig.GetPublicIncludeDirectories()
 	}
 	 

@@ -38,7 +38,6 @@ namespace Lumina
 
         #if WITH_EDITOR
         RUNTIME_API virtual IDevelopmentToolUI* CreateDevelopmentTools() = 0;
-        RUNTIME_API virtual void DrawDevelopmentTools();
         RUNTIME_API IDevelopmentToolUI* GetDevelopmentToolsUI() const { return DeveloperToolUI; }
         #endif
 

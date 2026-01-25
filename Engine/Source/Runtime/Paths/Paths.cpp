@@ -19,19 +19,15 @@ namespace Lumina::Paths
 
     void InitializePaths()
     {
-        const char* LuminaDir = std::getenv("LUMINA_DIR");
+        FString LuminaDir = std::getenv("LUMINA_DIR");
+        Normalize(LuminaDir);
             
-        CachedDirectories[EngineDirectoryName] = FString(LuminaDir) + "/Engine";
-        
-        CachedDirectories[EngineConfigDirectoryName] = FString(GetEngineDirectory() + "/Config");
-        
-        CachedDirectories[EngineResourceDirectoryName] = FString(LuminaDir) + "/Engine/Resources";
-
-        CachedDirectories[EngineFontDirectoryName] = FString(GetEngineResourceDirectory() + "/Fonts");
-        
-        CachedDirectories[EngineContentDirectoryName] = FString(GetEngineResourceDirectory() + "/Content");
-
-        CachedDirectories[EngineShadersDirectoryName] = FString(GetEngineResourceDirectory() + "/Shaders");
+        CachedDirectories[EngineDirectoryName]          = LuminaDir + "/Engine";
+        CachedDirectories[EngineConfigDirectoryName]    = GetEngineDirectory() + "/Config";
+        CachedDirectories[EngineResourceDirectoryName]  = GetEngineDirectory() + "/Resources";
+        CachedDirectories[EngineFontDirectoryName]      = GetEngineResourceDirectory() + "/Fonts";
+        CachedDirectories[EngineContentDirectoryName]   = GetEngineResourceDirectory() + "/Content";
+        CachedDirectories[EngineShadersDirectoryName]   = GetEngineResourceDirectory() + "/Shaders";
         
     }
 

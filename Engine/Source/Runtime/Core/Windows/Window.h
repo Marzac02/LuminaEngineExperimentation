@@ -18,19 +18,18 @@ namespace Lumina
 	{
 	public:
 		
-		static FWindow* Create(const FWindowSpecs& InSpecs);
-		
 		FWindow(const FWindowSpecs& InSpecs)
 			: LastMouseX(0)
 			, LastMouseY(0)
 			, Specs(InSpecs)
-		{}
+		{
+			Init();
+		}
 
 		virtual ~FWindow();
 		LE_NO_COPYMOVE(FWindow);
 
 		void Init();
-		void Shutdown();
 		void ProcessMessages();
 
 		GLFWwindow* GetWindow() const { return Window; }
