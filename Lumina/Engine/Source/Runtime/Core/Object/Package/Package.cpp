@@ -1,8 +1,6 @@
 #include "pch.h"
 #include "Package.h"
-
 #include <utility>
-
 #include "Assets/AssetRegistry/AssetRegistry.h"
 #include "Core/Engine/Engine.h"
 #include "Core/Object/Class.h"
@@ -11,7 +9,6 @@
 #include "Core/Profiler/Profile.h"
 #include "Paths/Paths.h"
 #include "Platform/Filesystem/FileHelper.h"
-
 #include "Core/Serialization/Package/PackageSaver.h"
 #include "Core/Serialization/Package/PackageLoader.h"
 #include "FileSystem/FileSystem.h"
@@ -40,6 +37,24 @@ namespace Lumina
         Object          = InObject;
     }
 
+    
+    struct FObjectLoadScopeGuard
+    {
+        CObject* Object;
+        
+        FObjectLoadScopeGuard(CObject* InObject)
+            : Object(InObject)
+        {
+            Object->SetFlag(OF_Loading);
+        }
+        
+        ~FObjectLoadScopeGuard()
+        {
+            Object->ClearFlags(OF_Loading);
+        }
+        
+        bool IsLoading() const { return Object->HasAnyFlag(OF_Loading); }
+    };
     
     void CPackage::OnDestroy()
     {
@@ -255,34 +270,47 @@ namespace Lumina
     CPackage* CPackage::LoadPackage(FStringView Path)
     {
         LUMINA_PROFILE_SCOPE();
-
-        auto Start = std::chrono::high_resolution_clock::now();
-
+        
         FFixedString ObjectName = SanitizeObjectName(Path);
         
-        bool bIsLoaderThread = false;
-        
-        CPackage* Package = FindObject<CPackage>(ObjectName);
-        if (!Package)
+        static FMutex FindOrCreateMutex;
+        CPackage* Package = nullptr;
         {
-            Package = NewObject<CPackage>(nullptr, ObjectName);
-            Package->LoadState.store(ELoadState::Loading, std::memory_order_relaxed);
-            bIsLoaderThread = true;
+            FScopeLock Lock(FindOrCreateMutex);
+            Package = FindObject<CPackage>(ObjectName);
+            
+            if (Package == nullptr)
+            {
+                Package = NewObject<CPackage>(nullptr, ObjectName);
+            }
         }
+        
+        ELoadState Expected = ELoadState::Unloaded;
+        bool bIsLoaderThread = Package->LoadState.compare_exchange_strong(
+            Expected, 
+            ELoadState::Loading,
+            std::memory_order_acquire,
+            std::memory_order_acquire);
         
         if (!bIsLoaderThread)
         {
-            ELoadState State;
-            while ((State = Package->LoadState.load(std::memory_order_acquire)) == ELoadState::Loading)
+            if (Expected == ELoadState::Loading)
             {
-                std::atomic_wait(&Package->LoadState, State);
+                ELoadState State;
+                while ((State = Package->LoadState.load(std::memory_order_acquire)) == ELoadState::Loading)
+                {
+                    std::atomic_wait(&Package->LoadState, State);
+                }
+                Expected = State;
             }
-            
-            return (State == ELoadState::Loaded) ? Package : nullptr;
+        
+            return (Expected == ELoadState::Loaded) ? Package : nullptr;
         }
         
-        bool bSuccess = false;
         
+        bool bSuccess = false;
+        auto Start = std::chrono::high_resolution_clock::now();
+
         TVector<uint8> FileBinary;
         if (FileSystem::ReadFile(FileBinary, Path))
         {
@@ -461,11 +489,13 @@ namespace Lumina
     void CPackage::LoadObject(CObject* Object)
     {
         LUMINA_PROFILE_SCOPE();
-        if (!Object || !Object->HasAnyFlag(OF_NeedsLoad))
+        if (!Object || !Object->HasAnyFlag(OF_NeedsLoad) || Object->HasAnyFlag(OF_Loading))
         {
             return;
         }
-
+        
+        Object->SetFlag(OF_Loading);
+        
         CPackage* ObjectPackage = Object->GetPackage();
         
         // If this object's package comes from somewhere else, load it through there.
@@ -514,7 +544,7 @@ namespace Lumina
             LOG_WARN("Mismatched size when loading object {}: expected {}, got {}", Object->GetName().ToString(), ExpectedSize, ActualSize);
         }
         
-        Object->ClearFlags(OF_NeedsLoad);
+        Object->ClearFlags(OF_NeedsLoad | OF_Loading);
         Object->SetFlag(OF_WasLoaded);
 
         Object->PostLoad();

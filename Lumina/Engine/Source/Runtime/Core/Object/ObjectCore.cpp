@@ -62,10 +62,30 @@ namespace Lumina
         
         if (const FAssetData* Data = FAssetRegistry::Get().GetAssetByGUID(GUID))
         {
-            return FAssetManager::Get().LoadAssetSynchronous(Data->Path, GUID);
+            if (CPackage* Package = CPackage::LoadPackage(Data->Path))
+            {
+                return Package->LoadObject(GUID);
+            }
         }
         
         return nullptr;
+    }
+
+    void AsyncLoadObject(const FGuid& GUID, const TFunction<void(CObject*)>& Callback)
+    {
+        Task::AsyncTask(1, 1, [GUID, Callback](uint32, uint32, uint32)
+        {
+            if (const FAssetData* Data = FAssetRegistry::Get().GetAssetByGUID(GUID))
+            {
+                if (CPackage* Package = CPackage::LoadPackage(Data->Path))
+                {
+                    if (CObject* Object = Package->LoadObject(GUID))
+                    {
+                        Callback(Object);
+                    }
+                }
+            }
+        });
     }
 
     CObject* StaticLoadObject(const FString& PathName)

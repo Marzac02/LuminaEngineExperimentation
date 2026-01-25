@@ -137,7 +137,7 @@ namespace Lumina
     {
         FScopeLock Lock(AssetsMutex);
 
-        auto It = eastl::find_if(Assets.begin(), Assets.end(), [&](const auto& Data)
+        auto It = eastl::find_if(Assets.begin(), Assets.end(), [&](const TUniquePtr<FAssetData>& Data)
         {
             return Data->Path == Path;
         });

@@ -23,18 +23,21 @@ namespace Lumina
 
         /** Does this object need to be loaded after creation? */
         OF_NeedsLoad            = BIT(3),
+        
+        /** Is this object currently being loaded? */
+        OF_Loading              = BIT(4),
 
         /** Does this object need PostLoad called? This will not deserialize the object again. */
-        OF_NeedsPostLoad        = BIT(4),
+        OF_NeedsPostLoad        = BIT(5),
 
         /** Was this object loaded from a package */
-        OF_WasLoaded            = BIT(5),
+        OF_WasLoaded            = BIT(6),
 
         /** Object is public outside of it's package (assets and such) */
-        OF_Public               = BIT(6),
+        OF_Public               = BIT(7),
 
         /** Object has already been marked to be destroyed */
-        OF_MarkedDestroy        = BIT(7),
+        OF_MarkedDestroy        = BIT(8),
     };
 
     ENUM_CLASS_FLAGS(EObjectFlags);

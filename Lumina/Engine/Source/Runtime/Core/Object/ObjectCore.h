@@ -5,6 +5,7 @@
 #include "ObjectFlags.h"
 #include "ObjectHandleTyped.h"
 #include "Containers/Array.h"
+#include "Containers/Function.h"
 #include "Core/LuminaMacros.h"
 #include "Module/API.h"
 #include "Platform/GenericPlatform.h"
@@ -34,6 +35,7 @@ namespace Lumina
     LUMINA_API CObject* FindObjectImpl(const FGuid& ObjectGUID);
     LUMINA_API CObject* FindObjectImpl(const FName& Name, CClass* Class);
     LUMINA_API CObject* StaticLoadObject(const FGuid& GUID);
+    LUMINA_API void AsyncLoadObject(const FGuid& GUID, const TFunction<void(CObject*)>& Callback);
     LUMINA_API CObject* StaticLoadObject(const FString& PathName);
     LUMINA_API FFixedString SanitizeObjectName(FStringView Name);
 

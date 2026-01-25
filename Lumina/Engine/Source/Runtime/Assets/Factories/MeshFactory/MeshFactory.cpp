@@ -616,7 +616,7 @@ namespace Lumina
                 
                 
                 size_t LastSlashPos = DestinationPath.find_last_of('/');
-                FFixedString QualifiedPath = DestinationPath.substr(0, LastSlashPos + 1).append("/").append_convert(TextureFileName.data(), TextureFileName.length());
+                FFixedString QualifiedPath = DestinationPath.substr(0, LastSlashPos + 1).append_convert(TextureFileName.data(), TextureFileName.length());
 
                 if (!FindObject<CPackage>(QualifiedPath))
                 {
