@@ -116,12 +116,13 @@ Performance profiling - Built-in Lua script profiling with Tracy
 3. **Open the solution**
    - Open `Lumina.sln` in Visual Studio
 
-4. **Build and run Editor**
-   - Select `Development` or `Debug` configuration (Debug will be vastly slower)
-   - **Note** You will see two different platforms, `Game` and `Editor`, by default this will be set to `Editor` and it's important that you do not change it while building the editor, as it will not compile.
+4. **Build and run Lumina**
+   - Select "Lumina" in the list of runnable configurations
+   - Select `Development` or `Debug` configuration (Debug will be vastly slower, but with debugger functionality)
+   - **Note** You will see two different platforms, `Game` and `Editor`, by default this will be set to `Editor`. Selecting game will launch without any tooling.
    - Press F5 or click Build -> Run
 
-5. **Start developing**
+6. **Start developing**
    - Open the `Sandbox` project to experiment
    - (TEMPORARILY NOT-WORKING) Or run `Tools/ProjectConfigurator.py` to create a new project
 
