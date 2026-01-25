@@ -4,7 +4,6 @@ include "BuildScripts/Actions/Reflection"
 
 workspace "Lumina"
 	language "C++"
-	targetdir "Build"
 	conformancemode "On"
 	cppdialect "C++latest"
 	staticruntime "Off"
@@ -14,7 +13,7 @@ workspace "Lumina"
     enableunitybuild "Off"
     fastuptodate "On"
     multiprocessorcompile "On"
-	startproject "Editor"
+	startproject "Lumina"
 
     configurations 
     { 
@@ -69,7 +68,12 @@ workspace "Lumina"
 
     filter "system:windows"
         systemversion "latest"
-        defines { "LE_PLATFORM_WINDOWS" }
+        defines 
+        { 
+            "LE_PLATFORM_WINDOWS",
+            "DLL_EXPORT=__declspec(dllexport)",
+            "DLL_IMPORT=__declspec(dllimport)",
+        }
         buildoptions 
         {
             "/Zc:preprocessor",
@@ -113,36 +117,37 @@ workspace "Lumina"
     filter {}
 
     group "Engine"
-		include "Lumina"
+		include "Engine/Source/Runtime"
+        include "Engine/Editor"
 	group ""
 
 	group "Applications"
-		include "Lumina/Applications/LuminaEditor"
-		include "Lumina/Applications/Reflector"
-		include "Lumina/Applications/Sandbox"
+    	include "Engine/Applications/Lumina"
+		include "Engine/Applications/Reflector"
+		include "Engine/Applications/Sandbox"
 	group ""
 
 	group "ThirdParty"
-        include "Lumina/Engine/ThirdParty/EA"
-        include "Lumina/Engine/ThirdParty/EnTT"
-		include "Lumina/Engine/ThirdParty/glfw"
-		include "Lumina/Engine/ThirdParty/imgui"
-		include "Lumina/Engine/Thirdparty/Tracy"
-        include "Lumina/Engine/Thirdparty/EnkiTS"
-        include "Lumina/Engine/ThirdParty/Sol2"
-        include "Lumina/Engine/ThirdParty/SPDLog"
-        include "Lumina/Engine/ThirdParty/JoltPhysics"
-        include "Lumina/Engine/ThirdParty/RPMalloc"
-        include "Lumina/Engine/ThirdParty/XXHash"
-        include "Lumina/Engine/ThirdParty/VulkanMemoryAllocator"
-        include "Lumina/Engine/ThirdParty/Volk"
-        include "Lumina/Engine/ThirdParty/tinyobjloader"
-        include "Lumina/Engine/ThirdParty/MeshOptimizer"
-        include "Lumina/Engine/ThirdParty/vk-bootstrap"
-        include "Lumina/Engine/ThirdParty/SPIRV-Reflect"
-        include "Lumina/Engine/ThirdParty/json"
-        include "Lumina/Engine/ThirdParty/fastgltf"
-        include "Lumina/Engine/ThirdParty/OpenFBX"
+        include "Engine/Source/ThirdParty/EA"
+        include "Engine/Source/ThirdParty/EnTT"
+		include "Engine/Source/ThirdParty/glfw"
+		include "Engine/Source/ThirdParty/imgui"
+		include "Engine/Source/Thirdparty/Tracy"
+        include "Engine/Source/Thirdparty/EnkiTS"
+        include "Engine/Source/ThirdParty/Sol2"
+        include "Engine/Source/ThirdParty/SPDLog"
+        include "Engine/Source/ThirdParty/JoltPhysics"
+        include "Engine/Source/ThirdParty/RPMalloc"
+        include "Engine/Source/ThirdParty/XXHash"
+        include "Engine/Source/ThirdParty/VulkanMemoryAllocator"
+        include "Engine/Source/ThirdParty/Volk"
+        include "Engine/Source/ThirdParty/tinyobjloader"
+        include "Engine/Source/ThirdParty/MeshOptimizer"
+        include "Engine/Source/ThirdParty/vk-bootstrap"
+        include "Engine/Source/ThirdParty/SPIRV-Reflect"
+        include "Engine/Source/ThirdParty/json"
+        include "Engine/Source/ThirdParty/fastgltf"
+        include "Engine/Source/ThirdParty/OpenFBX"
 	group ""
 
     group "Build"

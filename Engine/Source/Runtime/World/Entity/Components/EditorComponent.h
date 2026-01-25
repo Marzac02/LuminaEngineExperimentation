@@ -1,0 +1,10 @@
+#pragma once
+
+#include "Module/API.h"
+
+namespace Lumina
+{
+    struct RUNTIME_API FSelectedInEditorComponent { };
+    struct RUNTIME_API FHideInSceneOutliner { };
+    struct RUNTIME_API FEditorComponent { bool bEnabled = true; };
+}

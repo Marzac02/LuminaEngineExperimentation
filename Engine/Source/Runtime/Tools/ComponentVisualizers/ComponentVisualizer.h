@@ -1,0 +1,88 @@
+﻿#pragma once
+#include "Core/Object/Object.h"
+#include "Core/Object/ObjectMacros.h"
+#include "ComponentVisualizer.generated.h"
+
+namespace Lumina
+{
+    class IPrimitiveDrawInterface;
+    class CComponentVisualizer;
+
+    REFLECT()
+    class RUNTIME_API CComponentVisualizerRegistry : public CObject
+    {
+        GENERATED_BODY()
+    public:
+        
+        static CComponentVisualizerRegistry& Get();
+        
+        void RegisterComponentVisualizer(CComponentVisualizer* Visualizer);
+        
+        CComponentVisualizer* GetComponentVisualizer(CStruct* Component);
+        
+    private:
+        
+        THashMap<CStruct*, CComponentVisualizer*> Visualizers;
+    };
+    
+    REFLECT()
+    class RUNTIME_API CComponentVisualizer : public CObject
+    {
+        GENERATED_BODY()
+    public:
+        
+        void PostCreateCDO() override;
+        
+        virtual CStruct* GetSupportedComponentType() const { return nullptr; }
+        
+        virtual void Draw(IPrimitiveDrawInterface* PDI, entt::registry& Registry, entt::entity Entity) { }
+    };
+    
+    REFLECT()
+    class RUNTIME_API CComponentVisualizer_PointLight : public CComponentVisualizer
+    {
+        GENERATED_BODY()
+    public:
+        
+        CStruct* GetSupportedComponentType() const override;
+        
+        void Draw(IPrimitiveDrawInterface* PDI, entt::registry& Registry, entt::entity Entity) override;
+        
+    };
+    
+    REFLECT()
+    class RUNTIME_API CComponentVisualizer_SphereCollider : public CComponentVisualizer
+    {
+        GENERATED_BODY()
+    public:
+        
+        CStruct* GetSupportedComponentType() const override;
+        
+        void Draw(IPrimitiveDrawInterface* PDI, entt::registry& Registry, entt::entity Entity) override;
+        
+    };
+    
+    REFLECT()
+    class RUNTIME_API CComponentVisualizer_BoxCollider : public CComponentVisualizer
+    {
+        GENERATED_BODY()
+    public:
+        
+        CStruct* GetSupportedComponentType() const override;
+        
+        void Draw(IPrimitiveDrawInterface* PDI, entt::registry& Registry, entt::entity Entity) override;
+        
+    };
+    
+    REFLECT()
+    class RUNTIME_API CComponentVisualizer_CharacterPhysics : public CComponentVisualizer
+    {
+        GENERATED_BODY()
+    public:
+        
+        CStruct* GetSupportedComponentType() const override;
+        
+        void Draw(IPrimitiveDrawInterface* PDI, entt::registry& Registry, entt::entity Entity) override;
+        
+    };
+}

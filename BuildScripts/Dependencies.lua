@@ -1,15 +1,15 @@
 premake.api.register 
 {
-    name = "enablereflection",
-    scope = "project",
-    kind = "boolean",
+    name    = "enablereflection",
+    scope   = "project",
+    kind    = "boolean",
 }
 
 LuminaConfig = LuminaConfig or {}
 LuminaConfig.PublicIncludes         = LuminaConfig.PublicIncludes or {}
 
 
-LuminaConfig.EngineDirectory        = os.getenv("LUMINA_DIR")
+LuminaConfig.EngineDirectory        = "%{wks.location}"
 LuminaConfig.OutputDirectory        = "%{cfg.buildcfg}-%{cfg.system}-%{cfg.architecture}"
 LuminaConfig.ProjectFilesDirectory  = "%{wks.location}/Intermediates/ProjectFiles/%{prj.name}"
 LuminaConfig.ReflectionDirectory    = "%{wks.location}/Intermediates/Reflection/%{prj.name}"
@@ -31,7 +31,7 @@ function LuminaConfig.GetObjDirectory()
 end
 
 function LuminaConfig.ThirdPartyDirectory()
-    return path.join(LuminaConfig.EngineDirectory, "Lumina/Engine/ThirdParty")
+    return path.join(LuminaConfig.EngineDirectory, "Engine/Source/ThirdParty")
 end
 
 function LuminaConfig.EnginePath(Subpath)
@@ -39,7 +39,7 @@ function LuminaConfig.EnginePath(Subpath)
 end
 
 function LuminaConfig.ThirdPartyPath(Subpath)
-    return path.join(LuminaConfig.EngineDirectory, "Lumina/Engine/ThirdParty", Subpath)
+    return path.join(LuminaConfig.EngineDirectory, "Engine/Source/ThirdParty", Subpath)
 end
 
 function LuminaConfig.GetCPPFilesInDirectory(Path)
@@ -102,36 +102,34 @@ function LuminaConfig.RunReflection()
     return path.join(LuminaConfig.EngineDirectory, "BuildScripts/ReflectionRunner.bat")
 end
 
-LuminaConfig.AddPublicIncludeDirectory("Source")
-LuminaConfig.AddPublicIncludeDirectory(LuminaConfig.EnginePath("Lumina/Engine/Source"))
-LuminaConfig.AddPublicIncludeDirectory(LuminaConfig.EnginePath("Lumina/Engine/Source/Runtime"))
-LuminaConfig.AddPublicIncludeDirectory(LuminaConfig.EnginePath("Intermediates/Reflection/Lumina"))
+LuminaConfig.AddPublicIncludeDirectory(LuminaConfig.EnginePath("Engine/Source/Runtime"))
+LuminaConfig.AddPublicIncludeDirectory(LuminaConfig.EnginePath("Intermediates/Reflection/Runtime"))
 LuminaConfig.AddPublicIncludeDirectory(LuminaConfig.ReflectionDirectory)
-LuminaConfig.AddPublicIncludeDirectory(LuminaConfig.EnginePath("Lumina/Engine/ThirdParty"))
-LuminaConfig.AddPublicIncludeDirectory(LuminaConfig.EnginePath("Lumina/Engine/ThirdParty/spdlog/include"))
-LuminaConfig.AddPublicIncludeDirectory(LuminaConfig.EnginePath("Lumina/Engine/ThirdParty/GLFW/include"))
-LuminaConfig.AddPublicIncludeDirectory(LuminaConfig.EnginePath("Lumina/Engine/ThirdParty/GLM"))
-LuminaConfig.AddPublicIncludeDirectory(LuminaConfig.EnginePath("Lumina/Engine/ThirdParty/imgui"))
-LuminaConfig.AddPublicIncludeDirectory(LuminaConfig.EnginePath("Lumina/Engine/ThirdParty/vk-bootstrap"))
-LuminaConfig.AddPublicIncludeDirectory(LuminaConfig.EnginePath("Lumina/Engine/ThirdParty/VulkanMemoryAllocator"))
-LuminaConfig.AddPublicIncludeDirectory(LuminaConfig.EnginePath("Lumina/Engine/ThirdParty/fastgltf/include"))
-LuminaConfig.AddPublicIncludeDirectory(LuminaConfig.EnginePath("Lumina/Engine/ThirdParty/OpenFBX"))
-LuminaConfig.AddPublicIncludeDirectory(LuminaConfig.EnginePath("Lumina/Engine/ThirdParty/stb_image"))
-LuminaConfig.AddPublicIncludeDirectory(LuminaConfig.EnginePath("Lumina/Engine/ThirdParty/meshoptimizer/src"))
-LuminaConfig.AddPublicIncludeDirectory(LuminaConfig.EnginePath("Lumina/Engine/ThirdParty/vulkan"))
-LuminaConfig.AddPublicIncludeDirectory(LuminaConfig.EnginePath("Lumina/Engine/ThirdParty/shaderc"))
-LuminaConfig.AddPublicIncludeDirectory(LuminaConfig.EnginePath("Lumina/Engine/ThirdParty/volk"))
-LuminaConfig.AddPublicIncludeDirectory(LuminaConfig.EnginePath("Lumina/Engine/ThirdParty/EnkiTS/src"))
-LuminaConfig.AddPublicIncludeDirectory(LuminaConfig.EnginePath("Lumina/Engine/ThirdParty/SPIRV-Reflect"))
-LuminaConfig.AddPublicIncludeDirectory(LuminaConfig.EnginePath("Lumina/Engine/ThirdParty/json"))
-LuminaConfig.AddPublicIncludeDirectory(LuminaConfig.EnginePath("Lumina/Engine/ThirdParty/entt"))
-LuminaConfig.AddPublicIncludeDirectory(LuminaConfig.EnginePath("Lumina/Engine/ThirdParty/EA/EASTL/include"))
-LuminaConfig.AddPublicIncludeDirectory(LuminaConfig.EnginePath("Lumina/Engine/ThirdParty/EA/EABase/include/Common"))
-LuminaConfig.AddPublicIncludeDirectory(LuminaConfig.EnginePath("Lumina/Engine/ThirdParty/rpmalloc"))
-LuminaConfig.AddPublicIncludeDirectory(LuminaConfig.EnginePath("Lumina/Engine/ThirdParty/xxhash"))
-LuminaConfig.AddPublicIncludeDirectory(LuminaConfig.EnginePath("Lumina/Engine/ThirdParty/tracy/public"))
-LuminaConfig.AddPublicIncludeDirectory(LuminaConfig.EnginePath("Lumina/Engine/ThirdParty/RenderDoc"))
-LuminaConfig.AddPublicIncludeDirectory(LuminaConfig.EnginePath("Lumina/Engine/ThirdParty/concurrentqueue"))
-LuminaConfig.AddPublicIncludeDirectory(LuminaConfig.EnginePath("Lumina/Engine/ThirdParty/JoltPhysics"))
-LuminaConfig.AddPublicIncludeDirectory(LuminaConfig.EnginePath("Lumina/Engine/ThirdParty/sol2/include"))
-LuminaConfig.AddPublicIncludeDirectory(LuminaConfig.EnginePath("Lumina/Engine/ThirdParty/lua/include"))
+LuminaConfig.AddPublicIncludeDirectory(LuminaConfig.EnginePath("Engine/Source/ThirdParty"))
+LuminaConfig.AddPublicIncludeDirectory(LuminaConfig.EnginePath("Engine/Source/ThirdParty/spdlog/include"))
+LuminaConfig.AddPublicIncludeDirectory(LuminaConfig.EnginePath("Engine/Source/ThirdParty/GLFW/include"))
+LuminaConfig.AddPublicIncludeDirectory(LuminaConfig.EnginePath("Engine/Source/ThirdParty/GLM"))
+LuminaConfig.AddPublicIncludeDirectory(LuminaConfig.EnginePath("Engine/Source/ThirdParty/imgui"))
+LuminaConfig.AddPublicIncludeDirectory(LuminaConfig.EnginePath("Engine/Source/ThirdParty/vk-bootstrap"))
+LuminaConfig.AddPublicIncludeDirectory(LuminaConfig.EnginePath("Engine/Source/ThirdParty/VulkanMemoryAllocator"))
+LuminaConfig.AddPublicIncludeDirectory(LuminaConfig.EnginePath("Engine/Source/ThirdParty/fastgltf/include"))
+LuminaConfig.AddPublicIncludeDirectory(LuminaConfig.EnginePath("Engine/Source/ThirdParty/OpenFBX"))
+LuminaConfig.AddPublicIncludeDirectory(LuminaConfig.EnginePath("Engine/Source/ThirdParty/stb_image"))
+LuminaConfig.AddPublicIncludeDirectory(LuminaConfig.EnginePath("Engine/Source/ThirdParty/meshoptimizer/src"))
+LuminaConfig.AddPublicIncludeDirectory(LuminaConfig.EnginePath("Engine/Source/ThirdParty/vulkan"))
+LuminaConfig.AddPublicIncludeDirectory(LuminaConfig.EnginePath("Engine/Source/ThirdParty/shaderc"))
+LuminaConfig.AddPublicIncludeDirectory(LuminaConfig.EnginePath("Engine/Source/ThirdParty/volk"))
+LuminaConfig.AddPublicIncludeDirectory(LuminaConfig.EnginePath("Engine/Source/ThirdParty/EnkiTS/src"))
+LuminaConfig.AddPublicIncludeDirectory(LuminaConfig.EnginePath("Engine/Source/ThirdParty/SPIRV-Reflect"))
+LuminaConfig.AddPublicIncludeDirectory(LuminaConfig.EnginePath("Engine/Source/ThirdParty/json"))
+LuminaConfig.AddPublicIncludeDirectory(LuminaConfig.EnginePath("Engine/Source/ThirdParty/entt"))
+LuminaConfig.AddPublicIncludeDirectory(LuminaConfig.EnginePath("Engine/Source/ThirdParty/EA/EASTL/include"))
+LuminaConfig.AddPublicIncludeDirectory(LuminaConfig.EnginePath("Engine/Source/ThirdParty/EA/EABase/include/Common"))
+LuminaConfig.AddPublicIncludeDirectory(LuminaConfig.EnginePath("Engine/Source/ThirdParty/rpmalloc"))
+LuminaConfig.AddPublicIncludeDirectory(LuminaConfig.EnginePath("Engine/Source/ThirdParty/xxhash"))
+LuminaConfig.AddPublicIncludeDirectory(LuminaConfig.EnginePath("Engine/Source/ThirdParty/tracy/public"))
+LuminaConfig.AddPublicIncludeDirectory(LuminaConfig.EnginePath("Engine/Source/ThirdParty/RenderDoc"))
+LuminaConfig.AddPublicIncludeDirectory(LuminaConfig.EnginePath("Engine/Source/ThirdParty/concurrentqueue"))
+LuminaConfig.AddPublicIncludeDirectory(LuminaConfig.EnginePath("Engine/Source/ThirdParty/JoltPhysics"))
+LuminaConfig.AddPublicIncludeDirectory(LuminaConfig.EnginePath("Engine/Source/ThirdParty/sol2/include"))
+LuminaConfig.AddPublicIncludeDirectory(LuminaConfig.EnginePath("Engine/Source/ThirdParty/lua/include"))
