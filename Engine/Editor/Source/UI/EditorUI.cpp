@@ -2384,7 +2384,7 @@ namespace Lumina
 
                         if (ImGui::Button("##SandboxCard", ImVec2(cardWidth, cardHeight)))
                         {
-                            FString SandboxProjectDirectory = Paths::GetEngineInstallDirectory() + "/Applications/Sandbox/Sandbox.lproject";
+                            FString SandboxProjectDirectory = Paths::GetEngineDirectory() + "/Applications/Sandbox/Sandbox.lproject";
                             GEditorEngine->LoadProject(SandboxProjectDirectory);
                             ContentBrowser->RefreshContentBrowser();
                             FAssetRegistry::Get().RunInitialDiscovery();

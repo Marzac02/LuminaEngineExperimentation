@@ -47,7 +47,7 @@ namespace Lumina
 
         RUNTIME_API void SetReadyToClose(bool bReadyToClose) { bEngineReadyToClose = bReadyToClose; }
         
-        RUNTIME_API FORCEINLINE NODISCARD double GetDeltaTime() const { return UpdateContext.DeltaTime; }
+        RUNTIME_API NODISCARD double GetDeltaTime() const { return UpdateContext.DeltaTime; }
         
         template<typename T>
         requires(eastl::is_base_of_v<ISubsystem, T>)
@@ -59,7 +59,7 @@ namespace Lumina
         FORCEINLINE const FUpdateContext& GetUpdateContext() const { return UpdateContext; }
 
         RUNTIME_API void SetEngineReadyToClose(bool bReady) { bEngineReadyToClose = bReady; }
-        RUNTIME_API FORCEINLINE bool IsCloseRequested() const { return bCloseRequested; }
+        RUNTIME_API bool IsCloseRequested() const { return bCloseRequested; }
     
     protected:
         

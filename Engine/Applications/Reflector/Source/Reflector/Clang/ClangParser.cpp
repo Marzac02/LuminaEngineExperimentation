@@ -79,6 +79,7 @@ namespace Lumina::Reflection
         ClangArgs.emplace_back("-D");
         ClangArgs.emplace_back("NDEBUG");
         ClangArgs.emplace_back("-DRUNTIME_API=");
+        ClangArgs.emplace_back("-DEDITOR_API=");
         ClangArgs.emplace_back("-fms-extensions");
         ClangArgs.emplace_back("-fms-compatibility");
         ClangArgs.emplace_back("-Wfatal-errors=0");

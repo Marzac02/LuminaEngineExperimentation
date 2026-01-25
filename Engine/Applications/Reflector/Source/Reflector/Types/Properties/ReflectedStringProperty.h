@@ -14,6 +14,8 @@ namespace Lumina
             AppendPropertyDef(Stream, "Lumina::EPropertyFlags::None", "Lumina::EPropertyTypeFlags::String");
         }
 
+        bool GenerateLuaBinding(eastl::string& Stream) override;
+        
         virtual const char* GetPropertyParamType() const override { return "FStringPropertyParams"; } \
 
     };

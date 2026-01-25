@@ -4,11 +4,11 @@
 #include "Containers/Array.h"
 #include "Containers/String.h"
 #include "Tools/UI/ImGui/ImGuiX.h"
+#include "Core/Templates/LuminaTemplate.h"
 #ifdef _WIN32
     #include <Windows.h>
 #endif
 #include "GLFW/glfw3.h"
-#include "Module/API.h"
 #include "Tools/UI/ImGui/ImGuiDesignIcons.h"
 
 namespace Lumina::ImGuiX::Notifications

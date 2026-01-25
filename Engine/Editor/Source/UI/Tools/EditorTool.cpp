@@ -2,7 +2,6 @@
 #include "EditorTool.h"
 #include "imgui_internal.h"
 #include "ToolFlags.h"
-#include "EASTL/sort.h"
 #include "Thumbnails/ThumbnailManager.h"
 #include "Tools/UI/ImGui/ImGuiX.h"
 #include "World/WorldManager.h"
@@ -91,9 +90,9 @@ namespace Lumina
     void FEditorTool::SetupWorldForTool()
     {
         EditorEntity = World->ConstructEntity("Editor Entity");
+        World->GetEntityRegistry().emplace<FHideInSceneOutliner>(EditorEntity);
         World->GetEntityRegistry().emplace<SCameraComponent>(EditorEntity);
         World->GetEntityRegistry().emplace<SInputComponent>(EditorEntity);
-        World->GetEntityRegistry().emplace<FHideInSceneOutliner>(EditorEntity);
         World->GetEntityRegistry().emplace<FEditorComponent>(EditorEntity);
         World->GetEntityRegistry().emplace<SVelocityComponent>(EditorEntity).Speed = 50.0f;
         World->GetEntityRegistry().get<STransformComponent>(EditorEntity).SetLocation(glm::vec3(0.0f, 1.25f, 3.25f));

@@ -8,7 +8,7 @@ static int GuardedMain(int argc, char** argv)
     try
     {
         Lumina::FApplicationGlobalState GlobalState;
-        Lumina::FApplication* App = Lumina::Memory::New<Lumina::LuminaEditor>();
+        Lumina::FApplication* App = Lumina::Memory::New<Lumina::FLuminaEditor>();
         Result = App->Run(argc, argv);
     }
     catch (...)

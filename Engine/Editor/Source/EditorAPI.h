@@ -1,8 +1,6 @@
 ﻿#pragma once
 
-
-#ifdef EDITOR_EXPORTS
+#ifndef EDITOR_API
 #define EDITOR_API __declspec(dllexport)
-#else
-#define EDITOR_API __declspec(dllimport)
+#define RUNTIME_API __declspec(dllimport)
 #endif

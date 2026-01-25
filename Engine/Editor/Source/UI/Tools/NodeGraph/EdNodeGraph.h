@@ -3,6 +3,7 @@
 #include "EdGraphNode.h"
 #include "Containers/Array.h"
 #include "Containers/Function.h"
+#include "Containers/String.h"
 #include "Core/Object/ObjectHandleTyped.h"
 #include "imgui-node-editor/imgui_node_editor.h"
 #include "EdNodeGraph.generated.h"

@@ -7,14 +7,15 @@ project "Editor"
 
     libdirs
     {
-        "%{LuminaConfig.EngineDirectory}/Lumina/Engine/ThirdParty/lua/",
-		"%{LuminaConfig.EngineDirectory}/Lumina/Engine/ThirdParty/NvidiaAftermath/lib",
+        LuminaConfig.EnginePath("Engine/Source/ThirdParty/lua"),
+		LuminaConfig.EnginePath("Engine/Source/ThirdParty/NvidiaAftermath/lib"),
     }
 
 	links
 	{
-		--"Lumina",
+		"Runtime",
 		"ImGui",
+		"RPMalloc",
     	"EA",
 		"EnkiTS",
 		"Tracy",

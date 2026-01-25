@@ -21,11 +21,10 @@
 #include <Log/Log.h>
 #include <Memory/Memory.h>
 #include <Tools/UI/DevelopmentToolUI.h>
-#include <spdlog/details/windows_include.h>
 
 namespace Lumina
 {
-    FEditorEngine* GEditorEngine = nullptr;
+    EDITOR_API FEditorEngine* GEditorEngine = nullptr;
     
     bool FEditorEngine::Init()
     {
@@ -145,52 +144,52 @@ namespace Lumina
         Scripting::FScriptingContext::Get().LoadScriptsInDirectoryRecursively(ScriptPath);
     }
     
-    LuminaEditor::LuminaEditor()
+    FLuminaEditor::FLuminaEditor()
         : FApplication("Lumina Editor", 1 << 0)
     {
     }
     
-    bool LuminaEditor::Initialize(int argc, char** argv)
+    bool FLuminaEditor::Initialize(int argc, char** argv)
     {
         GEngine->Init();
         
         return true;
     }
 
-    FEngine* LuminaEditor::CreateEngine()
+    FEngine* FLuminaEditor::CreateEngine()
     {
         GEditorEngine = Memory::New<FEditorEngine>();
         GEngine = GEditorEngine;
         return GEngine;
     }
 
-    bool LuminaEditor::ShouldExit() const
+    bool FLuminaEditor::ShouldExit() const
     {
         return MainWindow->ShouldClose() || bExitRequested;
     }
 
-    void LuminaEditor::CreateProject()
+    void FLuminaEditor::CreateProject()
     {
         
     }
 
-    void LuminaEditor::OpenProject()
+    void FLuminaEditor::OpenProject()
     {
         
     }
 
-    FWindowSpecs LuminaEditor::GetWindowSpecs() const
+    FWindowSpecs FLuminaEditor::GetWindowSpecs() const
     {
         FWindowSpecs AppWindowSpecs;
         AppWindowSpecs.Title = ApplicationName.c_str();
         return AppWindowSpecs;
     }
 
-    void LuminaEditor::RenderDeveloperTools(const FUpdateContext& UpdateContext)
+    void FLuminaEditor::RenderDeveloperTools(const FUpdateContext& UpdateContext)
     {
     }
 
-    void LuminaEditor::Shutdown()
+    void FLuminaEditor::Shutdown()
     {
         
     }

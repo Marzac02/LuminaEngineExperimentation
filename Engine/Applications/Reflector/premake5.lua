@@ -1,6 +1,6 @@
 project "Reflector"
 	kind "ConsoleApp"
-	dependson { "EA", }
+	dependson { "EA", "XXHash", "NlohmannJson" }
     
 	configmap
 	{

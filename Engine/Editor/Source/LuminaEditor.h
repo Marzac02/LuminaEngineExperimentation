@@ -12,9 +12,9 @@ namespace Lumina
     class FEditorLayer;
     class FEditorPanel;
 
-    extern class FEditorEngine* GEditorEngine;
+    EDITOR_API extern class FEditorEngine* GEditorEngine;
     
-    class FEditorEngine : public FEngine
+    class EDITOR_API FEditorEngine : public FEngine
     {
     public:
         bool Init() override;
@@ -50,11 +50,11 @@ namespace Lumina
     };
     
 
-    class LuminaEditor : public FApplication
+    class EDITOR_API FLuminaEditor : public FApplication
     {
     public:
     
-        LuminaEditor();
+        FLuminaEditor();
 
         bool Initialize(int argc, char** argv) override;
         FEngine* CreateEngine() override;

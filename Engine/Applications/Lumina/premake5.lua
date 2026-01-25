@@ -1,7 +1,7 @@
 project "Lumina"
 	kind "WindowedApp"
 	rtti "off"
-	dependson { "Reflector", "Lumina", "Editor", "ImGui", "EA", "Tracy", "lua54" }
+	dependson { "Lumina", "Editor", "ImGui", "EA", "Tracy", "lua54" }
 
 	defines
 	{ 
@@ -19,7 +19,7 @@ project "Lumina"
 
 	links
 	 {
-		"Lumina",
+		"Runtime",
 		"Editor",
 		"ImGui",
     	"EA",
@@ -33,6 +33,11 @@ project "Lumina"
 		"Source/**.h",
 		"Source/**.cpp",
 		"**.lua",
+	}
+
+	forceincludes
+	{
+		"LaunchAPI.h"
 	}
 
 	includedirs
