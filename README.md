@@ -98,6 +98,9 @@ Performance profiling - Built-in Lua script profiling with Tracy
 - **Visual Studio 2022 or 2019** with MSVC v143 toolset (17.8+)
 - **Python 3.8+** added to your system PATH
 
+> [!NOTE]
+> [Jetbrains Rider](https://www.jetbrains.com/rider/) is the recommended IDE for Lumina development (but it is not required) 
+
 ### Installation Steps
 
 1. **Clone the repository**
