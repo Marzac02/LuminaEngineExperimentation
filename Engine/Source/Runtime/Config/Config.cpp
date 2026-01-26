@@ -23,22 +23,35 @@ namespace Lumina
             FS::ReadFile(Result, Info.VirtualPath);
             
             Json J = Json::parse(Result.c_str());
+            
+            FileConfigs[Info.VirtualPath.c_str()] = J;
+            
+            TFunction<void(const FString&, const Json&)> TrackPaths;
+            TrackPaths = [&](const FString& Prefix, const Json& Obj)
+            {
+                for (auto It = Obj.begin(); It != Obj.end(); ++It)
+                {
+                    FString Key = It.key().c_str();
+                    FString FullPath = Prefix.empty() ? Key : std::format("{}.{}", Prefix, Key).c_str();
+                    
+                    PathToFile[FullPath] = Info.VirtualPath;
+                    
+                    if (It->is_object())
+                    {
+                        TrackPaths(FullPath, *It);
+                    }
+                }
+            };
+            
+            TrackPaths("", J);
+            
             MergeJson(RootConfig, J);
         });
     }
 
-    bool FConfig::FCategory::Has(FStringView Key) const
+    const nlohmann::json* FConfig::GetJson(FStringView Key)
     {
-        return Node.contains(Key.data());
-    }
-
-    FConfig::FCategory FConfig::FCategory::GetCategory(FStringView CategoryName) const
-    {
-        if (!Node.contains(CategoryName.data()))
-        {
-            Node[CategoryName.data()] = nlohmann::json::object();
-        }
-        return FCategory(Node[CategoryName.data()]);
+        return NavigateToNode(Key);
     }
 
     bool FConfig::Set(const FString& Path, const nlohmann::json& Value)
@@ -48,6 +61,13 @@ namespace Lumina
             return false;
         }
     
+        FString SourceFile = FindSourceFile(Path);
+        
+        if (SourceFile.empty())
+        {
+            return false;
+        }
+        
         TVector<FString> PathParts;
         std::string PathStr = Path.c_str();
         std::string Delimiter = ".";
@@ -66,32 +86,58 @@ namespace Lumina
         }
     
         nlohmann::json* Current = &RootConfig;
-    
         for (size_t i = 0; i < PathParts.size() - 1; ++i)
         {
             const FString& Part = PathParts[i];
-        
             if (!Current->contains(Part.c_str()) || !(*Current)[Part.c_str()].is_object())
             {
                 (*Current)[Part.c_str()] = nlohmann::json::object();
             }
-        
             Current = &(*Current)[Part.c_str()];
         }
-    
-        const FString& FinalKey = PathParts.back();
-        (*Current)[FinalKey.c_str()] = Value;
+        (*Current)[PathParts.back().c_str()] = Value;
+        
+        Current = &FileConfigs[SourceFile];
+        for (size_t i = 0; i < PathParts.size() - 1; ++i)
+        {
+            const FString& Part = PathParts[i];
+            if (!Current->contains(Part.c_str()) || !(*Current)[Part.c_str()].is_object())
+            {
+                (*Current)[Part.c_str()] = nlohmann::json::object();
+            }
+            Current = &(*Current)[Part.c_str()];
+        }
+        (*Current)[PathParts.back().c_str()] = Value;
+        
+        FString JsonString = FileConfigs[SourceFile.c_str()].dump(4).c_str();
+        FS::WriteFile(SourceFile, JsonString);
     
         return true;
     }
 
-    FConfig::FCategory FConfig::GetCategory(FStringView CategoryName)
+    FString FConfig::FindSourceFile(const FString& Path) const
     {
-        if (!RootConfig.contains(CategoryName.data()))
+        auto It = PathToFile.find(Path);
+        if (It != PathToFile.end())
         {
-            RootConfig[CategoryName.data()] = nlohmann::json::object();
+            return It->second;
         }
-        return FCategory(RootConfig[CategoryName.data()]);
+        
+        FString CurrentPath = Path;
+        size_t LastDot = CurrentPath.find_last_of('.');
+        
+        while (LastDot != FString::npos)
+        {
+            CurrentPath = CurrentPath.substr(0, LastDot);
+            It = PathToFile.find(CurrentPath);
+            if (It != PathToFile.end())
+            {
+                return It->second;
+            }
+            LastDot = CurrentPath.find_last_of('.');
+        }
+        
+        return "";
     }
 
     void FConfig::MergeJson(nlohmann::json& Target, const nlohmann::json& Source)

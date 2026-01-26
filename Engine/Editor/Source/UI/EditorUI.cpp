@@ -87,14 +87,6 @@
 
 namespace Lumina
 {
-    FEditorUI::FEditorUI()
-    {
-    }
-
-    FEditorUI::~FEditorUI()
-    {
-    }
-
     bool FEditorUI::OnEvent(FEvent& Event)
     {
         for (FEditorTool* Tool : EditorTools)
@@ -2068,21 +2060,22 @@ namespace Lumina
 
         ImGui::Separator();
 
+        if (ImGui::MenuItem(LE_ICON_SETTINGS_HELPER " Config Settings"))
+        {
+            ConfigSettingsDialog();
+        }
+        
         if (ImGui::BeginMenu(LE_ICON_ROTATE_LEFT " Recent"))
         {
             ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.6f, 0.6f, 0.62f, 1.0f));
-            ImGui::MenuItem("Project1.lumina");
-            ImGui::MenuItem("Project2.lumina");
-            ImGui::MenuItem("Project3.lumina");
-            ImGui::PopStyleColor();
-
-            ImGui::Separator();
-
-            if (ImGui::MenuItem(LE_ICON_TRASH_CAN " Clear Recent"))
+         
+            auto Recents = GConfig->Get<std::vector<std::string>>("Editor.RecentProjects");
+            for (const auto& Item : Recents)
             {
-                // Clear recent files
+                ImGui::TextUnformatted(Item.c_str());
             }
-
+            ImGui::PopStyleColor();
+            
             ImGui::EndMenu();
         }
 
@@ -2170,11 +2163,6 @@ namespace Lumina
         }
     
         ImGui::Separator();
-    
-        if (ImGui::MenuItem(LE_ICON_SETTINGS_HELPER " Project Settings"))
-        {
-            ProjectSettingsDialog();
-        }
     
         if (ImGui::MenuItem(LE_ICON_DATABASE " Asset Registry"))
         {
@@ -2546,183 +2534,148 @@ namespace Lumina
         });
     }
 
-    void FEditorUI::ProjectSettingsDialog()
+    void FEditorUI::ConfigSettingsDialog()
     {
-        ModalManager.CreateDialogue("Project Settings", ImVec2(1000, 700), [this] () -> bool
+        ModalManager.CreateDialogue("Config Settings", ImVec2(1000, 700), [this] () -> bool
         {
-            static FString SelectedCategory;
-            
-            ImGui::BeginChild("SettingsCategories", ImVec2(200, 0), true);
+            if (ImGui::BeginTable("##SettingsTable", 2, 
+                ImGuiTableFlags_Borders | 
+                ImGuiTableFlags_RowBg | 
+                ImGuiTableFlags_Resizable |
+                ImGuiTableFlags_ScrollY))
             {
-                ImGui::TextColored(ImVec4(0.7f, 0.7f, 0.7f, 1.0f), "CATEGORIES");
-                ImGui::Separator();
-                ImGui::Spacing();
+                ImGui::TableSetupColumn("Setting", ImGuiTableColumnFlags_WidthFixed, 200.0f);
+                ImGui::TableSetupColumn("Value", ImGuiTableColumnFlags_WidthStretch);
+                ImGui::TableSetupScrollFreeze(0, 1);
+                ImGui::TableHeadersRow();
+            
+                TFunction<void(const nlohmann::json&, const FString&, int)> RenderValue;
+                RenderValue = [&](const nlohmann::json& V, const FString& Path, int Depth)
+                {
+                    ImGui::PushID(Path.c_str());
+                    
+                    if (V.is_string())
+                    {
+                        FFixedString Buffer(V.get<std::string>().c_str());
+                        if (ImGui::InputText("##Val", Buffer.data(), Buffer.max_size()))
+                        {
+                            GConfig->Set(Path, Buffer.c_str());
+                        }
+                    }
+                    else if (V.is_boolean())
+                    {
+                        bool BoolValue = V.get<bool>();
+                        if (ImGui::Checkbox("##Val", &BoolValue))
+                        {
+                            GConfig->Set(Path, BoolValue);
+                        }
+                    }
+                    else if (V.is_number_integer())
+                    {
+                        int IntValue = V.get<int>();
+                        if (ImGui::InputInt("##Val", &IntValue))
+                        {
+                            GConfig->Set(Path, IntValue);
+                        }
+                    }
+                    else if (V.is_number_float())
+                    {
+                        float FloatValue = V.get<float>();
+                        if (ImGui::InputFloat("##Val", &FloatValue))
+                        {
+                            GConfig->Set(Path, FloatValue);
+                        }
+                    }
+                    else if (V.is_array())
+                    {
+                        ImGui::PushStyleVar(ImGuiStyleVar_CellPadding, ImVec2(8, 4));
+                        
+                        FString TableID = std::format("##{}_nested_{}", Path, Depth).c_str();
+                        if (ImGui::BeginTable(TableID.c_str(), 2,
+                            ImGuiTableFlags_Borders |
+                            ImGuiTableFlags_RowBg |
+                            ImGuiTableFlags_Resizable))
+                        {
+                            ImGui::TableSetupColumn("Index", ImGuiTableColumnFlags_WidthFixed, 60.0f);
+                            ImGui::TableSetupColumn("Value", ImGuiTableColumnFlags_WidthStretch);
+                            ImGui::TableHeadersRow();
+    
+                            for (size_t i = 0; i < V.size(); ++i)
+                            {
+                                const nlohmann::json& ArrayValue = V[i];
+
+                                ImGui::TableNextRow();
+                                ImGui::TableNextColumn();
+                                ImGui::AlignTextToFramePadding();
+            
+                                ImGui::Text("[%zu]", i);
+
+                                ImGui::TableNextColumn();
+                                FString ArrayPath = std::format("{}[{}]", Path, i).c_str();
+                                RenderValue(ArrayValue, ArrayPath, Depth + 1);
+                            }
+
+    
+                            ImGui::EndTable();
+                        }
+                        
+                        ImGui::PopStyleVar();
+                    }
+                    else if (V.is_object())
+                    {
+                        ImGui::PushStyleVar(ImGuiStyleVar_CellPadding, ImVec2(8, 4));
+                        
+                        FString TableID = std::format("##{}_nested_{}", Path, Depth).c_str();
+                        if (ImGui::BeginTable(TableID.c_str(), 2,
+                            ImGuiTableFlags_Borders |
+                            ImGuiTableFlags_RowBg |
+                            ImGuiTableFlags_Resizable))
+                        {
+                            ImGui::TableSetupColumn("Property", ImGuiTableColumnFlags_WidthFixed, 200.0f);
+                            ImGui::TableSetupColumn("Value", ImGuiTableColumnFlags_WidthStretch);
+                            ImGui::TableHeadersRow();
+    
+                            for (auto It = V.begin(); It != V.end(); ++It)
+                            {
+                                FString NestedKey = It.key().c_str();
+                                const nlohmann::json& NestedValue = It.value();
+    
+                                ImGui::TableNextRow();
+                                ImGui::TableNextColumn();
+                                ImGui::AlignTextToFramePadding();
+                                ImGui::TextUnformatted(NestedKey.c_str());
+    
+                                ImGui::TableNextColumn();
+                                FString NestedPath = std::format("{}.{}", Path, NestedKey).c_str();
+                                RenderValue(NestedValue, NestedPath, Depth + 1);
+                            }
+    
+                            ImGui::EndTable();
+                        }
+                        
+                        ImGui::PopStyleVar();
+                    }
+                    else
+                    {
+                        ImGui::TextDisabled("Unknown type");
+                    }
+                    
+                    ImGui::PopID();
+                };
                 
-                TVector<FString> Categories;
                 GConfig->ForEach([&](const FString& Key, const nlohmann::json& Value)
                 {
-                    if (Value.is_object())
-                    {
-                        Categories.emplace_back(Key);
-                    }
-                });
-                
-                for (const FString& Category : Categories)
-                {
-                    FString Label = std::format("{} {}", LE_ICON_TABLE_SETTINGS, Category).c_str();
-                
-                    bool IsSelected = (SelectedCategory == Category);
-                    if (ImGui::Selectable(Label.c_str(), IsSelected))
-                    {
-                        SelectedCategory = Category;
-                    }
-                }
-            }
-            ImGui::EndChild();
-            
-            ImGui::SameLine();
-            
-            ImGui::BeginChild("SettingsContent", ImVec2(0, -40), true);
-            {
-                if (!SelectedCategory.empty())
-                {
-                    ImGui::TextColored(ImVec4(0.8f, 0.9f, 1.0f, 1.0f), SelectedCategory.c_str());
-                }
-                else
-                {
-                    ImGui::TextColored(ImVec4(0.8f, 0.9f, 1.0f, 1.0f), "General Settings");
-                }
-                ImGui::Separator();
-                ImGui::Spacing();
-                
-                if (ImGui::BeginTable("##SettingsTable", 2, 
-                    ImGuiTableFlags_Borders | 
-                    ImGuiTableFlags_RowBg | 
-                    ImGuiTableFlags_Resizable |
-                    ImGuiTableFlags_ScrollY))
-                {
-                    ImGui::TableSetupColumn("Setting", ImGuiTableColumnFlags_WidthFixed, 65.0f);
-                    ImGui::TableSetupColumn("Value", ImGuiTableColumnFlags_WidthStretch);
-                    ImGui::TableSetupScrollFreeze(0, 1);
-                    ImGui::TableHeadersRow();
-        
-                    auto RenderValue = [](const nlohmann::json& V, const FString& Path)
-                    {
-                        ImGui::PushID(Path.c_str());
-                        if (V.is_string())
-                        {
-                            FFixedString Buffer(V.get<std::string>().c_str());
-                            if (ImGui::InputText("##Val", Buffer.data(), Buffer.max_size()))
-                            {
-                                GConfig->Set(Path, Buffer.c_str());
-                            }
-                        }
-                        else if (V.is_boolean())
-                        {
-                            bool BoolValue = V.get<bool>();
-                            if (ImGui::Checkbox("##Val", &BoolValue))
-                            {
-                                GConfig->Set(Path, BoolValue);
-                            }
-                        }
-                        else if (V.is_number_integer())
-                        {
-                            int IntValue = V.get<int>();
-                            if (ImGui::InputInt("##Val", &IntValue))
-                            {
-                                GConfig->Set(Path, IntValue);
-                            }
-                        }
-                        else if (V.is_number_float())
-                        {
-                            float FloatValue = V.get<float>();
-                            if (ImGui::InputFloat("##Val", &FloatValue))
-                            {
-                                GConfig->Set(Path, FloatValue);
-                            }
-                        }
-                        else if (V.is_array())
-                        {
-                            ImGui::TextDisabled("[ %zu items ]", V.size());
-                        }
-                        else if (V.is_object())
-                        {
-                            ImGui::TextDisabled("{ %zu items }", V.size());
-                        }
-                        else
-                        {
-                            ImGui::TextDisabled("Unknown type");
-                        }
-                        ImGui::PopID();
-                    };
+                    ImGui::TableNextRow();
+                    ImGui::TableNextColumn();
+                    ImGui::AlignTextToFramePadding();
+                    ImGui::TextUnformatted(Key.c_str());
                     
-                    GConfig->ForEachInCategory(SelectedCategory, [&](const FString& Key, const nlohmann::json& Value)
-                    {
-                        FString FullPath = std::format("{}.{}", SelectedCategory, Key).c_str();
-                        
-                        ImGui::TableNextRow();
-                        ImGui::TableNextColumn();
-                        ImGui::AlignTextToFramePadding();
-                        
-                        if (Value.is_object())
-                        {
-                            bool IsOpen = ImGui::TreeNodeEx(Key.c_str(), ImGuiTreeNodeFlags_SpanFullWidth);
-                            
-                            ImGui::TableNextColumn();
-                            
-                            if (IsOpen)
-                            {
-                                ImGui::PushStyleVar(ImGuiStyleVar_CellPadding, ImVec2(8, 4));
-                                
-                                if (ImGui::BeginTable(std::format("##{}_nested", FullPath).c_str(), 2,
-                                    ImGuiTableFlags_Borders |
-                                    ImGuiTableFlags_RowBg |
-                                    ImGuiTableFlags_Resizable))
-                                {
-                                    ImGui::TableSetupColumn("Property", ImGuiTableColumnFlags_WidthFixed, 200.0f);
-                                    ImGui::TableSetupColumn("Value", ImGuiTableColumnFlags_WidthStretch);
-                                    
-                                    for (auto It = Value.begin(); It != Value.end(); ++It)
-                                    {
-                                        FString NestedKey = It.key().c_str();
-                                        const nlohmann::json& NestedValue = It.value();
-                                        
-                                        ImGui::TableNextRow();
-                                        ImGui::TableNextColumn();
-                                        ImGui::AlignTextToFramePadding();
-                                        ImGui::TextUnformatted(NestedKey.c_str());
-                                        
-                                        ImGui::TableNextColumn();
-                                        FString NestedPath = std::format("{}.{}", FullPath, NestedKey).c_str();
-                                        RenderValue(NestedValue, NestedPath);
-                                    }
-                                    
-                                    ImGui::EndTable();
-                                }
-                                
-                                ImGui::PopStyleVar();
-                                
-                                ImGui::TreePop();
-                            }
-                            else
-                            {
-                                ImGui::TextDisabled("{ %zu items }", Value.size());
-                            }
-                        }
-                        else
-                        {
-                            ImGui::TextUnformatted(Key.c_str());
-                            ImGui::TableNextColumn();
-                            RenderValue(Value, FullPath);
-                        }
-                    });
-        
-                    ImGui::EndTable();
-                }
-            }
-            ImGui::EndChild();
+                    ImGui::TableNextColumn();
+                    RenderValue(Value, Key, 0);
+                });
             
-            ImGui::Spacing();
+                ImGui::EndTable();
+            }
             
             if (ImGui::Button("Close", ImVec2(120, 0)))
             {
@@ -2744,6 +2697,18 @@ namespace Lumina
         if (FAssetData* Data = FAssetRegistry::Get().GetAssetByPath(EditorStartupMap))
         {
             OpenAssetEditor(Data->AssetGUID);
+        }
+        
+        auto Recents = GConfig->Get<std::vector<std::string>>("Editor.RecentProjects");
+        bool bDoesNotContains = eastl::none_of(Recents.begin(), Recents.end(), [&](const std::string& Item)
+        {
+            return Item == std::string(GEngine->GetProjectName().data());
+        });
+        
+        if (bDoesNotContains)
+        {
+            Recents.emplace_back(GEngine->GetProjectName().data());
+            GConfig->Set("Editor.RecentProjects", Recents);
         }
     }
 

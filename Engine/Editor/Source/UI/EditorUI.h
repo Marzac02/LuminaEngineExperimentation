@@ -33,8 +33,8 @@ namespace Lumina
 
         using FUITransactionManager = TTransactionManager<FDeleteAssetTransaction>;
         
-        FEditorUI();
-        ~FEditorUI() override;
+        FEditorUI() = default;
+        ~FEditorUI() override = default;
         LE_NO_COPYMOVE(FEditorUI);
 
         // Begin IEventHandler
@@ -84,7 +84,7 @@ namespace Lumina
         void DrawHelpMenu();
         void OpenProjectDialog();
         void NewProjectDialog();
-        void ProjectSettingsDialog();
+        void ConfigSettingsDialog();
         
         void OnProjectLoaded();
 

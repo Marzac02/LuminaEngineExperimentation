@@ -45,8 +45,6 @@ namespace Lumina
         
         FileSystem::Mount<FileSystem::FNativeFileSystem>("/Engine", Paths::GetEngineDirectory());
         
-        GConfig->LoadPath("/Engine/Config");
-        
         FCoreDelegates::OnPreEngineInit.BroadcastAndClear();
         
         FConsoleRegistry::Get().LoadFromConfig();
@@ -301,13 +299,16 @@ namespace Lumina
         FGuid ProjectID                 = FGuid::FromString(Data["ProjectID"].get<std::string>().c_str());
         ProjectPath                     .assign_convert(FS::Parent(Paths::Normalize(Path)));
         ProjectName                     = Data["Name"].get<std::string>().c_str();
+        
+        FFixedString ConfigDir          = Paths::Combine(ProjectPath, "Config");
         FFixedString GameDir            = Paths::Combine(ProjectPath, "Game");
         FFixedString BinariesDirectory  = Paths::Combine(ProjectPath, "Binaries");
         FFixedString GameScriptsDir     = Paths::Combine(ProjectPath, "Game", "Scripts");
         
         FS::Mount<FS::FNativeFileSystem>("/Game", GameDir);
-        
-        GConfig->LoadPath("/Game/Config");
+        FS::Mount<FS::FNativeFileSystem>("/Config", ConfigDir);
+
+        GConfig->LoadPath("/Config");
         
         FFixedString DLLPath;
         

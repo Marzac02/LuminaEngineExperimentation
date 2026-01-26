@@ -1,5 +1,8 @@
 {
-    "General": {
+    "Editor": {
+        "RecentProjects": [
+            "Sandbox"
+        ],
         "StartupProject": "NULL"
     }
 }

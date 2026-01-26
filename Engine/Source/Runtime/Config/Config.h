@@ -10,92 +10,65 @@ namespace Lumina
     class RUNTIME_API FConfig
     {
     public:
-        
+
         void LoadPath(FStringView ConfigPath);
-        
+
         template<typename T>
         T Get(FStringView Key, const T& Defaults = T{});
-    
-        class FCategory
-        {
-        public:
-            FCategory(nlohmann::json& CategoryNode) : Node(CategoryNode) {}
-            
-            template<typename T>
-            T Get(FStringView Key, const T& Defaults = T{}) const
-            {
-                if (Node.contains(Key.data()))
-                {
-                    return Node[Key.data()].get<T>();
-                }
-                return Defaults;
-            }
-            
-            template<typename T>
-            void Set(FStringView Key, const T& Value)
-            {
-                Node[Key.data()] = Value;
-            }
-            
-            bool Has(FStringView Key) const;
-            
-            FCategory GetCategory(FStringView CategoryName) const;
-            
-        private:
-            nlohmann::json& Node;
-        };
         
+        const nlohmann::json* GetJson(FStringView Key);
+
         bool Set(const FString& Path, const nlohmann::json& Value);
-        
-        FCategory GetCategory(FStringView CategoryName);
-        
+
         template<typename T>
         T GetNested(FStringView Path, const T& Defaults = T{});
-        
+
         template<typename TFunc>
         void ForEach(TFunc&& Func);
-        
-        template<typename TFunc>
-        void ForEachInCategory(FStringView CategoryName, TFunc&& Func);
-        
+
     private:
         
+        FString FindSourceFile(const FString& Path) const;
         void MergeJson(nlohmann::json& Target, const nlohmann::json& Source);
         nlohmann::json* NavigateToNode(FStringView Path);
         const nlohmann::json* NavigateToNode(FStringView Path) const;
-    
+
     private:
-        
+
         nlohmann::json RootConfig;
+
+        THashMap<FString, FString> PathToFile;
+        
+        THashMap<FString, nlohmann::json> FileConfigs;
     };
 
-    
+
     template <typename T>
     T FConfig::Get(FStringView Key, const T& Defaults)
     {
         std::string KeyStr = Key.data();
-    
+
         nlohmann::json* Current = &RootConfig;
         size_t Pos = 0;
-    
+
         while ((Pos = KeyStr.find('.')) != std::string::npos)
         {
             std::string Part = KeyStr.substr(0, Pos);
-        
+
             if (!Current->contains(Part) || !(*Current)[Part].is_object())
             {
                 return Defaults;
             }
-        
+
             Current = &(*Current)[Part];
             KeyStr.erase(0, Pos + 1);
         }
-    
+
         if (Current->contains(KeyStr))
         {
             return (*Current)[KeyStr].get<T>();
         }
-    
+
         return Defaults;
     }
 
@@ -114,22 +87,6 @@ namespace Lumina
     void FConfig::ForEach(TFunc&& Func)
     {
         for (auto It = RootConfig.begin(); It != RootConfig.end(); ++It)
-        {
-            FString Key = It.key().c_str();
-            eastl::invoke(Func, Key, *It);
-        }
-    }
-
-    template <typename TFunc>
-    void FConfig::ForEachInCategory(FStringView CategoryName, TFunc&& Func)
-    {
-        if (!RootConfig.contains(CategoryName.data()))
-        {
-            return;
-        }
-    
-        auto& Category = RootConfig[CategoryName.data()];
-        for (auto It = Category.begin(); It != Category.end(); ++It)
         {
             FString Key = It.key().c_str();
             eastl::invoke(Func, Key, *It);
