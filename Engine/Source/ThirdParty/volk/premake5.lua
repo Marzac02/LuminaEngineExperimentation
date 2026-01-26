@@ -1,7 +1,6 @@
 project "Volk"
 	kind "StaticLib"
 	warnings "off"
-    
 
 	files
 	{

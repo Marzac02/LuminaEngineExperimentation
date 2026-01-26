@@ -1,67 +1,138 @@
 ﻿#pragma once
-#include <nlohmann/json_fwd.hpp>
 
-#include "Core/Object/Object.h"
-#include "Core/Object/ObjectMacros.h"
-#include "Config.generated.h"
+#include "Containers/String.h"
+#include "Log/Log.h"
+#include "nlohmann/json.hpp"
 
 namespace Lumina
 {
-    
-    
-    class CConfig;
-    
-    REFLECT()
-    class RUNTIME_API CConfigRegistry : public CObject
+    RUNTIME_API extern class FConfig* GConfig;
+    class RUNTIME_API FConfig
     {
-        GENERATED_BODY()
     public:
         
-        static CConfigRegistry& Get();
-        
-        void Initialize();
-        
-        void RegisterConfig(CConfig* Config);
-        void OnDestroy() override;
-        
-        void LoadEngineConfig();
-        void LoadProjectConfig();
-        void SaveConfigs();
-        
-        FFixedString GetConfigFilePath(const CConfig* Config) const;
-        
-    private:
-        
-        FFixedString ResolvePath(FStringView PathTemplate, FStringView ConfigType);
-        
-        void LoadConfig(CConfig* Config);
-        void SaveConfig(CConfig* Config, FStringView Path);
+        void LoadPath(FStringView ConfigPath);
         
         template<typename T>
-        void LoadConfig()
+        T Get(FStringView Key, const T& Defaults = T{});
+    
+        class FCategory
         {
-            LoadConfig(GetMutableDefault<T>());
-        }
+        public:
+            FCategory(nlohmann::json& CategoryNode) : Node(CategoryNode) {}
+            
+            template<typename T>
+            T Get(FStringView Key, const T& Defaults = T{}) const
+            {
+                if (Node.contains(Key.data()))
+                {
+                    return Node[Key.data()].get<T>();
+                }
+                return Defaults;
+            }
+            
+            template<typename T>
+            void Set(FStringView Key, const T& Value)
+            {
+                Node[Key.data()] = Value;
+            }
+            
+            bool Has(FStringView Key) const;
+            
+            FCategory GetCategory(FStringView CategoryName) const;
+            
+        private:
+            nlohmann::json& Node;
+        };
         
+        bool Set(const FString& Path, const nlohmann::json& Value);
+        
+        FCategory GetCategory(FStringView CategoryName);
+        
+        template<typename T>
+        T GetNested(FStringView Path, const T& Defaults = T{});
+        
+        template<typename TFunc>
+        void ForEach(TFunc&& Func);
+        
+        template<typename TFunc>
+        void ForEachInCategory(FStringView CategoryName, TFunc&& Func);
         
     private:
         
-        TVector<CConfig*>   Configs;
+        void MergeJson(nlohmann::json& Target, const nlohmann::json& Source);
+        nlohmann::json* NavigateToNode(FStringView Path);
+        const nlohmann::json* NavigateToNode(FStringView Path) const;
+    
+    private:
+        
+        nlohmann::json RootConfig;
     };
+
     
-    
-    REFLECT()
-    class RUNTIME_API CConfig : public CObject
+    template <typename T>
+    T FConfig::Get(FStringView Key, const T& Defaults)
     {
-        GENERATED_BODY()
-    public:
+        std::string KeyStr = Key.data();
+    
+        nlohmann::json* Current = &RootConfig;
+        size_t Pos = 0;
+    
+        while ((Pos = KeyStr.find('.')) != std::string::npos)
+        {
+            std::string Part = KeyStr.substr(0, Pos);
         
-        void PostCreateCDO() override;
+            if (!Current->contains(Part) || !(*Current)[Part].is_object())
+            {
+                return Defaults;
+            }
         
-        virtual void SaveConfig(nlohmann::json& Json) LUMINA_PURE_VIRTUAL()
-        virtual void LoadConfig(nlohmann::json& Json) LUMINA_PURE_VIRTUAL()
-        
-        FString GetConfigName() const;
-        
-    };
+            Current = &(*Current)[Part];
+            KeyStr.erase(0, Pos + 1);
+        }
+    
+        if (Current->contains(KeyStr))
+        {
+            return (*Current)[KeyStr].get<T>();
+        }
+    
+        return Defaults;
+    }
+
+    template <typename T>
+    T FConfig::GetNested(FStringView Path, const T& Defaults)
+    {
+        const nlohmann::json* Node = NavigateToNode(Path);
+        if (Node && !Node->is_null())
+        {
+            return Node->get<T>();
+        }
+        return Defaults;
+    }
+
+    template <typename TFunc>
+    void FConfig::ForEach(TFunc&& Func)
+    {
+        for (auto It = RootConfig.begin(); It != RootConfig.end(); ++It)
+        {
+            FString Key = It.key().c_str();
+            eastl::invoke(Func, Key, *It);
+        }
+    }
+
+    template <typename TFunc>
+    void FConfig::ForEachInCategory(FStringView CategoryName, TFunc&& Func)
+    {
+        if (!RootConfig.contains(CategoryName.data()))
+        {
+            return;
+        }
+    
+        auto& Category = RootConfig[CategoryName.data()];
+        for (auto It = Category.begin(); It != Category.end(); ++It)
+        {
+            FString Key = It.key().c_str();
+            eastl::invoke(Func, Key, *It);
+        }
+    }
 }

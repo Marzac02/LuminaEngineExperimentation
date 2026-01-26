@@ -1,7 +1,8 @@
 project "Reflector"
 	kind "ConsoleApp"
 	dependson { "EA", "XXHash", "NlohmannJson" }
-    
+	targetsuffix ""
+
 	configmap
 	{
 		["Debug"] 				= "Development",
@@ -17,7 +18,7 @@ project "Reflector"
 
 	prebuildcommands 
 	{
-		LuminaConfig.MakeDirectory(LuminaConfig.EnginePath("Binaries/%{cfg.buildcfg}-%{cfg.system}-%{cfg.architecture}")),
+		LuminaConfig.MakeDirectory(LuminaConfig.GetTargetDirectory()),
 		LuminaConfig.CopyFile(LuminaConfig.EnginePath("External/LLVM/bin/libclang.dll"), LuminaConfig.GetTargetDirectory())
 	}
 

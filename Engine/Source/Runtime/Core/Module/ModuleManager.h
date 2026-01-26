@@ -1,10 +1,9 @@
 ﻿#pragma once
 
+#include "ModuleInterface.h"
 #include "Containers/Array.h"
 #include "Containers/Name.h"
 #include "Containers/String.h"
-#include "Core/Singleton/Singleton.h"
-#include "ModuleInterface.h"
 #include "Memory/Memory.h"
 #include "Memory/SmartPtr.h"
 
@@ -34,13 +33,14 @@ namespace Lumina
     using ModuleInitFunc = IModuleInterface* (*)();
     using ModuleShutdownFunc = void (*)();
     
-    class FModuleManager : public TSingleton<FModuleManager>
+    class FModuleManager
     {
     public:
         
+        static FModuleManager& Get();
 
-        RUNTIME_API IModuleInterface* LoadModule(FStringView ModuleName);
-        RUNTIME_API bool UnloadModule(const FString& ModuleName);
+        RUNTIME_API IModuleInterface* LoadModule(FStringView ModulePath);
+        RUNTIME_API bool UnloadModule(FStringView ModuleName);
 
         void UnloadAllModules();
 

@@ -1,8 +1,6 @@
 project "FastGLTF"
 	kind "StaticLib"
 	warnings "off"
-    
-
 
 	files
 	{

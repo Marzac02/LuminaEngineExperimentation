@@ -1,7 +1,7 @@
 project "VKBootstrap"
 	kind "StaticLib"
 	warnings "off"
-    
+
 
 	files
 	{
@@ -12,6 +12,5 @@ project "VKBootstrap"
 
 	includedirs
 	{
-		".",
 		LuminaConfig.ThirdPartyDirectory(),
 	}

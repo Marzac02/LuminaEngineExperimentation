@@ -46,6 +46,12 @@ workspace "Lumina"
         "TRACY_ENABLE",
     	"TRACY_CALLSTACK",
     	"TRACY_ON_DEMAND",
+        
+        'LUMINA_SYSTEM_NAME=\"%{LuminaConfig.GetSystem()}\"',
+        'LUMINA_ARCH_NAME=\"%{LuminaConfig.GetArchitecture()}\"',
+        'LUMINA_CONFIGURATION_NAME=\"%{cfg.buildcfg}\"',
+        'LUMINA_PLATFORM_NAME=\"%{LuminaConfig.GetSystem()}%{LuminaConfig.GetArchitecture()}\"',
+        'LUMINA_SHAREDLIB_EXT_NAME=\"%{LuminaConfig.GetSharedLibExtName()}\"',
 	}
 
 	disablewarnings
@@ -63,8 +69,8 @@ workspace "Lumina"
     filter "language:C++ or language:C"
 		architecture "x86_64"
         
-    filter "architecture:x86_64"
-        defines { "LUMINA_PLATFORM_CPU_X86" }
+    filter "architecture:64"
+        defines { "LUMINA_PLATFORM_CPU_X86_64" }
 
     filter "system:windows"
         systemversion "latest"
@@ -91,6 +97,7 @@ workspace "Lumina"
         defines { "WITH_EDITOR=1" }
 
     filter "configurations:Debug"
+        targetsuffix "-Debug"
         linktimeoptimization "Off"
         incrementallink "On"
         optimize "Off"
@@ -100,6 +107,7 @@ workspace "Lumina"
         defines { "LE_DEBUG", "LUMINA_DEBUG", "_DEBUG", "SOL_ALL_SAFETIES_ON", "DEBUG", }
 
     filter "configurations:Development"
+        targetsuffix "-Development"
         optimize "Speed"
         symbols "On"
         runtime "Release"
@@ -119,12 +127,12 @@ workspace "Lumina"
     group "Engine"
 		include "Engine/Source/Runtime"
         include "Engine/Editor"
+        include "Engine/Sandbox"
 	group ""
 
 	group "Applications"
     	include "Engine/Applications/Lumina"
 		include "Engine/Applications/Reflector"
-		include "Engine/Applications/Sandbox"
 	group ""
 
 	group "Engine/ThirdParty"

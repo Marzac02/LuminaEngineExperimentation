@@ -6,6 +6,11 @@
 #include "LuminaEditor.h"
 #endif
 
+#include <print>
+
+#include "Config/Config.h"
+#include "Core/CommandLine/CommandLine.h"
+
 using namespace Lumina;
 
 
@@ -16,8 +21,16 @@ int GuardedMain(int ArgC, char** ArgV)
     {
         FApplicationGlobalState GlobalState;
         
+        FCommandLine Parsed{ArgC, ArgV};
+        CommandLine = &Parsed;
+        
         FApplication Application = FApplication{};
         GApp = &Application;
+        
+        FConfig Config = FConfig{};
+        GConfig = &Config;
+        
+        TOptional<FFixedString> Project = CommandLine->Get("Project");
         
 #if WITH_EDITOR
         GEditorEngine = new FEditorEngine{};
@@ -26,18 +39,23 @@ int GuardedMain(int ArgC, char** ArgV)
         GEngine = new FEngine{};
 #endif
         
+        if (Project)
+        {
+            GEngine->LoadProject(Project.value());
+        }
+        
         Result = Application.Run(ArgC, ArgV);
         
         delete GEngine;
     }
     catch (std::exception& Error)
     {
-        LOG_ERROR("Fatal error: {}", Error.what());
+        std::println("Fatal error: {}", Error.what());
         return -1;
     }
     catch (...)
     {
-        LOG_ERROR("Unknown fatal error");
+        std::println("Unknown fatal error");
         return -1;
     }
 	

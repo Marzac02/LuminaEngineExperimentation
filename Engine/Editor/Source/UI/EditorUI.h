@@ -2,6 +2,7 @@
 
 #include <imgui/imgui.h>
 #include "Events/EventProcessor.h"
+#include "nlohmann/json.hpp"
 #include "Tools/EditorToolContext.h"
 #include "Tools/EditorToolModal.h"
 #include "Tools/Transactions/CoreTransactionTypes.h"
@@ -84,6 +85,9 @@ namespace Lumina
         void OpenProjectDialog();
         void NewProjectDialog();
         void ProjectSettingsDialog();
+        
+        void OnProjectLoaded();
+
         void AssetRegistryDialog();
         
         void HandleUserInput(const FUpdateContext& UpdateContext);

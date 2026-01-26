@@ -1,29 +1,36 @@
 #include "pch.h"
 #include "ModuleManager.h"
-#include "Platform/Platform.h"
 #include "ModuleInterface.h"
 #include "Core/Delegates/CoreDelegates.h"
 #include "Core/Templates/LuminaTemplate.h"
+#include "FileSystem/FileSystem.h"
 #include "Paths/Paths.h"
+#include "Platform/Platform.h"
 #include "Platform/Process/PlatformProcess.h"
 
 
 namespace Lumina
 {
-    IModuleInterface* FModuleManager::LoadModule(FStringView ModuleName)
+    FModuleManager& FModuleManager::Get()
     {
-        void* ModuleHandle = Platform::GetDLLHandle(StringUtils::ToWideString(ModuleName).c_str());
+        static FModuleManager Instance;
+        return Instance;
+    }
+
+    IModuleInterface* FModuleManager::LoadModule(FStringView ModulePath)
+    {
+        void* ModuleHandle = Platform::GetDLLHandle(StringUtils::ToWideString(ModulePath).c_str());
 
         if (!ModuleHandle)
         {
-            LOG_WARN("Failed to load module: {}", ModuleName);
+            LOG_WARN("Failed to load module: {}", ModulePath);
             return nullptr;
         }
 
         auto InitFunctionPtr = Platform::LumGetProcAddress<ModuleInitFunc>(ModuleHandle, "InitializeModule");
         if (!InitFunctionPtr)
         {
-            LOG_WARN("Failed to get InitializeModule export: {}", ModuleName);
+            LOG_WARN("Failed to get InitializeModule export: {}", ModulePath);
             return nullptr;
         }
 
@@ -31,9 +38,11 @@ namespace Lumina
 
         if (!ModuleInterface)
         {
-            LOG_WARN("Module returned null from InitializeModule(): {}", ModuleName);
+            LOG_WARN("Module returned null from InitializeModule(): {}", ModulePath);
             return nullptr;
         }
+        
+        FStringView ModuleName = FileSystem::FileName(ModulePath, true);
 
         FModuleInfo* ModuleInfo = GetOrCreateModuleInfo(ModuleName);
         ModuleInfo->ModuleHandle = ModuleHandle;
@@ -48,23 +57,17 @@ namespace Lumina
         return ModuleInterface;
     }
 
-    bool FModuleManager::UnloadModule(const FString& ModuleName)
+    bool FModuleManager::UnloadModule(FStringView ModuleName)
     {
         FName ModuleFName = FName(ModuleName);
         auto it = ModuleHashMap.find(ModuleFName);
-
-        if (it == ModuleHashMap.end())
-        {
-            LOG_WARN("Tried to unload module that isn't loaded: {}", ModuleName);
-            return false;
-        }
+        
+        DEBUG_ASSERT(it != ModuleHashMap.end());
 
         FModuleInfo& Info = it->second;
-
-        if (Info.ModuleInterface)
-        {
-            Info.ModuleInterface->ShutdownModule();
-        }
+        DEBUG_ASSERT(Info.ModuleInterface.get());
+        
+        Info.ModuleInterface->ShutdownModule();
         
         ModuleHashMap.erase(it);
         Info.ModuleInterface.reset();
@@ -73,12 +76,7 @@ namespace Lumina
         auto ShutdownFunctionPtr = Platform::LumGetProcAddress<ModuleShutdownFunc>(ModulePtr, "ShutdownModule");
         ShutdownFunctionPtr();
         
-        bool freed = Platform::FreeDLLHandle(ModulePtr);
-        if (!freed)
-        {
-            LOG_ERROR("Failed to free DLL handle for module: {}", ModuleName);
-            return false;
-        }
+        Platform::FreeDLLHandle(ModulePtr);
 
         LOG_INFO("[Module Manager] - Successfully un-loaded module {}", ModuleName);
         
@@ -96,7 +94,7 @@ namespace Lumina
         //@TODO This causes a crash with the heap.
         for (const FName& Key : Keys)
         {
-            //UnloadModule(Key.ToString());
+            UnloadModule(Key.ToString());
         }
     }
 

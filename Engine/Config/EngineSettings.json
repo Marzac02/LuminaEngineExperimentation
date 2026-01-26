@@ -1,0 +1,39 @@
+{
+    "Graphics": {
+        "Quality": {
+            "Shadows": "Ultra",
+            "ShadowResolution": 4096,
+            "Textures": "High",
+            "TextureFiltering": "Anisotropic16x",
+            "AntiAliasing": "TAA",
+            "AmbientOcclusion": true,
+            "MotionBlur": false,
+            "Bloom": true,
+            "VolumetricFog": true
+        },
+        "Display": {
+            "Resolution": {
+                "Width": 1920,
+                "Height": 1080
+            },
+            "Fullscreen": true,
+            "VSync": false,
+            "RefreshRate": 144,
+            "HDR": false
+        },
+        "Advanced": {
+            "RenderScale": 1.0,
+            "LODDistanceScale": 1.0,
+            "ViewDistance": 10000.0,
+            "FoliageDensity": 1.0,
+            "ParticleQuality": "High"
+        },
+        "PostProcessing": {
+            "ColorGrading": true,
+            "ChromaticAberration": false,
+            "FilmGrain": 0.0,
+            "Vignette": 0.2,
+            "DepthOfField": true
+        }
+    }
+}

@@ -51,10 +51,7 @@
 #include <string.h>
 #include <Windows.h>
 #include <cfloat>
-#include <cstdint>
-#include <cstdlib>
 #include <filesystem>
-#include <string.h>
 #include "Tools/ToolFlags.h"
 #include <Lumina.h>
 #include <Assets/AssetRegistry/AssetData.h>
@@ -70,7 +67,6 @@
 #include <Core/Object/ObjectFlags.h>
 #include <Core/Templates/LuminaTemplate.h>
 #include <Core/UpdateContext.h>
-#include <Core/UpdateStage.h>
 #include <Events/Event.h>
 #include <FileSystem/FileSystem.h>
 #include <GUID/GUID.h>
@@ -87,6 +83,7 @@
 #include <imgui.h>
 #include <ImGuizmo.h>
 #include <imgui_internal.h>
+#include "Config/Config.h"
 
 namespace Lumina
 {
@@ -2359,17 +2356,16 @@ namespace Lumina
 
                 ImGui::BeginChild("ProjectCards", ImVec2(0, 0), false);
                 {
-                    const float cardWidth = 280.0f;
-                    const float cardHeight = 200.0f;
-                    const float padding = 16.0f;
+                    const float CardWidth = 280.0f;
+                    const float CardHeight = 200.0f;
+                    const float Padding = 16.0f;
 
-                    // Calculate how many cards fit per row
                     float availWidth = ImGui::GetContentRegionAvail().x;
-                    int cardsPerRow = Math::Max(1, (int)((availWidth + padding) / (cardWidth + padding)));
+                    int CardsPerRow = Math::Max(1, (int)((availWidth + Padding) / (CardWidth + Padding)));
 
                     ImGui::BeginGroup();
                     {
-                        ImVec2 cursorPos = ImGui::GetCursorScreenPos();
+                        ImVec2 CursorPos = ImGui::GetCursorScreenPos();
                         ImDrawList* drawList = ImGui::GetWindowDrawList();
 
                         ImVec4 cardBgColor = ImVec4(0.15f, 0.15f, 0.16f, 1.0f);
@@ -2380,14 +2376,13 @@ namespace Lumina
                         ImGui::PushStyleColor(ImGuiCol_ButtonHovered, cardBgHoverColor);
                         ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.2f, 0.2f, 0.21f, 1.0f));
                         ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 6.0f);
-                        ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(12, 12));
+                        ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(18, 18));
 
-                        if (ImGui::Button("##SandboxCard", ImVec2(cardWidth, cardHeight)))
+                        if (ImGui::Button("##SandboxCard", ImVec2(CardWidth, CardHeight)))
                         {
-                            FString SandboxProjectDirectory = Paths::GetEngineDirectory() + "/Applications/Sandbox/Sandbox.lproject";
+                            FString SandboxProjectDirectory = Paths::GetEngineDirectory() + "/Sandbox/Sandbox.lproject";
                             GEditorEngine->LoadProject(SandboxProjectDirectory);
-                            ContentBrowser->RefreshContentBrowser();
-                            FAssetRegistry::Get().RunInitialDiscovery();
+                            OnProjectLoaded();
                             bShouldClose = true;
                         }
 
@@ -2395,12 +2390,12 @@ namespace Lumina
                         ImGui::PopStyleColor(3);
 
                         drawList->AddRectFilled(
-                            cursorPos,
-                            ImVec2(cursorPos.x + cardWidth, cursorPos.y + 4),
+                            CursorPos,
+                            ImVec2(CursorPos.x + CardWidth, CursorPos.y + 4),
                             ImGui::GetColorU32(accentColor)
                         );
 
-                        ImGui::SetCursorScreenPos(ImVec2(cursorPos.x + 16, cursorPos.y + 20));
+                        ImGui::SetCursorScreenPos(ImVec2(CursorPos.x + 16, CursorPos.y + 20));
                         ImGui::Dummy(ImVec2(0, 0));
 
                         ImGui::BeginGroup();
@@ -2417,7 +2412,7 @@ namespace Lumina
                             ImGui::Text(LE_ICON_FOLDER_OPEN);
                             ImGui::PopStyleColor();
 
-                            ImGui::SetCursorScreenPos(ImVec2(cursorPos.x + 16, iconPos.y + 50));
+                            ImGui::SetCursorScreenPos(ImVec2(CursorPos.x + 16, iconPos.y + 50));
 
                             ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 1.0f, 1.0f, 1.0f));
                             ImGui::Text("Sandbox Project");
@@ -2426,12 +2421,12 @@ namespace Lumina
                             ImGui::Spacing();
 
                             ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.7f, 0.7f, 0.7f, 1.0f));
-                            ImGui::BeginChild("##SandboxDesc", ImVec2(cardWidth - 32, 60), false, ImGuiWindowFlags_NoScrollbar);
+                            ImGui::BeginChild("##SandboxDesc", ImVec2(CardWidth - 32, 60), false, ImGuiWindowFlags_NoScrollbar);
                             ImGui::TextWrapped("A basic sandbox environment for testing and experimentation. Perfect for learning the engine basics.");
                             ImGui::EndChild();
                             ImGui::PopStyleColor();
 
-                            ImGui::SetCursorScreenPos(ImVec2(cursorPos.x + 16, cursorPos.y + cardHeight - 30));
+                            ImGui::SetCursorScreenPos(ImVec2(CursorPos.x + 16, CursorPos.y + CardHeight - 30));
 
                             ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.5f, 0.8f, 0.5f, 1.0f));
                             ImGui::Text("Example Project");
@@ -2464,8 +2459,7 @@ namespace Lumina
                     if (Platform::OpenFileDialogue(Project, "Open Project", "Lumina Project (*.lproject)\0*.lproject\0All Files (*.*)\0*.*\0"))
                     {
                         GEditorEngine->LoadProject(Project);
-                        ContentBrowser->RefreshContentBrowser();
-                        FAssetRegistry::Get().RunInitialDiscovery();
+                        OnProjectLoaded();
                         bShouldClose = true;
                     }
                 }
@@ -2556,35 +2550,32 @@ namespace Lumina
     {
         ModalManager.CreateDialogue("Project Settings", ImVec2(1000, 700), [this] () -> bool
         {
+            static FString SelectedCategory;
+            
             ImGui::BeginChild("SettingsCategories", ImVec2(200, 0), true);
             {
                 ImGui::TextColored(ImVec4(0.7f, 0.7f, 0.7f, 1.0f), "CATEGORIES");
                 ImGui::Separator();
                 ImGui::Spacing();
                 
-                if (ImGui::Selectable(LE_ICON_STAR_SETTINGS " General", true))
+                TVector<FString> Categories;
+                GConfig->ForEach([&](const FString& Key, const nlohmann::json& Value)
                 {
-                    // Select general
-                }
+                    if (Value.is_object())
+                    {
+                        Categories.emplace_back(Key);
+                    }
+                });
                 
-                if (ImGui::Selectable(LE_ICON_BRUSH " Graphics"))
+                for (const FString& Category : Categories)
                 {
-                    // Select graphics
-                }
+                    FString Label = std::format("{} {}", LE_ICON_TABLE_SETTINGS, Category).c_str();
                 
-                if (ImGui::Selectable(LE_ICON_VOLUME_HIGH " Audio"))
-                {
-                    // Select audio
-                }
-                
-                if (ImGui::Selectable(LE_ICON_KEYBOARD " Input"))
-                {
-                    // Select input
-                }
-                
-                if (ImGui::Selectable(LE_ICON_PUZZLE " Plugins"))
-                {
-                    // Select plugins
+                    bool IsSelected = (SelectedCategory == Category);
+                    if (ImGui::Selectable(Label.c_str(), IsSelected))
+                    {
+                        SelectedCategory = Category;
+                    }
                 }
             }
             ImGui::EndChild();
@@ -2593,11 +2584,141 @@ namespace Lumina
             
             ImGui::BeginChild("SettingsContent", ImVec2(0, -40), true);
             {
-                ImGui::TextColored(ImVec4(0.8f, 0.9f, 1.0f, 1.0f), "General Settings");
+                if (!SelectedCategory.empty())
+                {
+                    ImGui::TextColored(ImVec4(0.8f, 0.9f, 1.0f, 1.0f), SelectedCategory.c_str());
+                }
+                else
+                {
+                    ImGui::TextColored(ImVec4(0.8f, 0.9f, 1.0f, 1.0f), "General Settings");
+                }
                 ImGui::Separator();
                 ImGui::Spacing();
                 
-                ImGui::Text("Project settings content goes here...");
+                if (ImGui::BeginTable("##SettingsTable", 2, 
+                    ImGuiTableFlags_Borders | 
+                    ImGuiTableFlags_RowBg | 
+                    ImGuiTableFlags_Resizable |
+                    ImGuiTableFlags_ScrollY))
+                {
+                    ImGui::TableSetupColumn("Setting", ImGuiTableColumnFlags_WidthFixed, 65.0f);
+                    ImGui::TableSetupColumn("Value", ImGuiTableColumnFlags_WidthStretch);
+                    ImGui::TableSetupScrollFreeze(0, 1);
+                    ImGui::TableHeadersRow();
+        
+                    auto RenderValue = [](const nlohmann::json& V, const FString& Path)
+                    {
+                        ImGui::PushID(Path.c_str());
+                        if (V.is_string())
+                        {
+                            FFixedString Buffer(V.get<std::string>().c_str());
+                            if (ImGui::InputText("##Val", Buffer.data(), Buffer.max_size()))
+                            {
+                                GConfig->Set(Path, Buffer.c_str());
+                            }
+                        }
+                        else if (V.is_boolean())
+                        {
+                            bool BoolValue = V.get<bool>();
+                            if (ImGui::Checkbox("##Val", &BoolValue))
+                            {
+                                GConfig->Set(Path, BoolValue);
+                            }
+                        }
+                        else if (V.is_number_integer())
+                        {
+                            int IntValue = V.get<int>();
+                            if (ImGui::InputInt("##Val", &IntValue))
+                            {
+                                GConfig->Set(Path, IntValue);
+                            }
+                        }
+                        else if (V.is_number_float())
+                        {
+                            float FloatValue = V.get<float>();
+                            if (ImGui::InputFloat("##Val", &FloatValue))
+                            {
+                                GConfig->Set(Path, FloatValue);
+                            }
+                        }
+                        else if (V.is_array())
+                        {
+                            ImGui::TextDisabled("[ %zu items ]", V.size());
+                        }
+                        else if (V.is_object())
+                        {
+                            ImGui::TextDisabled("{ %zu items }", V.size());
+                        }
+                        else
+                        {
+                            ImGui::TextDisabled("Unknown type");
+                        }
+                        ImGui::PopID();
+                    };
+                    
+                    GConfig->ForEachInCategory(SelectedCategory, [&](const FString& Key, const nlohmann::json& Value)
+                    {
+                        FString FullPath = std::format("{}.{}", SelectedCategory, Key).c_str();
+                        
+                        ImGui::TableNextRow();
+                        ImGui::TableNextColumn();
+                        ImGui::AlignTextToFramePadding();
+                        
+                        if (Value.is_object())
+                        {
+                            bool IsOpen = ImGui::TreeNodeEx(Key.c_str(), ImGuiTreeNodeFlags_SpanFullWidth);
+                            
+                            ImGui::TableNextColumn();
+                            
+                            if (IsOpen)
+                            {
+                                ImGui::PushStyleVar(ImGuiStyleVar_CellPadding, ImVec2(8, 4));
+                                
+                                if (ImGui::BeginTable(std::format("##{}_nested", FullPath).c_str(), 2,
+                                    ImGuiTableFlags_Borders |
+                                    ImGuiTableFlags_RowBg |
+                                    ImGuiTableFlags_Resizable))
+                                {
+                                    ImGui::TableSetupColumn("Property", ImGuiTableColumnFlags_WidthFixed, 200.0f);
+                                    ImGui::TableSetupColumn("Value", ImGuiTableColumnFlags_WidthStretch);
+                                    
+                                    for (auto It = Value.begin(); It != Value.end(); ++It)
+                                    {
+                                        FString NestedKey = It.key().c_str();
+                                        const nlohmann::json& NestedValue = It.value();
+                                        
+                                        ImGui::TableNextRow();
+                                        ImGui::TableNextColumn();
+                                        ImGui::AlignTextToFramePadding();
+                                        ImGui::TextUnformatted(NestedKey.c_str());
+                                        
+                                        ImGui::TableNextColumn();
+                                        FString NestedPath = std::format("{}.{}", FullPath, NestedKey).c_str();
+                                        RenderValue(NestedValue, NestedPath);
+                                    }
+                                    
+                                    ImGui::EndTable();
+                                }
+                                
+                                ImGui::PopStyleVar();
+                                
+                                ImGui::TreePop();
+                            }
+                            else
+                            {
+                                ImGui::TextDisabled("{ %zu items }", Value.size());
+                            }
+                        }
+                        else
+                        {
+                            ImGui::TextUnformatted(Key.c_str());
+                            ImGui::TableNextColumn();
+                            RenderValue(Value, FullPath);
+                        }
+                    });
+        
+                    ImGui::EndTable();
+                }
             }
             ImGui::EndChild();
             
@@ -2610,6 +2731,20 @@ namespace Lumina
             
             return false;
         }, false);
+    }
+
+    void FEditorUI::OnProjectLoaded()
+    {
+        ContentBrowser->RefreshContentBrowser();
+        
+        //@TODO TEMP, maybe just wait until finished to load startup.
+        GTaskSystem->WaitForAll();
+        
+        FString EditorStartupMap = GConfig->Get<std::string>("Project.EditorStartupMap").c_str();
+        if (FAssetData* Data = FAssetRegistry::Get().GetAssetByPath(EditorStartupMap))
+        {
+            OpenAssetEditor(Data->AssetGUID);
+        }
     }
 
     void FEditorUI::AssetRegistryDialog()

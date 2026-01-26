@@ -1,0 +1,9 @@
+{
+    "Name": "Sandbox",
+    "ProjectID": "C9396E54-2E00-4874-B051-FCD1792359AC",
+    "Description": "A simple sandbox testing grounds for game content",
+    "Version": "0.0.1",
+    "Plugins": [
+        
+    ]
+}

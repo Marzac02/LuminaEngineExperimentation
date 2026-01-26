@@ -1,7 +1,7 @@
 #pragma once
 
+#include "Core/LuminaMacros.h"
 #include "Core/Engine/Engine.h"
-#include "Core/Utils/CommandLineParser.h"
 #include "Events/EventProcessor.h"
 
 namespace Lumina
@@ -57,7 +57,6 @@ namespace Lumina
 	
 	public:
 
-		static FCommandLine	CommandLine;
 	};
 	
 	RUNTIME_API extern FApplication* GApp;

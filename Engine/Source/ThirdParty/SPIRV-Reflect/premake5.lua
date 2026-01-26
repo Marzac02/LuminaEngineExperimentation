@@ -1,7 +1,6 @@
 project "SPIRV-Reflect"
 	kind "StaticLib"
 	warnings "off"
-    
 
 	files
 	{

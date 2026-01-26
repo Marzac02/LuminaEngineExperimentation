@@ -54,9 +54,7 @@ namespace Lumina
 	public:
 
 		static FAssetRegistry& Get();
-
-		void ProjectLoaded();
-
+		
 		void RunInitialDiscovery();
 		void OnInitialDiscoveryCompleted();
 

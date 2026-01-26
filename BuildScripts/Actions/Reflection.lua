@@ -1,6 +1,20 @@
 
 include "BuildScripts/Logger"
 
+function Capitalize(str)
+    if not str or str == "" then
+        return ""
+    end
+    return str:sub(1, 1):upper() .. str:sub(2)
+end
+
+ArchBits =
+{
+    ["x86"]     = "32",
+    ["x86_64"]  = "64",
+    ["ARM64"]   = "ARM64"
+}
+
 premake.modules.lua = {}
 local m = premake.modules.lua
 
@@ -89,7 +103,14 @@ newaction
             File:close()
         end
 
-        local ReflectionDirectory = path.join(os.getenv("LUMINA_DIR"), "Binaries", "Development-windows-x86_64", "Reflector.exe")
+        local SystemName = Capitalize(os.host())
+
+        local Extension = ""
+        if SystemName == "Windows" then
+            Extension = ".exe"
+        end
+
+        local ReflectionDirectory = path.join(os.getenv("LUMINA_DIR"), "Binaries", SystemName .. "64", "Reflector" .. Extension)
         local CmdLine = ReflectionDirectory .. " " .. path.getabsolute("Reflection_Files.json")
 
         local Result = os.execute(CmdLine)

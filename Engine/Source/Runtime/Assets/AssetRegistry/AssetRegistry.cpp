@@ -15,11 +15,6 @@ namespace Lumina
         static FAssetRegistry Registry;
         return Registry;
     }
-
-    void FAssetRegistry::ProjectLoaded()
-    {
-        RunInitialDiscovery();
-    }
     
     void FAssetRegistry::RunInitialDiscovery()
     {
@@ -169,7 +164,6 @@ namespace Lumina
         if (!FileSystem::ReadFile(Data, Path))
         {
             LOG_ERROR("Failed to load package file at path {}", Path);
-
             return;
         }
 
@@ -201,6 +195,8 @@ namespace Lumina
         AssetData->AssetName    = Export->ObjectName;
         AssetData->Path         .assign_convert(Path);
 
+        ASSERT(Assets.find(AssetData) == Assets.end());
+        
         FScopeLock Lock(AssetsMutex);
         Assets.emplace(Move(AssetData));
     }

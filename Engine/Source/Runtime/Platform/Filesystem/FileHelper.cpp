@@ -3,7 +3,6 @@
 #include <fstream>
 #include "Containers/Array.h"
 #include "Log/Log.h"
-#include "Paths/Paths.h"
 
 namespace Lumina::FileHelper
 {

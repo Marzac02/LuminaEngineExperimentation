@@ -2,7 +2,6 @@
 #include "Application.h"
 #include "Assets/AssetManager/AssetManager.h"
 #include "Core/Module/ModuleManager.h"
-#include "Core/Utils/CommandLineParser.h"
 #include "Core/Windows/Window.h"
 #include "Core/Windows/WindowTypes.h"
 #include "FileSystem/FileSystem.h"
@@ -12,15 +11,12 @@
 namespace Lumina
 {
     RUNTIME_API FApplication* GApp;
-    FCommandLine FApplication::CommandLine;
 
     int32 FApplication::Run(int argc, char** argv)
     {
         LUMINA_PROFILE_SCOPE();
         
         ASSERT(GEngine);
-        
-        CommandLine.Parse(argc, argv);
         
         LOG_TRACE("Initializing Lumina");
         

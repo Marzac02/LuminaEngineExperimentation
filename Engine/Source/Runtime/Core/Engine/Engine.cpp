@@ -1,6 +1,6 @@
 ﻿#include "pch.h"
 #include "Engine.h"
-#include "Assets/AssetManager/AssetManager.h"
+#include "Assets/AssetRegistry/AssetRegistry.h"
 #include "Config/Config.h"
 #include "Core/Application/Application.h"
 #include "Core/Console/ConsoleVariable.h"
@@ -11,8 +11,10 @@
 #include "Core/Windows/Window.h"
 #include "FileSystem/FileSystem.h"
 #include "Input/InputProcessor.h"
+#include "nlohmann/json.hpp"
 #include "Paths/Paths.h"
 #include "Physics/Physics.h"
+#include "Platform/Filesystem/FileHelper.h"
 #include "Renderer/RenderContext.h"
 #include "Renderer/RenderManager.h"
 #include "Renderer/RenderResource.h"
@@ -22,6 +24,8 @@
 #include "TaskSystem/ThreadedCallback.h"
 #include "Tools/UI/DevelopmentToolUI.h"
 #include "World/WorldManager.h"
+
+#define SANDBOX_PROJECT_ID "C9396E54-2E00-4874-B051-FCD1792359AC"
 
 namespace Lumina
 {
@@ -41,8 +45,7 @@ namespace Lumina
         
         FileSystem::Mount<FileSystem::FNativeFileSystem>("/Engine", Paths::GetEngineDirectory());
         
-        CConfigRegistry::Get().Initialize();
-        CConfigRegistry::Get().LoadEngineConfig();
+        GConfig->LoadPath("/Engine/Config");
         
         FCoreDelegates::OnPreEngineInit.BroadcastAndClear();
         
@@ -280,4 +283,93 @@ namespace Lumina
         EngineViewport = GRenderContext->CreateViewport(InSize, "Engine Viewport");
     }
 
+    void FEngine::LoadProject(FStringView Path)
+    {
+        namespace FS = FileSystem;
+        using Json = nlohmann::json;
+        
+        FString JsonData;
+        if (!FileHelper::LoadFileIntoString(JsonData, Path))
+        {
+            LOG_ERROR("Invalid project path");
+            return;
+        }
+        
+        Json Data = Json::parse(JsonData.c_str());
+        DEBUG_ASSERT(!Data.empty());
+        
+        FGuid ProjectID                 = FGuid::FromString(Data["ProjectID"].get<std::string>().c_str());
+        ProjectPath                     .assign_convert(FS::Parent(Paths::Normalize(Path)));
+        ProjectName                     = Data["Name"].get<std::string>().c_str();
+        FFixedString GameDir            = Paths::Combine(ProjectPath, "Game");
+        FFixedString BinariesDirectory  = Paths::Combine(ProjectPath, "Binaries");
+        FFixedString GameScriptsDir     = Paths::Combine(ProjectPath, "Game", "Scripts");
+        
+        FS::Mount<FS::FNativeFileSystem>("/Game", GameDir);
+        
+        GConfig->LoadPath("/Game/Config");
+        
+        FFixedString DLLPath;
+        
+        // Sandbox is a special project that has binaries hidden away elsewhere. A normal project will be at the normal bin path.
+        if (ProjectID == FGuid::FromString(SANDBOX_PROJECT_ID))
+        {
+            DLLPath = Paths::Combine(Paths::GetEngineInstallDirectory(), "Binaries", LUMINA_PLATFORM_NAME, ProjectName);
+        }
+        else
+        {
+            DLLPath = Paths::Combine(ProjectPath, "Binaries", LUMINA_PLATFORM_NAME, ProjectName);
+        }
+        
+        DLLPath.append("-").append(LUMINA_CONFIGURATION_NAME).append(LUMINA_SHAREDLIB_EXT_NAME);
+        
+        if (Paths::Exists(DLLPath))
+        {
+            if (IModuleInterface* Module = FModuleManager::Get().LoadModule(DLLPath))
+            {
+                ProcessNewlyLoadedCObjects();
+            }
+            else
+            {
+                LOG_INFO("No project module found");
+            }
+        }
+        
+        FAssetRegistry::Get().RunInitialDiscovery();
+        
+        Scripting::FScriptingContext::Get().LoadScriptsInDirectoryRecursively(GameScriptsDir);
+        
+        OnProjectLoaded.Broadcast();
+    }
+    
+    FFixedString FEngine::GetProjectScriptDirectory() const
+    {
+        if (!HasLoadedProject())
+        {
+            return {};
+        }
+        
+        return Paths::Combine(ProjectPath, "Game", "Scripts");
+    }
+
+    FFixedString FEngine::GetProjectGameDirectory() const
+    {
+        if (!HasLoadedProject())
+        {
+            return {};
+        }
+        
+        return Paths::Combine(ProjectPath, "Game");
+
+    }
+
+    FFixedString FEngine::GetProjectContentDirectory() const
+    {
+        if (!HasLoadedProject())
+        {
+            return {};
+        }
+        
+        return Paths::Combine(ProjectPath, "Game", "Content");
+    }
 }

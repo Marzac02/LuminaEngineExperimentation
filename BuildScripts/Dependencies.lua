@@ -8,14 +8,47 @@ premake.api.register
 LuminaConfig = LuminaConfig or {}
 LuminaConfig.PublicIncludes         = LuminaConfig.PublicIncludes or {}
 
+function capitalize(str)
+    if not str or str == "" then
+        return ""
+    end
+    return str:sub(1, 1):upper() .. str:sub(2)
+end
+
+ArchBits = 
+{
+    ["x86"]     = "32",
+    ["x86_64"]  = "64",
+    ["ARM64"]   = "ARM64"
+}
 
 LuminaConfig.EngineDirectory        = "%{wks.location}"
-LuminaConfig.OutputDirectory        = "%{cfg.buildcfg}-%{cfg.system}-%{cfg.architecture}"
+LuminaConfig.OutputDirectory        = "%{capitalize(cfg.system)}%{ArchBits[cfg.architecture]}"
 LuminaConfig.ProjectFilesDirectory  = "%{wks.location}/Intermediates/ProjectFiles/%{prj.name}"
 LuminaConfig.ReflectionDirectory    = "%{wks.location}/Intermediates/Reflection/%{prj.name}"
 
 if not LuminaConfig.EngineDirectory then
     error("LUMINA_DIR environment variable not set. Run Setup.py first")
+end
+
+function LuminaConfig.GetSystem()
+    return "%{capitalize(cfg.system)}"
+end
+
+function LuminaConfig.GetSharedLibExtName()
+    if os.host() == "windows" then
+        return ".dll"
+    elseif os.host() == "linux" then
+        return ".so"
+    elseif os.host() == "macosx" then
+        return ".dylib"
+    end
+
+    return ""
+end
+
+function LuminaConfig.GetArchitecture()
+    return "%{ArchBits[cfg.architecture]}"
 end
 
 function LuminaConfig.GetTargetDirectory()

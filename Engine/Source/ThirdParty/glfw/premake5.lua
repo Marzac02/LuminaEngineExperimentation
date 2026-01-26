@@ -2,8 +2,6 @@ project "GLFW"
 	kind "StaticLib"
 	language "C"
 	warnings "off"
-    
-
 
 	files
 	{

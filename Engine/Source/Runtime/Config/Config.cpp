@@ -1,192 +1,151 @@
 ﻿#include "pch.h"
 #include "Config.h"
-
 #include <nlohmann/json.hpp>
-
-#include "Config_Base.h"
-#include "Core/Object/Class.h"
 #include "FileSystem/FileSystem.h"
-#include "Paths/Paths.h"
+
+namespace FS = Lumina::FileSystem;
+using Json = nlohmann::json;
 
 namespace Lumina
 {
-    static CConfigRegistry* Singleton = nullptr;
-
-    CConfigRegistry& CConfigRegistry::Get()
+    RUNTIME_API FConfig* GConfig;
+    
+    void FConfig::LoadPath(FStringView ConfigPath)
     {
-        static std::once_flag Flag;
-        std::call_once(Flag, []()
+        FS::DirectoryIterator(ConfigPath, [&](const FS::FFileInfo& Info)
         {
-            Singleton = NewObject<CConfigRegistry>();
-        });
-
-        return *Singleton;
-    }
-
-    void CConfigRegistry::Initialize()
-    {
-        
-    }
-
-    void CConfigRegistry::RegisterConfig(CConfig* Config)
-    {
-        DEBUG_ASSERT(Config);
-
-        Configs.emplace_back(Config);
-        LoadConfig(Config);
-    }
-
-    void CConfigRegistry::OnDestroy()
-    {
-    }
-
-    void CConfigRegistry::LoadEngineConfig()
-    {
-        FFixedString ConfigPath = "/Engine/Config";
-        
-        FFixedString BasePath = ConfigPath + "/Base.json";
-        if (!FileSystem::Exists(BasePath))
-        {
-            SaveConfig(GetMutableDefault<CConfig_Base>(), BasePath);
-        }
-    }
-
-    void CConfigRegistry::LoadProjectConfig()
-    {
-        constexpr FStringView ConfigTypes[] = 
-        {
-            "Game",
-            "Engine",
-            "Input",
-            "Editor",
-            "Graphics",
-        };
-        
-        for (const FStringView& ConfigType : ConfigTypes)
-        {
-            FFixedString ConfigPath = ResolvePath("{PROJECT}/Config/Default{TYPE}.json", ConfigType);
-        
-            if (!FileSystem::Exists(ConfigPath))
+            if (Info.GetExt() != ".json")
             {
-                if (ConfigType == "Game")
-                {
-                    //SaveConfig(GameConfig, ConfigPath);
-                }
+                return;
+            }
+            
+            FString Result;
+            FS::ReadFile(Result, Info.VirtualPath);
+            
+            Json J = Json::parse(Result.c_str());
+            MergeJson(RootConfig, J);
+        });
+    }
+
+    bool FConfig::FCategory::Has(FStringView Key) const
+    {
+        return Node.contains(Key.data());
+    }
+
+    FConfig::FCategory FConfig::FCategory::GetCategory(FStringView CategoryName) const
+    {
+        if (!Node.contains(CategoryName.data()))
+        {
+            Node[CategoryName.data()] = nlohmann::json::object();
+        }
+        return FCategory(Node[CategoryName.data()]);
+    }
+
+    bool FConfig::Set(const FString& Path, const nlohmann::json& Value)
+    {
+        if (Path.empty())
+        {
+            return false;
+        }
+    
+        TVector<FString> PathParts;
+        std::string PathStr = Path.c_str();
+        std::string Delimiter = ".";
+        size_t Pos = 0;
+    
+        while ((Pos = PathStr.find(Delimiter)) != std::string::npos)
+        {
+            PathParts.emplace_back(PathStr.substr(0, Pos).c_str());
+            PathStr.erase(0, Pos + Delimiter.length());
+        }
+        PathParts.emplace_back(PathStr.c_str());
+    
+        if (PathParts.empty())
+        {
+            return false;
+        }
+    
+        nlohmann::json* Current = &RootConfig;
+    
+        for (size_t i = 0; i < PathParts.size() - 1; ++i)
+        {
+            const FString& Part = PathParts[i];
+        
+            if (!Current->contains(Part.c_str()) || !(*Current)[Part.c_str()].is_object())
+            {
+                (*Current)[Part.c_str()] = nlohmann::json::object();
+            }
+        
+            Current = &(*Current)[Part.c_str()];
+        }
+    
+        const FString& FinalKey = PathParts.back();
+        (*Current)[FinalKey.c_str()] = Value;
+    
+        return true;
+    }
+
+    FConfig::FCategory FConfig::GetCategory(FStringView CategoryName)
+    {
+        if (!RootConfig.contains(CategoryName.data()))
+        {
+            RootConfig[CategoryName.data()] = nlohmann::json::object();
+        }
+        return FCategory(RootConfig[CategoryName.data()]);
+    }
+
+    void FConfig::MergeJson(nlohmann::json& Target, const nlohmann::json& Source)
+    {
+        for (auto it = Source.begin(); it != Source.end(); ++it)
+        {
+            if (it->is_object() && Target.contains(it.key()) && Target[it.key()].is_object())
+            {
+                MergeJson(Target[it.key()], *it);
             }
             else
             {
-                if (ConfigType == "Game")
+                Target[it.key()] = *it;
+            }
+        }
+    }
+
+    nlohmann::json* FConfig::NavigateToNode(FStringView Path)
+    {
+        nlohmann::json* Current = &RootConfig;
+    
+        size_t Start = 0;
+        size_t Pos = 0;
+    
+        while (Pos < Path.size())
+        {
+            if (Path[Pos] == '.')
+            {
+                FStringView Segment = Path.substr(Start, Pos - Start);
+                if (!Current->contains(Segment.data()))
                 {
-                    
+                    return nullptr;
                 }
+                Current = &(*Current)[Segment.data()];
+                Start = Pos + 1;
             }
-        }
-    }
-
-    void CConfigRegistry::SaveConfigs()
-    {
-        
-    }
-
-    FFixedString CConfigRegistry::GetConfigFilePath(const CConfig* Config) const
-    {
-        DEBUG_ASSERT(Config);
-
-        FString ConfigName = Config->GetConfigName();
-        if (ConfigName.empty())
-        {
-            return {};
-        }
-        
-        return FFixedString()
-                    .assign("Config/")
-                    .append_convert(ConfigName)
-                    .append(".json");
-    }
-
-    FFixedString CConfigRegistry::ResolvePath(FStringView PathTemplate, FStringView ConfigType)
-    {
-        FFixedString Result(PathTemplate.begin(), PathTemplate.end());
-    
-        size_t EnginePos = Result.find("{ENGINE}");
-        if (EnginePos != FFixedString::npos)
-        {
-            Result.replace(EnginePos, 8, "/Engine");
+            Pos++;
         }
     
-        size_t ProjectPos = Result.find("{PROJECT}");
-        if (ProjectPos != FFixedString::npos)
+        if (Start < Path.size())
         {
-            Result.replace(ProjectPos, 9, "/Game");
-        }
-    
-        if (!ConfigType.empty())
-        {
-            size_t TypePos = Result.find("{TYPE}");
-            if (TypePos != FFixedString::npos)
+            FStringView Segment = Path.substr(Start);
+            if (!Current->contains(Segment.data()))
             {
-                Result.replace(TypePos, 6, FFixedString(ConfigType.begin(), ConfigType.end()));
+                return nullptr;
             }
+            Current = &(*Current)[Segment.data()];
         }
     
-        return Result;
+        return Current;
     }
 
-    void CConfigRegistry::LoadConfig(CConfig* Config)
+    const nlohmann::json* FConfig::NavigateToNode(FStringView Path) const
     {
-        DEBUG_ASSERT(Config);
-        
-        FString ConfigName = Config->GetConfigName();
-        FFixedString DefaultPath = GetConfigFilePath(Config);
-        if (DefaultPath.empty())
-        {
-            return;
-        }
-        
-        FString JsonContent;
-        if (FileSystem::ReadFile(JsonContent, DefaultPath))
-        {
-            try
-            {
-                nlohmann::json Json = nlohmann::json::parse(JsonContent.c_str());
-                Config->LoadConfig(Json);
-            }
-            catch (const std::exception& e)
-            {
-                LOG_ERROR("Failed to load config: {0}", e.what());
-            }
-        }
-    }
-
-    void CConfigRegistry::SaveConfig(CConfig* Config, FStringView Path)
-    {
-        DEBUG_ASSERT(Config);
-
-        FFixedString Header = "// Lumina Engine Configuration File\n";
-        
-        nlohmann::json Json;
-        
-        Config->SaveConfig(Json);
-        
-        FFixedString JsonString;
-        JsonString.assign_convert(Json.dump(4));
-        
-        FileSystem::WriteFile(Path, Header + JsonString);
-    }
-
-    void CConfig::PostCreateCDO()
-    {
-        CConfigRegistry::Get().RegisterConfig(this);
-    }
-
-    FString CConfig::GetConfigName() const
-    {
-        const CClass* Class = GetClass();
-        if (!Class->HasMeta("Config"))
-        {
-            return {};
-        }
-        
-        return Class->GetMeta("Config").ToString();
+        return const_cast<FConfig*>(this)->NavigateToNode(Path);
     }
 }

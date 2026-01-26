@@ -1,7 +1,6 @@
 project "OpenFBX"
 	kind "StaticLib"
 	warnings "off"
-    
 
 	files
 	{
@@ -9,9 +8,4 @@ project "OpenFBX"
 		"**.cpp",
 		"**.c",
 		"**.lua",
-	}
-
-	includedirs
-	{
-		".",
 	}

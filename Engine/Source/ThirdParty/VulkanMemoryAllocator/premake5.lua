@@ -1,7 +1,6 @@
 project "VMA"
 	kind "None"
 	warnings "off"
-    
 
 	files
 	{

@@ -80,12 +80,6 @@ project "Runtime"
         "shaderc_combined",
         "GFSDK_Aftermath_Lib",
     }
-    
-    postbuildcommands
-    {
-        '{COPYFILE} "%{LuminaConfig.EngineDirectory}/External/RenderDoc/renderdoc.dll" "%{cfg.targetdir}"',
-        '{COPYFILE} "%{LuminaConfig.EngineDirectory}/Engine/Source/ThirdParty/NvidiaAftermath/lib/GFSDK_Aftermath_Lib.x64.dll" "%{cfg.targetdir}"',
-    }
 
     filter "configurations:Debug or configurations:DebugEditor"
         removelinks { "shaderc_combined" }

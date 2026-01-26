@@ -13,6 +13,7 @@ namespace Lumina::Paths
         const char* EngineContentDirectoryName      = "EngineContentDirectory";
         const char* EngineShadersDirectoryName      = "EngineShadersDirectory";
         const char* EngineConfigDirectoryName       = "EngineConfigDirectory";
+        const char* EngineInstallDirectoryName      = "EngineInstallDirectory";
         const char* EngineDirectoryName             = "EngineDirectory";
 
     }
@@ -22,6 +23,7 @@ namespace Lumina::Paths
         FString LuminaDir = std::getenv("LUMINA_DIR");
         Normalize(LuminaDir);
             
+        CachedDirectories[EngineInstallDirectoryName]   = LuminaDir;
         CachedDirectories[EngineDirectoryName]          = LuminaDir + "/Engine";
         CachedDirectories[EngineConfigDirectoryName]    = GetEngineDirectory() + "/Config";
         CachedDirectories[EngineResourceDirectoryName]  = GetEngineDirectory() + "/Resources";
@@ -216,9 +218,9 @@ namespace Lumina::Paths
         return FString(data, i);
     }
 
-    FString GetEngineInstallDirectory()
+    const FString& GetEngineInstallDirectory()
     {
-        return Parent(GetEngineDirectory());
+        return CachedDirectories[EngineInstallDirectoryName];
     }
 
     void Normalize(FString& Path)

@@ -1,3 +1,5 @@
 {
-    "StartupProject": "NULL"
+    "General": {
+        "StartupProject": "NULL"
+    }
 }

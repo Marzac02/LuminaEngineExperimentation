@@ -63,7 +63,7 @@ namespace Lumina::Paths
     RUNTIME_API const FString& GetEngineShadersDirectory();
     
     /** Gets the engine installation directory (one level above the engine binary). */
-    RUNTIME_API FString GetEngineInstallDirectory();
+    RUNTIME_API const FString& GetEngineInstallDirectory();
 
     RUNTIME_API void Normalize(FString& Path);
     RUNTIME_API void Normalize(FFixedString& Path);
