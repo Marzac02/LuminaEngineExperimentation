@@ -2094,54 +2094,7 @@ namespace Lumina
     
                 if (IsOpen)
                 {
-                    ImGui::PushStyleVar(ImGuiStyleVar_IndentSpacing, 12.0f);
-                    ImGui::Indent();
-    
-                    
-                    for (size_t Sys = 0; Sys < SortedSystems.size(); ++Sys)
-                    {
-                        const auto& Pair = SortedSystems[Sys];
-                        CEntitySystem* System = Pair.second;
-                        
-                        ImGui::PushStyleColor(ImGuiCol_ChildBg, ImVec4(0.12f, 0.12f, 0.14f, 1.0f));
-                        ImGui::PushStyleVar(ImGuiStyleVar_ChildRounding, 2.0f);
-                        ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(8.0f, 6.0f));
-                        
-                        ImGui::BeginHorizontal(&Pair);
-                        
-                        ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.25f, 0.25f, 0.3f, 1.0f));
-                        ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.25f, 0.25f, 0.3f, 1.0f));
-                        ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.25f, 0.25f, 0.3f, 1.0f));
-                        ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(6.0f, 2.0f));
-                        ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 2.0f);
-                        
-                        ImGui::PopStyleVar(2);
-                        ImGui::PopStyleColor(3);
-                        
-                        ImGui::Spring(0.0f, 8.0f);
-                        
-                        ImGui::AlignTextToFramePadding();
-                        ImGui::TextColored(ImVec4(0.9f, 0.9f, 0.9f, 1.0f), "%s", System->GetName().c_str());
-                        
-                        ImGui::Spring(1.0f);
-                        
-                        ImVec4 StateColor = ImVec4(0.3f, 0.7f, 0.3f, 1.0f); 
-                        
-                        ImGui::TextColored(StateColor, LE_ICON_CHECK);
-                        
-                        ImGui::EndHorizontal();
-                        
-                        ImGui::PopStyleVar(2);
-                        ImGui::PopStyleColor();
-                    }
-    
-                    ImGui::Unindent();
-                    ImGui::PopStyleVar();
-                    
-                    if (i < (int)EUpdateStage::Max - 1)
-                    {
-                        ImGui::Spacing();
-                    }
+
                 }
                 else if (i < (int)EUpdateStage::Max - 1)
                 {

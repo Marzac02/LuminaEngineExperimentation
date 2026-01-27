@@ -424,7 +424,7 @@ namespace Lumina
                 FileSystem::RemoveAll(Destroy.PendingDestroy);
                 ImGuiX::Notifications::NotifySuccess("Deleted Directory {0}", Destroy.PendingDestroy);
             }
-            else
+            else if (FileSystem::HasExtension(Destroy.PendingDestroy, ".lasset"))
             {
                 if (const FAssetData* Data = FAssetRegistry::Get().GetAssetByPath(Destroy.PendingDestroy))
                 {

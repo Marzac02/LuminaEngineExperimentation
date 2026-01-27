@@ -91,48 +91,28 @@ namespace Lumina
 			glfwInitAllocator(&CustomAllocator);
 			glfwInit();
 			glfwSetErrorCallback(GLFWErrorCallback);
+			glfwWindowHint(GLFW_MAXIMIZED, GLFW_TRUE);
 			
 			glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
 #if WITH_EDITOR
-			glfwWindowHint(GLFW_TITLEBAR, false);
+			glfwWindowHint(GLFW_TITLEBAR, GLFW_FALSE);
 #else
-			glfwWindowHint(GLFW_TITLEBAR, true);
+			glfwWindowHint(GLFW_TITLEBAR, GLFW_TRUE);
 
 #endif
 			//glfwWindowHint(GLFW_DECORATED, GLFW_FALSE);
 			
-			Window = glfwCreateWindow(800, 400, Specs.Title.c_str(), nullptr, nullptr);
+			GLFWmonitor* Monitor = glfwGetPrimaryMonitor();
+			const GLFWvidmode* Mode = glfwGetVideoMode(Monitor);
+			
+			Specs.Extent.x = Mode->width - 25;
+			Specs.Extent.y = Mode->height - 25;
+			
+			Window = glfwCreateWindow(Specs.Extent.x, Specs.Extent.y, Specs.Title.c_str(), nullptr, nullptr);
 			glfwSetWindowAttrib(Window, GLFW_RESIZABLE, GLFW_TRUE);
 			
-			if (GLFWmonitor* currentMonitor = GetCurrentMonitor(Window))
-			{
-				int monitorX, monitorY, monitorWidth, monitorHeight;
-				glfwGetMonitorWorkarea(currentMonitor, &monitorX, &monitorY, &monitorWidth, &monitorHeight);
 
-				if (Specs.Extent.x == 0 || Specs.Extent.x >= (uint32)monitorWidth)
-				{
-					Specs.Extent.x = static_cast<decltype(Specs.Extent.x)>(static_cast<float>(monitorWidth) / 1.15f);
-				}
-				if (Specs.Extent.y == 0 || Specs.Extent.y >= (uint32)monitorHeight)
-				{
-					Specs.Extent.y = static_cast<decltype(Specs.Extent.y)>(static_cast<float>(monitorHeight) / 1.15f);
-				}
-				
-				glfwSetWindowSize(Window, (int)Specs.Extent.x, (int)Specs.Extent.y);
-				
-				int wx, wy;
-				glfwGetWindowSize(Window, &wx, &wy);
-
-				int mx, my, mw, mh;
-				glfwGetMonitorWorkarea(currentMonitor, &mx, &my, &mw, &mh);
-
-				int newX = mx + (mw - wx) / 2;
-				int newY = my + (mh - wy) / 2;
-
-				glfwSetWindowPos(Window, newX, newY);
-			}
-
-			LOG_TRACE("Initializing Window: {0} (Width: {1}p Height: {2}p)", Specs.Title, Specs.Extent.x, Specs.Extent.y);
+			LOG_TRACE("Initializing Window: {} (Width: {}p Height: {}p)", Specs.Title, Specs.Extent.x, Specs.Extent.y);
 			
 			GLFWimage Icon;
 			int Channels;
