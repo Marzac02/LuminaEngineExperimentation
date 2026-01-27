@@ -23,7 +23,8 @@ namespace Lumina
         
         ClearAssets();
         
-        TFixedVector<FFixedString, 256> PackagePaths;
+        TVector<FFixedString> PackagePaths;
+        PackagePaths.reserve(100);
         
         auto Callback = [&](const FS::FFileInfo& File)
         {
@@ -43,7 +44,7 @@ namespace Lumina
 
         
         uint32 NumPackages = (uint32)PackagePaths.size();
-        Task::AsyncTask(NumPackages, NumPackages, [this, PackagePaths = std::move(PackagePaths)] (uint32 Start, uint32 End, uint32)
+        Task::AsyncTask(NumPackages, NumPackages, [this, PackagePaths = Move(PackagePaths)] (uint32 Start, uint32 End, uint32)
         {
             for (uint32 i = Start; i < End; ++i)
             {
@@ -74,7 +75,7 @@ namespace Lumina
         AssetData->AssetName    = Asset->GetName();
         AssetData->Path         = Move(FilePath);
 
-        FScopeLock Lock(AssetsMutex);
+        FWriteScopeLock Lock(AssetsMutex);
         Assets.emplace(Move(AssetData));
 
         GetOnAssetRegistryUpdated().Broadcast();
@@ -82,7 +83,7 @@ namespace Lumina
 
     void FAssetRegistry::AssetDeleted(const FGuid& GUID)
     {
-        FScopeLock Lock(AssetsMutex);
+        FWriteScopeLock Lock(AssetsMutex);
 
         auto It = Assets.find_as(GUID, FGuidHash(), FAssetDataGuidEqual());
         ASSERT(It != Assets.end());
@@ -94,7 +95,7 @@ namespace Lumina
 
     void FAssetRegistry::AssetRenamed(FStringView OldPath, FStringView NewPath)
     {
-        FScopeLock Lock(AssetsMutex);
+        FWriteScopeLock Lock(AssetsMutex);
 
         auto It = eastl::find_if(Assets.begin(), Assets.end(), [&OldPath](const TUniquePtr<FAssetData>& Asset)
         {
@@ -105,20 +106,21 @@ namespace Lumina
 
         const TUniquePtr<FAssetData>& Data = *It;
         Data->Path.assign_convert(NewPath);
+        Data->AssetName = FileSystem::FileName(NewPath, true);
 
         GetOnAssetRegistryUpdated().Broadcast();
     }
 
     void FAssetRegistry::AssetSaved(CObject* Asset)
     {
-        FScopeLock Lock(AssetsMutex);
+        FReadScopeLock Lock(AssetsMutex);
         
         GetOnAssetRegistryUpdated().Broadcast();
     }
 
     FAssetData* FAssetRegistry::GetAssetByGUID(const FGuid& GUID) const
     {
-        FScopeLock Lock(AssetsMutex);
+        FReadScopeLock Lock(AssetsMutex);
 
         auto It = eastl::find_if(Assets.begin(), Assets.end(), [&](const auto& Data)
         {
@@ -130,7 +132,7 @@ namespace Lumina
 
     FAssetData* FAssetRegistry::GetAssetByPath(FStringView Path) const
     {
-        FScopeLock Lock(AssetsMutex);
+        FReadScopeLock Lock(AssetsMutex);
 
         auto It = eastl::find_if(Assets.begin(), Assets.end(), [&](const TUniquePtr<FAssetData>& Data)
         {
@@ -142,7 +144,7 @@ namespace Lumina
 
     TVector<FAssetData*> FAssetRegistry::FindByPredicate(const TFunction<bool(const FAssetData&)>& Predicate)
     {
-        FScopeLock Lock(AssetsMutex);
+        FReadScopeLock Lock(AssetsMutex);
 
         TVector<FAssetData*> Datas;
         Datas.reserve(Assets.size() / 2);
@@ -156,8 +158,7 @@ namespace Lumina
         
         return Datas;
     }
-
-
+    
     void FAssetRegistry::ProcessPackagePath(FStringView Path)
     {
         TVector<uint8> Data;
@@ -182,10 +183,9 @@ namespace Lumina
         {
             return E.ObjectName == PackageFileName; 
         });
-
-        if (Export == Exports.end())
+        
+        if (ALERT_IF(Export == Exports.end(), "Package name was not found in exports!"))
         {
-            LOG_ERROR("Failed to find asset in package file: {0}", Path);
             return;
         }
         
@@ -195,15 +195,14 @@ namespace Lumina
         AssetData->AssetName    = Export->ObjectName;
         AssetData->Path         .assign_convert(Path);
 
+        FWriteScopeLock Lock(AssetsMutex);
         ASSERT(Assets.find(AssetData) == Assets.end());
-        
-        FScopeLock Lock(AssetsMutex);
         Assets.emplace(Move(AssetData));
     }
     
     void FAssetRegistry::ClearAssets()
     {
-        FScopeLock Lock(AssetsMutex);
+        FWriteScopeLock Lock(AssetsMutex);
 
         Assets.clear();
 

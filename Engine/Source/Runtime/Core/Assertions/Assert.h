@@ -39,6 +39,21 @@ namespace Lumina::Assert
     namespace Detail
     {
         FORCENOINLINE RUNTIME_API void HandleAssertion(const FAssertion& Assertion);
+        FORCENOINLINE RUNTIME_API void Abort();
+        
+        constexpr bool ShouldAbortOnAssertion(EAssertionType Type)
+        {
+            switch (Type)
+            {
+                case EAssertionType::Assert:        return true;
+                case EAssertionType::Assume:        return true;
+                case EAssertionType::DebugAssert:   return true;
+                case EAssertionType::Unreachable:   return true;
+                case EAssertionType::Panic:         return true;
+                case EAssertionType::Alert:         return false;
+                default:                            return true;
+            }
+        }
     }
     
     // ========================= LUMINA ASSERTION INFO =========================
@@ -48,26 +63,45 @@ namespace Lumina::Assert
     // =========================================================================
     
 #define LUMINA_HANDLE_ASSERTION_HEADER \
-    ::Lumina::Assert::Detail::HandleAssertion(::Lumina::Assert::FAssertion
-
+    Detail::HandleAssertion(FAssertion
 
 #define LUMINA_ASSERTION_BODY(Expr, AssertType, ...) \
     if(!(Expr)) [[unlikely]] \
     { \
+        EASTL_DEBUG_BREAK(); \
+        using namespace Lumina::Assert; \
         LUMINA_HANDLE_ASSERTION_HEADER \
         { \
             __VA_OPT__(.Message = std::format(__VA_ARGS__).c_str(),) \
             .Location = std::source_location::current(), \
             .Expression = #Expr, \
-            .Type = ::Lumina::Assert::EAssertionType::AssertType \
+            .Type = EAssertionType::AssertType \
         }); \
+        if (Detail::ShouldAbortOnAssertion(EAssertionType::AssertType)) \
+        { \
+            Detail::Abort(); \
+        } \
     } \
 
-    
 #define LUMINA_ASSERT_INVOKE(Expr, Type, ...) \
-    do { \
-    LUMINA_ASSERTION_BODY(Expr, Type, __VA_ARGS__) \
+    do \
+    { \
+        LUMINA_ASSERTION_BODY(Expr, Type, __VA_ARGS__) \
     } while(0)
+    
+#define LUMINA_ALERT_IF_NOT_INVOKE(Expr, ...) \
+    [&]() \
+    { \
+        LUMINA_ASSERTION_BODY(Expr, Alert, __VA_ARGS__) \
+        return Expr; \
+    }()
+    
+    #define LUMINA_ALERT_IF_INVOKE(Expr, ...) \
+    [&]() \
+    { \
+        LUMINA_ASSERTION_BODY(!(Expr), Alert, __VA_ARGS__) \
+        return Expr; \
+    }()
     
 
 #ifdef LE_DEBUG
@@ -94,12 +128,14 @@ namespace Lumina::Assert
 #endif
     
 
-#define LUMINA_PANIC(...)               LUMINA_ASSERT_INVOKE(false,     Panic,          __VA_ARGS__)
+#define LUMINA_PANIC(...)                       LUMINA_ASSERT_INVOKE(false,             Panic,          __VA_ARGS__)
     
 #ifndef LE_SHIPPING
-#define LUMINA_ALERT(Expr, ...)         LUMINA_ASSERT_INVOKE(Expr,      Alert,          __VA_ARGS__)
+#define LUMINA_ALERT_IF_NOT(Expr, ...)          LUMINA_ALERT_IF_NOT_INVOKE(Expr,                        __VA_ARGS__)
+#define LUMINA_ALERT_IF(Expr, ...)              LUMINA_ALERT_IF_INVOKE(Expr,                            __VA_ARGS__)
 #else
-#define LUMINA_ALERT(...)               ((void)0)
+#define LUMINA_ALERT_IF_NOT(Expr, ...)          Expr
+#define LUMINA_ALERT_IF(Expr, ...)              Expr
 #endif
     
 #ifdef LE_DEBUG
@@ -113,7 +149,8 @@ namespace Lumina::Assert
 #define DEBUG_ASSERT(...)   LUMINA_DEBUG_ASSERT(__VA_ARGS__)
 #define ASSERT(...)         LUMINA_ASSERT(__VA_ARGS__)
 #define ASSUME(...)         LUMINA_ASSUME(__VA_ARGS__)
-#define ALERT_IF_NOT(...)   LUMINA_ALERT(__VA_ARGS__)
+#define ALERT_IF_NOT(...)   LUMINA_ALERT_IF_NOT(__VA_ARGS__)
+#define ALERT_IF(...)       LUMINA_ALERT_IF(__VA_ARGS__)
 #define PANIC(...)          LUMINA_PANIC(__VA_ARGS__)
 #define UNREACHABLE(...)    LUMINA_UNREACHABLE(__VA_ARGS__)
 

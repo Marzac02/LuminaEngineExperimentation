@@ -7,11 +7,10 @@
 #include "Core/Object/ObjectIterator.h"
 #include "Core/Object/Archive/ObjectReferenceReplacerArchive.h"
 #include "Core/Profiler/Profile.h"
-#include "Paths/Paths.h"
-#include "Platform/Filesystem/FileHelper.h"
-#include "Core/Serialization/Package/PackageSaver.h"
 #include "Core/Serialization/Package/PackageLoader.h"
+#include "Core/Serialization/Package/PackageSaver.h"
 #include "FileSystem/FileSystem.h"
+#include "Paths/Paths.h"
 #include "TaskSystem/TaskSystem.h"
 #include "Thumbnail/PackageThumbnail.h"
 
@@ -84,12 +83,12 @@ namespace Lumina
             }
         }
 
-		bool bSuccess = CObject::Rename(NewName, NewPackage);
+		bool bSuccess = Super::Rename(NewName, NewPackage);
         if (bSuccess && bFileNameDirty)
         {
             SavePackage(this, GetPackagePath());
 
-            for (FObjectExport& Export : ExportTable)
+             for (FObjectExport& Export : ExportTable)
             {
                 if (Export.Object.Get())
                 {
@@ -252,10 +251,10 @@ namespace Lumina
 
         FObjectExport* Export = eastl::find_if(Exports.begin(), Exports.end(), [&](const FObjectExport& E)
         {
-            return Export->ObjectName == NewFileName;
+            return E.ObjectName == NewFileName;
         });
         
-        if (Export)
+        if (Export != Exports.end())
         {
             Export->ObjectName = NewFileName;
 

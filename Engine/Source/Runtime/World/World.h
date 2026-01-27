@@ -43,6 +43,7 @@ namespace Lumina
         void Serialize(FArchive& Ar) override;
         void PreLoad() override;
         void PostLoad() override;
+        bool IsAsset() const override { return true; }
         //~ End CObject Interface
         
         /**

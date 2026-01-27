@@ -20,6 +20,7 @@ namespace Lumina::FileSystem
         { FS.ReadFile(OutStr, Path) }                           -> Concept::TSameAs<bool>;
         { FS.WriteFile(Path, Path) }                            -> Concept::TSameAs<bool>;
         { FS.WriteFile(Path, Data) }                            -> Concept::TSameAs<bool>;
+        { FS.IsEmpty(Path) }                                    -> Concept::TSameAs<bool>;
         { FS.Exists(Path) }                                     -> Concept::TSameAs<bool>;
         { FS.CreateDir(Path) }                                  -> Concept::TSameAs<bool>;
         { FS.Remove(Path) }                                     -> Concept::TSameAs<bool>;
@@ -54,6 +55,7 @@ namespace Lumina::FileSystem
         bool Rename(FStringView Old, FStringView New) const;
         void DirectoryIterator(FStringView Path, const TFunction<void(const FFileInfo&)>& Callback) const;
         void RecursiveDirectoryIterator(FStringView Path, const TFunction<void(const FFileInfo&)>& Callback) const;
+        bool IsEmpty(FStringView Path) const;
 
         
         FStringView GetAliasPath() const;
@@ -93,6 +95,7 @@ namespace Lumina::FileSystem
     RUNTIME_API void DirectoryIterator(FStringView Path, const TFunction<void(const FFileInfo&)>& Callback);
     RUNTIME_API void RecursiveDirectoryIterator(FStringView Path, const TFunction<void(const FFileInfo&)>& Callback);
 
+    RUNTIME_API bool IsEmpty(FStringView Directory);
     RUNTIME_API FStringView RemoveExtension(FStringView Path);
     RUNTIME_API bool Rename(FStringView Old, FStringView New);
     RUNTIME_API FFixedString MakeUniqueFilePath(FStringView BasePath);

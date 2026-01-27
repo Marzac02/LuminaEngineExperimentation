@@ -115,6 +115,11 @@ namespace Lumina::FileSystem
         eastl::visit([&](const auto& fs) { fs.RecursiveDirectoryIterator(Path, Callback); }, Storage);
     }
 
+    bool FFileSystem::IsEmpty(FStringView Path) const
+    {
+        return eastl::visit([&](const auto& fs) { return fs.IsEmpty(Path); }, Storage);
+    }
+
     FStringView FFileSystem::GetAliasPath() const
     {
         return eastl::visit([](const auto& fs) { return fs.GetAliasPath(); }, Storage);
@@ -323,6 +328,22 @@ namespace Lumina::FileSystem
         Detail::VisitFileSystems(Path, [&](const FFileSystem& FS)
         {
             FS.RecursiveDirectoryIterator(Path, Callback);
+        });
+    }
+
+    bool IsEmpty(FStringView Directory)
+    {
+        return Detail::VisitFileSystems(Directory, [&](const FFileSystem& FS)
+        {
+            if (FS.Exists(Directory))
+            {
+                if (FS.IsEmpty(Directory))
+                {
+                    return true;
+                }
+            }
+            
+            return false;        
         });
     }
 

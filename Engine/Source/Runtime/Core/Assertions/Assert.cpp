@@ -19,20 +19,6 @@ namespace Lumina::Assert
             default:                            return "";
         }
     }
-    
-    static constexpr bool ShouldAbortOnAssertion(EAssertionType Type)
-    {
-        switch (Type)
-        {
-            case EAssertionType::Assert:        return true;
-            case EAssertionType::Assume:        return true;
-            case EAssertionType::DebugAssert:   return true;
-            case EAssertionType::Unreachable:   return true;
-            case EAssertionType::Panic:         return true;
-            case EAssertionType::Alert:         return false;
-            default:                            return true;
-        }
-    }
 
     static void DefaultAssertionHandler(const FAssertion& Assertion)
     {
@@ -59,11 +45,6 @@ namespace Lumina::Assert
             
             LOG_CRITICAL("==================================================================================");
             
-            if (ShouldAbortOnAssertion(Assertion.Type))
-            {
-                std::abort();
-            }
-            
             Threading::Sleep(5);
         }
     }
@@ -73,6 +54,11 @@ namespace Lumina::Assert
     void Detail::HandleAssertion(const FAssertion& Assertion)
     {
         GAssertionHandler(Assertion);
+    }
+
+    void Detail::Abort()
+    {
+        std::abort();
     }
 
     void SetAssertionHandler(AssertionHandler Handler)

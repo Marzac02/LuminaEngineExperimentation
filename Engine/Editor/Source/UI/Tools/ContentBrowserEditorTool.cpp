@@ -61,6 +61,7 @@ namespace Lumina
         }
 
         
+        // ReSharper disable once CppMemberFunctionMayBeStatic
         NODISCARD constexpr size_t Capacity() const { return BufferSize; }
         FORCEINLINE NODISCARD char* CStr() { return Buffer.data(); }
         FORCEINLINE NODISCARD bool IsValid() const { return !Buffer.empty(); }
@@ -419,21 +420,32 @@ namespace Lumina
         
         ActionRegistry.ProcessAllOf<FPendingDestroy>([&] (const FPendingDestroy& Destroy)
         {
+            CObject* AliveObject = nullptr;
+            if (FileSystem::HasExtension(Destroy.PendingDestroy, ".lasset"))
+            {
+                if (const FAssetData* Data = FAssetRegistry::Get().GetAssetByPath(Destroy.PendingDestroy))
+                {
+                    if (CObject* Object = FindObject<CObject>(Data->AssetGUID))
+                    {
+                        AliveObject = Object;
+                        if (AliveObject->IsA<CWorld>())
+                        {
+                            ImGuiX::Notifications::NotifyError("Cannot destroy a world that's open {0}", Destroy.PendingDestroy);
+                            return;
+                        }
+                    }
+                }
+            }
+            
             if (FileSystem::IsDirectory(Destroy.PendingDestroy))
             {
                 FileSystem::RemoveAll(Destroy.PendingDestroy);
                 ImGuiX::Notifications::NotifySuccess("Deleted Directory {0}", Destroy.PendingDestroy);
             }
-            else if (FileSystem::HasExtension(Destroy.PendingDestroy, ".lasset"))
+            else if (AliveObject)
             {
-                if (const FAssetData* Data = FAssetRegistry::Get().GetAssetByPath(Destroy.PendingDestroy))
-                {
-                    if (CObject* AliveObject = FindObject<CObject>(Data->AssetGUID))
-                    {
-                        ToolContext->OnDestroyAsset(AliveObject);
-                    }
-                }
-
+                ToolContext->OnDestroyAsset(AliveObject);
+                
                 if (CPackage::DestroyPackage(Destroy.PendingDestroy))
                 {
                     ImGuiX::Notifications::NotifySuccess("Deleted Asset {0}", Destroy.PendingDestroy);
@@ -529,7 +541,15 @@ namespace Lumina
 
     void FContentBrowserEditorTool::OpenDeletionWarningPopup(const FContentBrowserTileViewItem* Item, const TFunction<void(EYesNo)>& Callback)
     {
-        if (Dialogs::Confirmation("Confirm Deletion", "Are you sure you want to delete \"{0}\"?\n""\nThis action cannot be undone.", Item->GetName()))
+        if (FileSystem::IsEmpty(Item->GetVirtualPath()))
+        {
+            if (Callback)
+            {
+                Callback(EYesNo::Yes);
+            }
+            ActionRegistry.EnqueueAction<FPendingDestroy>(FPendingDestroy{ FFixedString(Item->GetVirtualPath().data(), Item->GetVirtualPath().size()) });
+        }
+        else if (Dialogs::Confirmation("Confirm Deletion", "Are you sure you want to delete \"{0}\"?\n""\nThis action cannot be undone.", Item->GetName()))
         {
             if (Callback)
             {

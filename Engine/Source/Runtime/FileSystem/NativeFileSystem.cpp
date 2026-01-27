@@ -172,6 +172,11 @@ namespace Lumina::FileSystem
         return true;
     }
 
+    bool FNativeFileSystem::IsEmpty(FStringView Path) const
+    {
+        return std::filesystem::is_empty(ResolveVirtualPath(Path).c_str());
+    }
+
     void FNativeFileSystem::DirectoryIterator(FStringView Path, const TFunction<void(const FFileInfo&)>& Callback) const
     {
         FFixedString ResolvedPath = ResolveVirtualPath(Path);

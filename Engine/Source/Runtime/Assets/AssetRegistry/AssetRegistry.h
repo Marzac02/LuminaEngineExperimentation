@@ -82,7 +82,7 @@ namespace Lumina
 
 		FAssetRegistryUpdatedDelegate	OnAssetRegistryUpdated;
 
-		mutable FMutex				    AssetsMutex;
+		mutable FSharedMutex			AssetsMutex;
 
 		/** Global hash of all registered assets */
 		FAssetDataMap 					Assets;

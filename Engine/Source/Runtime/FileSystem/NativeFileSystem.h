@@ -32,6 +32,8 @@ namespace Lumina::FileSystem
         
         bool Rename(FStringView Old, FStringView New) const;
         
+        bool IsEmpty(FStringView Path) const;
+        
         void DirectoryIterator(FStringView Path, const TFunction<void(const FFileInfo&)>& Callback) const;
         void RecursiveDirectoryIterator(FStringView Path, const TFunction<void(const FFileInfo&)>& Callback) const;
 
