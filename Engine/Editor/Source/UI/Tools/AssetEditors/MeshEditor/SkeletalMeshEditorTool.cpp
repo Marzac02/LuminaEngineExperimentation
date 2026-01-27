@@ -315,27 +315,47 @@ namespace Lumina
                     {
                         ImGui::Indent(16.0f);
                         
-                        if (ImGui::BeginTable("##SurfaceDetails", 2, ImGuiTableFlags_BordersInnerV | ImGuiTableFlags_SizingStretchProp))
+                        
+                        float ImageWidth = 160.0f;
+                        float AvailWidth = ImGui::GetContentRegionAvail().x;
+                        
+                        if (ImGui::BeginChild("##TableChild", ImVec2(AvailWidth - ImageWidth - 5.0f, 0), ImGuiChildFlags_AutoResizeY))
                         {
-                            ImGui::TableSetupColumn("##Label", ImGuiTableColumnFlags_WidthFixed, 120.0f);
-                            ImGui::TableSetupColumn("##Value", ImGuiTableColumnFlags_WidthStretch);
-                            
-                            auto DetailRow = [](const char* label, const FString& value)
+                            if (ImGui::BeginTable("##SurfaceDetails", 2, ImGuiTableFlags_BordersInnerV | ImGuiTableFlags_SizingStretchProp))
                             {
-                                ImGui::TableNextRow();
-                                ImGui::TableSetColumnIndex(0);
-                                ImGui::TextColored(ImVec4(0.7f, 0.7f, 0.7f, 1.0f), "%s", label);
-                                ImGui::TableSetColumnIndex(1);
-                                ImGui::TextUnformatted(value.c_str());
-                            };
+                                ImGui::TableSetupColumn("##Label", ImGuiTableColumnFlags_WidthFixed, 120.0f);
+                                ImGui::TableSetupColumn("##Value", ImGuiTableColumnFlags_WidthStretch);
                             
-                            DetailRow("Material Index:", eastl::to_string(Surface.MaterialIndex));
-                            DetailRow("Start Index:", eastl::to_string(Surface.StartIndex));
-                            DetailRow("Index Count:", eastl::to_string(Surface.IndexCount));
-                            DetailRow("Triangle Count:", eastl::to_string(Surface.IndexCount / 3));
+                                auto DetailRow = [](const char* label, const FString& value)
+                                {
+                                    ImGui::TableNextRow();
+                                    ImGui::TableSetColumnIndex(0);
+                                    ImGui::TextColored(ImVec4(0.7f, 0.7f, 0.7f, 1.0f), "%s", label);
+                                    ImGui::TableSetColumnIndex(1);
+                                    ImGui::TextUnformatted(value.c_str());
+                                };
                             
-                            ImGui::EndTable();
+                                DetailRow("Material Index:", eastl::to_string(Surface.MaterialIndex));
+                                DetailRow("Start Index:", eastl::to_string(Surface.StartIndex));
+                                DetailRow("Index Count:", eastl::to_string(Surface.IndexCount));
+                                DetailRow("Triangle Count:", eastl::to_string(Surface.IndexCount / 3));
+                            
+                                ImGui::EndTable();
+                            }
                         }
+                        ImGui::EndChild();
+                        
+                        ImGui::SameLine();
+                        
+                        if (ImGui::BeginChild("OP", ImVec2(-1, 0), ImGuiChildFlags_AutoResizeY, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse))
+                        {
+                            if (CMaterialInterface* Material = SkeletalMesh->GetMaterialAtSlot(Surface.MaterialIndex))
+                            {
+                                ImGui::Text("Material: %s", Material->GetName().c_str());
+                            }
+                        }
+                        ImGui::EndChild();
+                        
                         
                         ImGui::Unindent(16.0f);
                     }

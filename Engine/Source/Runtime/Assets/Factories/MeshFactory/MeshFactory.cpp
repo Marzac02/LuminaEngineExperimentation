@@ -68,8 +68,7 @@ namespace Lumina
             Reimport();
         }
         
-        
-        ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(20, 20));
+        ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(10, 10));
         ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(12, 8));
     
         ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.9f, 0.9f, 0.9f, 1.0f));
@@ -82,61 +81,151 @@ namespace Lumina
         ImGui::PopStyleColor();
         ImGui::Spacing();
         
-        ImGui::PushStyleVar(ImGuiStyleVar_CellPadding, ImVec2(12, 8));
-        if (ImGui::BeginTable("GLTFImportOptionsTable", 2, ImGuiTableFlags_BordersInnerV | ImGuiTableFlags_PadOuterX))
+        ImGui::PushStyleVar(ImGuiStyleVar_CellPadding, ImVec2(12, 10));
+        if (ImGui::BeginTable("MeshImportOptionsTable", 2, 
+            ImGuiTableFlags_BordersInnerV | ImGuiTableFlags_PadOuterX))
         {
-            ImGui::TableSetupColumn("Option", ImGuiTableColumnFlags_WidthFixed, 180.0f);
+            ImGui::TableSetupColumn("Option", ImGuiTableColumnFlags_WidthFixed, 200.0f);
             ImGui::TableSetupColumn("Value", ImGuiTableColumnFlags_WidthStretch);
-    
+        
+            auto AddSectionHeader = [&](const char* Label)
+            {
+                ImGui::TableNextRow();
+                ImGui::TableSetColumnIndex(0);
+                ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.8f, 0.9f, 1.0f, 1.0f));
+                ImGui::TextUnformatted(Label);
+                ImGui::PopStyleColor();
+                ImGui::TableSetColumnIndex(1);
+                ImGui::Separator();
+            };
+        
             auto AddCheckboxRow = [&](const char* Icon, const char* Label, const char* Description, bool& Option)
             {
                 ImGui::TableNextRow();
                 ImGui::TableSetColumnIndex(0);
                 
-                ImGui::Text("%s %s", Icon, Label);
+                ImGui::Text("%s  %s", Icon, Label);
                 if (Description && ImGui::IsItemHovered())
                 {
-                    ImGui::SetTooltip("%s", Description);
+                    ImGui::BeginTooltip();
+                    ImGui::PushTextWrapPos(ImGui::GetFontSize() * 25.0f);
+                    ImGui::TextUnformatted(Description);
+                    ImGui::PopTextWrapPos();
+                    ImGui::EndTooltip();
                 }
                 
                 ImGui::TableSetColumnIndex(1);
-                ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(8, 4));
+                ImGui::SetCursorPosX(ImGui::GetCursorPosX() + 4);
                 if (ImGui::Checkbox(("##" + FString(Label)).c_str(), &Option))
                 {
                     Reimport();
                 }
-                ImGui::PopStyleVar();
             };
-    
-            AddCheckboxRow(LE_ICON_ANIMATION, "Import Meshes", "Import skeletal and(or) static meshes", Options.bImportMeshes);
-            AddCheckboxRow(LE_ICON_ANIMATION, "Import Animations", "Import skeletal and morph target animations", Options.bImportAnimations);
-            AddCheckboxRow(LE_ICON_SKULL, "Import Skeletons", "Import skeletons.", Options.bImportSkeleton);
-            AddCheckboxRow(LE_ICON_MATERIAL_DESIGN, "Import Materials", "Import material definitions from GLTF", Options.bImportMaterials);
-            AddCheckboxRow(LE_ICON_BADGE_ACCOUNT, "Optimize Mesh", "Optimize vertex cache and reduce overdraw", Options.bOptimize);
+        
+            auto AddSliderRow = [&](const char* Icon, const char* Label, const char* Description, 
+                                    float& Value, float Min, float Max, const char* Format = "%.2f")
+            {
+                ImGui::TableNextRow();
+                ImGui::TableSetColumnIndex(0);
+                
+                ImGui::Text("%s  %s", Icon, Label);
+                if (Description && ImGui::IsItemHovered())
+                {
+                    ImGui::BeginTooltip();
+                    ImGui::PushTextWrapPos(ImGui::GetFontSize() * 25.0f);
+                    ImGui::TextUnformatted(Description);
+                    ImGui::PopTextWrapPos();
+                    ImGui::EndTooltip();
+                }
+                
+                ImGui::TableSetColumnIndex(1);
+                ImGui::PushItemWidth(-1);
+                if (ImGui::SliderFloat(("##" + FString(Label)).c_str(), &Value, Min, Max, Format))
+                {
+                    if (ImGui::IsItemDeactivatedAfterEdit())
+                    {
+                        Reimport();
+                    }
+                }
+                ImGui::PopItemWidth();
+            };
+        
+            auto AddComboRow = [&](const char* Icon, const char* Label, const char* Description,
+                                  const char* Items[], int ItemCount, int& CurrentItem)
+            {
+                ImGui::TableNextRow();
+                ImGui::TableSetColumnIndex(0);
+                
+                ImGui::Text("%s  %s", Icon, Label);
+                if (Description && ImGui::IsItemHovered())
+                {
+                    ImGui::BeginTooltip();
+                    ImGui::PushTextWrapPos(ImGui::GetFontSize() * 25.0f);
+                    ImGui::TextUnformatted(Description);
+                    ImGui::PopTextWrapPos();
+                    ImGui::EndTooltip();
+                }
+                
+                ImGui::TableSetColumnIndex(1);
+                ImGui::PushItemWidth(-1);
+                if (ImGui::Combo(("##" + FString(Label)).c_str(), &CurrentItem, Items, ItemCount))
+                {
+                    Reimport();
+                }
+                ImGui::PopItemWidth();
+            };
+            
+            AddSectionHeader("Geometry");
+            
+            AddCheckboxRow(LE_ICON_ANIMATION, "Import Meshes", 
+                "Import skeletal and static meshes from the FBX file", 
+                Options.bImportMeshes);
+            
+            AddCheckboxRow(LE_ICON_SKULL, "Import Skeletons", 
+                "Import skeleton hierarchies and bone data", 
+                Options.bImportSkeleton);
+            
+            AddCheckboxRow(LE_ICON_BADGE_ACCOUNT, "Optimize Mesh", 
+                "Optimize vertex cache locality and reduce overdraw for better rendering performance", 
+                Options.bOptimize);
+            
+            AddSectionHeader("Animation");
+            
+            AddCheckboxRow(LE_ICON_ANIMATION, "Import Animations", 
+                "Import skeletal and morph target animations", 
+                Options.bImportAnimations);
+            
+            
+            AddSectionHeader("Materials & Textures");
+            
+            AddCheckboxRow(LE_ICON_MATERIAL_DESIGN, "Import Materials", 
+                "Import material definitions and create material assets", 
+                Options.bImportMaterials);
             
             if (!Options.bImportMaterials)
             {
-                AddCheckboxRow(LE_ICON_TEXTURE, "Import Textures", "Import textures", Options.bImportTextures);
+                AddCheckboxRow(LE_ICON_TEXTURE, "Import Textures", 
+                    "Import texture files referenced by the FBX", 
+                    Options.bImportTextures);
             }
             
-            AddCheckboxRow(LE_ICON_ACCOUNT_BOX, "Flip UVs", "Flip the UVs vertically on load", Options.bFlipUVs);
-
-            ImGui::TableNextRow();
-            ImGui::TableSetColumnIndex(0);
-            ImGui::TextUnformatted(LE_ICON_ACCOUNT_BOX " Scale");
-            if (ImGui::IsItemHovered())
-            {
-                ImGui::SetTooltip("Uniform scale factor applied to all imported geometry");
-            }
-            ImGui::TableSetColumnIndex(1);
-            ImGui::PushItemWidth(-1);
-            ImGui::SliderFloat("##ImportScale", &Options.Scale, 0.01f, 100.0f, "%.2f");
-            if (ImGui::IsItemDeactivatedAfterEdit())
-            {
-                Reimport();
-            }
-            ImGui::PopItemWidth();
-    
+            AddSectionHeader("Transform");
+            
+            AddSliderRow(LE_ICON_RESIZE, "Scale", 
+                "Uniform scale factor applied to all imported geometry", 
+                Options.Scale, 0.001f, 100.0f, "%.3f");
+            
+            
+            AddCheckboxRow(LE_ICON_FLIP_VERTICAL, "Flip UVs", 
+                "Flip UV coordinates vertically (1 - V)", 
+                Options.bFlipUVs);
+            
+            AddCheckboxRow(LE_ICON_FLIP_HORIZONTAL, "Flip Normals", 
+                "Invert mesh normals (useful for inside-out geometry)", 
+                Options.bFlipNormals);
+            
+            AddSectionHeader("Advanced");
+        
             ImGui::EndTable();
         }
         ImGui::PopStyleVar();
@@ -212,68 +301,62 @@ namespace Lumina
                 ImGui::SeparatorText(LE_ICON_ACCOUNT_BOX "Texture Preview");
                 ImGui::PopStyleColor();
                 ImGui::Spacing();
-    
-                if (ImGui::BeginChild("ImportTexturesChild", ImVec2(0, 300), true))
+                
+                ImGui::PushStyleVar(ImGuiStyleVar_CellPadding, ImVec2(8, 8));
+                if (ImGui::BeginTable("ImportTextures", 2, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg | ImGuiTableFlags_Resizable))
                 {
-                    ImGui::PushStyleVar(ImGuiStyleVar_CellPadding, ImVec2(8, 8));
-                    if (ImGui::BeginTable("ImportTextures", 2, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg | ImGuiTableFlags_Resizable))
+                    ImGui::TableSetupColumn("Preview", ImGuiTableColumnFlags_WidthFixed, 150.0f);
+                    ImGui::TableSetupColumn("Path", ImGuiTableColumnFlags_WidthStretch);
+                    
+                    ImGui::PushStyleColor(ImGuiCol_TableHeaderBg, ImVec4(0.4f, 0.3f, 0.4f, 1.0f));
+                    ImGui::TableHeadersRow();
+                    ImGui::PopStyleColor();
+    
+                    ImGuiListClipper Clipper;
+                    Clipper.Begin(((int)ImportedData->Textures.size()));
+                    
+                    TVector<FMeshImportImage> TextureVector;
+                    TextureVector.assign(ImportedData->Textures.begin(), ImportedData->Textures.end());
+                    
+                    while (Clipper.Step())
                     {
-                        ImGui::TableSetupColumn("Preview", ImGuiTableColumnFlags_WidthFixed, 150.0f);
-                        ImGui::TableSetupColumn("Path", ImGuiTableColumnFlags_WidthStretch);
-                        
-                        ImGui::PushStyleColor(ImGuiCol_TableHeaderBg, ImVec4(0.4f, 0.3f, 0.4f, 1.0f));
-                        ImGui::TableHeadersRow();
-                        ImGui::PopStyleColor();
-    
-                        ImGuiListClipper Clipper;
-                        Clipper.Begin(((int)ImportedData->Textures.size()));
-                        
-                        TVector<FMeshImportImage> TextureVector;
-                        TextureVector.assign(ImportedData->Textures.begin(), ImportedData->Textures.end());
-                        
-                        while (Clipper.Step())
+                        for (int i = Clipper.DisplayStart; i < Clipper.DisplayEnd; i++)
                         {
-                            for (int i = Clipper.DisplayStart; i < Clipper.DisplayEnd; i++)
-                            {
-                                const FMeshImportImage& Image = TextureVector[i];
+                            const FMeshImportImage& Image = TextureVector[i];
     
-                                FFixedString ImagePath = Paths::Combine(FileSystem::Parent(RawPath), Image.RelativePath);
-                                if (!Paths::Exists(ImagePath))
-                                {
-                                    continue;
-                                }
-                        
-                                ImGui::TableNextRow();
-                                ImGui::TableSetColumnIndex(0);
-                            
-                                ImVec2 ImageSize(128.0f, 128.0f);
-                                ImVec2 CursorPos = ImGui::GetCursorScreenPos();
-                                ImGui::GetWindowDrawList()->AddRect(
-                                    CursorPos, 
-                                    ImVec2(CursorPos.x + ImageSize.x + 4, CursorPos.y + ImageSize.y + 4),
-                                    IM_COL32(100, 100, 100, 255), 2.0f);
-                            
-                                ImGui::SetCursorScreenPos(ImVec2(CursorPos.x + 2, CursorPos.y + 2));
-
-                                ImGui::Image(ImGuiX::ToImTextureRef(ImagePath), ImageSize);
-
-                                ImGui::TableSetColumnIndex(1);
-                                ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.9f, 0.9f, 0.9f, 1.0f));
-                                ImGuiX::TextWrapped("{0}", FileSystem::FileName(ImagePath));
-                                ImGui::PopStyleColor();
-                                ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.7f, 0.7f, 0.7f, 1.0f));
-                                ImGuiX::TextWrapped("{0}", ImagePath);
-                                ImGui::PopStyleColor();
+                            FFixedString ImagePath = Paths::Combine(FileSystem::Parent(RawPath), Image.RelativePath);
+                            if (!Paths::Exists(ImagePath))
+                            {
+                                continue;
                             }
-                        }
+                    
+                            ImGui::TableNextRow();
+                            ImGui::TableSetColumnIndex(0);
                         
-                        ImGui::EndTable();
-                        ImGui::PopStyleVar();
+                            ImVec2 ImageSize(128.0f, 128.0f);
+                            ImVec2 CursorPos = ImGui::GetCursorScreenPos();
+                            ImGui::GetWindowDrawList()->AddRect(
+                                CursorPos, 
+                                ImVec2(CursorPos.x + ImageSize.x + 4, CursorPos.y + ImageSize.y + 4),
+                                IM_COL32(100, 100, 100, 255), 2.0f);
+                        
+                            ImGui::SetCursorScreenPos(ImVec2(CursorPos.x + 2, CursorPos.y + 2));
+
+                            ImGui::Image(ImGuiX::ToImTextureRef(ImagePath), ImageSize);
+
+                            ImGui::TableSetColumnIndex(1);
+                            ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.9f, 0.9f, 0.9f, 1.0f));
+                            ImGuiX::TextWrapped("{0}", FileSystem::FileName(ImagePath));
+                            ImGui::PopStyleColor();
+                            ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.7f, 0.7f, 0.7f, 1.0f));
+                            ImGuiX::TextWrapped("{0}", ImagePath);
+                            ImGui::PopStyleColor();
+                        }
                     }
                     
+                    ImGui::EndTable();
+                    ImGui::PopStyleVar();
                 }
-                
-                ImGui::EndChild();
             }
             
             if (!ImportedData->Skeletons.empty())
@@ -284,89 +367,66 @@ namespace Lumina
                 ImGui::PopStyleColor();
                 ImGui::Spacing();
                 
-                if (ImGui::BeginChild("ImportSkeletonsChild", ImVec2(0, 300), true))
+                ImGui::PushStyleVar(ImGuiStyleVar_CellPadding, ImVec2(8, 8));
+                if (ImGui::BeginTable("ImportSkeletons", 3, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg | ImGuiTableFlags_Resizable))
                 {
-                    ImGui::PushStyleVar(ImGuiStyleVar_CellPadding, ImVec2(8, 8));
-                    if (ImGui::BeginTable("ImportSkeletons", 3, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg | ImGuiTableFlags_Resizable))
+                    ImGui::TableSetupColumn("Import", ImGuiTableColumnFlags_WidthFixed, 40.0f);
+                    ImGui::TableSetupColumn("Name", ImGuiTableColumnFlags_WidthFixed, 80.0f);
+                    ImGui::TableSetupColumn("Bones", ImGuiTableColumnFlags_WidthStretch);
+                    
+                    ImGui::PushStyleColor(ImGuiCol_TableHeaderBg, ImVec4(0.4f, 0.3f, 0.4f, 1.0f));
+                    ImGui::TableHeadersRow();
+                    ImGui::PopStyleColor();
+                    
+                    for (const TUniquePtr<FSkeletonResource>& Skeleton : ImportedData->Skeletons)
                     {
-                        ImGui::TableSetupColumn("Import", ImGuiTableColumnFlags_WidthFixed, 40.0f);
-                        ImGui::TableSetupColumn("Name", ImGuiTableColumnFlags_WidthFixed, 80.0f);
-                        ImGui::TableSetupColumn("Bones", ImGuiTableColumnFlags_WidthStretch);
+                        ImGui::TableNextRow();
+                        ImGui::PushID(Skeleton.get());
                         
-                        ImGui::PushStyleColor(ImGuiCol_TableHeaderBg, ImVec4(0.4f, 0.3f, 0.4f, 1.0f));
-                        ImGui::TableHeadersRow();
-                        ImGui::PopStyleColor();
-                        
-                        for (const TUniquePtr<FSkeletonResource>& Skeleton : ImportedData->Skeletons)
+                        ImGui::TableNextColumn();
+                        bool bImport = true;//Skeleton->bShouldImport;
+                        if (ImGui::Checkbox("##import", &bImport))
                         {
-                            ImGui::TableNextRow();
-                            ImGui::PushID(Skeleton.get());
-                            
-                            ImGui::TableNextColumn();
-                            bool bImport = true;//Skeleton->bShouldImport;
-                            if (ImGui::Checkbox("##import", &bImport))
+                            //Skeleton->bShouldImport = bImport;
+                        }
+                        
+                        ImGui::TableNextColumn();
+                        ImGui::Text("%s", Skeleton->Name.c_str());
+                        
+                        ImGui::TableNextColumn();
+                        if (ImGui::TreeNodeEx("Bone Hierarchy", ImGuiTreeNodeFlags_Framed))
+                        {
+                            auto DisplayBoneHierarchy = [&](int32 BoneIndex, int Depth, auto& Self) -> void
                             {
-                                //Skeleton->bShouldImport = bImport;
-                            }
-                            
-                            ImGui::TableNextColumn();
-                            ImGui::Text("%s", Skeleton->Name.c_str());
-                            
-                            ImGui::TableNextColumn();
-                            if (ImGui::TreeNodeEx("Bone Hierarchy", ImGuiTreeNodeFlags_DefaultOpen | ImGuiTreeNodeFlags_Framed))
-                            {
-                                auto DisplayBoneHierarchy = [&](int32 BoneIndex, int Depth, auto& Self) -> void
+                                const FSkeletonResource::FBoneInfo& Bone = Skeleton->Bones[BoneIndex];
+                                
+                                FFixedString NodeName(FFixedString::CtorSprintf(), "%s (Index: %d)", Bone.Name.c_str(), BoneIndex);
+                                if (ImGui::TreeNodeEx(NodeName.c_str()))
                                 {
-                                    const FSkeletonResource::FBoneInfo& Bone = Skeleton->Bones[BoneIndex];
-                                    
-                                    FFixedString NodeName(FFixedString::CtorSprintf(), "%s (Index: %d)", Bone.Name.c_str(), BoneIndex);
-                                    if (ImGui::TreeNodeEx(NodeName.c_str(), ImGuiTreeNodeFlags_DefaultOpen))
+                                    TVector<int32> Children = Skeleton->GetChildBones(BoneIndex);
+                                    for (int32 ChildIdx : Children)
                                     {
-                                        TVector<int32> Children = Skeleton->GetChildBones(BoneIndex);
-                                        for (int32 ChildIdx : Children)
-                                        {
-                                            Self(ChildIdx, Depth + 1, Self);
-                                        }
-                                        ImGui::TreePop();
+                                        Self(ChildIdx, Depth + 1, Self);
                                     }
-                                };
-                                
-                                for (int32 RootIdx : Skeleton->GetRootBones())
-                                {
-                                    DisplayBoneHierarchy(RootIdx, 0, DisplayBoneHierarchy);
+                                    ImGui::TreePop();
                                 }
-                                
-                                ImGui::TreePop();
+                            };
+                            
+                            for (int32 RootIdx : Skeleton->GetRootBones())
+                            {
+                                DisplayBoneHierarchy(RootIdx, 0, DisplayBoneHierarchy);
                             }
                             
-                            ImGui::PopID();
+                            ImGui::TreePop();
                         }
                         
-                        ImGui::EndTable();
+                        ImGui::PopID();
                     }
                     
-                    ImGui::PopStyleVar();
-                    
-                    ImGui::Spacing();
-                    if (ImGui::Button("Select All##Skeletons"))
-                    {
-                        for (auto& Skeleton : ImportedData->Skeletons)
-                        {
-                            //Skeleton->bShouldImport = true;
-                        }
-                    }
-                    ImGui::SameLine();
-                    if (ImGui::Button("Deselect All##Skeletons"))
-                    {
-                        for (auto& Skeleton : ImportedData->Skeletons)
-                        {
-                            //Skeleton->bShouldImport = false;
-                        }
-                    }
-                    
+                    ImGui::EndTable();
                 }
                 
-                ImGui::EndChild();
+                ImGui::PopStyleVar();
             }
             
             if (!ImportedData->Animations.empty())
@@ -377,130 +437,103 @@ namespace Lumina
                 ImGui::PopStyleColor();
                 ImGui::Spacing();
                 
-                if (ImGui::BeginChild("ImportAnimationsChild", ImVec2(0, 400), true))
+                for (size_t i = 0; i < ImportedData->Animations.size(); ++i)
                 {
-                    for (size_t i = 0; i < ImportedData->Animations.size(); ++i)
+                    const TUniquePtr<FAnimationResource>& Animation = ImportedData->Animations[i];
+                    
+                    ImGui::PushID((int)i);
+                    
+                    bool bOpen = ImGui::TreeNodeEx(Animation->Name.c_str(), ImGuiTreeNodeFlags_SpanAvailWidth | ImGuiTreeNodeFlags_AllowOverlap);
+                    
+                    if (bOpen)
                     {
-                        const TUniquePtr<FAnimationResource>& Animation = ImportedData->Animations[i];
-                        
-                        ImGui::PushID((int)i);
-                        
-                        bool bOpen = ImGui::TreeNodeEx(Animation->Name.c_str(), ImGuiTreeNodeFlags_SpanAvailWidth | ImGuiTreeNodeFlags_AllowOverlap);
-                        
-                        if (bOpen)
-                        {
-                            ImGui::Indent();
-                            ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.7f, 0.7f, 0.7f, 1.0f));
-                            ImGui::Text("Duration: %.2f seconds", Animation->Duration);
-                            ImGui::Text("Total Channels: %zu", Animation->Channels.size());
-                            ImGui::PopStyleColor();
-                            ImGui::Spacing();
-                            
-                            if (!Animation->Channels.empty())
-                            {
-                                ImGui::PushStyleVar(ImGuiStyleVar_CellPadding, ImVec2(6, 4));
-                                if (ImGui::BeginTable("ChannelTable", 4, 
-                                    ImGuiTableFlags_Borders | 
-                                    ImGuiTableFlags_RowBg | 
-                                    ImGuiTableFlags_SizingStretchProp))
-                                {
-                                    ImGui::TableSetupColumn("Bone", ImGuiTableColumnFlags_WidthStretch);
-                                    ImGui::TableSetupColumn("Type", ImGuiTableColumnFlags_WidthFixed, 80.0f);
-                                    ImGui::TableSetupColumn("Keys", ImGuiTableColumnFlags_WidthFixed, 60.0f);
-                                    ImGui::TableSetupColumn("Time Range", ImGuiTableColumnFlags_WidthFixed, 100.0f);
-                                    
-                                    ImGui::PushStyleColor(ImGuiCol_TableHeaderBg, ImVec4(0.35f, 0.25f, 0.35f, 1.0f));
-                                    ImGui::TableHeadersRow();
-                                    ImGui::PopStyleColor();
-                                    
-                                    for (const auto& Channel : Animation->Channels)
-                                    {
-                                        ImGui::TableNextRow();
-                                        
-                                        ImGui::TableNextColumn();
-                                        ImGui::Text("%s", Channel.TargetBone.c_str());
-                                        
-                                        ImGui::TableNextColumn();
-                                        const char* pathName = "Unknown";
-                                        ImVec4 typeColor = ImVec4(1, 1, 1, 1);
-                                        switch (Channel.TargetPath)
-                                        {
-                                            case FAnimationChannel::ETargetPath::Translation: 
-                                                pathName = "Translation"; 
-                                                typeColor = ImVec4(0.4f, 0.8f, 0.4f, 1.0f);
-                                                break;
-                                            case FAnimationChannel::ETargetPath::Rotation: 
-                                                pathName = "Rotation"; 
-                                                typeColor = ImVec4(0.4f, 0.6f, 1.0f, 1.0f);
-                                                break;
-                                            case FAnimationChannel::ETargetPath::Scale: 
-                                                pathName = "Scale"; 
-                                                typeColor = ImVec4(1.0f, 0.7f, 0.4f, 1.0f);
-                                                break;
-                                            case FAnimationChannel::ETargetPath::Weights: 
-                                                pathName = "Weights"; 
-                                                typeColor = ImVec4(1.0f, 0.4f, 0.8f, 1.0f);
-                                                break;
-                                        }
-                                        ImGui::TextColored(typeColor, "%s", pathName);
-                                        
-                                        ImGui::TableSetColumnIndex(2);
-                                        ImGui::Text("%zu", Channel.Timestamps.size());
-                                        
-                                        ImGui::TableSetColumnIndex(3);
-                                        if (!Channel.Timestamps.empty())
-                                        {
-                                            float minTime = Channel.Timestamps.front();
-                                            float maxTime = Channel.Timestamps.back();
-                                            ImGui::Text("%.2f - %.2f", minTime, maxTime);
-                                        }
-                                        else
-                                        {
-                                            ImGui::TextDisabled("N/A");
-                                        }
-                                    }
-                                    
-                                    ImGui::EndTable();
-                                }
-                                ImGui::PopStyleVar();
-                            }
-                            
-                            ImGui::Unindent();
-                            ImGui::TreePop();
-                        }
-                        
-                        ImGui::PopID();
+                        ImGui::Indent();
+                        ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.7f, 0.7f, 0.7f, 1.0f));
+                        ImGui::Text("Duration: %.2f seconds", Animation->Duration);
+                        ImGui::Text("Total Channels: %zu", Animation->Channels.size());
+                        ImGui::PopStyleColor();
                         ImGui::Spacing();
+                        
+                        if (!Animation->Channels.empty())
+                        {
+                            ImGui::PushStyleVar(ImGuiStyleVar_CellPadding, ImVec2(6, 4));
+                            if (ImGui::BeginTable("ChannelTable", 4, 
+                                ImGuiTableFlags_Borders | 
+                                ImGuiTableFlags_RowBg | 
+                                ImGuiTableFlags_SizingStretchProp))
+                            {
+                                ImGui::TableSetupColumn("Bone", ImGuiTableColumnFlags_WidthStretch);
+                                ImGui::TableSetupColumn("Type", ImGuiTableColumnFlags_WidthFixed, 80.0f);
+                                ImGui::TableSetupColumn("Keys", ImGuiTableColumnFlags_WidthFixed, 60.0f);
+                                ImGui::TableSetupColumn("Time Range", ImGuiTableColumnFlags_WidthFixed, 100.0f);
+                                
+                                ImGui::PushStyleColor(ImGuiCol_TableHeaderBg, ImVec4(0.35f, 0.25f, 0.35f, 1.0f));
+                                ImGui::TableHeadersRow();
+                                ImGui::PopStyleColor();
+                                
+                                for (const auto& Channel : Animation->Channels)
+                                {
+                                    ImGui::TableNextRow();
+                                    
+                                    ImGui::TableNextColumn();
+                                    ImGui::Text("%s", Channel.TargetBone.c_str());
+                                    
+                                    ImGui::TableNextColumn();
+                                    const char* pathName = "Unknown";
+                                    ImVec4 typeColor = ImVec4(1, 1, 1, 1);
+                                    switch (Channel.TargetPath)
+                                    {
+                                        case FAnimationChannel::ETargetPath::Translation: 
+                                            pathName = "Translation"; 
+                                            typeColor = ImVec4(0.4f, 0.8f, 0.4f, 1.0f);
+                                            break;
+                                        case FAnimationChannel::ETargetPath::Rotation: 
+                                            pathName = "Rotation"; 
+                                            typeColor = ImVec4(0.4f, 0.6f, 1.0f, 1.0f);
+                                            break;
+                                        case FAnimationChannel::ETargetPath::Scale: 
+                                            pathName = "Scale"; 
+                                            typeColor = ImVec4(1.0f, 0.7f, 0.4f, 1.0f);
+                                            break;
+                                        case FAnimationChannel::ETargetPath::Weights: 
+                                            pathName = "Weights"; 
+                                            typeColor = ImVec4(1.0f, 0.4f, 0.8f, 1.0f);
+                                            break;
+                                    }
+                                    ImGui::TextColored(typeColor, "%s", pathName);
+                                    
+                                    ImGui::TableSetColumnIndex(2);
+                                    ImGui::Text("%zu", Channel.Timestamps.size());
+                                    
+                                    ImGui::TableSetColumnIndex(3);
+                                    if (!Channel.Timestamps.empty())
+                                    {
+                                        float minTime = Channel.Timestamps.front();
+                                        float maxTime = Channel.Timestamps.back();
+                                        ImGui::Text("%.2f - %.2f", minTime, maxTime);
+                                    }
+                                    else
+                                    {
+                                        ImGui::TextDisabled("N/A");
+                                    }
+                                }
+                                
+                                ImGui::EndTable();
+                            }
+                            ImGui::PopStyleVar();
+                        }
+                        
+                        ImGui::Unindent();
+                        ImGui::TreePop();
                     }
                     
+                    ImGui::PopID();
                     ImGui::Spacing();
-                    ImGui::Separator();
-                    ImGui::Spacing();
-                    
-                    if (ImGui::Button("Select All", ImVec2(120, 0)))
-                    {
-                        for (auto& Anim : ImportedData->Animations)
-                        {
-                            //Anim->bShouldImport = true;
-                        }
-                    }
-                    ImGui::SameLine();
-                    if (ImGui::Button("Deselect All", ImVec2(120, 0)))
-                    {
-                        for (auto& Anim : ImportedData->Animations)
-                        {
-                            //Anim->bShouldImport = false;
-                        }
-                    }
                 }
-                
-                ImGui::EndChild();
             }
         }
     
-        ImGui::Spacing();
         ImGui::Separator();
-        ImGui::Spacing();
     
         float buttonWidth = 100.0f;
         float spacing = ImGui::GetStyle().ItemSpacing.x;
@@ -539,10 +572,8 @@ namespace Lumina
             bShouldClose = true;
         }
         
-        ImGui::PopStyleVar();
         ImGui::PopStyleColor(3);
-        
-        ImGui::PopStyleVar(2);
+        ImGui::PopStyleVar(3);
         
         return bShouldImport;
     }
@@ -559,6 +590,8 @@ namespace Lumina
             return;
         }
         
+        TObjectPtr<CSkeleton> MaybeSkeleton;
+        
         if (!ImportData->Skeletons.empty())
         {
             uint32 WorkSize = (uint32)ImportData->Skeletons.size();
@@ -570,12 +603,14 @@ namespace Lumina
                 FFixedString SkeletonPath = DestinationPath.substr(0, Pos + 1).append_convert(Skeleton->Name.ToString());
                 
                 CSkeleton* NewSkeleton = CreateNewOf<CSkeleton>(SkeletonPath);
+                NewSkeleton->SetFlag(OF_NeedsPostLoad);
+
                 NewSkeleton->SkeletonResource = Move(Skeleton);
                     
                 CPackage* NewPackage = NewSkeleton->GetPackage();
                 CPackage::SavePackage(NewPackage, NewPackage->GetPackagePath());
                 FAssetRegistry::Get().AssetCreated(NewSkeleton);
-                NewSkeleton->ConditionalBeginDestroy();
+                MaybeSkeleton = NewSkeleton;
             });
         }
         
@@ -590,12 +625,15 @@ namespace Lumina
                 FFixedString AnimationPath = DestinationPath.substr(0, Pos + 1).append_convert(Clip->Name.ToString());
                     
                 CAnimation* NewAnimation = CreateNewOf<CAnimation>(AnimationPath);
+                NewAnimation->SetFlag(OF_NeedsPostLoad);
+
                 NewAnimation->AnimationResource = Move(Clip);
+                NewAnimation->Skeleton = MaybeSkeleton;
                     
                 CPackage* NewPackage = NewAnimation->GetPackage();
                 CPackage::SavePackage(NewPackage, NewPackage->GetPackagePath());
                 FAssetRegistry::Get().AssetCreated(NewAnimation);
-                NewAnimation->ConditionalBeginDestroy();
+                NewAnimation->ForceDestroyNow();
             });
         }
         
@@ -644,6 +682,8 @@ namespace Lumina
                 else
                 {
                     CSkeletalMesh* NewSkeletalMesh = CreateNewOf<CSkeletalMesh>(QualifiedPath);
+                    NewSkeletalMesh->Skeleton = MaybeSkeleton;
+                    MaybeSkeleton->PreviewMesh = NewSkeletalMesh;
                     NewMesh = NewSkeletalMesh;
                 }
             
@@ -654,10 +694,16 @@ namespace Lumina
                 CPackage::SavePackage(NewPackage, NewPackage->GetPackagePath());
                 FAssetRegistry::Get().AssetCreated(NewMesh);
             
-                NewMesh->ConditionalBeginDestroy();
+                NewMesh->ForceDestroyNow();
             
                 Counter++;
             });
+        }
+        
+        if (MaybeSkeleton)
+        {
+            CPackage::SavePackage(MaybeSkeleton->GetPackage(), MaybeSkeleton->GetPackage()->GetPackagePath());
+            MaybeSkeleton->ForceDestroyNow();
         }
     }
 }

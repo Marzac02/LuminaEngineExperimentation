@@ -7,7 +7,7 @@
 
 namespace Lumina
 {
-    RUNTIME_API extern class FCommandLine* CommandLine;
+    RUNTIME_API extern class FCommandLine* GCommandLine;
     
     class RUNTIME_API FCommandLine
     {

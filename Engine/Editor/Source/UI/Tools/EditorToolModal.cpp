@@ -19,7 +19,6 @@ namespace Lumina
         ActiveModal = MakeUnique<FEditorToolModal>(Title, Size);
         ActiveModal->DrawFunction = Move(DrawFunction);
         ActiveModal->bBlocking = bBlocking;
-        
     }
 
 
@@ -30,21 +29,20 @@ namespace Lumina
             return;
         }
 
-        // Only open popups for blocking modals
         if (ActiveModal->bBlocking)
         {
             ImGui::OpenPopup(ActiveModal->Title.c_str());
         }
 
-        ImGuiViewport* viewport = ImGui::GetMainViewport();
-        ImVec2 center = viewport->GetCenter();
-        ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
+        ImGuiViewport* Viewport = ImGui::GetMainViewport();
+        ImVec2 Center = Viewport->GetCenter();
+        ImGui::SetNextWindowPos(Center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
         ImGui::SetNextWindowSize(ActiveModal->Size, ImGuiCond_Appearing);
 
         if (ActiveModal->bBlocking)
         {
             bool bOpen = true;
-            if (ImGui::BeginPopupModal(ActiveModal->Title.c_str(), &bOpen, ImGuiWindowFlags_NoResize))
+            if (ImGui::BeginPopupModal(ActiveModal->Title.c_str(), &bOpen))
             {
                 if (ActiveModal->DrawModal() || !bOpen)
                 {
@@ -57,7 +55,7 @@ namespace Lumina
         else
         {
             bool bOpen = true;
-            if (ImGui::Begin(ActiveModal->Title.c_str(), &bOpen, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse))
+            if (ImGui::Begin(ActiveModal->Title.c_str(), &bOpen, ImGuiWindowFlags_NoCollapse))
             {
                 if (ActiveModal->DrawModal() || !bOpen)
                 {

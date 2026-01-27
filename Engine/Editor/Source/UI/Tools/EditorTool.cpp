@@ -145,7 +145,7 @@ namespace Lumina
 
         if (ImGui::BeginMenu(LE_ICON_HELP_CIRCLE_OUTLINE" Help"))
         {
-            if (ImGui::BeginTable("HelpTable", 2))
+            if (ImGui::BeginTable("HelpTable", 2, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg))
             {
                 DrawHelpMenu();
                 ImGui::EndTable();

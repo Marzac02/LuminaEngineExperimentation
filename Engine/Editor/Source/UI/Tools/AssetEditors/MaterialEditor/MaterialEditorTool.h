@@ -31,6 +31,7 @@ namespace Lumina
         void OnInitialize() override;
         void OnDeinitialize(const FUpdateContext& UpdateContext) override;
         void SetupWorldForTool() override;
+        void DrawHelpMenu() override;
 
         bool DrawViewport(const FUpdateContext& UpdateContext, ImTextureRef ViewportTexture) override;
         bool ShouldGenerateThumbnailOnLoad() const override { return true; }

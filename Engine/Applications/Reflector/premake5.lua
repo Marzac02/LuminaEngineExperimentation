@@ -1,19 +1,10 @@
 project "Reflector"
 	kind "ConsoleApp"
-	dependson { "EA", "XXHash", "NlohmannJson" }
 	targetsuffix ""
 
 	configmap
 	{
-		["Debug"] 				= "Development",
-		["DebugEditor"]			= "Development",
-		["DevelopmentEditor"] 	= "Development",
-		["Shipping"]			= "Development",
-	}
-
-	disablewarnings
-	{
-		"4291" -- memory will not be freed if initialization throws an exception
+		["Debug"] 		= "Development",
 	}
 
 	prebuildcommands 
@@ -30,33 +21,33 @@ project "Reflector"
 
 	links
 	{
-        "EA",
         "XXHash",
 		"NlohmannJson",
-	  	"clangBasic.lib",
-	  	"clangLex.lib",
-	  	"clangAST.lib",
-	  	"libclang.lib",
-	  	"LLVMAnalysis.lib",
-	  	"LLVMBinaryFormat.lib",
-	  	"LLVMBitReader.lib",
-	  	"LLVMBitstreamReader.lib",
-	  	"LLVMDemangle.lib",
-	  	"LLVMFrontendOffloading.lib",
-	  	"LLVMFrontendOpenMP.lib",
-	  	"LLVMMC.lib",
-	  	"LLVMProfileData.lib",
-	  	"LLVMRemarks.lib",
-	  	"LLVMScalarOpts.lib",
-	  	"LLVMTargetParser.lib",
-	  	"LLVMTransformUtils.lib",
-	  	"LLVMCore.lib",
-        "LLVMSupport.lib",
+	  	"clangBasic",
+	  	"clangLex",
+	  	"clangAST",
+	  	"libclang",
+	  	"LLVMAnalysis",
+	  	"LLVMBinaryFormat",
+	  	"LLVMBitReader",
+	  	"LLVMBitstreamReader",
+	  	"LLVMDemangle",
+	  	"LLVMFrontendOffloading",
+	  	"LLVMFrontendOpenMP",
+	  	"LLVMMC",
+	  	"LLVMProfileData",
+	  	"LLVMRemarks",
+	  	"LLVMScalarOpts",
+	  	"LLVMTargetParser",
+	  	"LLVMTransformUtils",
+	  	"LLVMCore",
+        "LLVMSupport",
 	}
-	  
 
 	files
 	{
+		LuminaConfig.ThirdPartyPath("EA/**.h"),
+		LuminaConfig.ThirdPartyPath("EA/**.cpp"),
 		"Source/**.cpp",
 		"Source/**.h",
 		"**.lua",

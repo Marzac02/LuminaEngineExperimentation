@@ -2,7 +2,6 @@
 #include "EditorTool.h"
 #include "Assets/AssetRegistry/AssetData.h"
 #include "Core/LuminaCommonTypes.h"
-#include "Core/Object/ObjectRename.h"
 #include "Core/Object/Package/Package.h"
 #include "FileSystem/FileSystem.h"
 #include "Paths/Paths.h"

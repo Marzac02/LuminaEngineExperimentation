@@ -85,13 +85,15 @@ namespace Lumina
         TFunction<void(CEdGraphNode*)>                  NodeSelectedCallback;
         TFunction<void(CEdGraphNode*)>                  PreNodeDeletedCallback;
 
-        size_t                                          NextID = 1;
+        int64                                           NextID = 1;
 
-        bool                                            bFirstDraw = true;
         
         ImGuiTextFilter                                 Filter;
     
         TVector<CEdGraphNode*>                          CopiedNodes;
+        
+        bool                                            bFirstDraw = true;
+        bool                                            bDebug = false;
         
     private:
 

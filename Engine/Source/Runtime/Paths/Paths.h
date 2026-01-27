@@ -16,9 +16,6 @@ namespace Lumina::Paths
     
     RUNTIME_API bool IsDirectory(const FString& Path);
     
-    /** Removes and returns the path without its file extension. */
-    RUNTIME_API FString RemoveExtension(const FString& InPath);
-    
     /** Checks whether the given file or directory exists. */
     RUNTIME_API bool Exists(FStringView Filename);
     

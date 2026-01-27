@@ -200,6 +200,61 @@ namespace Lumina
         }
     }
 
+    bool IsValueValidForType(double Value, const FName& TypeName)
+    {
+        if (TypeName == "Int8Property")
+        {
+            return Value >= INT8_MIN && Value <= INT8_MAX;
+        }
+        if (TypeName == "Int16Property")
+        {
+            return Value >= INT16_MIN && Value <= INT16_MAX;
+        }
+        if (TypeName == "IntProperty")
+        {
+            return Value >= INT32_MIN && Value <= INT32_MAX;
+        }
+        if (TypeName == "Int64Property")
+        {
+            return Value >= (double)INT64_MIN && Value <= (double)INT64_MAX;
+        }
+        if (TypeName == "UInt8Property")
+        {
+            return Value >= 0 && Value <= UINT8_MAX;
+        }
+        if (TypeName == "UInt16Property")
+        {
+            return Value >= 0 && Value <= UINT16_MAX;
+        }
+        if (TypeName == "UInt32Property")
+        {
+            return Value >= 0 && Value <= UINT32_MAX;
+        }
+        if (TypeName == "UInt64Property")
+        {
+            return Value >= 0 && Value <= (double)UINT64_MAX;
+        }
+        if (TypeName == "FloatProperty" || TypeName == "DoubleProperty")
+        {
+            return true;
+        }
+        return false;
+    }
+
+    bool IsPropertyNumeric(const FName& Type)
+    {
+        return Type == "Int8Property" ||
+            Type == "Int16Property" ||
+            Type == "Int32Property" ||
+            Type == "Int64Property" ||
+            Type == "UInt8Property" ||
+            Type == "UInt16Property" ||
+            Type == "UInt32Property" ||
+            Type == "UInt64Property" ||
+            Type == "FloatProperty" || 
+            Type == "DoubleProperty";
+    }
+
     static void ConstructPropertyMetadata(FProperty* NewProperty, uint16 NumMetadata, const FMetaDataPairParam* ParamArray)
     {
         for (uint16 i = 0; i < NumMetadata; ++i)

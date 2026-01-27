@@ -106,6 +106,7 @@ namespace Lumina
         RegisterGraphNode(CMaterialExpression_Sin::StaticClass());
         RegisterGraphNode(CMaterialExpression_Cosin::StaticClass());
         RegisterGraphNode(CMaterialExpression_Floor::StaticClass());
+        RegisterGraphNode(CMaterialExpression_Fract::StaticClass());
         RegisterGraphNode(CMaterialExpression_Ceil::StaticClass());
         RegisterGraphNode(CMaterialExpression_Power::StaticClass());
         RegisterGraphNode(CMaterialExpression_Mod::StaticClass());

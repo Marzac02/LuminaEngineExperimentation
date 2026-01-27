@@ -281,8 +281,8 @@ namespace Lumina
                     const FGeometrySurface& Surface = Resource.GeometrySurfaces[i];
                     ImGui::PushID(static_cast<int>(i));
                     
-                    FString headerLabel = "Surface " + eastl::to_string(i) + ": " + Surface.ID.ToString();
-                    if (ImGui::CollapsingHeader(headerLabel.c_str(), ImGuiTreeNodeFlags_DefaultOpen))
+                    FString HeaderLabel = "Surface " + eastl::to_string(i) + ": " + Surface.ID.ToString();
+                    if (ImGui::CollapsingHeader(HeaderLabel.c_str(), ImGuiTreeNodeFlags_DefaultOpen))
                     {
                         ImGui::Indent(16.0f);
                         
@@ -306,6 +306,11 @@ namespace Lumina
                             DetailRow("Triangle Count:", eastl::to_string(Surface.IndexCount / 3));
                             
                             ImGui::EndTable();
+                        }
+                        
+                        if (ImGui::BeginChild("OP", ImVec2(-1, 0), ImGuiChildFlags_AutoResizeY, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse))
+                        {
+                            ImGui::Image(0, ImVec2(50, 50));
                         }
                         
                         ImGui::Unindent(16.0f);

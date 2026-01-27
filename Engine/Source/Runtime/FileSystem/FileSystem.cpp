@@ -357,16 +357,38 @@ namespace Lumina::FileSystem
 
     FFixedString MakeUniqueFilePath(FStringView BasePath)
     {
+        FStringView Ext = Extension(BasePath);
+        FStringView NoExtensionPath = RemoveExtension(BasePath);
+    
         FFixedString ReturnPath(BasePath.begin(), BasePath.end());
-        
-        int32 Counter = 0;
-        while (Exists(BasePath))
+    
+        if (!Exists(ReturnPath))
         {
-            ReturnPath.assign(BasePath.begin(), BasePath.end()).append("_").append_convert(eastl::to_string(Counter));
+            return Move(ReturnPath);
+        }
+    
+        int32 Counter = 1;
+        while (Counter <= 25)
+        {
+            ReturnPath.clear();
+            ReturnPath.append(NoExtensionPath.begin(), NoExtensionPath.end());
+            ReturnPath.append("_");
+            ReturnPath.append_convert(eastl::to_string(Counter));
+        
+            if (!Ext.empty())
+            {
+                ReturnPath.append(Ext.begin(), Ext.end());
+            }
+        
+            if (!Exists(ReturnPath))
+            {
+                return Move(ReturnPath);
+            }
+        
             Counter++;
         }
-        
-        return ReturnPath;
+    
+        return {};
     }
 
     bool CreateFile(FStringView Path)

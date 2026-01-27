@@ -54,17 +54,6 @@ namespace Lumina::Paths
         return std::filesystem::is_directory(Path.c_str());
     }
 
-    FString RemoveExtension(const FString& InPath)
-    {
-        size_t Dot = InPath.find_last_of(".");
-        if (Dot != FString::npos)
-        {
-            return InPath.substr(0, Dot);
-        }
-
-        return InPath;
-    }
-
     bool Exists(FStringView Filename)
     {
         return std::filesystem::exists(Filename.data());
@@ -110,32 +99,25 @@ namespace Lumina::Paths
         return true;
     }
     
-
     FString MakeRelativeTo(const FString& Path, const FString& BasePath)
     {
-        std::filesystem::path FullPath = std::filesystem::weakly_canonical(Path.c_str());
-        std::filesystem::path Base = std::filesystem::weakly_canonical(BasePath.c_str());
-
-        if (!std::filesystem::exists(Base) || !std::filesystem::is_directory(Base))
-        {
-            return Path;
-        }
-
-        if (!std::filesystem::equivalent(FullPath.root_path(), Base.root_path()))
-        {
-            return Path;
-        }
-
-        std::error_code ec;
-        std::filesystem::path RelativePath = std::filesystem::relative(FullPath, Base, ec);
+        FString NormalizedPath = Path;
+        FString NormalizedBase = BasePath;
     
-        if (ec)
+        eastl::replace(NormalizedPath.begin(), NormalizedPath.end(), '\\', '/');
+        eastl::replace(NormalizedBase.begin(), NormalizedBase.end(), '\\', '/');
+    
+        if (!NormalizedBase.empty() && NormalizedBase.back() != '/')
         {
-            LOG_ERROR("Path Error: {0}", ec.message());
+            NormalizedBase.push_back('/');
+        }
+    
+        if (NormalizedPath.find(NormalizedBase) != 0)
+        {
             return Path;
         }
-
-        return RelativePath.string().c_str();
+    
+        return NormalizedPath.substr(NormalizedBase.size());
     }
 
     void ReplaceFilename(FString& Path, const FString& NewFilename)

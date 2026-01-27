@@ -31,7 +31,6 @@
 #include <Core/Object/Object.h>
 #include <Core/Object/ObjectCore.h>
 #include <Core/Templates/LuminaTemplate.h>
-#include <Core/UpdateContext.h>
 #include <Events/Event.h>
 #include <FileSystem/FileInfo.h>
 #include <Memory/SmartPtr.h>
@@ -42,10 +41,8 @@
 #include <Tools/UI/ImGui/Widgets/TileViewWidget.h>
 #include <Tools/UI/ImGui/Widgets/TreeListView.h>
 #include <EASTL/any.h>
-#include <entt/entt.hpp>
 #include <imgui.h>
 #include <imgui_internal.h>
-
 #include "Core/Object/Package/Thumbnail/PackageThumbnail.h"
 #include "Thumbnails/ThumbnailManager.h"
 #include <LuminaEditor.h>
@@ -549,41 +546,63 @@ namespace Lumina
 
     void FContentBrowserEditorTool::OnProjectLoaded()
     {
-        SelectedPath = GEditorEngine->GetProjectGameDirectory();
+        FFixedString ScriptPath = GEditorEngine->GetProjectScriptDirectory();
         
         Watcher.Stop();
-        Watcher.Watch(GEditorEngine->GetProjectScriptDirectory(), [&](const FFileEvent& Event)
+        Watcher.Watch(ScriptPath, [&](const FFileEvent& Event)
         {
+            if (!FileSystem::HasExtension(Event.Path, ".lua"))
+            {
+                return;
+            }
+            
+            FStringView Prefix = "/Game/Scripts";
+            size_t Pos = Event.Path.find(Prefix.data(), 0, Prefix.size());
+            if (Pos == FString::npos)
+            {
+                return;
+            }
+            
+            FFixedString RelativePath;
+            RelativePath.append_convert(Prefix.data(), Prefix.size()).append_convert(Event.Path.substr(Pos + Prefix.size()));
+            
             switch (Event.Action)
             {
             case EFileAction::Added:
                 {
-                    Scripting::FScriptingContext::Get().OnScriptCreated(Event.Path);
+                    Scripting::FScriptingContext::Get().OnScriptCreated(RelativePath);
                     RefreshContentBrowser();
                 }
                 break;
             case EFileAction::Modified:
                 {
-                    Scripting::FScriptingContext::Get().OnScriptReloaded(Event.Path);
+                    Scripting::FScriptingContext::Get().OnScriptReloaded(RelativePath);
                     RefreshContentBrowser();
                 }
                 break;
             case EFileAction::Removed:
                 {
-                    Scripting::FScriptingContext::Get().OnScriptDeleted(Event.Path);
+                    Scripting::FScriptingContext::Get().OnScriptDeleted(RelativePath);
                     RefreshContentBrowser();
                 }
                 break;
             case EFileAction::Renamed:
                 {
-                    Scripting::FScriptingContext::Get().OnScriptRenamed(Event.Path, Event.OldPath);
+                    FFixedString RelativeOldPath;
+                    size_t OldPos = Event.OldPath.find(Prefix.data(), 0, Prefix.size());
+                    if (OldPos == FString::npos)
+                    {
+                        return;
+                    }
+                    
+                    RelativePath.append_convert(Prefix.data(), Prefix.size()).append_convert(Event.OldPath.substr(OldPos + Prefix.size()));
+                    Scripting::FScriptingContext::Get().OnScriptRenamed(RelativePath, RelativeOldPath);
                     RefreshContentBrowser();
                 }
                 break;
             }
         });
     }
-    
 
     void FContentBrowserEditorTool::TryImport(const FFixedString& Path)
     {
@@ -883,7 +902,6 @@ namespace Lumina
             ImGui::EndPopup();
         }
         
-
         ImGui::BeginHorizontal("Breadcrumbs");
 
         auto GameDirPos = SelectedPath.find("Game");

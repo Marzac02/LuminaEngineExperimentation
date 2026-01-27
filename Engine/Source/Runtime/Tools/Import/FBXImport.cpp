@@ -72,7 +72,7 @@ namespace Lumina::Import::Mesh::FBX
             for (int ObjIdx = 0; ObjIdx < ObjectCount; ++ObjIdx)
             {
                 const ofbx::Object* Bone = FBXScene->getAllObjects()[ObjIdx];
-        
+                
                 if (!Bone->isNode())
                 {
                     continue;
@@ -256,6 +256,16 @@ namespace Lumina::Import::Mesh::FBX
             }
         }
         
+        int DataCount = FBXScene->getEmbeddedDataCount();
+        
+        for (int DataIdx = 0; DataIdx < DataCount; ++DataIdx)
+        {
+            ofbx::DataView Data = FBXScene->getEmbeddedData(DataIdx);
+            auto Filename = FBXScene->getEmbeddedFilename(DataIdx);
+            
+        }
+        
+        
         
         THashMap<FName, int32> BoneNameToIndex;
         TVector<const ofbx::Object*> BoneObjects;
@@ -271,6 +281,21 @@ namespace Lumina::Import::Mesh::FBX
             {
                 const ofbx::Material* Material = Mesh->getMaterial(MatIdx);
                 auto Texture = Material->getTexture(ofbx::Texture::DIFFUSE);
+                
+                if (Texture)
+                {
+                    ofbx::DataView View = Texture->getEmbeddedData(); 
+                    if (View.begin != View.end) 
+                    {
+                        
+                    }
+                    else
+                    {
+                        ofbx::DataView filename = Texture->getRelativeFileName();
+                        ofbx::DataView absolutePath = Texture->getFileName();
+                        FString Path((FString::value_type*)absolutePath.begin, (FString::value_type*)absolutePath.end);
+                    }
+                }
             }
         }
         
@@ -403,7 +428,6 @@ namespace Lumina::Import::Mesh::FBX
             bool bSkinned = OFBXSkin != nullptr;
             
             TUniquePtr<FMeshResource>& MeshResource = MeshGroups[bSkinned];
-            uint32 StartIndex = static_cast<uint32>(MeshResource->Indices.size());
             THashMap<int, uint32> VertexIndexMap;
             
             const ofbx::GeometryData& Geometry      = Mesh->getGeometryData();
@@ -499,11 +523,12 @@ namespace Lumina::Import::Mesh::FBX
                         }
                     }
                 }
-                
             }
-
+            
             for (int PartitionIdx = 0; PartitionIdx < Geometry.getPartitionCount(); ++PartitionIdx)
             {
+                uint32 StartIndex = static_cast<uint32>(MeshResource->Indices.size());
+
                 const ofbx::GeometryPartition& Partition = Geometry.getPartition(PartitionIdx);
                 
                 for (int PolygonIdx = 0; PolygonIdx < Partition.polygon_count; ++PolygonIdx)
@@ -541,6 +566,12 @@ namespace Lumina::Import::Mesh::FBX
                             if (UVs.values)
                             {
                                 ofbx::Vec2 U = UVs.get(Index);
+                                
+                                if (ImportOptions.bFlipUVs)
+                                {
+                                    U.y = 1.0f - U.y;
+                                }
+                                
                                 UV = glm::vec2(U.x, U.y);
                             }
                             
@@ -599,13 +630,14 @@ namespace Lumina::Import::Mesh::FBX
                         MeshResource->Indices.push_back(VertexIdx);
                     }
                 }
+                
+                FGeometrySurface Surface;
+                Surface.ID = Mesh->name;
+                Surface.StartIndex = StartIndex;
+                Surface.IndexCount = MeshResource->Indices.size() - StartIndex;
+                Surface.MaterialIndex = (int16)PartitionIdx;
+                MeshResource->GeometrySurfaces.push_back(Surface);
             }
-            
-            FGeometrySurface Surface;
-            Surface.ID = Mesh->name;
-            Surface.StartIndex = StartIndex;
-            Surface.IndexCount = MeshResource->Indices.size() - StartIndex;
-            MeshResource->GeometrySurfaces.push_back(Surface);
         }
 
         for (auto& [_, Resource] : MeshGroups)

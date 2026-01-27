@@ -38,7 +38,7 @@ namespace Lumina
 
     FString CMaterialExpression_ComponentMask::GetNodeDisplayName() const
     {
-        FString Builder = "ComponentMask (";
+        FString Builder = "ComponentMask_";
         if (R)
         {
             Builder.append("R");
@@ -58,9 +58,7 @@ namespace Lumina
         {
             Builder.append("A");
         }
-
-        Builder.append(")");
-
+        
         return Builder;
     }
 
@@ -132,8 +130,7 @@ namespace Lumina
                 
                 if (NeedsConstruction)
                 {
-                    Compiler.AddRaw(OutputTypeStr + " " + NodeName + " = " + 
-                                  OutputTypeStr + "(" + InputNodeName + Swizzle + ");\n");
+                    Compiler.AddRaw(OutputTypeStr + " " + NodeName + " = " + OutputTypeStr + "(" + InputNodeName + Swizzle + ");\n");
                 }
                 else
                 {
@@ -836,6 +833,20 @@ namespace Lumina
     void CMaterialExpression_Floor::GenerateDefinition(FMaterialCompiler& Compiler)
     {
         Compiler.Floor(A, B);
+    }
+    
+    void CMaterialExpression_Fract::BuildNode()
+    {
+        Super::BuildNode();
+
+        A = Cast<CMaterialInput>(CreatePin(CMaterialInput::StaticClass(), "X", ENodePinDirection::Input, EMaterialInputType::Float));
+        A->SetPinName("X");
+        A->SetShouldDrawEditor(true);
+    }
+
+    void CMaterialExpression_Fract::GenerateDefinition(FMaterialCompiler& Compiler)
+    {
+        Compiler.Fract(A);
     }
 
     void CMaterialExpression_Ceil::BuildNode()

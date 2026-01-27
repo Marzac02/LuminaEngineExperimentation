@@ -10,6 +10,11 @@ project "Editor"
 		LuminaConfig.EnginePath("Engine/Source/ThirdParty/NvidiaAftermath/lib"),
     }
 
+	prebuildcommands
+	{
+		LuminaConfig.RunReflection()
+	}
+
 	links
 	{
 		"Runtime",

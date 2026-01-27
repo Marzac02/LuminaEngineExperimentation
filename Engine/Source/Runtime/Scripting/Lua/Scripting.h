@@ -23,10 +23,32 @@ namespace Lumina::Scripting
     
     class FScriptingContext
     {
-    
-        struct FScriptReload
+        struct FScriptLoad
         {
+            FScriptLoad(FStringView Str)
+                : Path(Str)
+            {}
+            
             FString Path;
+        };
+        
+        struct FScriptDelete
+        {
+            FScriptDelete(FStringView Str)
+                : Path(Str)
+            {}
+            
+            FString Path;
+        };
+        
+        struct FScriptRename
+        {
+            FScriptRename(FStringView A, FStringView B)
+                : NewName(A), OldName(B)
+            {}
+            
+            FString NewName;
+            FString OldName;
         };
         
     public:
@@ -45,7 +67,7 @@ namespace Lumina::Scripting
         RUNTIME_API void OnScriptCreated(FStringView ScriptPath);
         RUNTIME_API void OnScriptRenamed(FStringView NewPath, FStringView OldPath);
         RUNTIME_API void OnScriptDeleted(FStringView ScriptPath);
-        RUNTIME_API void LoadScriptsInDirectoryRecursively(FStringView Directory);
+        RUNTIME_API void LoadScripts(FStringView Directory);
         
         
         void RegisterCoreTypes();
@@ -63,17 +85,18 @@ namespace Lumina::Scripting
         void Lua_Warning(const sol::variadic_args& Args);
         void Lua_Error(const sol::variadic_args& Args);
 
-        TVector<entt::entity> LoadScriptPath(FStringView ScriptPath, bool bFailSilently = false);
+        TVector<entt::entity> LoadScript(FStringView ScriptData, bool bFailSilently = false);
     
     private:
-        FMutex LoadMutex;
+        
+        FSharedMutex SharedMutex;
         
         sol::state State;
         
         FDeferredActionRegistry DeferredActions;
         entt::registry ScriptRegistry;
         
-        THashMap<FName, TVector<entt::entity>> PathToScriptEntities;
+        THashMap<FStringView, TVector<entt::entity>> PathToScriptEntities;
         
     };
 

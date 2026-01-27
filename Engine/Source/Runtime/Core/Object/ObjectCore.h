@@ -155,40 +155,41 @@ namespace Lumina
     inline constexpr const char* PropertyTypeFlagNames[] =
     {
         "None",
-        "Int8",
-        "Int16",
-        "Int32",
-        "Int64",
+        "Int8Property",
+        "Int16Property",
+        "Int32Property",
+        "Int64Property",
 
-        "UInt8",
-        "UInt16",
-        "UInt32",
-        "UInt64",
+        "UInt8Property",
+        "UInt16Property",
+        "UInt32Property",
+        "UInt64Property",
 
-        "Float",
-        "Double",
+        "FloatProperty",
+        "DoubleProperty",
 
-        "Bool",
-        "Object",
-        "Class",
-        "Name",
-        "String",
-        "Enum",
-        "Vector",
-        "Struct"
+        "BoolProperty",
+        "ObjectProperty",
+        "ClassProperty",
+        "NameProperty",
+        "StringProperty",
+        "EnumProperty",
+        "VectorProperty",
+        "StructProperty"
     };
 
     static_assert(std::size(PropertyTypeFlagNames) == (size_t)EPropertyTypeFlags::Count, "PropertyTypeFlagStrings must match number of flags in EPropertyTypeFlags");
     
     inline const char* PropertyTypeToString(EPropertyTypeFlags Flag)
     {
-        size_t index = static_cast<size_t>(Flag);
-        if (index >= std::size(PropertyTypeFlagNames))
-        {
-            return "Invalid";
-        }
-        return PropertyTypeFlagNames[index];
+        size_t Index = static_cast<size_t>(Flag);
+        return PropertyTypeFlagNames[Index];
     }
+    
+    RUNTIME_API EPropertyTypeFlags PropertyStringToType(FName String);
+    
+    RUNTIME_API bool IsValueValidForType(double Value, const FName& TypeName);
+    RUNTIME_API bool IsPropertyNumeric(const FName& Type);
     
     template <typename T>
     struct TRegistrationInfo

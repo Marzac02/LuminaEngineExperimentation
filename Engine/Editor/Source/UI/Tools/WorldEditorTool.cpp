@@ -2107,7 +2107,7 @@ namespace Lumina
                         ImGui::PushStyleVar(ImGuiStyleVar_ChildRounding, 2.0f);
                         ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(8.0f, 6.0f));
                         
-                        ImGui::BeginHorizontal((int)Sys);
+                        ImGui::BeginHorizontal(&Pair);
                         
                         ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.25f, 0.25f, 0.3f, 1.0f));
                         ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.25f, 0.25f, 0.3f, 1.0f));

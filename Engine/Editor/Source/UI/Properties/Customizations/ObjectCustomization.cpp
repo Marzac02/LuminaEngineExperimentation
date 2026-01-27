@@ -20,6 +20,9 @@
 #include <imgui_internal.h>
 #include <LuminaEditor.h>
 
+#include "Core/Object/Package/Package.h"
+#include "thumbnails/thumbnailmanager.h"
+
 namespace Lumina
 {
     static constexpr ImVec2 GButtonSize(42, 0);
@@ -45,20 +48,16 @@ namespace Lumina
             TOptional<ImTextureRef> ButtonTexture;
             if (Object.IsValid())
             {
-                //FString FullPath = Paths::ResolveVirtualPath(Object.Get()->GetPathName());
-                //CThumbnailManager::Get().TryLoadThumbnailsForPackage(FullPath);
-                //if (FRHIImage* Image = CThumbnailManager::GetThumbnailForPackage(Object.Get()->GetPackage())->LoadedImage)
-                //{
-                //    ButtonTexture = ImGuiX::ToImTextureRef(Image);
-                //}
+                if (FPackageThumbnail* Thumbnail = CThumbnailManager::Get().GetThumbnailForPackage(HardObject->GetPackage()->GetName()))
+                {
+                    ButtonTexture = ImGuiX::ToImTextureRef(Thumbnail->LoadedImage);
+                }
             }
-
 
             if (!ButtonTexture.has_value())
             {
-                ButtonTexture = ImGuiX::ToImTextureRef(Paths::GetEngineResourceDirectory() + "/Textures/SkeletalMeshIcon.png");
+                ButtonTexture = ImGuiX::ToImTextureRef(Paths::GetEngineResourceDirectory() + "/Textures/File.png");
             }
-
             
             ImGui::ImageButton(Label, ButtonTexture.value(), ImVec2(64, 64));
             ImGui::EndDisabled();

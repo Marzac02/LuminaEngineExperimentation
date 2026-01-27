@@ -124,6 +124,17 @@ namespace Lumina
         StaticMeshComponent.MaterialOverrides.push_back(CastAsserted<CMaterialInterface>(Asset.Get()));
     }
 
+    void FMaterialEditorTool::DrawHelpMenu()
+    {
+        ImGui::TableNextRow();
+        
+        ImGui::TableNextColumn();
+        ImGui::TextUnformatted("Debug Node IDs");
+
+        ImGui::TableNextColumn();
+        ImGui::Checkbox("##DebugID", &NodeGraph->bDebug);
+    }
+
     bool FMaterialEditorTool::DrawViewport(const FUpdateContext& UpdateContext, ImTextureRef ViewportTexture)
     {
         const ImVec2 ViewportSize(eastl::max(ImGui::GetContentRegionAvail().x, 64.0f), eastl::max(ImGui::GetContentRegionAvail().y, 64.0f));

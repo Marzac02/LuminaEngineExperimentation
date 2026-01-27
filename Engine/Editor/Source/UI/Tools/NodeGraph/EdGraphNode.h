@@ -58,15 +58,15 @@ namespace Lumina
         virtual void DrawContextMenu() { }
         virtual void DrawNodeTitleBar();
 
-        void SetError(const FString& InError) { Error = InError; bHasError = true; }
+        void SetError(const FString& InError) { Error = InError; }
         FString GetError() const { return Error; }
-        bool HasError() const { return bHasError; }
-        void ClearError() { Error = {}; bHasError = false; }
+        bool HasError() const { return !Error.empty(); }
+        void ClearError() { Error = {}; }
         
         CEdNodeGraphPin* GetPin(uint16 ID, ENodePinDirection Direction);
         CEdNodeGraphPin* GetPinByIndex(uint32 Index, ENodePinDirection Direction);
         
-        uint64 GetNodeID() const { return NodeID; }
+        int64 GetNodeID() const { return NodeID; }
 
         void SetGridPos(float X, float Y) { GridX = X; GridY = Y; }
         float GetNodeX() const { return GridX; }
@@ -84,7 +84,7 @@ namespace Lumina
         float GridY;
 
         PROPERTY(DuplicateTransient)
-        uint64 NodeID = 0;
+        int64 NodeID = 0;
         
         
     protected:
@@ -96,7 +96,6 @@ namespace Lumina
 
         FString     FullName;
         FString     Error;
-        bool        bHasError;
         bool        bInitialPosSet = false;
         bool        bWasBuild = false;
     };

@@ -110,7 +110,7 @@ namespace Lumina
         /** Struct this inherits from, may be null */
         CStruct* GetSuperStruct() const { return SuperStruct; }
 
-        RUNTIME_API FProperty* GetProperty(const FName& Name);
+        RUNTIME_API FProperty* GetProperty(const FName& Name) const;
         RUNTIME_API virtual void AddProperty(FProperty* Property);
 
         RUNTIME_API void SerializeTaggedProperties(FArchive& Ar, void* Data);

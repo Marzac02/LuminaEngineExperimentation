@@ -85,18 +85,16 @@ namespace Lumina
         return DisplayName;
     }
     
-    FProperty* CStruct::GetProperty(const FName& Name)
+    FProperty* CStruct::GetProperty(const FName& Name) const
     {
-        FProperty* Current = LinkedProperty;
-        while (Current != nullptr)
+        for (FProperty* Current = LinkedProperty; Current; Current = (FProperty*)Current->Next)
         {
             if (Current->Name == Name)
             {
                 return Current;
             }
-            
-            Current = (FProperty*)Current->Next;
         }
+        
         return nullptr;
     }
 
@@ -118,7 +116,22 @@ namespace Lumina
         
         Property->Next = nullptr;
     }
-
+    
+    static bool ReadNumericValue(FArchive& Ar, const FName& TypeName, double& OutValue)
+    {
+        if (TypeName == "Int8Property") { int8 v; Ar << v; OutValue = v; return true; }
+        if (TypeName == "Int16Property") { int16 v; Ar << v; OutValue = v; return true; }
+        if (TypeName == "Int32Property") { int32 v; Ar << v; OutValue = v; return true; }
+        if (TypeName == "Int64Property") { int64 v; Ar << v; OutValue = v; return true; }
+        if (TypeName == "UInt8Property") { uint8 v; Ar << v; OutValue = v; return true; }
+        if (TypeName == "UInt16Property") { uint16 v; Ar << v; OutValue = v; return true; }
+        if (TypeName == "UInt32Property") { uint32 v; Ar << v; OutValue = v; return true; }
+        if (TypeName == "UInt64Property") { uint64 v; Ar << v; OutValue = v; return true; }
+        if (TypeName == "FloatProperty") { float v; Ar << v; OutValue = v; return true; }
+        if (TypeName == "DoubleProperty") { Ar << OutValue; return true; }
+        return false;
+    }
+    
     void CStruct::SerializeTaggedProperties(FArchive& Ar, void* Data)
     {
         if (Ar.IsWriting())
@@ -130,7 +143,7 @@ namespace Lumina
             for (FProperty* Current = LinkedProperty; Current; Current = (FProperty*)Current->Next)
             {
                 FPropertyTag PropertyTag;
-                PropertyTag.Type = Current->GetTypeAsFName();
+                PropertyTag.Type = Current->GetTypeName();
                 PropertyTag.Name = Current->GetPropertyName();
 
                 // Write a placeholder tag to measure its size
@@ -178,7 +191,7 @@ namespace Lumina
                 FProperty* FoundProperty = nullptr;
 
                 // First try for an O(n) search, as the order may still match.
-                if (Current->GetTypeAsFName() == Tag.Type && Current->GetPropertyName() == Tag.Name)
+                if (Current->GetPropertyName() == Tag.Name)
                 {
                     FoundProperty = Current;
                     Current = (FProperty*)Current->Next;
@@ -189,7 +202,7 @@ namespace Lumina
                 {
                     for (FProperty* Search = LinkedProperty; Search; Search = (FProperty*)Search->Next)
                     {
-                        if (Search->GetTypeAsFName() == Tag.Type && Search->GetPropertyName() == Tag.Name)
+                        if (Search->GetPropertyName() == Tag.Name)
                         {
                             FoundProperty = Search;
                             break;
@@ -199,9 +212,31 @@ namespace Lumina
         
                 if (FoundProperty)
                 {
-                    void* ValuePtr = FoundProperty->IsA(EPropertyTypeFlags::Vector) ? Data : FoundProperty->GetValuePtr<void>(Data);
-            
-                    FoundProperty->Serialize(Ar, ValuePtr);
+                    if (FoundProperty->GetTypeName() == Tag.Type)
+                    {
+                        void* ValuePtr = FoundProperty->IsA(EPropertyTypeFlags::Vector) ? Data : FoundProperty->GetValuePtr<void>(Data);
+                        FoundProperty->Serialize(Ar, ValuePtr);
+                    }
+                    else if (IsPropertyNumeric(FoundProperty->GetTypeName()) && IsPropertyNumeric(Tag.Type))
+                    {
+                        double OldValue = 0.0;
+                        if (!ReadNumericValue(Ar, Tag.Type, OldValue))
+                        {
+                            LOG_ERROR("Failed to read numeric value for property '{}'", Tag.Name);
+                        }
+                        else if (IsValueValidForType(OldValue, FoundProperty->GetTypeName()))
+                        {
+                            FoundProperty->SetValue(Data, OldValue);
+                                            
+                            LOG_WARN("Property '{}' type changed from '{}' to '{}', converted value to new type.", 
+                            Tag.Name, Tag.Type, FoundProperty->GetTypeName());
+                        }
+                        else
+                        {
+                            LOG_WARN("Property '{}' type changed from '{}' to '{}', but the value cannot fit in the new type.", 
+                            Tag.Name, Tag.Type, FoundProperty->GetTypeName());
+                        }
+                    }
                 }
                 else
                 {

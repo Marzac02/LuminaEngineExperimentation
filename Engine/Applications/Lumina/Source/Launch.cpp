@@ -1,20 +1,17 @@
 ﻿#include "Core/Application/Application.h"
 #include "Core/Application/ApplicationGlobalState.h"
-#include "Core/Windows/Window.h"
 
 #if WITH_EDITOR
 #include "LuminaEditor.h"
 #endif
-
 #include <print>
-
 #include "Config/Config.h"
 #include "Core/CommandLine/CommandLine.h"
 
 using namespace Lumina;
 
 
-int GuardedMain(int ArgC, char** ArgV)
+int GuardedMain(int ArgC, char** ArgV)  // NOLINT(misc-use-internal-linkage)
 {
     int Result = 0;
     try
@@ -22,31 +19,31 @@ int GuardedMain(int ArgC, char** ArgV)
         FApplicationGlobalState GlobalState;
         
         FCommandLine Parsed{ArgC, ArgV};
-        CommandLine = &Parsed;
+        GCommandLine = &Parsed;
         
-        FApplication Application = FApplication{};
+        FApplication Application{};
         GApp = &Application;
         
-        FConfig Config = FConfig{};
+        FConfig Config{};
         GConfig = &Config;
         
-        TOptional<FFixedString> Project = CommandLine->Get("Project");
-        
 #if WITH_EDITOR
-        GEditorEngine = new FEditorEngine{};
+        FEditorEngine EdEngine{};
+        GEditorEngine = &EdEngine;
         GEngine = GEditorEngine;
 #else
-        GEngine = new FEngine{};
+        FEngine Engine{};
+        GEngine = &Engine;
 #endif
-        
-        if (Project)
-        {
-            GEngine->LoadProject(Project.value());
-        }
         
         Result = Application.Run(ArgC, ArgV);
         
-        delete GEngine;
+        GEditorEngine   = nullptr;
+        GApp            = nullptr;
+        GCommandLine    = nullptr;
+        GConfig         = nullptr;
+        
+        return Result;
     }
     catch (std::exception& Error)
     {
@@ -58,6 +55,4 @@ int GuardedMain(int ArgC, char** ArgV)
         std::println("Unknown fatal error");
         return -1;
     }
-	
-    return Result;
 }

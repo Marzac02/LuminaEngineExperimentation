@@ -49,7 +49,7 @@ namespace Lumina
         template<typename ValueType>
         ValueType* SetValuePtr(void* ContainerPtr, const ValueType& Value, int64 ArrayIndex = 0) const
         {
-            if (sizeof(Value) != ElementSize)
+            if (sizeof(Value) > sizeof(double))
             {
                 LOG_ERROR("Attempted to set Property Value Ptr of incorrect size {} {} {}", GetPropertyName(), sizeof(Value), ElementSize);
                 return nullptr;
@@ -108,8 +108,7 @@ namespace Lumina
 
         RUNTIME_API bool IsA(EPropertyTypeFlags Flag) const { return TypeFlags == Flag; }
         
-        FString GetTypeAsString() const;
-        FName GetTypeAsFName() const;
+        const FName& GetTypeName() const;
 
         FName GetMetadata(const FName& Key) { return Metadata.GetMetadata(Key); }
         bool HasMetadata(const FName& Key) { return Metadata.HasMetadata(Key); }

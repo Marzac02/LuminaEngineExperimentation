@@ -249,6 +249,22 @@ namespace Lumina
         void GenerateDefinition(FMaterialCompiler& Compiler) override;
 
     };
+    
+    REFLECT()
+    class CMaterialExpression_Fract : public CMaterialExpression_Math
+    {
+        GENERATED_BODY()
+    public:
+        
+        
+        void BuildNode() override;
+
+        FString GetNodeDisplayName() const override { return "Fract"; }
+        void* GetNodeDefaultValue() override { return &ConstA; }
+        uint32 GenerateExpression(FMaterialCompiler& Compiler) override { return 0; }
+        void GenerateDefinition(FMaterialCompiler& Compiler) override;
+
+    };
 
     REFLECT()
     class CMaterialExpression_Ceil : public CMaterialExpression_Math

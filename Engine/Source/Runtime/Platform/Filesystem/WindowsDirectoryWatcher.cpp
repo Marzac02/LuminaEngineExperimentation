@@ -6,6 +6,7 @@
 #include <windows.h>
 #include <filesystem>
 #include "Core/Templates/LuminaTemplate.h"
+#include "Paths/Paths.h"
 
 namespace Lumina
 {
@@ -131,9 +132,10 @@ namespace Lumina
                 
                 std::filesystem::path FullPath = std::filesystem::path(Path.c_str()) / FileNameUtf8.c_str();
                 FString FullPathStr = FullPath.string().c_str();
-
+                Paths::Normalize(FullPathStr);
                 FFileEvent Event;
                 Event.Path = FullPathStr;
+                
 
                 switch (Info->Action)
                 {

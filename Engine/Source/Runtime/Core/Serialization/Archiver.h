@@ -150,8 +150,7 @@ namespace Lumina
             Value = std::bit_cast<double>(Temp);
             return *this;
         }
-
-
+        
         virtual FArchive& operator<<(uint64& Value)
         {
             ByteOrderSerialize(Value);
@@ -341,9 +340,7 @@ namespace Lumina
             Serialize(&Value, sizeof(T));
             return *this;
         }
-
-
-
+    
     private:
 
         TBitFlags<EArchiverFlags> Flags;

@@ -86,16 +86,12 @@ namespace Lumina
     
         Graph::GraphNodeBuilder NodeBuilder;
         
-        THashMap<uint64, uint64> NodeIDToIndex;
         TVector<TPair<CEdNodeGraphPin*, CEdNodeGraphPin*>> Links;
         Links.reserve(40);
     
         uint32 Index = 0;
         for (CEdGraphNode* Node : Nodes)
         {
-            NodeIDToIndex[Node->GetNodeID()] = Index;
-            NextID = std::max(Node->GetNodeID() + 1, NextID);
-            
             ImVec2 Position = NodeEditor::GetNodePosition(Node->GetNodeID());
             Node->GridX = Position.x;
             Node->GridY = Position.y;
@@ -116,6 +112,12 @@ namespace Lumina
             
             ImGui::Spring(0);
             Node->DrawNodeTitleBar();
+            
+            if (bDebug)
+            {
+                ImGui::Text("(ID - %llu)", Node->GetNodeID());
+            }
+            
             ImGui::Spring(1);
             ImGui::Dummy(ImVec2(Node->GetMinNodeTitleBarSize()));
             ImGui::Spring(0);
@@ -149,6 +151,11 @@ namespace Lumina
     
                     ImGui::TextUnformatted(InputPin->GetPinName().c_str());
                     
+                    if (bDebug)
+                    {
+                        ImGui::Text("(ID - %i)", InputPin->GetPinGUID());
+                    }
+                    
                     ImGui::Spring(0);
                 }
                 ImGui::PopID();
@@ -177,6 +184,12 @@ namespace Lumina
                         PinColor = ImVec4(255.0f, 0.0f, 0.0f, 255.0f);
                     }
                     DrawPinIcon(OutputPin->HasConnection(), 255.0f, PinColor);
+                    
+                    if (bDebug)
+                    {
+                        ImGui::Text("(ID - %i)", OutputPin->GetPinGUID());
+                    }
+                    
                 }
                 ImGui::PopID();
     
@@ -404,13 +417,13 @@ namespace Lumina
                 // Realistically it shouldn't matter too much.
                 auto NodeItr = eastl::find_if(Nodes.begin(), Nodes.end(), [NodeId] (const TObjectPtr<CEdGraphNode>& A)
                 {
-                    return A->GetNodeID() == NodeId.Get();
+                    return A->GetNodeID() == NodeId.Get() && A->IsDeletable();
                 });
 
                 if (NodeItr != Nodes.end())
                 {
                     CEdGraphNode* Node = *NodeItr;
-                    if (!Node->IsDeletable() || !NodeEditor::AcceptDeletedItem())
+                    if (!NodeEditor::AcceptDeletedItem())
                     {
                         continue;
                     }
@@ -472,6 +485,7 @@ namespace Lumina
                 }
             }
         }
+        
         NodeEditor::EndDelete();
         
         NodeEditor::End();
@@ -730,9 +744,15 @@ namespace Lumina
 
     uint64 CEdNodeGraph::AddNode(CEdGraphNode* InNode)
     {
-        size_t NewID = NextID++;
-        InNode->FullName = InNode->GetNodeDisplayName() + "_" + eastl::to_string(NewID);
-        InNode->NodeID = NewID;
+        int64 NodeID = NextID++;
+        
+        if (InNode->NodeID != 0)
+        {
+            NodeID = InNode->GetNodeID();
+        }
+        
+        InNode->FullName = InNode->GetNodeDisplayName() + "_" + eastl::to_string(NodeID);
+        InNode->NodeID = NodeID;
 
         Nodes.push_back(InNode);
 
@@ -744,7 +764,7 @@ namespace Lumina
         
         ValidateGraph();
 
-        return NewID;
+        return NextID;
     }
     
 }

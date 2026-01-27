@@ -13,13 +13,8 @@ namespace Lumina
         }, Owner);
    
     }
-
-    FString FProperty::GetTypeAsString() const
-    {
-        return TypeName.ToString();
-    }
-
-    FName FProperty::GetTypeAsFName() const
+    
+    const FName& FProperty::GetTypeName() const
     {
         return TypeName;
     }

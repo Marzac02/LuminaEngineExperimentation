@@ -383,7 +383,7 @@ namespace Lumina
 
     void FMaterialCompiler::WorldPos(const FString& ID)
     {
-        ShaderChunks.append("vec3 " + ID + " = inModelMatrix[3].xyz;\n");
+        ShaderChunks.append("vec3 " + ID + " = WorldPosition;\n");
         RegisterNodeOutput(ID, EMaterialValueType::Float3, EComponentMask::RGB);
     }
 
@@ -454,6 +454,18 @@ namespace Lumina
         FString TypeStr = GetVectorType(AValue.Type);
 
         ShaderChunks.append(TypeStr + " " + OwningNode + " = cos(" + AValue.Value + ");\n");
+        RegisterNodeOutput(OwningNode, AValue.Type, EComponentMask::RGBA);
+    }
+
+    void FMaterialCompiler::Fract(CMaterialInput* A)
+    {
+        FString OwningNode = A->GetOwningNode()->GetNodeFullName();
+        CMaterialExpression_Fract* Node = A->GetOwningNode<CMaterialExpression_Fract>();
+
+        FInputValue AValue = GetTypedInputValue(A, Node->ConstA);
+        FString TypeStr = GetVectorType(AValue.Type);
+
+        ShaderChunks.append(TypeStr + " " + OwningNode + " = fract(" + AValue.Value + ");\n");
         RegisterNodeOutput(OwningNode, AValue.Type, EComponentMask::RGBA);
     }
 

@@ -8,6 +8,7 @@
 #ifdef _WIN32
     #include <Windows.h>
 #endif
+#include "FileSystem/FileSystem.h"
 #include "GLFW/glfw3.h"
 #include "Input/InputProcessor.h"
 #include "Memory/SmartPtr.h"
@@ -57,45 +58,6 @@ namespace Lumina::Scripting
         // When this function exits, Lua will exhibit default behavior and abort()
     }
     
-    static void Lua_Print(sol::this_state S, const sol::variadic_args& Args)
-    {
-        sol::state_view View(S);
-        sol::protected_function ToString = View[sol::meta_function::to_string];
-        FFixedString Output;
-        for (size_t i = 0; i < Args.size(); ++i)
-        {
-            sol::object Obj = Args[i];
-                
-            sol::protected_function_result Result = ToString(Obj);
-                
-            if (Result.valid())
-            {
-                if (sol::optional<const char*> str = Result)
-                {
-                    Output += *str;
-                }
-                else
-                {
-                    Output += "[tostring error]";
-                }
-            }
-            else
-            {
-                sol::error err = Result;
-                Output += "[error: ";
-                Output += err.what();
-                Output += "]";
-            }
-                
-            if (i < Args.size() - 1)
-            {
-                Output += "\t";
-            }
-        }
-            
-        LOG_INFO("[Lua] {}", Output);
-    }
-    
     void Initialize()
     {
         GScriptingContext = MakeUnique<FScriptingContext>();
@@ -138,9 +100,34 @@ namespace Lumina::Scripting
 
     void FScriptingContext::ProcessDeferredActions()
     {
-        DeferredActions.ProcessAllOf<FScriptReload>([&](const FScriptReload& Reload)
+        namespace FS = FileSystem;
+        
+        FWriteScopeLock Lock(SharedMutex);
+        
+        DeferredActions.ProcessAllOf<FScriptDelete>([&](const FScriptDelete& Reload)
         {
-            LoadScriptPath(Reload.Path);
+            FString ScriptData;
+            FS::ReadFile(ScriptData, Reload.Path);
+            LoadScript(ScriptData);
+        });
+        
+        DeferredActions.ProcessAllOf<FScriptRename>([&](const FScriptRename& Reload)
+        {
+            auto It = PathToScriptEntities.find(Reload.OldName);
+            if (It == PathToScriptEntities.end())
+            {
+                return;
+            }
+            
+            PathToScriptEntities.emplace(Reload.NewName, Move(It->second));
+            PathToScriptEntities.erase(It);
+        });
+        
+        DeferredActions.ProcessAllOf<FScriptLoad>([&](const FScriptLoad& Reload)
+        {
+            FString ScriptData;
+            FS::ReadFile(ScriptData, Reload.Path);
+            LoadScript(ScriptData);
         });
     }
 
@@ -151,51 +138,48 @@ namespace Lumina::Scripting
 
     void FScriptingContext::OnScriptReloaded(FStringView ScriptPath)
     {
-        FScopeLock Lock(LoadMutex);
+        FWriteScopeLock Lock(SharedMutex);
         
-        DeferredActions.EnqueueAction<FScriptReload>(FString(ScriptPath));
+        DeferredActions.EnqueueAction<FScriptLoad>(ScriptPath);
     }
 
     void FScriptingContext::OnScriptCreated(FStringView ScriptPath)
     {
-        FScopeLock Lock(LoadMutex);
+        FWriteScopeLock Lock(SharedMutex);
 
+        DeferredActions.EnqueueAction<FScriptLoad>(ScriptPath);
     }
 
     void FScriptingContext::OnScriptRenamed(FStringView NewPath, FStringView OldPath)
     {
-        FScopeLock Lock(LoadMutex);
+        FWriteScopeLock Lock(SharedMutex);
         
-
+        DeferredActions.EnqueueAction<FScriptRename>(NewPath, OldPath);
     }
 
     void FScriptingContext::OnScriptDeleted(FStringView ScriptPath)
     {
-        FScopeLock Lock(LoadMutex);
+        FWriteScopeLock Lock(SharedMutex);
         
+        DeferredActions.EnqueueAction<FScriptDelete>(ScriptPath);
     }
     
-    void FScriptingContext::LoadScriptsInDirectoryRecursively(FStringView Directory)
+    void FScriptingContext::LoadScripts(FStringView Directory)
     {
-        FScopeLock Lock(LoadMutex);
+        FWriteScopeLock Lock(SharedMutex);
+        
+        namespace FS = FileSystem;
         
         ScriptRegistry = {};
-        for (auto& Itr : std::filesystem::recursive_directory_iterator(Directory.data()))
+        FS::RecursiveDirectoryIterator(Directory, [&](const FS::FFileInfo& Info)
         {
-            if (Itr.is_directory())
+            if (Info.IsLua())
             {
-                continue;
+                FString ScriptData;
+                FS::ReadFile(ScriptData, Info.VirtualPath);
+                LoadScript(ScriptData);
             }
-
-            if (Itr.path().extension() == ".lua")
-            {
-                FString ScriptPath = Itr.path().generic_string().c_str();
-                FString ScriptDirectory = Itr.path().parent_path().generic_string().c_str();
-                Paths::Normalize(ScriptDirectory);
-
-                LoadScriptPath(ScriptPath);
-            }
-        }
+        });
     }
 
     void FScriptingContext::RegisterCoreTypes()
@@ -788,20 +772,18 @@ namespace Lumina::Scripting
         LOG_ERROR("[Lua] {}", Output);
     }
 
-    TVector<entt::entity> FScriptingContext::LoadScriptPath(FStringView ScriptPath, bool bFailSilently)
+    TVector<entt::entity> FScriptingContext::LoadScript(FStringView ScriptData, bool bFailSilently)
     {
         sol::environment Environment(State, sol::create, State.globals());
         
-        FString NormalizedPath(ScriptPath);
-        Paths::Normalize(NormalizedPath);
-        for (entt::entity EntityToRemove : PathToScriptEntities[NormalizedPath])
+        for (entt::entity EntityToRemove : PathToScriptEntities[ScriptData])
         {
             ScriptRegistry.destroy(EntityToRemove);
         };
         
-        PathToScriptEntities[NormalizedPath].clear();
+        PathToScriptEntities[ScriptData].clear();
     
-        sol::protected_function_result Result = State.safe_script_file(ScriptPath.data(), Environment);
+        sol::protected_function_result Result = State.safe_script(ScriptData.data(), Environment);
         if (!Result.valid())
         {
             sol::error Error = Result;
@@ -818,10 +800,6 @@ namespace Lumina::Scripting
         sol::object ReturnedObject = Result;
         if (!ReturnedObject.is<sol::table>())
         {
-            if (!bFailSilently)
-            {
-                LOG_WARN("[Sol] Script {} did not return a table", ScriptPath);
-            }
             return {};
         }
 
@@ -847,7 +825,7 @@ namespace Lumina::Scripting
             {
                 if (entt::entity Entity = Factory->ProcessScript(key.as<const char*>(), EntryTable, ScriptRegistry); Entity != entt::null)
                 {
-                    PathToScriptEntities[NormalizedPath].push_back(Entity);
+                    PathToScriptEntities[ScriptData].push_back(Entity);
                     NewScriptEntities.push_back(Entity);
                     break;
                 }

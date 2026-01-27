@@ -30,6 +30,11 @@ namespace Lumina
 
     CMaterialInterface* CMesh::GetMaterialAtSlot(size_t Slot) const
     {
+        if (Materials.size() <= Slot)
+        {
+            return nullptr;
+        }
+        
         return Materials.empty() ? nullptr : Materials[Slot].Get();
     }
 

@@ -28,7 +28,7 @@ namespace Lumina
         int64 Offset = 0;
         
         
-        FORCEINLINE friend FArchive& operator << (FArchive& Ar, FPropertyTag& Data)
+        friend FArchive& operator << (FArchive& Ar, FPropertyTag& Data)
         {
             Ar << Data.Type;
             Ar << Data.Name;
@@ -37,5 +37,14 @@ namespace Lumina
 
             return Ar;
         }
+    };
+    
+    struct FPropertyTagTable
+    {
+        uint32 Version = 1;
+        uint32 NumEntries = 0;
+        
+        // Followed by: FPropertyTagEntry[NumEntries]
+        // Followed by: Raw property data
     };
 }

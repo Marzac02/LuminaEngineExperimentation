@@ -48,6 +48,9 @@ vec4 GetMaterialVec4(uint Index)
     return MaterialUniforms.Vectors[Index];
 }
 
+// ============================================================================
+// MATERIAL DATA
+// ============================================================================
 
 uint EntityID       = inEntityID;
 vec3 ViewNormal     = normalize(inNormalVS.xyz);

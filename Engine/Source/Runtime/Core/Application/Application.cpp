@@ -1,6 +1,7 @@
 #include "pch.h"
 #include "Application.h"
 #include "Assets/AssetManager/AssetManager.h"
+#include "Core/CommandLine/CommandLine.h"
 #include "Core/Module/ModuleManager.h"
 #include "Core/Windows/Window.h"
 #include "Core/Windows/WindowTypes.h"
@@ -84,6 +85,12 @@ namespace Lumina
         InitializeCObjectSystem();
         
         Paths::InitializePaths();
+        
+        if (TOptional<FFixedString> Project = GCommandLine->Get("Project"))
+        {
+            GEngine->LoadProject(Project.value());
+        }
+        
     }
 
     bool FApplication::CreateApplicationWindow()

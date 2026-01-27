@@ -4,9 +4,8 @@ include "BuildScripts/Actions/Reflection"
 
 workspace "Lumina"
 	language "C++"
-	conformancemode "On"
 	cppdialect "C++latest"
-	staticruntime "Off"
+	--staticruntime "Off"
     warnings "Default"
     targetdir (LuminaConfig.GetTargetDirectory())
     objdir (LuminaConfig.GetObjDirectory())
@@ -74,6 +73,7 @@ workspace "Lumina"
 
     filter "system:windows"
         systemversion "latest"
+        conformancemode "On"
         defines 
         { 
             "LE_PLATFORM_WINDOWS",

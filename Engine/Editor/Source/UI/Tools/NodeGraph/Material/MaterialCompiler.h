@@ -103,6 +103,7 @@ namespace Lumina
         void Subtract(CMaterialInput* A, CMaterialInput* B);
         void Sin(CMaterialInput* A, CMaterialInput* B);
         void Cos(CMaterialInput* A, CMaterialInput* B);
+        void Fract(CMaterialInput* A);
         void Floor(CMaterialInput* A, CMaterialInput* B);
         void Ceil(CMaterialInput* A, CMaterialInput* B);
         void Power(CMaterialInput* A, CMaterialInput* B);

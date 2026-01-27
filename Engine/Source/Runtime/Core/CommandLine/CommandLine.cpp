@@ -4,7 +4,7 @@
 namespace Lumina
 {
     
-    RUNTIME_API FCommandLine* CommandLine = nullptr;
+    RUNTIME_API FCommandLine* GCommandLine = nullptr;
     
     namespace Detail
     {
@@ -18,7 +18,6 @@ namespace Lumina
     
     FCommandLine::FCommandLine(int argc, char* argv[])
     {
-        CommandLine = this;
         Parse(argc, argv);
     }
 

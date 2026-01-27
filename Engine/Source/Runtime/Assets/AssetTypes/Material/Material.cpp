@@ -208,7 +208,7 @@ namespace Lumina
             DefaultMaterial = nullptr;
         }
         
-        DefaultMaterial = NewObject<CMaterial>();
+        DefaultMaterial = NewObject<CMaterial>(nullptr, "DefaultMaterial");
         DefaultMaterial->AddToRoot();
         
         FString LoadedString;
