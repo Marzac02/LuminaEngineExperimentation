@@ -26,6 +26,7 @@ project "Runtime"
         "**.cpp",
         "**.h",
         "**.lua",
+        "**.glsl",
         LuminaConfig.GetReflectionFiles()
     }
 

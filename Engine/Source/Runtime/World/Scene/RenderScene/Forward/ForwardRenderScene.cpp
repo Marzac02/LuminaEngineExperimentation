@@ -12,6 +12,7 @@
 #include "Renderer/TypedBuffer.h"
 #include "Renderer/RenderGraph/RenderGraphDescriptor.h"
 #include "World/World.h"
+#include "World/Entity/Components/BillboardComponent.h"
 #include "world/entity/components/environmentcomponent.h"
 #include "world/entity/components/lightcomponent.h"
 #include "World/Entity/Components/LineBatcherComponent.h"
@@ -86,6 +87,7 @@ namespace Lumina
         BasePass(RenderGraph);
         TransparentPass(RenderGraph);
         BatchedLineDraw(RenderGraph);
+        BillboardPass(RenderGraph);
         SelectionPass(RenderGraph);
         ToneMappingPass(RenderGraph);
         DebugDrawPass(RenderGraph);
@@ -96,6 +98,9 @@ namespace Lumina
         SceneViewport->SetViewVolume(ViewVolume);
         
         SceneGlobalData.CameraData.Location             = glm::vec4(SceneViewport->GetViewVolume().GetViewPosition(), 1.0f);
+        SceneGlobalData.CameraData.Up                   = glm::vec4(SceneViewport->GetViewVolume().GetUpVector(), 1.0f);
+        SceneGlobalData.CameraData.Right                = glm::vec4(SceneViewport->GetViewVolume().GetRightVector(), 1.0f);
+        SceneGlobalData.CameraData.Forward              = glm::vec4(SceneViewport->GetViewVolume().GetForwardVector(), 1.0f);
         SceneGlobalData.CameraData.View                 = SceneViewport->GetViewVolume().GetViewMatrix();
         SceneGlobalData.CameraData.InverseView          = SceneViewport->GetViewVolume().GetInverseViewMatrix();
         SceneGlobalData.CameraData.Projection           = SceneViewport->GetViewVolume().GetProjectionMatrix();
@@ -330,6 +335,22 @@ namespace Lumina
         }
         
         //========================================================================================================================
+        
+        {
+            auto View = World->GetEntityRegistry().view<SBillboardComponent, STransformComponent>();
+            View.each([this](const SBillboardComponent& BillboardComponent, const STransformComponent& TransformComponent)
+            {
+                if (!BillboardComponent.Texture.IsValid())
+                {
+                    return;
+                }
+                
+                
+                
+                
+                
+            });
+        }
         
         {
             LUMINA_PROFILE_SECTION("Directional Light Processing");
@@ -1371,6 +1392,69 @@ namespace Lumina
         });
     }
 
+    void FForwardRenderScene::BillboardPass(FRenderGraph& RenderGraph)
+    {
+        FRGPassDescriptor* Descriptor = RenderGraph.AllocDescriptor();
+        RenderGraph.AddPass(RG_Raster, FRGEvent("Billboard Pass"), Descriptor, [&](ICommandList& CmdList)
+        {
+            LUMINA_PROFILE_SECTION_COLORED("Billboard Pass", tracy::Color::Red);
+            
+            FRHIVertexShaderRef VertexShader = FShaderLibrary::GetVertexShader("Billboard.vert");
+            FRHIPixelShaderRef PixelShader = FShaderLibrary::GetPixelShader("Billboard.frag");
+            
+            FRenderPassDesc::FAttachment RenderTarget;
+            RenderTarget.SetImage(HDRRenderTarget);
+            if (RenderSettings.bHasEnvironment)
+            {
+                RenderTarget.SetLoadOp(ERenderLoadOp::Load);
+            }
+            
+            FRenderPassDesc::FAttachment PickerImageAttachment; PickerImageAttachment
+                .SetImage(PickerImage)
+                .SetLoadOp(ERenderLoadOp::Load);
+            
+            FRenderPassDesc::FAttachment Depth; Depth
+                .SetImage(DepthAttachment)
+                .SetLoadOp(ERenderLoadOp::Load);
+            
+            FRenderPassDesc RenderPass; RenderPass
+                .AddColorAttachment(RenderTarget)
+                .AddColorAttachment(PickerImageAttachment)
+                .SetDepthAttachment(Depth)
+                .SetRenderArea(HDRRenderTarget->GetExtent());
+            
+            FRasterState RasterState;
+            RasterState.EnableDepthClip();
+        
+            FDepthStencilState DepthState; DepthState
+                .SetDepthFunc(EComparisonFunc::Equal)
+                .DisableDepthWrite()
+                .DisableDepthTest();
+            
+            FRenderState RenderState;
+            RenderState.SetRasterState(RasterState);
+            RenderState.SetDepthStencilState(DepthState);
+            
+            FGraphicsPipelineDesc Desc; Desc
+                .SetDebugName("Billboard Pass")
+                .SetRenderState(RenderState)
+                .SetVertexShader(VertexShader)
+                .SetPixelShader(PixelShader)
+                .AddBindingLayout(BindingLayout)
+                .AddBindingLayout(BasePassLayout);
+            
+            FGraphicsState GraphicsState; GraphicsState
+                .SetRenderPass(RenderPass)
+                .SetViewportState(MakeViewportStateFromImage(HDRRenderTarget))
+                .SetPipeline(GRenderContext->CreateGraphicsPipeline(Desc, RenderPass))
+                .AddBindingSet(BindingSet)
+                .AddBindingSet(BasePassSet);
+            
+            CmdList.SetGraphicsState(GraphicsState);
+            CmdList.Draw(6, 1, 0, 0);
+        });
+    }
+
     void FForwardRenderScene::TransparentPass(FRenderGraph& RenderGraph)
     {
         
@@ -1897,6 +1981,21 @@ namespace Lumina
             VertexDesc[1].Format = EFormat::R32_UINT;
         
             SimpleVertexLayoutInput = GRenderContext->CreateInputLayout(VertexDesc, std::size(VertexDesc));
+        }
+        
+        {
+            FVertexAttributeDesc VertexDesc[2];
+            // Pos
+            VertexDesc[0].SetElementStride(sizeof(FBillboardVertex));
+            VertexDesc[0].SetOffset(offsetof(FBillboardVertex, Position));
+            VertexDesc[0].Format = EFormat::RGBA32_FLOAT;
+        
+            // Color
+            VertexDesc[1].SetElementStride(sizeof(FBillboardVertex));
+            VertexDesc[1].SetOffset(offsetof(FBillboardVertex, Size));
+            VertexDesc[1].Format = EFormat::R32_FLOAT;
+        
+            BillboardInputLayout = GRenderContext->CreateInputLayout(VertexDesc, std::size(VertexDesc));
         }
         
         {

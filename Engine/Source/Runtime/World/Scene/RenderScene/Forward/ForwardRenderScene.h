@@ -40,6 +40,7 @@ namespace Lumina
         void SpotShadowPass(FRenderGraph& RenderGraph);
         void CascadedShowPass(FRenderGraph& RenderGraph);
         void BasePass(FRenderGraph& RenderGraph);
+        void BillboardPass(FRenderGraph& RenderGraph);
         void TransparentPass(FRenderGraph& RenderGraph);
         void EnvironmentPass(FRenderGraph& RenderGraph);
         void BatchedLineDraw(FRenderGraph& RenderGraph);
@@ -77,6 +78,7 @@ namespace Lumina
         FRHIViewportRef                     SceneViewport;
         
         FRHIInputLayoutRef                  SimpleVertexLayoutInput;
+        FRHIInputLayoutRef                  BillboardInputLayout;
 
         FSceneGlobalData                    SceneGlobalData;
 
@@ -109,7 +111,6 @@ namespace Lumina
 
         FRHIBindingSetRef                   SelectionPassSet;
         FRHIBindingLayoutRef                SelectionPassLayout;
-
         
         FRHITypedVertexBuffer<FSimpleElementVertex> SimpleVertexBuffer;
         TVector<FSimpleElementVertex>               SimpleVertices;

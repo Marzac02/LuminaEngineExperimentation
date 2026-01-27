@@ -112,10 +112,17 @@ namespace Lumina
         glm::vec3   Position;
         uint32      Color;
     };
+    
+    struct FBillboardVertex
+    {
+        glm::vec3   Position;
+        float       Size;
+    };
 
     static_assert(offsetof(FVertex, Position) == 0, "Required FVertex::Position to be the first member.");
     static_assert(TCanBulkSerialize<FVertex>::value);
     static_assert(TCanBulkSerialize<FSkinnedVertex>::value);
+    static_assert(TCanBulkSerialize<FBillboardVertex>::value);
     static_assert(TCanBulkSerialize<FSimpleElementVertex>::value);
 
 }

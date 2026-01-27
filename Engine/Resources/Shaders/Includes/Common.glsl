@@ -38,6 +38,9 @@ struct FDrawIndexedIndirectArguments
 struct FCameraView
 {
     vec4 CameraPosition;    // Camera Position
+    vec4 CameraUp;
+    vec4 CameraRight;
+    vec4 CameraForward;
     mat4 CameraView;        // View matrix
     mat4 InverseCameraView;
     mat4 CameraProjection;  // Projection matrix

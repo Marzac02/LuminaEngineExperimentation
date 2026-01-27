@@ -101,6 +101,9 @@ namespace Lumina
     struct FCameraData
     {
         glm::vec4 Location          = {};
+        glm::vec4 Up                = {};
+        glm::vec4 Right             = {};
+        glm::vec4 Forward           = {};
         glm::mat4 View              = {};
         glm::mat4 InverseView       = {};
         glm::mat4 Projection        = {};
@@ -277,7 +280,7 @@ namespace Lumina
         FRHIImageRef Material;
         FRHIImageRef AlbedoSpec;
     };
-
+    
     struct alignas(16) FCluster
     {
         glm::vec4 MinPoint;

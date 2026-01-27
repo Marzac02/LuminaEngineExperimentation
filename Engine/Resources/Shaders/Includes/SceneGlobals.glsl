@@ -100,6 +100,21 @@ vec3 GetCameraPosition()
     return SceneUBO.CameraView.CameraPosition.xyx;
 }
 
+vec3 GetCameraUp()
+{
+    return SceneUBO.CameraView.CameraUp.xyx;
+}
+
+vec3 GetCameraRight()
+{
+    return SceneUBO.CameraView.CameraRight.xyx;
+}
+
+vec3 GetCameraForward()
+{
+    return SceneUBO.CameraView.CameraForward.xyx;
+}
+
 mat4 GetCameraView()
 {
     return SceneUBO.CameraView.CameraView;
