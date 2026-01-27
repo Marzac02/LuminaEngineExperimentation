@@ -279,7 +279,7 @@ namespace Lumina
                 for (size_t i = 0; i < Resource.GeometrySurfaces.size(); ++i)
                 {
                     const FGeometrySurface& Surface = Resource.GeometrySurfaces[i];
-                    ImGui::PushID(static_cast<int>(i));
+                    ImGui::PushID(&Surface);
                     
                     FString HeaderLabel = "Surface " + eastl::to_string(i) + ": " + Surface.ID.ToString();
                     if (ImGui::CollapsingHeader(HeaderLabel.c_str(), ImGuiTreeNodeFlags_DefaultOpen))
@@ -308,24 +308,13 @@ namespace Lumina
                             ImGui::EndTable();
                         }
                         
-                        if (ImGui::BeginChild("OP", ImVec2(-1, 0), ImGuiChildFlags_AutoResizeY, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse))
-                        {
-                            ImGui::Image(0, ImVec2(50, 50));
-                        }
-                        
                         ImGui::Unindent(16.0f);
                     }
                     
                     ImGui::PopID();
-                    
-                    if (i < Resource.GeometrySurfaces.size() - 1)
-                    {
-                        ImGui::Spacing();
-                    }
                 }
             }
     
-            ImGui::Spacing();
             ImGui::Spacing();
     
             ImGuiX::Font::PushFont(ImGuiX::Font::EFont::Large);

@@ -74,11 +74,7 @@ namespace Lumina::Reflection
         }
     
         AmalgamationFile.close();   
-        
-        eastl::string ManualReflectPath = "-include" + LuminaDirectory;
-        ManualReflectPath.append("/Lumina/Engine/Source/Runtime/Core/Object/ManualReflectTypes.h");
-        
-        AppendArg(eastl::move(ManualReflectPath));
+        AppendArg("-includeCore/Object/ManualReflectTypes.h");
         AppendArg("-x");
         AppendArg("c++");
         AppendArg("-std=c++23");

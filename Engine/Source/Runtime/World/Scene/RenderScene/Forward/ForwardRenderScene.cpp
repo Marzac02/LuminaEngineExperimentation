@@ -350,9 +350,9 @@ namespace Lumina
                 Light.Direction         = glm::normalize(DirectionalLightComponent.Direction);
                 LightData.SunDirection  = Light.Direction;
                 
-                LightData.CascadeSplits[0] = 10.0f;
-                LightData.CascadeSplits[1] = 20.0f;
-                LightData.CascadeSplits[2] = 40.0f;
+                LightData.CascadeSplits[0] = 15.0f;
+                LightData.CascadeSplits[1] = 50.0f;
+                LightData.CascadeSplits[2] = 200.0f;
 
                 for (int i = 0; i < NumCascades; ++i)
                 {
@@ -1251,7 +1251,7 @@ namespace Lumina
             
             FRenderPassDesc RenderPass; RenderPass
                 .SetDepthAttachment(Depth)
-                .SetViewMask(RenderUtils::CreateViewMask<0u, 1u>()) // Must match NUM_CASCADES
+                .SetViewMask(RenderUtils::CreateViewMask<0u, 1u, 2u>()) // Must match NUM_CASCADES
                 .SetRenderArea(glm::uvec2(GCSMResolution, GCSMResolution));
             
             for (const FMeshDrawCommand& Batch : DrawCommands)

@@ -207,7 +207,7 @@ float ComputeShadowFactor(FLight Light, vec3 FragmentPos, float Bias)
             }
         }
 
-        ViewProjectionIndex = clamp(ViewProjectionIndex, 0, 1);
+        ViewProjectionIndex = clamp(ViewProjectionIndex, 0, 3);
     }
 
     vec4 ShadowCoord        = Light.ViewProjection[ViewProjectionIndex] * vec4(FragmentPos, 1.0);

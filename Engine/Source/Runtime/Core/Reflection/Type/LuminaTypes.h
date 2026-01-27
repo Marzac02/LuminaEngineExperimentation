@@ -49,12 +49,6 @@ namespace Lumina
         template<typename ValueType>
         ValueType* SetValuePtr(void* ContainerPtr, const ValueType& Value, int64 ArrayIndex = 0) const
         {
-            if (sizeof(Value) > sizeof(double))
-            {
-                LOG_ERROR("Attempted to set Property Value Ptr of incorrect size {} {} {}", GetPropertyName(), sizeof(Value), ElementSize);
-                return nullptr;
-            }
-
             ValueType* ValuePtr = GetValuePtr<ValueType>(ContainerPtr, ArrayIndex);
             *ValuePtr = Value;
             return ValuePtr;
@@ -354,13 +348,8 @@ namespace Lumina
     {
         return (uint64)TTypeInfo::GetPropertyValue(Container);
     }
-
-
     
-
-
     //-------------------------------------------------------------------------------
-    
     
     class FBoolProperty : public TProperty_Numeric<bool>
     {

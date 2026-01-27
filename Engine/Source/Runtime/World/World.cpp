@@ -253,7 +253,8 @@ namespace Lumina
                 continue;
             }
             
-            if(Storage.contains(From))
+            // We also need to check the entity we're creating, incase another component adds it.
+            if(Storage.contains(From) && !Storage.contains(To))
             {
                 Storage.push(To, Storage.value(From));
             }

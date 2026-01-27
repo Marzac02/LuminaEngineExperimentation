@@ -23,7 +23,7 @@ const float INV_PI  = 0.31830988618;
 
 #define MAX_LIGHTS 1728
 #define MAX_SHADOWS 100
-#define NUM_CASCADES 2
+#define NUM_CASCADES 3
 
 
 struct FDrawIndexedIndirectArguments 
