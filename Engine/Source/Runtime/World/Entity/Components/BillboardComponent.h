@@ -7,12 +7,15 @@ namespace Lumina
 {
     class CTexture;
     
-    REFLECT(EntityComponent)
+    REFLECT(Component)
     struct SBillboardComponent
     {
         GENERATED_BODY()
         
         PROPERTY(Editable)
         TObjectPtr<CTexture> Texture;
+        
+        PROPERTY(Editable)
+        float Scale = 1.0f;
     };
 }

@@ -127,6 +127,7 @@ namespace Lumina
         void ProcessAnyNewlyLoadedScripts();
 
         //~ Begin Debug Drawing
+        void DrawBillboard(FRHIImage* Image, const glm::vec3& Location, float Scale) override;
         void DrawLine(const glm::vec3& Start, const glm::vec3& End, const glm::vec4& Color, float Thickness = 1.0f, bool bDepthTest = true, float Duration = 0.0f) override;
         //~ End Debug Drawing
         

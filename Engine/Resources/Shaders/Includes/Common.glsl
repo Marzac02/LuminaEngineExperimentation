@@ -125,6 +125,12 @@ struct FLightShadow
     int Pad;
 };
 
+struct FBillboardInstance
+{
+    vec3    Position;
+    float   Size;
+};
+
 struct FLight
 {
     vec3 Position;

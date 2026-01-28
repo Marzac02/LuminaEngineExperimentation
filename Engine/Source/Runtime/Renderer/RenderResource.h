@@ -1384,7 +1384,7 @@ namespace Lumina
 
 		TFixedVector<FBindingLayoutItem, 4> Bindings;
 
-		
+		FBindingLayoutDesc& SetDebugName(FStringView Name) { DebugName = Name; return *this; }
 		FBindingLayoutDesc& SetVisibility(ERHIShaderType InType) { StageFlags.SetFlag(InType); return *this; }
 		FBindingLayoutDesc& SetBindingIndex(uint32 Value) { Index = Value; return *this; }
 		FBindingLayoutDesc& AddItem(const FBindingLayoutItem& Item) { Bindings.push_back(Item); return *this; }
@@ -1428,7 +1428,6 @@ namespace Lumina
 		ERHIBindingResourceType		Type			= ERHIBindingResourceType::Unknown;
 		EFormat						Format			= EFormat::UNKNOWN;
 		
-		// verify that the `subresources` and `range` have the same size and are covered by `rawData`
 		static_assert(sizeof(FTextureSubresourceSet) == 16, "sizeof(TextureSubresourceSet) is supposed to be 16 bytes");
 		static_assert(sizeof(FBufferRange) == 16, "sizeof(BufferRange) is supposed to be 16 bytes");
 		
@@ -1583,6 +1582,7 @@ namespace Lumina
 			return !(*this == b);
 		}
 
+		FBindingSetDesc& SetDebugName(FStringView Name) { DebugName = Name; return *this; }
 		FBindingSetDesc& AddItem(const FBindingSetItem& value) { Bindings.push_back(value); return *this; }
 	};
 
@@ -2071,6 +2071,13 @@ namespace eastl
 			Hash::HashCombine(hash, Desc.VS ? Desc.VS->GetHashCode() : 0);
 			Hash::HashCombine(hash, Desc.PS ? Desc.PS->GetHashCode() : 0);
 			Hash::HashCombine(hash, Desc.RenderState);
+			Hash::HashCombine(hash, Desc.InputLayout.GetReference());
+
+			for (const FRHIBindingLayoutRef& Layout : Desc.BindingLayouts)
+			{
+				Hash::HashCombine(hash, Layout.GetReference());
+			}
+			
 			return hash;
 		}
 	};

@@ -130,7 +130,7 @@ namespace Lumina
 
 
 		FName SquareTexturePath		= Paths::GetEngineResourceDirectory() + "/Textures/WhiteSquareTexture.png";
-		FRHIImageRef RHI			= Import::Textures::CreateTextureFromImport(GRenderContext, SquareTexturePath.ToString(), false);
+		FRHIImageRef RHI			= Import::Textures::CreateTextureFromImport(SquareTexturePath.ToString(), false);
 		ImTextureRef ImTex			= ImGuiX::ToImTextureRef(RHI);
 
 		TUniquePtr<FEntry> Entry	= MakeUnique<FEntry>();
@@ -333,7 +333,7 @@ namespace Lumina
 			return It->second->ImTexture.GetTexID();
 		}
 
-		FRHIImageRef Image = Import::Textures::CreateTextureFromImport(GRenderContext, Path, false);
+		FRHIImageRef Image = Import::Textures::CreateTextureFromImport(Path, false);
 		ReferencedImages.push_back(Image);
 		
 		const FTextureSubresourceSet Subresource = AllSubresources;

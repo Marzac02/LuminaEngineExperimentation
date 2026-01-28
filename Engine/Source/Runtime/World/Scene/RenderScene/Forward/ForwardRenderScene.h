@@ -28,6 +28,8 @@ namespace Lumina
         
         void CompileDrawCommands(FRenderGraph& RenderGraph) override;
                 
+        void DrawBillboard(FRHIImage* Image, const glm::vec3& Location, float Scale) override;
+        void DrawLine(const glm::vec3& Start, const glm::vec3& End, const glm::vec4& Color, float Thickness, bool bDepthTest, float Duration) override { }
 
         //~ Begin Render Passes
         void ResetPass(FRenderGraph& RenderGraph);
@@ -63,7 +65,13 @@ namespace Lumina
         FSceneRenderSettings& GetSceneRenderSettings() override;
         entt::entity GetEntityAtPixel(uint32 X, uint32 Y) const override;
 
+#if USING(WITH_EDITOR)
+        FRHIImageRef                        PointLightIcon;
+        FRHIImageRef                        DirectionalLightIcon;
+        FRHIImageRef                        SpotLightIcon;
 
+#endif
+        
         FDelegateHandle                     SwapchainResizedHandle;
         CWorld*                             World = nullptr;
         
@@ -78,9 +86,11 @@ namespace Lumina
         FRHIViewportRef                     SceneViewport;
         
         FRHIInputLayoutRef                  SimpleVertexLayoutInput;
-        FRHIInputLayoutRef                  BillboardInputLayout;
-
+        
         FSceneGlobalData                    SceneGlobalData;
+        
+        FRHIBindingSetRef                   BillboardPassSet;
+        FRHIBindingLayoutRef                BillboardPassLayout;
 
         FRHIBindingSetRef                   BasePassSet;
         FRHIBindingLayoutRef                BasePassLayout;
@@ -124,6 +134,8 @@ namespace Lumina
         };
 
         TVector<FLineBatch> LineBatches;
+
+        TVector<FBillboardInstance>                 BillboardInstances;
         
         FRHIBindingLayoutRef                        SimplePassLayout;
 
@@ -155,7 +167,7 @@ namespace Lumina
         FMeshPass ShadowMeshPass;
         
         /** Packed array of all cached mesh draw commands */
-        TVector<FMeshDrawCommand>             DrawCommands;
+        TVector<FMeshDrawCommand>               DrawCommands;
 
         /** Packed indirect draw arguments, gets sent directly to the GPU */
         TVector<FDrawIndexedIndirectArguments>  IndirectDrawArguments;

@@ -2,7 +2,11 @@
 #include "ComponentVisualizer.h"
 
 #include "Core/Math/Color.h"
+#include "Paths/Paths.h"
 #include "Renderer/PrimitiveDrawInterface.h"
+#include "Renderer/RenderResource.h"
+#include "Tools/Import/ImportHelpers.h"
+#include "Tools/UI/ImGui/ImGuiX.h"
 #include "World/Entity/Components/CharacterComponent.h"
 #include "world/entity/components/lightcomponent.h"
 #include "world/entity/components/physicscomponent.h"
@@ -11,6 +15,7 @@
 namespace Lumina
 {
     static CComponentVisualizerRegistry* Singleton = nullptr;
+    
     
     CComponentVisualizerRegistry& CComponentVisualizerRegistry::Get()
     {
@@ -58,7 +63,7 @@ namespace Lumina
         const STransformComponent& Transform = Registry.get<STransformComponent>(Entity);
         
         PDI->DrawSphere(Transform.GetLocation(), PointLight.Attenuation, 
-            glm::vec4(PointLight.LightColor, 1.0f), 32, 1.0f, 0.0f);
+            glm::vec4(PointLight.LightColor, 1.0f), 32, 1.0f, true, 0.0f);
     }
 
     CStruct* CComponentVisualizer_SphereCollider::GetSupportedComponentType() const
@@ -71,7 +76,7 @@ namespace Lumina
         const SSphereColliderComponent& Sphere = Registry.get<SSphereColliderComponent>(Entity);
         const STransformComponent& Transform = Registry.get<STransformComponent>(Entity);
         
-        PDI->DrawSphere(Transform.GetLocation(), Sphere.Radius * Transform.MaxScale(), FColor::Green, 12, 1.5f, 0.0f);
+        PDI->DrawSphere(Transform.GetLocation(), Sphere.Radius * Transform.MaxScale(), FColor::Green, 12, 1.5f, true, 0.0f);
     }
 
     CStruct* CComponentVisualizer_BoxCollider::GetSupportedComponentType() const
@@ -84,7 +89,7 @@ namespace Lumina
         const SBoxColliderComponent& Box = Registry.get<SBoxColliderComponent>(Entity);
         const STransformComponent& Transform = Registry.get<STransformComponent>(Entity);
         
-        PDI->DrawBox(Transform.GetLocation(), Box.HalfExtent * Transform.GetScale(), Transform.GetRotation(), FColor::Green, 1.5f, 0.0f);
+        PDI->DrawBox(Transform.GetLocation(), Box.HalfExtent * Transform.GetScale(), Transform.GetRotation(), FColor::Green, 1.5f, true, 0.0f);
     }
 
     CStruct* CComponentVisualizer_CharacterPhysics::GetSupportedComponentType() const
@@ -101,6 +106,6 @@ namespace Lumina
         glm::vec3 Start = Location - glm::vec3(0, Character.HalfHeight, 0);
         glm::vec3 End = Location + glm::vec3(0, Character.HalfHeight, 0);
     
-        PDI->DrawCapsule(Start, End, Character.Radius, glm::vec4(0.0f, 1.0f, 0.0f, 1.0f), 12, 2.0f, 0.0f);
+        PDI->DrawCapsule(Start, End, Character.Radius, glm::vec4(0.0f, 1.0f, 0.0f, 1.0f), 12, 2.0f, true, 0.0f);
     }
 }

@@ -281,6 +281,13 @@ namespace Lumina
         FRHIImageRef AlbedoSpec;
     };
     
+    struct FBillboardInstance
+    {
+        glm::vec3       Position;
+        float           Size;
+        FRHIImageRef    Texture;
+    };
+    
     struct alignas(16) FCluster
     {
         glm::vec4 MinPoint;

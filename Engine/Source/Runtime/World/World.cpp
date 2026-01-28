@@ -392,6 +392,11 @@ namespace Lumina
         });
     }
 
+    void CWorld::DrawBillboard(FRHIImage* Image, const glm::vec3& Location, float Scale)
+    {
+        RenderScene->DrawBillboard(Image, Location, Scale);
+    }
+
     void CWorld::DrawLine(const glm::vec3& Start, const glm::vec3& End, const glm::vec4& Color, float Thickness, bool bDepthTest, float Duration)
     {
         FLineBatcherComponent& Batcher = GetOrCreateLineBatcher();

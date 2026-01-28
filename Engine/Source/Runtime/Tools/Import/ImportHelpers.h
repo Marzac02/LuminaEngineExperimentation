@@ -35,7 +35,7 @@ namespace Lumina::Import
         RUNTIME_API TOptional<FTextureImportResult> ImportTexture(FStringView RawFilePath, bool bFlipVertical = true);
     
         /** Creates a raw RHI Image */
-        NODISCARD RUNTIME_API FRHIImageRef CreateTextureFromImport(IRenderContext* RenderContext, FStringView RawFilePath, bool bFlipVerticalOnLoad = true);
+        NODISCARD RUNTIME_API FRHIImageRef CreateTextureFromImport(FStringView RawFilePath, bool bFlipVerticalOnLoad = true);
     }
 
     namespace Mesh

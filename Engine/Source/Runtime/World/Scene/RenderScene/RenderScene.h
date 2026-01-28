@@ -1,6 +1,7 @@
 ﻿#pragma once
 #include "SceneRenderTypes.h"
 #include "Platform/GenericPlatform.h"
+#include "Renderer/PrimitiveDrawInterface.h"
 #include "Renderer/RHIFwd.h"
 #include "World/Scene/SceneInterface.h"
 
@@ -10,11 +11,11 @@ namespace Lumina
     class FRenderGraph;
     class FViewVolume;
 
-    class IRenderScene : public ISceneInterface
+    class IRenderScene : public ISceneInterface, public IPrimitiveDrawInterface
     {
     public:
 
-        virtual ~IRenderScene() = default;
+        ~IRenderScene() override = default;
         
         RUNTIME_API virtual void RenderScene(FRenderGraph& RenderGraph, const FViewVolume& ViewVolume) = 0;
         RUNTIME_API virtual void SetViewVolume(const FViewVolume& ViewVolume) = 0;

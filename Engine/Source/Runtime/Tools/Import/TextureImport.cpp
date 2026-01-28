@@ -12,6 +12,7 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
 #include "FileSystem/FileSystem.h"
+#include "Renderer/RHIGlobals.h"
 
 namespace Lumina::Import::Textures
 {
@@ -146,7 +147,7 @@ namespace Lumina::Import::Textures
         return Result;
     }
 
-    FRHIImageRef CreateTextureFromImport(IRenderContext* RenderContext, FStringView RawFilePath, bool bFlipVerticalOnLoad)
+    FRHIImageRef CreateTextureFromImport(FStringView RawFilePath, bool bFlipVerticalOnLoad)
     {
         LUMINA_PROFILE_SCOPE();
 
@@ -170,16 +171,16 @@ namespace Lumina::Import::Textures
         ImageDescription.InitialState = EResourceStates::ShaderResource;
         ImageDescription.bKeepInitialState = true;
         
-        FRHIImageRef ReturnImage = RenderContext->CreateImage(ImageDescription);
+        FRHIImageRef ReturnImage = GRenderContext->CreateImage(ImageDescription);
 
         const uint32 Width = ImageDescription.Extent.x;
         const uint32 RowPitch = Width * RHI::Format::BytesPerBlock(Result.Format);
 
-        FRHICommandListRef TransferCommandList = RenderContext->CreateCommandList(FCommandListInfo::Transfer());
+        FRHICommandListRef TransferCommandList = GRenderContext->CreateCommandList(FCommandListInfo::Transfer());
         TransferCommandList->Open();
         TransferCommandList->WriteImage(ReturnImage, 0, 0, Pixels.data(), RowPitch, 0);
         TransferCommandList->Close();
-        RenderContext->ExecuteCommandList(TransferCommandList, ECommandQueue::Transfer);
+        GRenderContext->ExecuteCommandList(TransferCommandList, ECommandQueue::Transfer);
 
         return ReturnImage;
     }
