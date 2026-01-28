@@ -39,7 +39,6 @@
 https://github.com/user-attachments/assets/e95f8cc4-79d9-4186-8bc6-277dd8ca7487
 
 
-
 ## About
 Lumina is a modern C++ game engine designed for learning and experimentation with real-world engine architecture. Built from the ground up with Vulkan, it demonstrates professional engine design patterns including reflection systems, ECS architecture, and advanced rendering techniques.
 
