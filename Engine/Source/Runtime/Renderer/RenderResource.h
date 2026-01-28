@@ -2071,12 +2071,6 @@ namespace eastl
 			Hash::HashCombine(hash, Desc.VS ? Desc.VS->GetHashCode() : 0);
 			Hash::HashCombine(hash, Desc.PS ? Desc.PS->GetHashCode() : 0);
 			Hash::HashCombine(hash, Desc.RenderState);
-			Hash::HashCombine(hash, Desc.InputLayout.GetReference());
-
-			for (const FRHIBindingLayoutRef& Layout : Desc.BindingLayouts)
-			{
-				Hash::HashCombine(hash, Layout.GetReference());
-			}
 			
 			return hash;
 		}

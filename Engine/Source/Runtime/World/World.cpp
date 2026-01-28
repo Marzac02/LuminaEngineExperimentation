@@ -72,14 +72,12 @@ namespace Lumina
         
         PhysicsScene    = Physics::GetPhysicsContext()->CreatePhysicsScene(this);
         CameraManager   = MakeUnique<FCameraManager>(this);
-        RenderScene     = MakeUnique<FForwardRenderScene>(this);
 
         EntityRegistry.ctx().emplace<Physics::IPhysicsScene*>(PhysicsScene.get());
         EntityRegistry.ctx().emplace<FCameraManager*>(CameraManager.get());
-        EntityRegistry.ctx().emplace<IRenderScene*>(RenderScene.get());
         EntityRegistry.ctx().emplace<FSystemContext&>(SystemContext);
-
-        RenderScene->Init();
+        
+        CreateRenderer();
         
         ProcessAnyNewlyLoadedScripts();
         
@@ -175,9 +173,9 @@ namespace Lumina
         });
         
         Scripting::FScriptingContext::Get().OnScriptLoaded.Remove(ScriptUpdatedDelegateHandle);
-        
+
         PhysicsScene.reset();
-        RenderScene->Shutdown();
+        DestroyRenderer();
         
         FCoreDelegates::PostWorldUnload.Broadcast();
         
@@ -319,6 +317,42 @@ namespace Lumina
     void CWorld::EndPlay()
     {
         PhysicsScene->OnWorldStopSimulate();
+    }
+
+    void CWorld::CreateRenderer()
+    {
+        if (!RenderScene)
+        {
+            RenderScene = MakeUnique<FForwardRenderScene>(this);
+            RenderScene->Init();
+            EntityRegistry.ctx().emplace<IRenderScene*>(RenderScene.get());
+        }
+    }
+
+    void CWorld::DestroyRenderer()
+    {
+        if (RenderScene)
+        {
+            RenderScene->Shutdown();
+            RenderScene.reset();
+        }
+    }
+
+    void CWorld::SetActive(bool bNewActive)
+    {
+        if (bActive != bNewActive)
+        {
+            bActive = bNewActive;
+            
+            if (bActive)
+            {
+                CreateRenderer();       
+            }
+            else
+            {
+                DestroyRenderer();
+            }
+        }
     }
 
     CWorld* CWorld::DuplicateWorld(CWorld* OwningWorld)

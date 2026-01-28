@@ -93,11 +93,14 @@ namespace Lumina
 
         void BeginPlay();
         void EndPlay();
+        
+        void CreateRenderer();
+        void DestroyRenderer();
 
         void SetPaused(bool bNewPause) { bPaused = bNewPause; }
         bool IsPaused() const { return bPaused; }
 
-        void SetActive(bool bNewActive) { bActive = bNewActive; }
+        void SetActive(bool bNewActive);
         bool IsSuspended() const { return !bActive; }
 
         void SetSimulating(bool bSim)
@@ -118,6 +121,7 @@ namespace Lumina
         static CWorld* DuplicateWorld(CWorld* OwningWorld);
 
         IRenderScene* GetRenderer() const { return RenderScene.get(); }
+        Physics::IPhysicsScene* GetPhysicsScene() const { return PhysicsScene.get(); }
 
         const TVector<CEntitySystem*>& GetSystemsForUpdateStage(EUpdateStage Stage);
 

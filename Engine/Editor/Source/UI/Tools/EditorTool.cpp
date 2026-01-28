@@ -34,7 +34,7 @@ namespace Lumina
 
         if (HasWorld())
         {
-            if (World->GetRenderer() == nullptr)
+            if (World->GetPhysicsScene() == nullptr)
             {
                 World->InitializeWorld();
             }
@@ -79,7 +79,7 @@ namespace Lumina
         
         World = InWorld;
 
-        if (World->GetRenderer() == nullptr)
+        if (World->GetPhysicsScene() == nullptr)
         {
             World->InitializeWorld();
         }
