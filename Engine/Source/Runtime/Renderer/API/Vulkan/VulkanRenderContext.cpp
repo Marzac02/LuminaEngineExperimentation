@@ -703,6 +703,7 @@ namespace Lumina
         DeviceFeatures.multiDrawIndirect                    = VK_TRUE;
         DeviceFeatures.shaderStorageImageWriteWithoutFormat = VK_TRUE;
         DeviceFeatures.drawIndirectFirstInstance            = VK_TRUE;
+        DeviceFeatures.vertexPipelineStoresAndAtomics       = VK_TRUE; // @TODO See if we need this.
 
         VkPhysicalDeviceVulkan11Features Features11 = {};
         Features11.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_1_FEATURES;
@@ -944,12 +945,12 @@ namespace Lumina
 
         auto WriteDescriptorForBinding = [&] (const VkDescriptorSetLayoutBinding& LayoutBinding)
         {
-            VkWriteDescriptorSet Write = {};
-            Write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-            Write.descriptorCount = LayoutBinding.descriptorCount;
-            Write.dstArrayElement = 0;
-            Write.dstBinding = LayoutBinding.binding;
-            Write.dstSet = DescriptorTable->DescriptorSet;
+            VkWriteDescriptorSet Write  = {};
+            Write.sType                 = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+            Write.descriptorCount       = 1;
+            Write.dstArrayElement       = Binding.Slot;
+            Write.dstBinding            = LayoutBinding.binding;
+            Write.dstSet                = DescriptorTable->DescriptorSet;
             
             switch (Binding.Type)
             {
@@ -1030,9 +1031,11 @@ namespace Lumina
 
         for (uint32 BindingLocation = 0; BindingLocation < uint32(BindingLayout->Bindings.size()); BindingLocation++)
         {
-            if (BindingLayout->BindlessDesc.Bindings[BindingLocation].Type == Binding.Type)
+            const FBindingLayoutItem& Item = BindingLayout->BindlessDesc.Bindings[BindingLocation];
+            if (Item.Type == Binding.Type)
             {
                 const VkDescriptorSetLayoutBinding& LayoutBinding = BindingLayout->Bindings[BindingLocation];
+                
                 WriteDescriptorForBinding(LayoutBinding);
             }
         }
@@ -1081,10 +1084,6 @@ namespace Lumina
             Item.Slot = BindingItem.Slot;
             Item.Type = BindingItem.Type;
             Item.Size = 1;
-            if (Item.Type == ERHIBindingResourceType::PushConstants)
-            {
-                Item.Size = (uint16)BindingItem.GetBufferRange().ByteSize;
-            }
             LayoutDesc.Bindings.push_back(Item);
         }
 
@@ -1278,7 +1277,8 @@ namespace Lumina
 
     void FVulkanRenderContext::ClearBindingCaches()
     {
-        
+        InputLayoutMap.clear();
+        PipelineCache.ReleasePipelines();
     }
 
     FRHIInputLayoutRef FVulkanRenderContext::CreateInputLayout(const FVertexAttributeDesc* AttributeDesc, uint32 Count)

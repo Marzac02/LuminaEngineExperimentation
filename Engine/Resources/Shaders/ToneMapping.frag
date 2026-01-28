@@ -1,9 +1,7 @@
 #version 450 core
 #pragma shader_stage(fragment)
 
-#include "Includes/Common.glsl"
-
-layout(set = 0, binding = 0) uniform sampler2D uHDRSceneColor;
+#include "Includes/SceneGlobals.glsl"
 
 layout(push_constant) uniform PushConstants
 {

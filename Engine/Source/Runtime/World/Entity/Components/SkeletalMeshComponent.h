@@ -24,6 +24,12 @@ namespace Lumina
         PROPERTY(Editable, Category = "Mesh")
         TObjectPtr<CSkeletalMesh> SkeletalMesh;
         
+        PROPERTY(Editable, Category = "Shadow")
+        bool bCastShadow = true;
+
+        PROPERTY(Editable, Category = "Shadow")
+        bool bReceiveShadow = true;
+        
         TArray<glm::mat4, 255> BoneTransforms;
     };
 }

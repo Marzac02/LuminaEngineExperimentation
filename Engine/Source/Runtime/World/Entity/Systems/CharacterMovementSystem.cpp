@@ -1,6 +1,8 @@
 ﻿#include "pch.h"
 #include "CharacterMovementSystem.h"
 
+#include <glm/gtx/quaternion.hpp>
+
 #include "Physics/API/Jolt/JoltPhysics.h"
 #include "Physics/API/Jolt/JoltPhysicsScene.h"
 #include "Physics/API/Jolt/JoltUtils.h"

@@ -14,6 +14,7 @@ layout(location = 2) out vec4 outNormalWS;
 layout(location = 3) out vec4 outFragPos;
 layout(location = 4) out vec2 outUV;
 layout(location = 5) flat out uint outEntityID;
+layout(location = 6) flat out uint outReceiveShadow;
 
 precise invariant gl_Position;
 
@@ -32,10 +33,10 @@ void main()
     uint BoneOffset = Instance.BoneOffset;
     
     mat4 SkinMatrix =
-    Bones.BoneMatrices[BoneOffset + inJointIndices.x] * Weights.x +
-    Bones.BoneMatrices[BoneOffset + inJointIndices.y] * Weights.y +
-    Bones.BoneMatrices[BoneOffset + inJointIndices.z] * Weights.z +
-    Bones.BoneMatrices[BoneOffset + inJointIndices.w] * Weights.w;
+    BoneData.BoneMatrices[BoneOffset + inJointIndices.x] * Weights.x +
+    BoneData.BoneMatrices[BoneOffset + inJointIndices.y] * Weights.y +
+    BoneData.BoneMatrices[BoneOffset + inJointIndices.z] * Weights.z +
+    BoneData.BoneMatrices[BoneOffset + inJointIndices.w] * Weights.w;
 
     Position = (SkinMatrix * vec4(inPosition, 1.0)).xyz;
     NormalOS = mat3(SkinMatrix) * NormalOS;
@@ -62,11 +63,12 @@ void main()
     FInstanceData InstanceData = GetInstanceData(gl_InstanceIndex);
 
     // Outputs
-    outUV           = vec2(uv.x, uv.y);
-    outFragPos      = ViewPos;
-    outNormal       = vec4(NormalVS, 1.0);
-    outNormalWS     = vec4(NormalWS, 1.0);
-    outFragColor    = inColor;
-    outEntityID     = InstanceData.EntityID;
-    gl_Position     = Projection * ViewPos;
+    outUV               = vec2(uv.x, uv.y);
+    outFragPos          = ViewPos;
+    outNormal           = vec4(NormalVS, 1.0);
+    outNormalWS         = vec4(NormalWS, 1.0);
+    outFragColor        = inColor;
+    outEntityID         = InstanceData.EntityID;
+    outReceiveShadow    = uint(HasFlag(InstanceData.Flags, INSTANCE_FLAG_RECEIVE_SHADOW));
+    gl_Position         = Projection * ViewPos;
 }

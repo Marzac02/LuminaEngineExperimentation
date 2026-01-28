@@ -98,6 +98,18 @@ namespace Lumina
         Num,
     };
     
+    enum class EInstanceFlags : uint32
+    {
+        None            = 0,
+        Billboard       = BIT(0),
+        Skinned         = BIT(1),
+        Selected        = BIT(2),
+        CastShadow      = BIT(3),
+        ReceiveShadow   = BIT(4),
+    };
+    
+    ENUM_CLASS_FLAGS(EInstanceFlags);
+    
     struct FCameraData
     {
         glm::vec4 Location          = {};
@@ -263,6 +275,14 @@ namespace Lumina
         FLight          Lights[MAX_LIGHTS];
     };
     
+    struct FLineBatch
+    {
+        uint32 StartVertex;
+        uint32 VertexCount;
+        float Thickness;
+        bool bDepthTest;
+    };
+    
     struct FSSAOSettings
     {
         float Radius = 1.0f;
@@ -308,13 +328,13 @@ namespace Lumina
 
     struct alignas(16) FInstanceData
     {
-        glm::mat4   Transform;
-        glm::vec4   SphereBounds;
+        glm::mat4       Transform;
+        glm::vec4       SphereBounds;
         
-        uint32      EntityID;
-        uint32      BatchedDrawID;
-        uint32      bSelected;
-        uint32      BoneOffset;
+        uint32          EntityID;
+        uint32          BatchedDrawID;
+        EInstanceFlags  Flags;
+        uint32          BoneOffset;
     };
     
     VERIFY_SSBO_ALIGNMENT(FInstanceData)
@@ -352,6 +372,7 @@ namespace Lumina
         float           FarPlane;
         
         FSSAOSettings   SSAOSettings;
+        FCullData       CullData;
     };
 
     struct FMeshPass

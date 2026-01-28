@@ -16,9 +16,40 @@ namespace Lumina
      */
     class FForwardRenderScene : public IRenderScene
     {
-    
     public:
         FForwardRenderScene(CWorld* InWorld);
+        
+        enum class ENamedBuffer : uint8
+        {
+            Scene,
+            Light,
+            Instance,
+            InstanceMapping,
+            Indirect,
+            Bone,
+            Cluster,
+            Materials,
+            SimpleVertex,
+            
+            Num,
+        };
+        
+        enum class ENamedImage : uint8
+        {
+            HDR,
+            Cascade,
+            DepthAttachment,
+            DepthPyramid,
+            Picker,
+            
+            #if USING(WITH_EDITOR)
+            PointLightIcon,
+            DirectionalLightIcon,
+            SpotLightIcon,
+            #endif
+            
+            Num,
+        };
         
         void Init() override;
         void Shutdown() override;
@@ -54,24 +85,18 @@ namespace Lumina
         void InitBuffers();
         void InitImages();
         void InitFrameResources();
+        void CreateLayouts();
 
         static FViewportState MakeViewportStateFromImage(const FRHIImage* Image);
-
-        void CheckInstanceBufferResize(uint32 NumInstances);
-        void CheckLightBufferResize(uint32 NumLights);
-        void CheckSimpleVertexResize(uint32 NumVertices);
+        
+        FRHIBuffer* GetNamedBuffer(ENamedBuffer Buffer) const { return NamedBuffers[(int)Buffer]; }
+        FRHIImage* GetNamedImage(ENamedImage Image) const { return NamedImages[(int)Image];}
         
         FRHIImage* GetRenderTarget() const override;
         FSceneRenderSettings& GetSceneRenderSettings() override;
         entt::entity GetEntityAtPixel(uint32 X, uint32 Y) const override;
-
-#if USING(WITH_EDITOR)
-        FRHIImageRef                        PointLightIcon;
-        FRHIImageRef                        DirectionalLightIcon;
-        FRHIImageRef                        SpotLightIcon;
-
-#endif
         
+        FViewportState                      SceneViewportState;
         FDelegateHandle                     SwapchainResizedHandle;
         CWorld*                             World = nullptr;
         
@@ -80,86 +105,35 @@ namespace Lumina
 
         /** Packed array of all light shadows in the scene */
         TArray<TVector<FLightShadow>, (uint32)ELightType::Num>    PackedShadows;
+        
 
         FBindingCache                       BindingCache;
 
         FRHIViewportRef                     SceneViewport;
         
-        FRHIInputLayoutRef                  SimpleVertexLayoutInput;
         
         FSceneGlobalData                    SceneGlobalData;
         
-        FRHIBindingSetRef                   BillboardPassSet;
-        FRHIBindingLayoutRef                BillboardPassLayout;
-
-        FRHIBindingSetRef                   BasePassSet;
-        FRHIBindingLayoutRef                BasePassLayout;
-
-        FRHIBindingSetRef                   ToneMappingPassSet;
-        FRHIBindingLayoutRef                ToneMappingPassLayout;
+        FRHIBindingSetRef                   SceneBindingSet;
+        FRHIBindingLayoutRef                SceneBindingLayout;
+        FRHIBindingLayoutRef                SceneBindlessLayout;
+        FRHIDescriptorTableRef              SceneDescriptorTable;
         
-        FRHIBindingSetRef                   ShadowPassSet;
-        FRHIBindingLayoutRef                ShadowPassLayout;
-
-        FRHIBindingSetRef                   DebugPassSet;
-        FRHIBindingLayoutRef                DebugPassLayout;
-
-        FRHIBindingSetRef                   SSAOBlurPassSet;
-        FRHIBindingLayoutRef                SSAOBlurPassLayout;
+        TVector<FSimpleElementVertex>       SimpleVertices;
         
-        FRHIBindingSetRef                   BindingSet;
-        FRHIBindingLayoutRef                BindingLayout;
-
-        FRHIBindingSetRef                   MeshCullSet;
-        FRHIBindingLayoutRef                MeshCullLayout;
-
-        FRHIBindingSetRef                   ClusterBuildSet;
-        FRHIBindingLayoutRef                ClusterBuildLayout;
-
-        FRHIBindingSetRef                   LightCullSet;
-        FRHIBindingLayoutRef                LightCullLayout;
-
-        FRHIBindingSetRef                   SelectionPassSet;
-        FRHIBindingLayoutRef                SelectionPassLayout;
-        
-        FRHITypedVertexBuffer<FSimpleElementVertex> SimpleVertexBuffer;
-        TVector<FSimpleElementVertex>               SimpleVertices;
-        
-        struct FLineBatch
-        {
-            uint32 StartVertex;
-            uint32 VertexCount;
-            float Thickness;
-            bool bDepthTest;
-        };
-
-        TVector<FLineBatch> LineBatches;
+        FRHIInputLayoutRef                  SimpleVertexLayoutInput;
+        TVector<FLineBatch>                 LineBatches;
 
         TVector<FBillboardInstance>                 BillboardInstances;
         
-        FRHIBindingLayoutRef                        SimplePassLayout;
-
-        FRHIBufferRef                               CullDataBuffer;
-        FRHIBufferRef                               ClusterBuffer;
-        FRHIBufferRef                               SceneDataBuffer;
-        FRHIBufferRef                               InstanceDataBuffer;
-        FRHIBufferRef                               BoneDataBuffer;
-        FRHIBufferRef                               InstanceMappingBuffer;
-        FRHIBufferRef                               LightDataBuffer;
-        FRHIBufferRef                               IndirectDrawBuffer;
-        
-        FShadowAtlas                        ShadowAtlas;
-
-        FRHIImageRef                        HDRRenderTarget;
-        FRHIImageRef                        CascadedShadowMap;
-        FRHIImageRef                        DepthAttachment;
-        FRHIImageRef                        DepthPyramid;
-        FRHIImageRef                        PickerImage;
+        TArray<FRHIBufferRef, (int)ENamedBuffer::Num>   NamedBuffers = {};
+        TArray<FRHIImageRef, (int)ENamedImage::Num>     NamedImages = {};
         
         /** Packed array of per-instance data */
         TVector<FInstanceData>                  InstanceData;
         TVector<glm::mat4>                      BonesData;
         
+        FShadowAtlas                            ShadowAtlas;
         
         FMeshPass DepthMeshPass;
         FMeshPass OpaqueMeshPass;

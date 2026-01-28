@@ -7,14 +7,6 @@
 
 layout(location = 0) out vec2 vUV;
 
-layout(set = 1, binding = 0) uniform sampler2D uBillboardTexture;
-
-layout(push_constant) uniform PC
-{
-    FBillboardInstance Billboard;
-};
-
-
 const vec2 Positions[6] = vec2[]
 (
     vec2(-1.0, -1.0),  // Triangle 1
@@ -42,10 +34,10 @@ void main()
     vec2 QuadPos = Positions[gl_VertexIndex];
     vUV = UVs[gl_VertexIndex];
 
-    vec3 BillboardCenter    = Billboard.Position;
-    float BillboardSize     = Billboard.Size;
+    vec3 BillboardCenter    = vec3(1.0, 0.0, 0.0);//Billboard.Position;
+    float BillboardSize     = 1.0;//Billboard.Size;
 
-    mat4 ViewMatrix     = GetCameraView();
+    mat4 ViewMatrix         = GetCameraView();
 
     vec3 CameraRight_WS =  vec3(ViewMatrix[0][0], ViewMatrix[1][0], ViewMatrix[2][0]);
     vec3 CameraUp_WS    = -vec3(ViewMatrix[0][1], ViewMatrix[1][1], ViewMatrix[2][1]);

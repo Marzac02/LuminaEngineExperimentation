@@ -111,9 +111,6 @@ enum class ERHIBindingResourceType : uint8
 	Buffer_Uniform = Buffer_CBV,
 	Buffer_Uniform_Dynamic,
 	Buffer_Storage_Dynamic,
-
-	// Push Constant Ranges
-	PushConstants,
 };
 
 enum class ERHIBindingPoint : uint8
@@ -1355,15 +1352,6 @@ namespace Lumina
 			Result.Size = Size;
 			return Result;
 		}
-
-		static FBindingLayoutItem PushConstants(uint32 Slot, uint16 Size = 0)
-		{
-			FBindingLayoutItem Result;
-			Result.Slot = Slot;
-			Result.Type = ERHIBindingResourceType::PushConstants;
-			Result.Size = Size;
-			return Result;
-		}
 		
 		bool operator ==(const FBindingLayoutItem& b) const
 		{
@@ -1529,20 +1517,7 @@ namespace Lumina
 			
 			return Result;
 		}
-
-		static FBindingSetItem PushConstants(uint32 Slot, uint32 ByteSize)
-		{
-			FBindingSetItem Result;
-			Result.Slot					= Slot;
-			Result.ArrayElement			= 0;
-			Result.Type					= ERHIBindingResourceType::PushConstants;
-			Result.ResourceHandle		= nullptr;
-			Result.Format				= EFormat::UNKNOWN;
-			Result.Variant				= FBufferRange{0, ByteSize};
-			
-			return Result;
-		}
-
+		
 		bool operator == (const FBindingSetItem& b) const
 		{
 			return ResourceHandle == b.ResourceHandle

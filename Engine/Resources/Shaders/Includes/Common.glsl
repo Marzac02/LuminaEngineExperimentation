@@ -25,6 +25,8 @@ const float INV_PI  = 0.31830988618;
 #define MAX_SHADOWS 100
 #define NUM_CASCADES 3
 
+#define MAX_SCALARS 24
+#define MAX_VECTORS 24
 
 struct FDrawIndexedIndirectArguments 
 {
@@ -54,13 +56,24 @@ const int SSAO_KERNEL_SIZE        = 32;
 //////////////////////////////////////////////////////////
 
 
-const uint LIGHT_FLAG_TYPE_DIRECTIONAL = 1 << 0;
-const uint LIGHT_FLAG_TYPE_POINT       = 1 << 1;
-const uint LIGHT_FLAG_TYPE_SPOT        = 1 << 2;
-const uint LIGHT_FLAG_CASTSHADOW       = 1 << 3;
+#define BIT(X) (1u << (X))
 
+
+const uint LIGHT_FLAG_TYPE_DIRECTIONAL = BIT(0);
+const uint LIGHT_FLAG_TYPE_POINT       = BIT(1);
+const uint LIGHT_FLAG_TYPE_SPOT        = BIT(2);
+const uint LIGHT_FLAG_CASTSHADOW       = BIT(3);
 
 //////////////////////////////////////////////////////////
+
+#define INSTANCE_FLAG_BILLBOARD         BIT(0)
+#define INSTANCE_FLAG_SKINNED           BIT(1)
+#define INSTANCE_FLAG_SELECTED          BIT(2)
+#define INSTANCE_FLAG_CAST_SHADOW       BIT(3)
+#define INSTANCE_FLAG_RECEIVE_SHADOW    BIT(4)
+
+//////////////////////////////////////////////////////////
+
 
 // Unpack 10:10:10:2 normal
 vec3 UnpackNormal(uint packed)
@@ -111,7 +124,7 @@ struct FInstanceData
     
     uint    EntityID;
     uint    BatchedDrawID;
-    uint    Selected;
+    uint    Flags;          // (INSTANCE_FLAG_XXX)
     uint    BoneOffset;
 };
 
@@ -151,6 +164,21 @@ struct FLight
     FLightShadow Shadow[6];
 };
 
+struct FLightData
+{
+    uint    NumLights;
+    uint    Padding[3];
+
+    vec3    SunDirection;
+    uint    bHasSun;
+
+    vec4    CascadeSplits;
+
+    vec4    AmbientLight;
+
+    FLight  Lights[MAX_LIGHTS];
+};
+
 struct FCluster
 {
     vec4 MinPoint;
@@ -158,7 +186,6 @@ struct FCluster
     uint LightIndices[LIGHTS_PER_CLUSTER];
     uint Count;
 };
-
 
 struct FFrustum
 {
@@ -184,14 +211,29 @@ struct FCullData
     float PyramidHeight;
 };
 
+struct FSceneGlobalData
+{
+    FCameraView CameraView;
+    uvec4 ScreenSize;
+    uvec4 GridSize;
+
+    float Time;
+    float DeltaTime;
+    float NearPlane;
+    float FarPlane;
+
+    FSSAOSettings   SSAOSettings;
+    FCullData       CullData;
+};
+
 vec4 UnpackColor(uint ColorMask)
 {
     return vec4
     (
-        float((ColorMask >> COL_R_SHIFT) & 0xFF) / 255.0,
-        float((ColorMask >> COL_G_SHIFT) & 0xFF) / 255.0,
-        float((ColorMask >> COL_B_SHIFT) & 0xFF) / 255.0,
-        float((ColorMask >> COL_A_SHIFT) & 0xFF) / 255.0
+        float((ColorMask >> COL_R_SHIFT) & uint(0xFF)) / 255.0,
+        float((ColorMask >> COL_G_SHIFT) & uint(0xFF)) / 255.0,
+        float((ColorMask >> COL_B_SHIFT) & uint(0xFF)) / 255.0,
+        float((ColorMask >> COL_A_SHIFT) & uint(0xFF)) / 255.0
     );
 }
 
@@ -229,7 +271,6 @@ uint ToggleFlag(uint value, uint flag)
 {
     return value ^ flag;
 }
-
 
 
 vec3 ReconstructWorldPosition(vec2 uv, float depth, mat4 invProjection, mat4 invView) 

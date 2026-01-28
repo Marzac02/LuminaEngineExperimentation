@@ -37,8 +37,8 @@ void main()
     for(int i = 0; i < SSAO_KERNEL_SIZE; i++)
     {
         // Get sample position.
-        vec3 SamplerPos = TBN * SceneUBO.SSAOSettings.Samples[i].xyz; // Tangent-Space to View-Space
-        SamplerPos = FragPos + SamplerPos * SceneUBO.SSAOSettings.Radius;
+        vec3 SamplerPos = TBN * uSceneData.SSAOSettings.Samples[i].xyz; // Tangent-Space to View-Space
+        SamplerPos = FragPos + SamplerPos * uSceneData.SSAOSettings.Radius;
         
         // Get sample position in screen space.
         vec4 Offset = vec4(SamplerPos, 1.0f);
@@ -50,13 +50,13 @@ void main()
         vec3 SamplePos = ReconstructViewPos(Offset.xy, SampleDepth, GetInverseCameraProjection());
 
         
-        float RangeCheck = smoothstep(0.0f, 1.0f, SceneUBO.SSAOSettings.Radius / abs(FragPos.z - SamplePos.z));
+        float RangeCheck = smoothstep(0.0f, 1.0f, uSceneData.SSAOSettings.Radius / abs(FragPos.z - SamplePos.z));
         
         // Now both are in view-space, so the comparison is valid
         Occlusion += (SamplePos.z >= SamplerPos.z + Bias ? 0.0f : 1.0f) * RangeCheck;
     }
     
-    float Power = SceneUBO.SSAOSettings.Power;
+    float Power = uSceneData.SSAOSettings.Power;
     Occlusion = 1.0 - (Occlusion / float(SSAO_KERNEL_SIZE));
     outFragColor = pow(Occlusion, Power);
 }

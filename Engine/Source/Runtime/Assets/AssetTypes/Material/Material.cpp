@@ -199,7 +199,7 @@ namespace Lumina
 
         ShaderCompiler->Flush();
 
-        FString FragmentPath = Paths::GetEngineResourceDirectory() + "/MaterialShader/ForwardBasePass.frag";
+        FString FragmentPath = Paths::GetEngineResourceDirectory() + "/Shaders/MaterialShader/ForwardBasePass.frag";
         
         if (DefaultMaterial)
         {

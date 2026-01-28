@@ -151,7 +151,6 @@ namespace Lumina
             FBindingSetDesc SetDesc;
             SetDesc.AddItem(FBindingSetItem::TextureSRV(0, RHIImage, nullptr, RHIImage->GetFormat(), FTextureSubresourceSet(i - 1, 1, 0, 1)));
             SetDesc.AddItem(FBindingSetItem::TextureUAV(1, RHIImage, RHIImage->GetFormat(), FTextureSubresourceSet(i, 1, 0, 1)));
-            SetDesc.AddItem(FBindingSetItem::PushConstants(0, sizeof(glm::vec2)));
 
             FRHIBindingSetRef Set;
             FRHIBindingLayoutRef Layout;

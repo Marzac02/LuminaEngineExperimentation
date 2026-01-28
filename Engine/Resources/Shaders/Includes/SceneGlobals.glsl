@@ -2,62 +2,90 @@
 
 #include "Common.glsl"
 
-layout(set = 0, binding = 0) restrict readonly uniform SceneGlobals
+//////////////////////////////////////////////////////////
+// BINDING SET 0
+//////////////////////////////////////////////////////////
+
+layout(set = 0, binding = 0) restrict uniform SceneGlobals
 {
-    FCameraView CameraView;
-    uvec4 ScreenSize;
-    uvec4 GridSize;
+    FSceneGlobalData uSceneData;
+};
 
-    float Time;
-    float DeltaTime;
-    float NearPlane;
-    float FarPlane;
+layout(set = 0, binding = 1) restrict readonly buffer SceneLightData
+{
+    FLightData LightData;
+};
 
-    FSSAOSettings SSAOSettings;
-
-} SceneUBO;
-
-layout(set = 0, binding = 1) restrict readonly buffer FModelData
+layout(set = 0, binding = 2) restrict readonly buffer BufferInstanceData
 {
     FInstanceData Instances[];
-} ModelData;
+} InstanceData;
 
-layout(set = 0, binding = 2) restrict readonly buffer InstanceMappingData
+layout(set = 0, binding = 3) restrict buffer InstanceMappingData
 {
     uint Mapping[];
-} uMappingData;
+} MappingData;
 
-layout(set = 0, binding = 3) restrict readonly buffer FLightData
+layout(set = 0, binding = 4) restrict buffer FIndirectDrawBuffer
 {
-    uint    NumLights;
-    uint    Padding[3];
+    FDrawIndexedIndirectArguments Args[];
+} IndirectDrawData;
 
-    vec3    SunDirection;
-    uint    bHasSun;
-
-    vec4    CascadeSplits;
-
-    vec4    AmbientLight;
-
-    FLight  Lights[MAX_LIGHTS];
-} LightData;
-
-layout(set = 0, binding = 4) restrict readonly buffer FBoneData
+layout(set = 0, binding = 5) restrict readonly buffer FBoneData
 {
     mat4 BoneMatrices[];
-} Bones;
+} BoneData;
+
+layout(set = 0, binding = 6) restrict buffer ClusterSSBO
+{
+    FCluster Clusters[];
+} Clusters;
+
+layout(set = 0, binding = 7) restrict buffer MaterialUniforms
+{
+    vec4 Scalars[MAX_SCALARS / 4];
+    vec4 Vectors[MAX_VECTORS];
+} uMaterialUniforms;
+
+layout(set = 0, binding = 8)        uniform sampler2DArray uShadowCascade;
+layout(set = 0, binding = 9)        uniform sampler2DArray uShadowAtlas;
+layout(set = 0, binding = 10)       uniform usampler2D uSelectionTexture;
+layout(set = 0, binding = 11)       uniform sampler2D uDepthPyramid;
+layout(set = 0, binding = 12)       uniform sampler2D uHDRSceneColor;
+
+
+//////////////////////////////////////////////////////////
+// BINDING SET 1
+//////////////////////////////////////////////////////////
+
+layout(set = 1, binding = 0) uniform sampler2D uGlobalTextures[];
+
+
 
 //////////////////////////////////////////////////////////
 
 
+
+float GetMaterialScalar(uint Index)
+{
+    uint v = Index / 4;
+    uint c = Index % 4;
+    return uMaterialUniforms.Scalars[v][c];
+}
+
+vec4 GetMaterialVec4(uint Index)
+{
+    return uMaterialUniforms.Vectors[Index];
+}
+
 uint DrawIDToInstanceID(uint ID)
 {
-    return uMappingData.Mapping[ID];
+    return MappingData.Mapping[ID];
 }
 
 FInstanceData GetInstanceData(uint Index)
 {
-    return ModelData.Instances[DrawIDToInstanceID(Index)];
+    return InstanceData.Instances[DrawIDToInstanceID(Index)];
 }
 
 vec3 GetSunDirection()
@@ -77,67 +105,67 @@ float GetAmbientLightIntensity()
 
 float GetTime()
 {
-    return SceneUBO.Time;
+    return uSceneData.Time;
 }
 
 float GetDeltaTime()
 {
-    return SceneUBO.DeltaTime;
+    return uSceneData.DeltaTime;
 }
 
 float GetNearPlane()
 {
-    return SceneUBO.NearPlane;
+    return uSceneData.NearPlane;
 }
 
 float GetFarPlane()
 {
-    return SceneUBO.FarPlane;
+    return uSceneData.FarPlane;
 }
 
 vec3 GetCameraPosition()
 {
-    return SceneUBO.CameraView.CameraPosition.xyx;
+    return uSceneData.CameraView.CameraPosition.xyx;
 }
 
 vec3 GetCameraUp()
 {
-    return SceneUBO.CameraView.CameraUp.xyx;
+    return uSceneData.CameraView.CameraUp.xyx;
 }
 
 vec3 GetCameraRight()
 {
-    return SceneUBO.CameraView.CameraRight.xyx;
+    return uSceneData.CameraView.CameraRight.xyx;
 }
 
 vec3 GetCameraForward()
 {
-    return SceneUBO.CameraView.CameraForward.xyx;
+    return uSceneData.CameraView.CameraForward.xyx;
 }
 
 mat4 GetCameraView()
 {
-    return SceneUBO.CameraView.CameraView;
+    return uSceneData.CameraView.CameraView;
 }
 
 mat4 GetInverseCameraView()
 {
-    return SceneUBO.CameraView.InverseCameraView;
+    return uSceneData.CameraView.InverseCameraView;
 }
 
 mat4 GetCameraProjection()
 {
-    return SceneUBO.CameraView.CameraProjection;
+    return uSceneData.CameraView.CameraProjection;
 }
 
 mat4 GetInverseCameraProjection()
 {
-    return SceneUBO.CameraView.InverseCameraProjection;
+    return uSceneData.CameraView.InverseCameraProjection;
 }
 
 mat4 GetModelMatrix(uint Index)
 {
-    return ModelData.Instances[DrawIDToInstanceID(Index)].ModelMatrix;
+    return InstanceData.Instances[DrawIDToInstanceID(Index)].ModelMatrix;
 }
 
 vec3 GetModelLocation(uint Index)
@@ -148,7 +176,7 @@ vec3 GetModelLocation(uint Index)
 
 uint GetEntityID(uint Index)
 {
-    return ModelData.Instances[DrawIDToInstanceID(Index)].EntityID;
+    return InstanceData.Instances[DrawIDToInstanceID(Index)].EntityID;
 }
 
 vec3 WorldToView(vec3 WorldPos)

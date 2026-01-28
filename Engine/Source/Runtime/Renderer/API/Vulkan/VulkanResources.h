@@ -579,7 +579,7 @@ namespace Lumina
 
         RENDER_RESOURCE(RRT_DescriptorTable)
 
-        FVulkanDescriptorTable(FVulkanRenderContext* InContext, FVulkanBindingLayout* InLayout);
+        FVulkanDescriptorTable(const FVulkanRenderContext* InContext, FVulkanBindingLayout* InLayout);
         ~FVulkanDescriptorTable() override;
         
         const FBindingSetDesc* GetDesc() const override { return nullptr; }

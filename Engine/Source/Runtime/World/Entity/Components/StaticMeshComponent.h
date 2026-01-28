@@ -21,7 +21,11 @@ namespace Lumina
         
         PROPERTY(Editable, Category = "Mesh")
         TObjectPtr<CStaticMesh> StaticMesh;
+        
+        PROPERTY(Editable, Category = "Shadow")
+        bool bCastShadow = true;
 
-        TVector<FTransform>        Instances;
+        PROPERTY(Editable, Category = "Shadow")
+        bool bReceiveShadow = true;
     };
 }

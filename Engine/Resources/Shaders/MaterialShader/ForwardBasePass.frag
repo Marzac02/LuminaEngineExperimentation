@@ -4,9 +4,6 @@
 
 #include "Includes/SceneGlobals.glsl"
 
-#define MAX_SCALARS 24
-#define MAX_VECTORS 24
-
 layout(early_fragment_tests) in;
 
 layout(location = 0) in vec4 inColor;
@@ -15,38 +12,11 @@ layout(location = 2) in vec4 inNormalWS;
 layout(location = 3) in vec4 inFragPos;
 layout(location = 4) in vec2 inUV;
 layout(location = 5) flat in uint inEntityID;
+layout(location = 6) flat in uint inReceiveShadow;
 
 layout(location = 0) out vec4 outColor;
 layout(location = 1) out uint outPicker;
 
-layout(set = 1, binding = 0) uniform sampler2DArray uShadowCascade;
-layout(set = 1, binding = 1) uniform sampler2DArray uShadowAtlas;
-
-// Cluster data
-layout(set = 1, binding = 2) restrict readonly buffer ClusterSSBO
-{
-    FCluster Clusters[];
-} Clusters;
-
-// Material uniforms
-layout(set = 2, binding = 0) uniform FMaterialUniforms
-{
-    vec4 Scalars[MAX_SCALARS / 4];
-    vec4 Vectors[MAX_VECTORS];
-} MaterialUniforms;
-
-
-float GetMaterialScalar(uint Index)
-{
-    uint v = Index / 4;
-    uint c = Index % 4;
-    return MaterialUniforms.Scalars[v][c];
-}
-
-vec4 GetMaterialVec4(uint Index)
-{
-    return MaterialUniforms.Vectors[Index];
-}
 
 // ============================================================================
 // MATERIAL DATA
@@ -192,6 +162,11 @@ FCubemapCoord DirectionToCubemapCoord(vec3 dir)
 
 float ComputeShadowFactor(FLight Light, vec3 FragmentPos, float Bias)
 {
+    if(inReceiveShadow == 0)
+    {
+        return 1.0;
+    }
+    
     bool IsPointLight       = Light.Flags == LIGHT_FLAG_TYPE_POINT;
     bool IsSpotLight        = Light.Flags == LIGHT_FLAG_TYPE_SPOT;
     bool IsDirectionalLight = Light.Flags == LIGHT_FLAG_TYPE_DIRECTIONAL;
@@ -379,7 +354,7 @@ void main()
     // Setup geometry
     vec3 TSN        = normalize(Material.Normal);
     vec3 N          = GetWorldNormal(WorldNormal, inUV, WorldPosition, TSN);
-    vec3 V          = normalize(SceneUBO.CameraView.CameraPosition.xyz - WorldPosition);
+    vec3 V          = normalize(GetCameraPosition() - WorldPosition);
     
     // Calculate Fresnel reflectance at normal incidence
     vec3 IOR    = vec3(0.5);
@@ -393,8 +368,8 @@ void main()
     // Cluster calculation
     float zNear         = GetNearPlane();
     float zFar          = GetFarPlane();
-    uvec3 GridSize      = SceneUBO.GridSize.xyz;
-    uvec2 ScreenSize    = SceneUBO.ScreenSize.xy;
+    uvec3 GridSize      = uSceneData.GridSize.xyz;
+    uvec2 ScreenSize    = uSceneData.ScreenSize.xy;
     
     uint zTile      = uint((log(abs(ViewPosition.z) / zNear) * GridSize.z) / log(zFar / zNear));
     vec2 TileSize   = vec2(ScreenSize) / vec2(GridSize.xy);

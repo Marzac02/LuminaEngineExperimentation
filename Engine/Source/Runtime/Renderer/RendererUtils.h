@@ -1,12 +1,26 @@
 ﻿#pragma once
 
 #include <algorithm>
-#include <glm/gtx/quaternion.hpp>
+#include "RenderResource.h"
 #include "Containers/Array.h"
+#include "Core/Functional/FunctionRef.h"
 #include "Platform/GenericPlatform.h"
+
+namespace Lumina
+{
+    class FRHIBuffer;
+}
 
 namespace Lumina::RenderUtils
 {
+    /**
+     * 
+     * @param Buffer Buffer needing a resize
+     * @param DesiredSize New desired size.
+     * @return true if the buffer was resized.
+     */
+    RUNTIME_API bool ResizeBufferIfNeeded(FRHIBufferRef& Buffer, uint32 DesiredSize, int GrowthFactor);
+    
     inline uint32 CalculateMipCount(uint32 Width, uint32 Height)
     {
         uint32 Levels = 1;

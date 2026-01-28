@@ -948,18 +948,13 @@ namespace Lumina
     void FVulkanCommandList::SetResourceStatesForBindingSet(FRHIBindingSet* BindingSet)
     {
         LUMINA_PROFILE_SCOPE();
-
-        if (BindingSet == nullptr)
-        {
-            return;
-        }
+        DEBUG_ASSERT(BindingSet);
 
         if (BindingSet->GetDesc() == nullptr)
         {
             return; // Bindless.
         }
         
-
         FVulkanBindingSet* VkBindingSet = static_cast<FVulkanBindingSet*>(BindingSet);
         
         for (uint32 Binding : VkBindingSet->BindingsRequiringTransitions)
@@ -1220,42 +1215,18 @@ namespace Lumina
         {
             SIZE_T SetIndex = i;
             FRHIBindingSet* Set = BindingSets[SetIndex];
-            FVulkanBindingSet* VulkanSet = static_cast<FVulkanBindingSet*>(Set);
-    
-            if (!VulkanSet)
-            {
-                continue;
-            }
+            ASSERT(Set);
     
             if (CurrentBatchStart == UINT32_MAX)
             {
                 CurrentBatchStart = (uint32)i;
             }
-    
-            // Handle gaps — flush current batch if gap detected // @TODO UNUSED FOR NOW
-            //if (SetIndex != CurrentBatchStart + CurrentDescriptorBatch.size())
-            //{
-            //    if (!CurrentDescriptorBatch.empty())
-            //    {
-            //        vkCmdBindDescriptorSets(CurrentCommandBuffer->CommandBuffer,
-            //            BindPoint,
-            //            PipelineLayout,
-            //            CurrentBatchStart,
-            //            static_cast<uint32>(CurrentDescriptorBatch.size()),
-            //            CurrentDescriptorBatch.data(),
-            //            static_cast<uint32>(DynamicOffsets.size()),
-            //            DynamicOffsets.data());
-            //
-            //        CurrentDescriptorBatch.clear();
-            //        DynamicOffsets.clear();
-            //        CurrentBatchStart = (uint32)SetIndex;
-            //    }
-            //}
-
-            CurrentDescriptorBatch.push_back(VulkanSet->DescriptorSet);
-    
-            if (VulkanSet->GetDesc())
+            
+            // No desc means bindless.
+            if (Set->GetDesc())
             {
+                FVulkanBindingSet* VulkanSet = static_cast<FVulkanBindingSet*>(Set);
+
                 for (FRHIBuffer* DynamicBuffer : VulkanSet->DynamicBuffers)
                 {
                     auto Found = DynamicBufferWrites.find(DynamicBuffer);
@@ -1273,6 +1244,12 @@ namespace Lumina
                 }
 
                 CurrentCommandBuffer->AddReferencedResource(VulkanSet);
+                CurrentDescriptorBatch.push_back(VulkanSet->DescriptorSet);
+            }
+            else
+            {
+                FVulkanDescriptorTable* VulkanTable = static_cast<FVulkanDescriptorTable*>(Set);
+                CurrentDescriptorBatch.push_back(VulkanTable->DescriptorSet);
             }
         }
         
@@ -1298,7 +1275,7 @@ namespace Lumina
         LUMINA_PROFILE_SCOPE();
         
         CommandListStats.NumPushConstants++;
-        vkCmdPushConstants(CurrentCommandBuffer->CommandBuffer, CurrentPipelineLayout, PushConstantVisibility, 0, (uint32)ByteSize, Data);
+        vkCmdPushConstants(CurrentCommandBuffer->CommandBuffer, CurrentPipelineLayout, VK_SHADER_STAGE_ALL, 0, (uint32)ByteSize, Data);
     }
 
     VkViewport FVulkanCommandList::ToVkViewport(float MinX, float MinY, float MinZ, float MaxX, float MaxY, float MaxZ)

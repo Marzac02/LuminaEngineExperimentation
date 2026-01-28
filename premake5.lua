@@ -124,16 +124,20 @@ workspace "Lumina"
     
     filter {}
 
+    group "Applications"
+    	include "Engine/Applications/Lumina"
+		include "Engine/Applications/Reflector"
+	group ""
+
     group "Engine"
 		include "Engine/Source/Runtime"
         include "Engine/Editor"
         include "Engine/Sandbox"
 	group ""
 
-	group "Applications"
-    	include "Engine/Applications/Lumina"
-		include "Engine/Applications/Reflector"
-	group ""
+    group "Engine/Shaders"
+        include "Engine/Resources/Shaders"
+    group ""
 
 	group "Engine/ThirdParty"
         include "Engine/Source/ThirdParty/EA"

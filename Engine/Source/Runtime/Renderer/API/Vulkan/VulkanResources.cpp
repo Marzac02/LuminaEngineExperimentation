@@ -316,7 +316,6 @@ namespace Lumina
         case ERHIBindingResourceType::Buffer_CBV:                   return VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
         case ERHIBindingResourceType::Buffer_Uniform_Dynamic:       return VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
         case ERHIBindingResourceType::Buffer_Storage_Dynamic:       return VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC;
-        case ERHIBindingResourceType::PushConstants:                /* handled separately */;
         default:                                                    return VK_DESCRIPTOR_TYPE_MAX_ENUM;
         }
     }
@@ -1117,11 +1116,6 @@ namespace Lumina
         
         for (const FBindingLayoutItem& Item : InDesc.Bindings)
         {
-            if (Item.Type == ERHIBindingResourceType::PushConstants)
-            {
-                continue;
-            }
-            
             VkDescriptorSetLayoutBinding Binding = {};
             Binding.descriptorType = ToVkDescriptorType(Item.Type);
             Binding.stageFlags = ToVkStageFlags(InDesc.StageFlags);
@@ -1144,16 +1138,11 @@ namespace Lumina
         
         for (const FBindingLayoutItem& Item : InDesc.Bindings)
         {
-            if (Item.Type == ERHIBindingResourceType::PushConstants)
-            {
-                continue;
-            }
-            
             VkDescriptorSetLayoutBinding Binding = {};
-            Binding.descriptorType = ToVkDescriptorType(Item.Type);
-            Binding.stageFlags = ToVkStageFlags(InDesc.StageFlags);
-            Binding.descriptorCount = 1;
-            Binding.binding = Item.Slot;
+            Binding.descriptorType      = ToVkDescriptorType(Item.Type);
+            Binding.stageFlags          = ToVkStageFlags(InDesc.StageFlags);
+            Binding.descriptorCount     = InDesc.MaxCapacity;
+            Binding.binding             = Bindings.size();
 
             Bindings.push_back(Binding);
         }
@@ -1212,10 +1201,8 @@ namespace Lumina
 
         auto MutableDescriptorTypeList = &CbvSrvUavTypes;
 
-        if (bBindless)
-        {
-            CreateInfo.pNext = &ExtendedInfo;
-        }
+
+        CreateInfo.pNext = &ExtendedInfo;
 
         auto Result = vkCreateDescriptorSetLayout(Device->GetDevice(), &CreateInfo, VK_ALLOC_CALLBACK, &DescriptorSetLayout);
         VK_CHECK(Result);
@@ -1245,9 +1232,7 @@ namespace Lumina
             }
         }
 
-
         return Result == VK_SUCCESS;
-        
     }
 
     void* FVulkanBindingLayout::GetAPIResourceImpl(EAPIResourceType)
@@ -1297,7 +1282,7 @@ namespace Lumina
         for (size_t BindingIndex = 0; BindingIndex < InDesc.Bindings.size(); ++BindingIndex)
         {
             const FBindingSetItem& Item = InDesc.Bindings[BindingIndex];
-            if (Item.Type == ERHIBindingResourceType::PushConstants || (Item.ResourceHandle == nullptr))
+            if (Item.ResourceHandle == nullptr)
             {
                 continue;
             }
@@ -1313,8 +1298,7 @@ namespace Lumina
             Write.dstArrayElement = 0;
             Write.dstBinding = VkBinding.binding;
             Write.dstSet = DescriptorSet;
-
-
+            
             switch (Item.Type)
             {
             case ERHIBindingResourceType::Texture_SRV:
@@ -1330,7 +1314,6 @@ namespace Lumina
                     ImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
                     ImageInfo.sampler = Item.GetTextureResource().Sampler ?
                     Item.GetTextureResource().Sampler->GetAPI<VkSampler>() : TStaticRHISampler<>::GetRHI()->GetAPI<VkSampler>();
-
                     
                     Write.pImageInfo = &ImageInfo;
                     Write.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
@@ -1495,7 +1478,7 @@ namespace Lumina
         return DescriptorSet;
     }
 
-    FVulkanDescriptorTable::FVulkanDescriptorTable(FVulkanRenderContext* InContext, FVulkanBindingLayout* InLayout)
+    FVulkanDescriptorTable::FVulkanDescriptorTable(const FVulkanRenderContext* InContext, FVulkanBindingLayout* InLayout)
         : IDeviceChild(InContext->GetDevice())
         , Layout(InLayout)
     {
@@ -1516,7 +1499,6 @@ namespace Lumina
         AllocateInfo.pSetLayouts = &InLayout->DescriptorSetLayout;
         
         VK_CHECK(vkAllocateDescriptorSets(Device->GetDevice(), &AllocateInfo, &DescriptorSet));
-
     }
 
     FVulkanDescriptorTable::~FVulkanDescriptorTable()
@@ -1538,45 +1520,29 @@ namespace Lumina
     void FVulkanPipeline::CreatePipelineLayout(const FString& DebugName, const TFixedVector<FRHIBindingLayoutRef, 1>& BindingLayouts, VkShaderStageFlags& OutStageFlags)
     {
         TFixedVector<VkDescriptorSetLayout, 2> Layouts;
-        uint32 PushConstantSize = 0;
         
         for (const FRHIBindingLayoutRef& Binding : BindingLayouts)
         {
             ASSERT(Binding.IsValid());
             
             FVulkanBindingLayout* VkBindingLayout = Binding.As<FVulkanBindingLayout>();
-            if (!VkBindingLayout->bBindless)
-            {
-                for (const FBindingLayoutItem& Item : VkBindingLayout->GetDesc()->Bindings)
-                {
-                    if (Item.Type == ERHIBindingResourceType::PushConstants)
-                    {
-                        PushConstantSize = Item.Size;
-                        OutStageFlags = ToVkStageFlags(VkBindingLayout->GetDesc()->StageFlags);
-
-                        break;
-                    }
-                }
-            }
-            
             Layouts.push_back(VkBindingLayout->DescriptorSetLayout);
         }
 
         VkPushConstantRange Range = {};
-        Range.size = PushConstantSize;
-        Range.stageFlags = OutStageFlags;
+        Range.size = 128;
+        Range.stageFlags = VK_SHADER_STAGE_ALL;
         Range.offset = 0;
         
         VkPipelineLayoutCreateInfo CreateInfo = {};
         CreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
         CreateInfo.pSetLayouts = Layouts.data();
         CreateInfo.setLayoutCount = (uint32)Layouts.size();
-        CreateInfo.pushConstantRangeCount = PushConstantSize ? 1 : 0;
+        CreateInfo.pushConstantRangeCount = 1;
         CreateInfo.pPushConstantRanges = &Range;
         
         VK_CHECK(vkCreatePipelineLayout(Device->GetDevice(), &CreateInfo, VK_ALLOC_CALLBACK, &PipelineLayout));
         static_cast<FVulkanRenderContext*>(GRenderContext)->SetVulkanObjectName(DebugName, VK_OBJECT_TYPE_PIPELINE_LAYOUT, (uintptr_t)PipelineLayout);
-
     }
 
     FVulkanGraphicsPipeline::FVulkanGraphicsPipeline(FVulkanDevice* InDevice, const FGraphicsPipelineDesc& InDesc, const FRenderPassDesc& RenderPassDesc)
@@ -1616,6 +1582,8 @@ namespace Lumina
             FragmentStage.pSpecializationInfo   = nullptr;
             ShaderStages.push_back(FragmentStage);
         }
+        
+        DEBUG_ASSERT(!ShaderStages.empty());
 
         VkPipelineDynamicStateCreateInfo DynamicState = {};
         DynamicState.sType                      = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
