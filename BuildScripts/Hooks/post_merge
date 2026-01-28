@@ -1,0 +1,7 @@
+bash#!/bin/bash
+# Delete intermediates directory after pull
+if [ -d "Intermediate" ]; then
+    echo "Cleaning up Intermediate directory..."
+    rm -rf Intermediate
+    echo "Intermediate directory deleted."
+fi
