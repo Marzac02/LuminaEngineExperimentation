@@ -30,10 +30,10 @@ void main()
     uint BoneOffset = Instance.BoneOffset;
     
     mat4 SkinMatrix =
-    Bones.BoneMatrices[BoneOffset + inJointIndices.x] * Weights.x +
-    Bones.BoneMatrices[BoneOffset + inJointIndices.y] * Weights.y +
-    Bones.BoneMatrices[BoneOffset + inJointIndices.z] * Weights.z +
-    Bones.BoneMatrices[BoneOffset + inJointIndices.w] * Weights.w;
+    BoneData.BoneMatrices[BoneOffset + inJointIndices.x] * Weights.x +
+    BoneData.BoneMatrices[BoneOffset + inJointIndices.y] * Weights.y +
+    BoneData.BoneMatrices[BoneOffset + inJointIndices.z] * Weights.z +
+    BoneData.BoneMatrices[BoneOffset + inJointIndices.w] * Weights.w;
 
     Position = (SkinMatrix * vec4(inPosition, 1.0)).xyz;
     #endif
