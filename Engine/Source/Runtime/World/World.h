@@ -15,6 +15,7 @@
 #include "Renderer/PrimitiveDrawInterface.h"
 #include "Core/Delegates/Delegate.h"
 #include "World.generated.h"
+#include "Core/Functional/FunctionRef.h"
 
 
 namespace Lumina
@@ -70,7 +71,7 @@ namespace Lumina
 
         entt::entity ConstructEntity(const FName& Name, const FTransform& Transform = FTransform());
         
-        void CopyEntity(entt::entity& To, entt::entity From);
+        void CopyEntity(entt::entity& To, entt::entity From, TFunctionRef<bool(entt::type_info)> Callback);
         void DestroyEntity(entt::entity Entity);
 
         //LUM_DEPRECATED("0.0.1", "Access to the registry has been deprecated")
@@ -145,8 +146,8 @@ namespace Lumina
         void MarkTransformDirty(entt::entity Entity);
         void SetEntityTransform(entt::entity Entity, const FTransform& NewTransform);
 
-        void SetSelectedEntity(entt::entity EntityID);
-        entt::entity GetSelectedEntity() const;
+        TVector<entt::entity> GetSelectedEntities() const;
+        bool IsSelected(entt::entity Entity) const;
 
         template<typename TFunc>
         void ForEachUniqueSystem(TFunc&& Func)

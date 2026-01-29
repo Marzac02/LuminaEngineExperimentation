@@ -28,27 +28,6 @@ const float INV_PI  = 0.31830988618;
 #define MAX_SCALARS 24
 #define MAX_VECTORS 24
 
-struct FDrawIndexedIndirectArguments 
-{
-    uint IndexCount;
-    uint InstanceCount;
-    uint FirstIndex;
-    int  VertexOffset;
-    uint FirstInstance;
-};
-
-struct FCameraView
-{
-    vec4 CameraPosition;    // Camera Position
-    vec4 CameraUp;
-    vec4 CameraRight;
-    vec4 CameraForward;
-    mat4 CameraView;        // View matrix
-    mat4 InverseCameraView;
-    mat4 CameraProjection;  // Projection matrix
-    mat4 InverseCameraProjection; // Inverse Camera Projection.
-};
-
 //////////////////////////////////////////////////////////
 
 const int SSAO_KERNEL_SIZE        = 32;
@@ -107,6 +86,36 @@ vec3 ScreenSpaceDither(vec2 vScreenPos, float Time)
     vDither.rgb = fract(vDither.rgb / vec3(103.0, 71.0, 97.0)) - vec3(0.5, 0.5, 0.5);
     return (vDither.rgb / 255.0) * 0.375;
 }
+
+struct FDrawIndexedIndirectArguments
+{
+    uint IndexCount;
+    uint InstanceCount;
+    uint FirstIndex;
+    int  VertexOffset;
+    uint FirstInstance;
+};
+
+struct FCameraView
+{
+    vec4 CameraPosition;    // Camera Position
+    vec4 CameraUp;
+    vec4 CameraRight;
+    vec4 CameraForward;
+    mat4 CameraView;        // View matrix
+    mat4 InverseCameraView;
+    mat4 CameraProjection;  // Projection matrix
+    mat4 InverseCameraProjection; // Inverse Camera Projection.
+};
+
+struct FEntityAABB
+{
+    uint  Entity;
+    float MinX;
+    float MinY;
+    float MaxX;
+    float MaxY;
+};
 
 struct FSSAOSettings
 {

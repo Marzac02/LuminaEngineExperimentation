@@ -80,6 +80,7 @@ void main()
         if(bVisible && uSceneData.CullData.bOcclusionCull != 0)
         {
             vec4 SphereBounds = InstanceData.Instances[gID].SphereBounds;
+            uint Entity = InstanceData.Instances[gID].EntityID;
             vec3 Center = SphereBounds.xyz;
             Center = (uSceneData.CullData.View * vec4(Center, 1.0f)).xyz;
             float Radius = SphereBounds.w;

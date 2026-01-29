@@ -88,13 +88,22 @@
         void DrawSnapSettingsPopup();
 
     protected:
+        
+        void AddSelectedEntity(entt::entity Entity, bool bRebuild);
+        void RemoveSelectedEntity(entt::entity Entity, bool bRebuild);
+        void ClearSelectedEntities();
+        entt::entity GetLastSelectedEntity() const;
+        void ClearLastSelectedEntity() const;
+        
+        void AddEntityToCopies(entt::entity Entity);
+        void RemoveEntityFromCopies(entt::entity Entity);
+        void ClearCopies() const;
 
         void SetWorldPlayInEditor(bool bShouldPlay);
         void SetWorldNewSimulate(bool bShouldSimulate);
 
         void DrawAddToEntityOrWorldPopup(entt::entity Entity = entt::null);
         void DrawFilterOptions();
-        void SetSelectedEntity(entt::entity Entity);
         void RebuildSceneOutliner(FTreeListView& Tree);
         void HandleEntityEditorDragDrop(FTreeListView& Tree, entt::entity DropItem);
 
@@ -130,6 +139,13 @@
 
     private:
 
+        struct FSelectionBox
+        {
+            bool bActive = false;
+            ImVec2 Start;
+            ImVec2 Current;
+        } SelectionBox;
+        
         TObjectPtr<CWorld>                      ProxyWorld;
         
         ImGuiTextFilter                         AddEntityComponentFilter;
@@ -139,9 +155,6 @@
         
         ImGuizmo::OPERATION                     GuizmoOp;
         ImGuizmo::MODE                          GuizmoMode;
-
-        entt::entity                            SelectedEntity;
-        entt::entity                            CopiedEntity;
         
         FTreeListView                           OutlinerListView;
         FTreeListViewContext                    OutlinerContext;

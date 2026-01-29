@@ -15,6 +15,7 @@ layout(location = 3) out vec4 outFragPos;
 layout(location = 4) out vec2 outUV;
 layout(location = 5) flat out uint outEntityID;
 layout(location = 6) flat out uint outReceiveShadow;
+layout(location = 7) flat out uint outSelected;
 
 precise invariant gl_Position;
 
@@ -70,5 +71,6 @@ void main()
     outFragColor        = inColor;
     outEntityID         = InstanceData.EntityID;
     outReceiveShadow    = uint(HasFlag(InstanceData.Flags, INSTANCE_FLAG_RECEIVE_SHADOW));
+    outSelected         = uint(HasFlag(InstanceData.Flags, INSTANCE_FLAG_SELECTED));
     gl_Position         = Projection * ViewPos;
 }

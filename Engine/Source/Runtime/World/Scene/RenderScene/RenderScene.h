@@ -24,6 +24,7 @@ namespace Lumina
         RUNTIME_API virtual FSceneRenderSettings& GetSceneRenderSettings() = 0;
 
         RUNTIME_API virtual entt::entity GetEntityAtPixel(uint32 X, uint32 Y) const = 0;
+        RUNTIME_API virtual THashSet<entt::entity> GetEntitiesInPixelRange(uint32 MinX, uint32 MinY, uint32 MaxX, uint32 MaxY) const = 0;
         
     };
 }

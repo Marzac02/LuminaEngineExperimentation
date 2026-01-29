@@ -61,7 +61,6 @@ layout(set = 0, binding = 12)       uniform sampler2D uHDRSceneColor;
 layout(set = 1, binding = 0) uniform sampler2D uGlobalTextures[];
 
 
-
 //////////////////////////////////////////////////////////
 
 

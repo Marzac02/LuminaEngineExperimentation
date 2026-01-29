@@ -134,8 +134,8 @@ namespace Lumina
     void FForwardRenderScene::SwapchainResized(glm::vec2 NewSize)
     {
         SceneViewport = GRenderContext->CreateViewport(NewSize, "Forward Renderer Viewport");
-        
         InitFrameResources();
+        
         BindingCache.ReleaseResources();
     }
 
@@ -234,7 +234,7 @@ namespace Lumina
                         }
                         
                         EInstanceFlags Flags = EInstanceFlags::None;
-                        if (Entity == World->GetSelectedEntity())
+                        if (World->IsSelected(Entity))
                         {
                             Flags |= EInstanceFlags::Selected;
                         }
@@ -338,7 +338,7 @@ namespace Lumina
                         }
                         
                         EInstanceFlags Flags = EInstanceFlags::Skinned;
-                        if (Entity == World->GetSelectedEntity())
+                        if (World->IsSelected(Entity))
                         {
                             Flags |= EInstanceFlags::Selected;
                         }
@@ -781,6 +781,8 @@ namespace Lumina
             RenderGraph.AddPass(RG_Raster, FRGEvent("Write Scene Buffers"), Descriptor, [this](ICommandList& CmdList)
             {
                 LUMINA_PROFILE_SECTION_COLORED("Write Scene Buffers", tracy::Color::OrangeRed3);
+                
+                SceneGlobalData.CullData.InstanceNum = (uint32)InstanceData.size();
                 
                 const SIZE_T SimpleVertexSize   = SimpleVertices.size() * sizeof(FSimpleElementVertex);
                 const SIZE_T InstanceDataSize   = InstanceData.size() * sizeof(FInstanceData);
@@ -1698,11 +1700,10 @@ namespace Lumina
 
     void FForwardRenderScene::SelectionPass(FRenderGraph& RenderGraph)
     {
-        if (!World->GetEntityRegistry().valid(World->GetSelectedEntity()))
+        if (World->GetSelectedEntities().empty())
         {
             return;
         }
-        
         FRGPassDescriptor* Descriptor = RenderGraph.AllocDescriptor();
         RenderGraph.AddPass(RG_Raster, FRGEvent("Selection Post Process Pass"), Descriptor, [&](ICommandList& CmdList)
         {
@@ -1753,10 +1754,19 @@ namespace Lumina
         
             CmdList.SetGraphicsState(GraphicsState);
 
-            uint32 Push[3];
+            auto Selections = World->GetSelectedEntities();
+            
+            uint32 Push[32];
             Push[0] = PackColor(glm::vec4(255, 0, 0, 255));
             Push[1] = CVarSelectionThickness.GetValue();
-            Push[2] = entt::to_integral(World->GetSelectedEntity());
+            Push[2] = glm::min(29u, (uint32)Selections.size());
+            uint32 Start = 3;
+            
+            for (int i = 0; std::cmp_less(i, Push[2]); ++i)
+            {
+                Push[Start++] = entt::to_integral(Selections[i]);
+            }
+
             CmdList.SetPushConstants(Push, sizeof(Push));
             CmdList.Draw(3, 1, 0, 0); 
         });
@@ -2004,6 +2014,8 @@ namespace Lumina
             NamedImages[(int)ENamedImage::HDR] = GRenderContext->CreateImage(ImageDesc);
         }
         
+        //==================================================================================================
+        
         {
             FRHIImageDesc ImageDesc;
             ImageDesc.Extent = Extent;
@@ -2041,7 +2053,7 @@ namespace Lumina
         {
             FRHIImageDesc ImageDesc;
             ImageDesc.Extent = Extent;
-            ImageDesc.Format = EFormat::R32_UINT;
+            ImageDesc.Format = EFormat::RG32_UINT;
             ImageDesc.Dimension = EImageDimension::Texture2D;
             ImageDesc.InitialState = EResourceStates::RenderTarget;
             ImageDesc.bKeepInitialState = true;
@@ -2081,20 +2093,16 @@ namespace Lumina
         SceneViewportState.Viewports.emplace_back(FViewport(SizeX, SizeY));
         SceneViewportState.Scissors.emplace_back(FRect((int)SizeX, (int)SizeY));
         
-        {
-            FVertexAttributeDesc VertexDesc[2];
-            // Pos
-            VertexDesc[0].SetElementStride(sizeof(FSimpleElementVertex));
-            VertexDesc[0].SetOffset(offsetof(FSimpleElementVertex, Position));
-            VertexDesc[0].Format = EFormat::RGBA32_FLOAT;
+        FVertexAttributeDesc VertexDesc[2];
+        VertexDesc[0].SetElementStride(sizeof(FSimpleElementVertex));
+        VertexDesc[0].SetOffset(offsetof(FSimpleElementVertex, Position));
+        VertexDesc[0].Format = EFormat::RGBA32_FLOAT;
         
-            // Color
-            VertexDesc[1].SetElementStride(sizeof(FSimpleElementVertex));
-            VertexDesc[1].SetOffset(offsetof(FSimpleElementVertex, Color));
-            VertexDesc[1].Format = EFormat::R32_UINT;
+        VertexDesc[1].SetElementStride(sizeof(FSimpleElementVertex));
+        VertexDesc[1].SetOffset(offsetof(FSimpleElementVertex, Color));
+        VertexDesc[1].Format = EFormat::R32_UINT;
         
-            SimpleVertexLayoutInput = GRenderContext->CreateInputLayout(VertexDesc, std::size(VertexDesc));
-        }
+        SimpleVertexLayoutInput = GRenderContext->CreateInputLayout(VertexDesc, eastl::size(VertexDesc));
         
         CreateLayouts();
     }
@@ -2191,16 +2199,104 @@ namespace Lumina
         }
 
         uint8* RowStart = static_cast<uint8*>(MappedMemory) + Y * RowPitch;
-        uint32* PixelPtr = reinterpret_cast<uint32*>(RowStart) + X;
-        uint32 PixelValue = *PixelPtr;
+        glm::uvec2* PixelPtr = reinterpret_cast<glm::uvec2*>(RowStart) + X;
+        glm::uvec2 PixelValue = *PixelPtr;
 
         GRenderContext->UnMapStagingTexture(StagingImage);
 
-        if (PixelValue == 0)
+        if (PixelValue.x == 0)
         {
             return entt::null;
         }
 
-        return static_cast<entt::entity>(PixelValue);
+        return static_cast<entt::entity>(PixelValue.x);
+    }
+
+    THashSet<entt::entity> FForwardRenderScene::GetEntitiesInPixelRange(uint32 MinX, uint32 MinY, uint32 MaxX, uint32 MaxY) const
+    {
+        THashSet<entt::entity> entities;
+        
+        FRHIImage* PickerImage = GetNamedImage(ENamedImage::Picker);
+        if (!PickerImage)
+        {
+            return entities;
+        }
+    
+        FRHICommandListRef CommandList = GRenderContext->CreateCommandList(FCommandListInfo::Graphics());
+        CommandList->Open();
+    
+        FRHIStagingImageRef StagingImage = GRenderContext->CreateStagingImage(PickerImage->GetDescription(), ERHIAccess::HostRead);
+        CommandList->CopyImage(PickerImage, FTextureSlice(), StagingImage, FTextureSlice());
+    
+        CommandList->Close();
+        GRenderContext->ExecuteCommandList(CommandList);
+    
+        size_t RowPitch = 0;
+        void* MappedMemory = GRenderContext->MapStagingTexture(StagingImage, FTextureSlice(), ERHIAccess::HostRead, &RowPitch);
+        if (!MappedMemory)
+        {
+            return entities;
+        }
+    
+        const uint32 Width  = PickerImage->GetDescription().Extent.x;
+        const uint32 Height = PickerImage->GetDescription().Extent.y;
+    
+        MinX = glm::clamp(MinX, 0u, Width - 1);
+        MinY = glm::clamp(MinY, 0u, Height - 1);
+        MaxX = glm::clamp(MaxX, 0u, Width - 1);
+        MaxY = glm::clamp(MaxY, 0u, Height - 1);
+    
+        if (MinX > MaxX)
+        {
+            std::swap(MinX, MaxX);
+        }
+        if (MinY > MaxY)
+        {
+            std::swap(MinY, MaxY);
+        }
+    
+        struct EntityBounds
+        {
+            uint32 MinX = UINT32_MAX;
+            uint32 MinY = UINT32_MAX;
+            uint32 MaxX = 0;
+            uint32 MaxY = 0;
+        };
+        
+        THashMap<entt::entity, EntityBounds> entityBoundsMap;
+    
+        for (uint32 y = 0; y < Height; ++y)
+        {
+            uint8* RowStart = static_cast<uint8*>(MappedMemory) + y * RowPitch;
+            
+            for (uint32 x = 0; x < Width; ++x)
+            {
+                glm::uvec2* PixelPtr = reinterpret_cast<glm::uvec2*>(RowStart) + x;
+                glm::uvec2 PixelValue = *PixelPtr;
+    
+                if (PixelValue.x != 0)
+                {
+                    entt::entity entity = static_cast<entt::entity>(PixelValue.x);
+                    
+                    EntityBounds& bounds = entityBoundsMap[entity];
+                    bounds.MinX = glm::min(bounds.MinX, x);
+                    bounds.MinY = glm::min(bounds.MinY, y);
+                    bounds.MaxX = glm::max(bounds.MaxX, x);
+                    bounds.MaxY = glm::max(bounds.MaxY, y);
+                }
+            }
+        }
+    
+        GRenderContext->UnMapStagingTexture(StagingImage);
+    
+        for (const auto& [entity, bounds] : entityBoundsMap)
+        {
+            if (bounds.MinX >= MinX && bounds.MaxX <= MaxX &&bounds.MinY >= MinY && bounds.MaxY <= MaxY)
+            {
+                entities.insert(entity);
+            }
+        }
+    
+        return entities;
     }
 }

@@ -7,7 +7,6 @@
 #include "VulkanMacros.h"
 #include "vk_mem_alloc.h"
 #include "VulkanRenderContext.h"
-#include "Core/Engine/Engine.h"
 #include "Core/Templates/Align.h"
 #include "Renderer/RenderManager.h"
 #include "Renderer/RHIStaticStates.h"

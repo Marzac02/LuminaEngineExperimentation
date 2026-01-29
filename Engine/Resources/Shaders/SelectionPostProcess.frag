@@ -11,30 +11,30 @@ layout(push_constant) uniform PushConstants
 {
     uint Color;
     uint Thickness;
-    uint Selection;
+    uint NumSections;
+    uint Selections[29];
 };
+
+
 
 void main() 
 {
     ivec2 TexSize = textureSize(uSelectionTexture, 0);
     ivec2 PixelCoord = ivec2(inUV * vec2(TexSize));
+    uint Selected = texelFetch(uSelectionTexture, PixelCoord, 0).g;
     
-    uint CenterID = texelFetch(uSelectionTexture, PixelCoord, 0).r;
-    
-    if(CenterID == Selection) 
+    if (Selected == 1)
     {
-        uint Left  = texelFetch(uSelectionTexture, PixelCoord + ivec2(-Thickness, 0), 0).r;
-        uint Right = texelFetch(uSelectionTexture, PixelCoord + ivec2(Thickness, 0), 0).r;
-        uint Up    = texelFetch(uSelectionTexture, PixelCoord + ivec2(0, -Thickness), 0).r;
-        uint Down  = texelFetch(uSelectionTexture, PixelCoord + ivec2(0, Thickness), 0).r;
-        
-        if(Left != CenterID || Right != CenterID || Up != CenterID || Down != CenterID)
+        bool Left  = bool(texelFetch(uSelectionTexture, PixelCoord + ivec2(-int(Thickness), 0), 0).g);
+        bool Right = bool(texelFetch(uSelectionTexture, PixelCoord + ivec2( int(Thickness), 0), 0).g);
+        bool Up    = bool(texelFetch(uSelectionTexture, PixelCoord + ivec2(0, -int(Thickness)), 0).g);
+        bool Down  = bool(texelFetch(uSelectionTexture, PixelCoord + ivec2(0,  int(Thickness)), 0).g);
+
+        if (!Left || !Right || !Up || !Down)
         {
-            vec4 FinalColor = UnpackColor(Color);
-            outColor = FinalColor;
+            outColor = UnpackColor(Color);
             return;
         }
     }
-
     discard;
 }

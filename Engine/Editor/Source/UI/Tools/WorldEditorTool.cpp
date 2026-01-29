@@ -1,6 +1,10 @@
 ﻿#include "WorldEditorTool.h"
+
+#include <glm/gtx/string_cast.hpp>
+
 #include "EditorToolContext.h"
 #include "Assets/AssetRegistry/AssetRegistry.h"
+#include "Components/EditorEntityTags.h"
 #include "Core/Console/ConsoleVariable.h"
 #include "Core/Object/Class.h"
 #include "Core/Object/ObjectIterator.h"
@@ -37,8 +41,6 @@ namespace Lumina
 
     FWorldEditorTool::FWorldEditorTool(IEditorToolContext* Context, CWorld* InWorld)
         : FEditorTool(Context, "World Editor", InWorld)
-        , SelectedEntity(entt::null)
-        , CopiedEntity(entt::null)
     {
         GuizmoOp = ImGuizmo::TRANSLATE;
         GuizmoMode = ImGuizmo::WORLD;
@@ -63,7 +65,11 @@ namespace Lumina
         
         CreateToolWindow("Details", [&] (bool bFocused)
         {
-            DrawEntityEditor(bFocused, SelectedEntity);
+            entt::entity LastSelected = GetLastSelectedEntity();
+            if (World->GetEntityRegistry().valid(LastSelected))
+            {
+                DrawEntityEditor(bFocused, LastSelected);
+            }
         });
 
 
@@ -113,7 +119,12 @@ namespace Lumina
             if (ImGui::MenuItem("Duplicate"))
             {
                 entt::entity New = entt::null;
-                CopyEntity(New, SelectedEntity);
+                auto View = World->GetEntityRegistry().view<FSelectedInEditorComponent>();
+                
+                View.each([&](entt::entity Entity)
+                {
+                    CopyEntity(New, Entity);
+                });
             }
             
             if (ImGui::MenuItem("Delete"))
@@ -131,15 +142,16 @@ namespace Lumina
         {
             if (Item == entt::null)
             {
-                SelectedEntity = entt::null;
+                World->GetEntityRegistry().clear<FSelectedInEditorComponent>();
                 return;
             }
             
             FEntityListViewItemData& Data = Tree.Get<FEntityListViewItemData>(Item);
             
-            SelectedEntity = Data.Entity;
+            ClearSelectedEntities();
+            AddSelectedEntity(Data.Entity, true);
             
-            RebuildPropertyTables(SelectedEntity);
+            RebuildPropertyTables(Data.Entity);
         };
 
         OutlinerContext.DragDropFunction = [this](FTreeListView& Tree, entt::entity Item)
@@ -210,82 +222,94 @@ namespace Lumina
         {
             entt::entity Entity = EntityDestroyRequests.back();
             EntityDestroyRequests.pop();
-
-            if (Entity == SelectedEntity)
+            
+            if (!World->GetEntityRegistry().valid(Entity))
             {
-                if (CopiedEntity == SelectedEntity)
-                {
-                    CopiedEntity = entt::null;
-                }
-                
-                SetSelectedEntity(entt::null);
+                LOG_WARN("Attempted to delete an invalid entity! {}", entt::to_integral(Entity));
+                continue;
             }
             
             World->DestroyEntity(Entity);
             OutlinerListView.MarkTreeDirty();
         }
 
-        if (World->GetEntityRegistry().valid(SelectedEntity))
-        {
-            World->GetEntityRegistry().emplace_or_replace<FNeedsTransformUpdate>(SelectedEntity);
-            
-            if (bViewportHovered)
-            {
-                if (ImGui::IsKeyDown(ImGuiKey_LeftCtrl) && ImGui::IsKeyPressed(ImGuiKey_C))
-                {
-                    CopiedEntity = SelectedEntity;
-                }
+        auto View = World->GetEntityRegistry().view<FSelectedInEditorComponent>();
 
-                if (ImGui::IsKeyDown(ImGuiKey_LeftCtrl) && ImGui::IsKeyPressed(ImGuiKey_D))
+        if (bViewportHovered)
+        {
+            bool bCopyPressed = ImGui::IsKeyDown(ImGuiKey_LeftCtrl) && ImGui::IsKeyPressed(ImGuiKey_C);
+            bool bDuplicatePressed = ImGui::IsKeyDown(ImGuiKey_LeftCtrl) && ImGui::IsKeyPressed(ImGuiKey_D);
+            bool bDeletePressed = ImGui::IsKeyPressed(ImGuiKey_Delete);
+    
+            if (bCopyPressed)
+            {
+                ClearCopies();
+            }
+    
+            View.each([&](entt::entity SelectedEntity)
+            {
+                World->GetEntityRegistry().emplace_or_replace<FNeedsTransformUpdate>(SelectedEntity);
+        
+                if (bCopyPressed)
+                {
+                    AddEntityToCopies(SelectedEntity);
+                }
+    
+                if (bDuplicatePressed)
                 {
                     entt::entity New = entt::null;
                     CopyEntity(New, SelectedEntity);
                 }
-            }
+        
+                if (bDeletePressed)
+                {
+                    EntityDestroyRequests.push(SelectedEntity);
+                }
+            });
+        }
+        else
+        {
+            View.each([&](entt::entity SelectedEntity)
+            {
+                World->GetEntityRegistry().emplace_or_replace<FNeedsTransformUpdate>(SelectedEntity);
+            });
         }
 
-        if (World->GetEntityRegistry().valid(CopiedEntity) && bViewportHovered)
+        
+        auto CopyView = World->GetEntityRegistry().view<FCopiedTag>();
+        CopyView.each([&](entt::entity Entity)
         {
-            if (ImGui::IsKeyDown(ImGuiKey_LeftCtrl) && ImGui::IsKeyPressed(ImGuiKey_V))
+            if (ImGui::IsKeyDown(ImGuiKey_LeftCtrl) && ImGui::IsKeyPressed(ImGuiKey_V) && bViewportHovered)
             {
                 entt::entity New = entt::null;
-                CopyEntity(New, CopiedEntity);
+                CopyEntity(New, Entity);
             }
-        }
-
-        if (World->GetEntityRegistry().valid(SelectedEntity) && bViewportHovered)
-        {
-            if (ImGui::IsKeyPressed(ImGuiKey_Delete))
-            {
-                EntityDestroyRequests.push(SelectedEntity);
-            }
-        }
+        });
     }
 
     void FWorldEditorTool::EndFrame()
     {
         using namespace entt::literals;
         
-        if (!World->GetEntityRegistry().valid(SelectedEntity))
-        {
-            return;
-        }
-        
         CComponentVisualizerRegistry& ComponentVisualizerRegistry = CComponentVisualizerRegistry::Get();
-        
-        ECS::Utils::ForEachComponent([&](void*, entt::basic_sparse_set<>& Set, const entt::meta_type& Type)
-        {
-            if (entt::meta_any ReturnValue = ECS::Utils::InvokeMetaFunc(Type, "static_struct"_hs))
-            {
-                CStruct* StructType = ReturnValue.cast<CStruct*>();
 
-                if (CComponentVisualizer* Visualizer = ComponentVisualizerRegistry.GetComponentVisualizer(StructType))
+        auto View = World->GetEntityRegistry().view<FSelectedInEditorComponent>();
+        View.each([&] (entt::entity SelectedEntity)
+        {
+            ECS::Utils::ForEachComponent([&](void*, entt::basic_sparse_set<>& Set, const entt::meta_type& Type)
+            {
+                if (entt::meta_any ReturnValue = ECS::Utils::InvokeMetaFunc(Type, "static_struct"_hs))
                 {
-                    Visualizer->Draw(World, World->GetEntityRegistry(), SelectedEntity);
-                }
+                    CStruct* StructType = ReturnValue.cast<CStruct*>();
+
+                    if (CComponentVisualizer* Visualizer = ComponentVisualizerRegistry.GetComponentVisualizer(StructType))
+                    {
+                        Visualizer->Draw(World, World->GetEntityRegistry(), SelectedEntity);
+                    }
                 
-            }
-        }, World->GetEntityRegistry(), SelectedEntity);
+                }
+            }, World->GetEntityRegistry(), SelectedEntity);
+        });
     }
 
     const char* FWorldEditorTool::GetTitlebarIcon() const
@@ -347,72 +371,117 @@ namespace Lumina
         ImGuizmo::SetDrawlist(ImGui::GetCurrentWindow()->DrawList);
         ImGuizmo::SetRect(ImGui::GetCursorScreenPos().x, ImGui::GetCursorScreenPos().y, ViewportSize.x, ViewportSize.y);
 
-        if (World->GetEntityRegistry().valid(SelectedEntity))
+        auto SelectionView = World->GetEntityRegistry().view<FSelectedInEditorComponent, STransformComponent>();
+        
+        if (SelectionView.size_hint())
         {
-            STransformComponent& SelectedTransformComponent = World->GetEntityRegistry().get<STransformComponent>(SelectedEntity);
-            if (CameraComponent.GetViewVolume().GetFrustum().IsInside(SelectedTransformComponent.WorldTransform.Location))
+            entt::entity PivotEntity = GetLastSelectedEntity();
+            if (World->GetEntityRegistry().valid(PivotEntity))
             {
-                glm::mat4 EntityMatrix = SelectedTransformComponent.GetMatrix();
-
-                float* SnapValues = nullptr;
-                float SnapArray[3] = { 0.0f, 0.0f, 0.0f };
-
-                if (bGuizmoSnapEnabled)
+                STransformComponent& PivotTransformComponent = World->GetEntityRegistry().get<STransformComponent>(PivotEntity);
+                if (CameraComponent.GetViewVolume().GetFrustum().IsInside(PivotTransformComponent.WorldTransform.Location))
                 {
-                    switch (GuizmoOp)
+                    glm::mat4 EntityMatrix = PivotTransformComponent.GetMatrix();
+
+                    float* SnapValues = nullptr;
+                    float SnapArray[3] = {};
+
+                    if (bGuizmoSnapEnabled)
                     {
-                    case ImGuizmo::TRANSLATE:
-                        SnapArray[0] = GuizmoSnapTranslate;
-                        SnapArray[1] = GuizmoSnapTranslate;
-                        SnapArray[2] = GuizmoSnapTranslate;
-                        SnapValues = SnapArray;
-                        break;
-
-                    case ImGuizmo::ROTATE:
-                        SnapArray[0] = GuizmoSnapRotate;
-                        SnapArray[1] = GuizmoSnapRotate;
-                        SnapArray[2] = GuizmoSnapRotate;
-                        SnapValues = SnapArray;
-                        break;
-
-                    case ImGuizmo::SCALE:
-                        SnapArray[0] = GuizmoSnapScale;
-                        SnapArray[1] = GuizmoSnapScale;
-                        SnapArray[2] = GuizmoSnapScale;
-                        SnapValues = SnapArray;
-                        break;
-                    }
-                }
-
-                ImGuizmo::Manipulate(glm::value_ptr(ViewMatrix), glm::value_ptr(ProjectionMatrix),
-                    GuizmoOp, GuizmoMode, glm::value_ptr(EntityMatrix), nullptr, SnapValues);
-                
-                if (ImGuizmo::IsUsing())
-                {
-                    bImGuizmoUsedOnce = true;
-                
-                    glm::mat4 Matrix = EntityMatrix;
-                    glm::vec3 Translation, Scale, Skew;
-                    glm::quat Rotation;
-                    glm::vec4 Perspective;
-
-                    if (FRelationshipComponent* RelationshipComponent = World->GetEntityRegistry().try_get<FRelationshipComponent>(SelectedEntity))
-                    {
-                        if (RelationshipComponent->Parent != entt::null)
+                        switch (GuizmoOp)
                         {
-                            STransformComponent& ParentTransform = World->GetEntityRegistry().get<STransformComponent>(RelationshipComponent->Parent);
-                            glm::mat4 ParentWorldMatrix = ParentTransform.WorldTransform.GetMatrix();
-                            glm::mat4 ParentWorldInverse = glm::inverse(ParentWorldMatrix);
-                            glm::mat4 LocalMatrix = ParentWorldInverse * EntityMatrix;
-                            Matrix = LocalMatrix;
+                        case ImGuizmo::TRANSLATE:
+                            SnapArray[0] = GuizmoSnapTranslate;
+                            SnapArray[1] = GuizmoSnapTranslate;
+                            SnapArray[2] = GuizmoSnapTranslate;
+                            SnapValues = SnapArray;
+                            break;
+
+                        case ImGuizmo::ROTATE:
+                            SnapArray[0] = GuizmoSnapRotate;
+                            SnapArray[1] = GuizmoSnapRotate;
+                            SnapArray[2] = GuizmoSnapRotate;
+                            SnapValues = SnapArray;
+                            break;
+
+                        case ImGuizmo::SCALE:
+                            SnapArray[0] = GuizmoSnapScale;
+                            SnapArray[1] = GuizmoSnapScale;
+                            SnapArray[2] = GuizmoSnapScale;
+                            SnapValues = SnapArray;
+                            break;
                         }
                     }
+
+                    glm::mat4 PreManipulateMatrix = EntityMatrix;
+
+                    ImGuizmo::Manipulate(glm::value_ptr(ViewMatrix), glm::value_ptr(ProjectionMatrix),
+                        GuizmoOp, GuizmoMode, glm::value_ptr(EntityMatrix), nullptr, SnapValues);
                 
-                    glm::decompose(Matrix, Scale, Rotation, Translation, Skew, Perspective);
-        
-                    SelectedTransformComponent.SetLocation(Translation);
-                    SelectedTransformComponent.SetScale(Scale);
-                    SelectedTransformComponent.SetRotation(Rotation);
+                    if (ImGuizmo::IsUsing())
+                    {
+                        bImGuizmoUsedOnce = true;
+                        
+                        glm::mat4 DeltaMatrix = EntityMatrix * glm::inverse(PreManipulateMatrix);
+                
+                        glm::vec3 DeltaTranslation, DeltaScale, DeltaSkew;
+                        glm::quat DeltaRotation;
+                        glm::vec4 DeltaPerspective;
+                        glm::decompose(DeltaMatrix, DeltaScale, DeltaRotation, DeltaTranslation, DeltaSkew, DeltaPerspective);
+
+                        glm::vec3 PivotPosition = PivotTransformComponent.WorldTransform.Location;
+                        
+                        SelectionView.each([&] (entt::entity Entity, STransformComponent& Transform)
+                        {
+                            switch (GuizmoOp)
+                            {
+                                case ImGuizmo::TRANSLATE:
+                                {
+                                    Transform.Translate(DeltaTranslation);
+                                    break;
+                                }
+                                    
+                                case ImGuizmo::ROTATE:
+                                {
+                                    glm::vec3 OffsetFromPivot = Transform.WorldTransform.Location - PivotPosition;
+                                    glm::vec3 RotatedOffset = DeltaRotation * OffsetFromPivot;
+                                    Transform.SetLocation(PivotPosition + RotatedOffset);
+                                    Transform.SetRotation(DeltaRotation * Transform.GetRotation());
+                                    break;
+                                }
+                                    
+                                case ImGuizmo::SCALE:
+                                {
+                                    glm::vec3 OffsetFromPivot = Transform.WorldTransform.Location - PivotPosition;
+                                    glm::vec3 ScaledOffset = OffsetFromPivot * DeltaScale;
+                                    Transform.SetLocation(PivotPosition + ScaledOffset);
+                                    Transform.SetScale(Transform.GetScale() * DeltaScale);
+                                    break;
+                                }
+                            }
+                            
+                            if (FRelationshipComponent* RelationshipComponent = World->GetEntityRegistry().try_get<FRelationshipComponent>(Entity))
+                            {
+                                if (RelationshipComponent->Parent != entt::null)
+                                {
+                                    STransformComponent& ParentTransform = World->GetEntityRegistry().get<STransformComponent>(RelationshipComponent->Parent);
+                                    glm::mat4 ParentWorldMatrix = ParentTransform.WorldTransform.GetMatrix();
+                                    glm::mat4 ParentWorldInverse = glm::inverse(ParentWorldMatrix);
+                                    glm::mat4 WorldMatrix = Transform.WorldTransform.GetMatrix();
+                                    glm::mat4 LocalMatrix = ParentWorldInverse * WorldMatrix;
+                                    
+                                    glm::vec3 LocalTranslation, LocalScale, LocalSkew;
+                                    glm::quat LocalRotation;
+                                    glm::vec4 LocalPerspective;
+                                    glm::decompose(LocalMatrix, LocalScale, LocalRotation, LocalTranslation, LocalSkew, LocalPerspective);
+                                    
+                                    Transform.SetLocation(LocalTranslation);
+                                    Transform.SetScale(LocalScale);
+                                    Transform.SetRotation(LocalRotation);
+                                }
+                            }
+                        });
+                    }
                 }
             }
         }
@@ -440,34 +509,102 @@ namespace Lumina
             
             bool bOverImGuizmo = bImGuizmoUsedOnce ? ImGuizmo::IsOver() : false;
             
-            if ((!bOverImGuizmo) && ImGui::IsMouseClicked(ImGuiMouseButton_Left))
+            if (!bOverImGuizmo)
             {
-                entt::entity EntityHandle = World->GetRenderer()->GetEntityAtPixel(TexX, TexY);
-                SetSelectedEntity(EntityHandle);
-            }
-            else if ((!bOverImGuizmo) && ImGui::IsMouseReleased(ImGuiMouseButton_Right))
-            {
-                ImVec2 DragDelta = ImGui::GetMouseDragDelta(ImGuiMouseButton_Right);
-                float DragDistance = sqrtf(DragDelta.x * DragDelta.x + DragDelta.y * DragDelta.y);
-            
-                if (DragDistance < 5.0f)
+                // Check LEFT mouse button drag for selection box
+                ImVec2 LeftDragDelta = ImGui::GetMouseDragDelta(ImGuiMouseButton_Left);
+                float LeftDragDistance = sqrtf(LeftDragDelta.x * LeftDragDelta.x + LeftDragDelta.y * LeftDragDelta.y);
+                bool bLeftDragging = LeftDragDistance >= 15.0f;
+    
+                // Check RIGHT mouse button drag for context menu
+                ImVec2 RightDragDelta = ImGui::GetMouseDragDelta(ImGuiMouseButton_Right);
+                float RightDragDistance = sqrtf(RightDragDelta.x * RightDragDelta.x + RightDragDelta.y * RightDragDelta.y);
+                bool bRightDragging = RightDragDistance < 15.0f;
+                
+                if (ImGui::IsMouseClicked(ImGuiMouseButton_Left))
                 {
-                    entt::entity EntityHandle = World->GetRenderer()->GetEntityAtPixel(TexX, TexY);
-                    SetSelectedEntity(EntityHandle);
-            
-                    if (EntityHandle != entt::null)
+                    SelectionBox.bActive = true;
+                    SelectionBox.Start = MousePosInViewport;
+                    SelectionBox.Current = SelectionBox.Start;
+                }
+
+                if (ImGui::IsMouseReleased(ImGuiMouseButton_Right))
+                {
+                    if (bRightDragging)
                     {
-                        ImGui::OpenPopup("EntityContextMenu");
+                        entt::entity EntityHandle = World->GetRenderer()->GetEntityAtPixel(TexX, TexY);
+                        
+                        ClearSelectedEntities();
+                        AddSelectedEntity(EntityHandle, true);
+            
+                        if (EntityHandle != entt::null)
+                        {
+                            ImGui::OpenPopup("EntityContextMenu");
+                        }
                     }
                 }
             
-                ImGui::ResetMouseDragDelta(ImGuiMouseButton_Right);
+                if (ImGui::IsMouseDown(ImGuiMouseButton_Left) && SelectionBox.bActive)
+                {
+                    SelectionBox.Current = MousePosInViewport;
+                }
+                
+                if (SelectionBox.bActive)
+                {
+                    ImDrawList* DrawList = ImGui::GetWindowDrawList();
+                    ImVec2 ViewportPos = ImGui::GetCursorScreenPos();
+                
+                    ImVec2 ScreenStart = ImVec2(ViewportPos.x + SelectionBox.Start.x, ViewportPos.y + SelectionBox.Start.y);
+                    ImVec2 ScreenEnd = ImVec2(ViewportPos.x + SelectionBox.Current.x, ViewportPos.y + SelectionBox.Current.y);
+
+                    DrawList->AddRectFilled(ScreenStart, ScreenEnd, IM_COL32(100, 150, 255, 50));
+                    DrawList->AddRect(ScreenStart, ScreenEnd, IM_COL32(100, 150, 255, 255), 0.0f, 0, 2.0f);
+                }
+            
+                if (ImGui::IsMouseReleased(ImGuiMouseButton_Left) && SelectionBox.bActive)
+                {
+                    ImVec2 Start = SelectionBox.Start;
+                    ImVec2 End = SelectionBox.Current;
+                    
+                    if (!bLeftDragging)
+                    {
+                        entt::entity EntityHandle = World->GetRenderer()->GetEntityAtPixel(TexX, TexY);
+                        
+                        if (!ImGui::GetIO().KeyCtrl)
+                        {
+                            ClearSelectedEntities();
+                        }
+                        
+                        AddSelectedEntity(EntityHandle, true);
+                    }
+                    else
+                    {
+                        uint32 MinTexX = static_cast<uint32>(glm::min(Start.x, End.x) * ScaleX);
+                        uint32 MinTexY = static_cast<uint32>(glm::min(Start.y, End.y) * ScaleY);
+                        uint32 MaxTexX = static_cast<uint32>(glm::max(Start.x, End.x) * ScaleX);
+                        uint32 MaxTexY = static_cast<uint32>(glm::max(Start.y, End.y) * ScaleY);
+                    
+                        for (entt::entity Entity : World->GetRenderer()->GetEntitiesInPixelRange(MinTexX, MinTexY, MaxTexX, MaxTexY))
+                        {
+                            AddSelectedEntity(Entity, true);
+                        }
+                    } 
+    
+                    SelectionBox.bActive = false;
+                }
             }
         }
         
         if (ImGui::BeginPopup("EntityContextMenu"))
         {
-            if (SelectedEntity != entt::null)
+            auto LastSelectedView = World->GetEntityRegistry().view<FLastSelectedTag>();
+            entt::entity LastSelectedEntity = entt::null;
+            LastSelectedView.each([&](entt::entity Entity)
+            {
+               LastSelectedEntity = Entity; 
+            });
+            
+            if (World->GetEntityRegistry().valid(LastSelectedEntity))
             {
                 entt::registry& Registry = World->GetEntityRegistry();
                 
@@ -481,7 +618,7 @@ namespace Lumina
                 
                 ImGui::SameLine();
                 ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.4f, 0.8f, 1.0f, 1.0f));
-                ImGui::Text("%u", (uint32)SelectedEntity);
+                ImGui::Text("%u", (uint32)LastSelectedEntity);
                 ImGui::PopStyleColor();
                 
                 ImGui::Spacing();
@@ -491,9 +628,9 @@ namespace Lumina
                 ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 0.4f, 0.4f, 1.0f));
                 if (ImGui::MenuItem(LE_ICON_TRASH_CAN" Delete Entity", "Del"))
                 {
-                    if (Dialogs::Confirmation("Confirm Deletion", "Are you sure you want to delete entity \"{0}\"?\n\nThis action cannot be undone.", entt::to_integral(SelectedEntity)))
+                    if (Dialogs::Confirmation("Confirm Deletion", "Are you sure you want to delete entity \"{0}\"?\n\nThis action cannot be undone.", entt::to_integral(LastSelectedEntity)))
                     {
-                        EntityDestroyRequests.push(SelectedEntity);
+                        EntityDestroyRequests.push(LastSelectedEntity);
                     }
                     
                     ImGui::CloseCurrentPopup();
@@ -506,7 +643,7 @@ namespace Lumina
                 
                 if (ImGui::MenuItem("Add Component"))
                 {
-                    PushAddComponentModal(SelectedEntity);
+                    PushAddComponentModal(LastSelectedEntity);
                     ImGui::CloseCurrentPopup();
                 }
                 
@@ -530,10 +667,10 @@ namespace Lumina
                             
                             if (ImGui::MenuItem(ReturnValue.cast<CStruct*>()->MakeDisplayName().c_str()))
                             {
-                                ComponentDestroyRequests.push(FComponentDestroyRequest{StructType, SelectedEntity});
+                                ComponentDestroyRequests.push(FComponentDestroyRequest{StructType, LastSelectedEntity});
                             }
                         }
-                    }, Registry, SelectedEntity);
+                    }, Registry, LastSelectedEntity);
                     
                     ImGui::PopStyleColor();
                     ImGui::PopStyleVar();
@@ -548,7 +685,7 @@ namespace Lumina
                 if (ImGui::MenuItem("Duplicate", "Ctrl+D"))
                 {
                     entt::entity To;
-                    CopyEntity(To, SelectedEntity);
+                    CopyEntity(To, LastSelectedEntity);
                     ImGui::CloseCurrentPopup();
                 }
                 ImGui::PopStyleColor();
@@ -556,29 +693,30 @@ namespace Lumina
                 ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.8f, 0.8f, 0.6f, 1.0f));
                 if (ImGui::MenuItem("Copy", "Ctrl+C"))
                 {
-                    CopiedEntity = SelectedEntity;
+                    ClearCopies();
+                    AddEntityToCopies(LastSelectedEntity);
                     ImGui::CloseCurrentPopup();
                 }
                 ImGui::PopStyleColor();
                 
                 
-                if (ECS::Utils::IsChild(Registry, SelectedEntity))
+                if (ECS::Utils::IsChild(Registry, LastSelectedEntity))
                 {
                     ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.2f, 0.3f, 0.6f, 1.0f));
                     if (ImGui::MenuItem("Unparent"))
                     {
-                        ECS::Utils::RemoveFromParent(Registry, SelectedEntity);
+                        ECS::Utils::RemoveFromParent(Registry, LastSelectedEntity);
                         OutlinerListView.MarkTreeDirty();
                     }
                     ImGui::PopStyleColor();
                 }
             
-                if (ECS::Utils::IsParent(Registry, SelectedEntity))
+                if (ECS::Utils::IsParent(Registry, LastSelectedEntity))
                 {
                     ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.6f, 0.9f, 0.2f, 1.0f));
                     if (ImGui::MenuItem("Detach Children"))
                     {
-                        ECS::Utils::DetachImmediateChildren(Registry, SelectedEntity);
+                        ECS::Utils::DetachImmediateChildren(Registry, LastSelectedEntity);
                         OutlinerListView.MarkTreeDirty();
                     }
                     ImGui::PopStyleColor();
@@ -847,14 +985,14 @@ namespace Lumina
                 }
                 
                 eastl::sort(Components.begin(), Components.end(), [](const ComponentInfo& a, const ComponentInfo& b)
+                {
+                    if (a.Category != b.Category)
                     {
-                        if (a.Category != b.Category)
-                        {
-                            return a.Category < b.Category;
-                        }
+                        return a.Category < b.Category;
+                    }
 
-                        return a.Name < b.Name;
-                    });
+                    return a.Name < b.Name;
+                });
                 
                 for (const ComponentInfo& CompInfo : Components)
                 {
@@ -878,7 +1016,7 @@ namespace Lumina
                     {
                         using namespace entt::literals;
 
-                        ECS::Utils::InvokeMetaFunc(CompInfo.MetaType, "emplace"_hs, entt::forward_as_meta(World->GetEntityRegistry()), SelectedEntity, entt::forward_as_meta(entt::meta_any{}));
+                        ECS::Utils::InvokeMetaFunc(CompInfo.MetaType, "emplace"_hs, entt::forward_as_meta(World->GetEntityRegistry()), Entity, entt::forward_as_meta(entt::meta_any{}));
                         bComponentAdded = true;
                     }
                     
@@ -988,7 +1126,7 @@ namespace Lumina
 
     void FWorldEditorTool::SetWorld(CWorld* InWorld)
     {
-        SetSelectedEntity(entt::null);
+        World->GetEntityRegistry().clear<FSelectedInEditorComponent>();
         
         FEditorTool::SetWorld(InWorld);
         
@@ -997,10 +1135,7 @@ namespace Lumina
 
     void FWorldEditorTool::OnEntityDestroyed(entt::registry& Registry, entt::entity Entity)
     {
-        if (SelectedEntity == Entity)
-        {
-            SetSelectedEntity(entt::null);
-        }
+        RemoveSelectedEntity(Entity, true);
     }
 
     void FWorldEditorTool::DrawSimulationControls(float ButtonSize)
@@ -1186,7 +1321,7 @@ namespace Lumina
     
         if (ImGuiX::IconButton(LE_ICON_CROSSHAIRS, "##FocusSelection", 0xFFFFFFFF, BtnSize))
         {
-            FocusViewportToEntity(SelectedEntity);
+            //FocusViewportToEntity(SelectedEntity);
         }
     
         if (ImGui::IsItemHovered(ImGuiHoveredFlags_DelayShort))
@@ -1498,6 +1633,84 @@ namespace Lumina
         ImGui::PopStyleColor();
     }
 
+    void FWorldEditorTool::AddSelectedEntity(entt::entity Entity, bool bRebuild)
+    {
+        if (!World->GetEntityRegistry().valid(Entity))
+        {
+            return;
+        }
+        
+        ClearLastSelectedEntity();
+        World->GetEntityRegistry().emplace_or_replace<FLastSelectedTag>(Entity);
+        World->GetEntityRegistry().emplace_or_replace<FSelectedInEditorComponent>(Entity);
+        
+        if (bRebuild)
+        {
+            RebuildPropertyTables(Entity);
+            OutlinerListView.MarkTreeDirty();
+        }
+    }
+
+    void FWorldEditorTool::RemoveSelectedEntity(entt::entity Entity, bool bRebuild)
+    {
+        if (World->GetEntityRegistry().valid(Entity))
+        {
+            return;
+        }
+        
+        if (World->GetEntityRegistry().any_of<FSelectedInEditorComponent>(Entity))
+        {
+            World->GetEntityRegistry().remove<FSelectedInEditorComponent>(Entity);
+        }
+        
+        ClearLastSelectedEntity();
+        
+        if (bRebuild)
+        {
+            RebuildPropertyTables(Entity);
+            OutlinerListView.MarkTreeDirty();
+        }
+    }
+
+    void FWorldEditorTool::ClearSelectedEntities()
+    {
+        World->GetEntityRegistry().clear<FSelectedInEditorComponent>();
+        ClearLastSelectedEntity();
+    }
+
+    entt::entity FWorldEditorTool::GetLastSelectedEntity() const
+    {
+        auto View = World->GetEntityRegistry().view<FLastSelectedTag>();
+        
+        entt::entity LastEntity = entt::null;
+        View.each([&](entt::entity Entity)
+        {
+            LastEntity = Entity;
+        });
+        
+        return LastEntity;
+    }
+
+    void FWorldEditorTool::ClearLastSelectedEntity() const
+    {
+        World->GetEntityRegistry().clear<FLastSelectedTag>();
+    }
+
+    void FWorldEditorTool::AddEntityToCopies(entt::entity Entity)
+    {
+        World->GetEntityRegistry().emplace_or_replace<FCopiedTag>(Entity);
+    }
+
+    void FWorldEditorTool::RemoveEntityFromCopies(entt::entity Entity)
+    {
+        World->GetEntityRegistry().remove<FCopiedTag>(Entity);
+    }
+
+    void FWorldEditorTool::ClearCopies() const
+    {
+        World->GetEntityRegistry().clear<FCopiedTag>();
+    }
+
     void FWorldEditorTool::SetWorldPlayInEditor(bool bShouldPlay)
     {
         if (bShouldPlay != bGamePreviewRunning && bShouldPlay == true)
@@ -1549,12 +1762,12 @@ namespace Lumina
             ProxyWorld->DestroyEntity(EditorEntity);
             EditorEntity = entt::null;
             
-            entt::entity PreviousSelectedEntity = SelectedEntity;
-            SetSelectedEntity(entt::null);
+            //entt::entity PreviousSelectedEntity = SelectedEntity;
+            //SetSelectedEntity(entt::null);
             
             SetupWorldForTool();
 
-            SetSelectedEntity(PreviousSelectedEntity);
+            //SetSelectedEntity(PreviousSelectedEntity);
             
             World->GetEntityRegistry().patch<STransformComponent>(EditorEntity, [TransformCopy](STransformComponent& Patch)
             {
@@ -1579,7 +1792,7 @@ namespace Lumina
             STransformComponent TransformCopy = World->GetEntityRegistry().get<STransformComponent>(EditorEntity);
             SCameraComponent CameraCopy =  World->GetEntityRegistry().get<SCameraComponent>(EditorEntity);
 
-            entt::entity PreviousSelectedEntity = SelectedEntity;
+            //entt::entity PreviousSelectedEntity = SelectedEntity;
             
             World->DestroyEntity(EditorEntity);
             EditorEntity = entt::null;
@@ -1587,7 +1800,7 @@ namespace Lumina
             SetWorld(ProxyWorld);
             ProxyWorld->SetActive(true);
             
-            SetSelectedEntity(PreviousSelectedEntity);
+            //SetSelectedEntity(PreviousSelectedEntity);
             
             World->GetEntityRegistry().patch<STransformComponent>(EditorEntity, [TransformCopy](STransformComponent& Patch)
             {
@@ -1811,20 +2024,6 @@ namespace Lumina
         }
     }
 
-    void FWorldEditorTool::SetSelectedEntity(entt::entity Entity)
-    {
-        if (Entity == SelectedEntity)
-        {
-            return;
-        }
-
-        SelectedEntity = Entity;
-        
-        OutlinerListView.MarkTreeDirty();
-        RebuildPropertyTables(Entity);
-        World->SetSelectedEntity(SelectedEntity);
-    }
-
     void FWorldEditorTool::RebuildSceneOutliner(FTreeListView& Tree)
     {
         TFunction<void(entt::entity, entt::entity)> AddEntityRecursive;
@@ -1839,7 +2038,7 @@ namespace Lumina
             Tree.Get<FTreeNodeDisplay>(ItemEntity).TooltipText = FString("Entity: " + eastl::to_string(entt::to_integral(WorldEntity))).c_str();
             Tree.EmplaceUserData<FEntityListViewItemData>(ItemEntity).Entity = WorldEntity;
 
-            if (WorldEntity == SelectedEntity)
+            if (World->GetEntityRegistry().any_of<FSelectedInEditorComponent>(WorldEntity))
             {
                 FTreeNodeState& State = Tree.Get<FTreeNodeState>(ItemEntity);
                 State.bSelected = true;
@@ -2612,9 +2811,13 @@ namespace Lumina
         using namespace entt::literals;
         
         entt::id_type TypeID = ECS::Utils::GetTypeID(Event.OuterType->GetName().c_str());
-        
-        entt::meta_any Component = ECS::Utils::InvokeMetaFunc(TypeID, "get"_hs, entt::forward_as_meta(World->GetEntityRegistry()), SelectedEntity);
-        ECS::Utils::InvokeMetaFunc(TypeID, "patch"_hs, entt::forward_as_meta(World->GetEntityRegistry()), SelectedEntity, entt::forward_as_meta(Component));
+
+        auto View = World->GetEntityRegistry().view<FSelectedInEditorComponent>();
+        View.each([&](entt::entity Entity)
+        {
+            entt::meta_any Component = ECS::Utils::InvokeMetaFunc(TypeID, "get"_hs, entt::forward_as_meta(World->GetEntityRegistry()), Entity);
+            ECS::Utils::InvokeMetaFunc(TypeID, "patch"_hs, entt::forward_as_meta(World->GetEntityRegistry()), Entity, entt::forward_as_meta(Component));
+        });
         
         if (World->GetPackage())
         {
@@ -2744,7 +2947,11 @@ namespace Lumina
 
         if (CreatedEntity != entt::null)
         {
-            SetSelectedEntity(CreatedEntity);   
+            auto View = GetWorld()->GetEntityRegistry().view<FSelectedInEditorComponent>();
+            if (!View.empty())
+            {
+                AddSelectedEntity(CreatedEntity, true);
+            }
             OutlinerListView.MarkTreeDirty();
         }
     }
@@ -2752,13 +2959,30 @@ namespace Lumina
     void FWorldEditorTool::CreateEntity()
     {
         entt::entity NewEntity = World->ConstructEntity("Entity");
-        SetSelectedEntity(NewEntity);   
+        
+        auto View = GetWorld()->GetEntityRegistry().view<FSelectedInEditorComponent>();
+        if (!View.empty())
+        {
+            AddSelectedEntity(NewEntity, true);
+        }
+        
         OutlinerListView.MarkTreeDirty();
     }
 
     void FWorldEditorTool::CopyEntity(entt::entity& To, entt::entity From)
     {
-        World->CopyEntity(To, From);
+        World->CopyEntity(To, From, [&](const entt::type_info& Type)
+        {
+            if    (Type == entt::type_id<FRelationshipComponent>() 
+                || Type == entt::type_id<FSelectedInEditorComponent>()
+                || Type == entt::type_id<FCopiedTag>()
+                || Type == entt::type_id<FLastSelectedTag>())
+            {
+                return false;
+            }
+            
+            return true;
+        });
         OutlinerListView.MarkTreeDirty();
     }
 

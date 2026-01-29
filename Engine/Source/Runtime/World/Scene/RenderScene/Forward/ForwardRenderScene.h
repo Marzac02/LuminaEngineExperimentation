@@ -1,7 +1,6 @@
 ﻿#pragma once
 #include "Core/Delegates/Delegate.h"
 #include "Renderer/BindingCache.h"
-#include "Renderer/TypedBuffer.h"
 #include "Renderer/Vertex.h"
 #include "World/Scene/RenderScene/MeshDrawCommand.h"
 #include "World/Scene/RenderScene/RenderScene.h"
@@ -95,6 +94,7 @@ namespace Lumina
         FRHIImage* GetRenderTarget() const override;
         FSceneRenderSettings& GetSceneRenderSettings() override;
         entt::entity GetEntityAtPixel(uint32 X, uint32 Y) const override;
+        THashSet<entt::entity> GetEntitiesInPixelRange(uint32 MinX, uint32 MinY, uint32 MaxX, uint32 MaxY) const override;
         
         FViewportState                      SceneViewportState;
         FDelegateHandle                     SwapchainResizedHandle;

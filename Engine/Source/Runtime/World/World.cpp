@@ -238,7 +238,7 @@ namespace Lumina
         return NewEntity;
     }
     
-    void CWorld::CopyEntity(entt::entity& To, entt::entity From)
+    void CWorld::CopyEntity(entt::entity& To, entt::entity From, TFunctionRef<bool(entt::type_info)> Callback)
     {
         ASSERT(To != From);
         
@@ -246,7 +246,7 @@ namespace Lumina
         
         for (auto [ID, Storage]: EntityRegistry.storage())
         {
-            if (Storage.info() == entt::type_id<FRelationshipComponent>() || Storage.info() == entt::type_id<FSelectedInEditorComponent>())
+            if (!Callback(Storage.info()))
             {
                 continue;
             }
@@ -510,27 +510,20 @@ namespace Lumina
         EntityRegistry.emplace_or_replace<FNeedsTransformUpdate>(Entity);
     }
 
-    void CWorld::SetSelectedEntity(entt::entity EntityID)
-    {
-        EntityRegistry.clear<FSelectedInEditorComponent>();
-        
-        if (EntityRegistry.valid(EntityID))
-        {
-            EntityRegistry.emplace<FSelectedInEditorComponent>(EntityID);
-        }
-    }
-
-    entt::entity CWorld::GetSelectedEntity() const
+    TVector<entt::entity> CWorld::GetSelectedEntities() const
     {
         auto View = EntityRegistry.view<FSelectedInEditorComponent>();
-        ASSERT(View.size() <= 1);
-
-        for (entt::entity Entity : View)
+        TVector<entt::entity> Selections(View.size());
+        View.each([&](entt::entity Entity)
         {
-            return Entity;
-        }
+           Selections.push_back(Entity); 
+        });
+        return Selections;
+    }
 
-        return entt::null;
+    bool CWorld::IsSelected(entt::entity Entity) const
+    {
+        return EntityRegistry.any_of<FSelectedInEditorComponent>(Entity);
     }
 
     FLineBatcherComponent& CWorld::GetOrCreateLineBatcher()
