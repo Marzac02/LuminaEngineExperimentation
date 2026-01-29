@@ -3,6 +3,12 @@
         "RecentProjects": [
             "Sandbox"
         ],
-        "StartupProject": "NULL"
+        "StartupProject": "NULL",
+        "WorldEditorTool": {
+            "GuizmoSnapEnabled": true,
+            "GuizmoSnapRotate": 1.0,
+            "GuizmoSnapScale": 0.10000000149011612,
+            "GuizmoSnapTranslate": 1.0
+        }
     }
 }

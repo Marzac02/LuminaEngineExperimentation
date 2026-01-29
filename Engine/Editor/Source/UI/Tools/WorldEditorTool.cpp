@@ -1,10 +1,9 @@
 ﻿#include "WorldEditorTool.h"
-
 #include <glm/gtx/string_cast.hpp>
-
 #include "EditorToolContext.h"
 #include "Assets/AssetRegistry/AssetRegistry.h"
 #include "Components/EditorEntityTags.h"
+#include "Config/Config.h"
 #include "Core/Console/ConsoleVariable.h"
 #include "Core/Object/Class.h"
 #include "Core/Object/ObjectIterator.h"
@@ -13,7 +12,6 @@
 #include "glm/gtc/type_ptr.hpp"
 #include "glm/gtx/matrix_decompose.hpp"
 #include "Memory/SmartPtr.h"
-#include "Paths/Paths.h"
 #include "Tools/ComponentVisualizers/ComponentVisualizer.h"
 #include "Tools/Dialogs/Dialogs.h"
 #include "Tools/UI/ImGui/ImGuiFonts.h"
@@ -72,6 +70,11 @@ namespace Lumina
             }
         });
 
+
+        bGuizmoSnapEnabled  = GConfig->Get("Editor.WorldEditorTool.GuizmoSnapEnabled", true);
+        GuizmoSnapTranslate = GConfig->Get("Editor.WorldEditorTool.GuizmoSnapTranslate", 0.1f);
+        GuizmoSnapRotate    = GConfig->Get("Editor.WorldEditorTool.GuizmoSnapRotate", 5.0f);
+        GuizmoSnapScale     = GConfig->Get("Editor.WorldEditorTool.GuizmoSnapScale", 0.1f);
 
         //------------------------------------------------------------------------------------------------------
         
@@ -263,7 +266,8 @@ namespace Lumina
         
                 if (bDeletePressed)
                 {
-                    EntityDestroyRequests.push(SelectedEntity);
+                    World->DestroyEntity(SelectedEntity);
+                    OutlinerListView.MarkTreeDirty();
                 }
             });
         }
@@ -1397,6 +1401,7 @@ namespace Lumina
         if (ImGuiX::IconButton(LE_ICON_MAGNET, "##SnapToggle", 0xFFFFFFFF, BtnSize))
         {
             bGuizmoSnapEnabled = !bGuizmoSnapEnabled;
+            GConfig->Set("Editor.WorldEditorTool.GuizmoSnapEnabled", bGuizmoSnapEnabled);
         }
     
         if (bSnapWasEnabled)
@@ -1503,12 +1508,14 @@ namespace Lumina
         
         if (ImGui::Checkbox("Enable Snap", &bGuizmoSnapEnabled))
         {
-            
+            GConfig->Set("Editor.WorldEditorTool.GuizmoSnapEnabled", bGuizmoSnapEnabled);
         }
         
         ImGui::Spacing();
         
         ImGui::PushStyleColor(ImGuiCol_Header, ImVec4(0.2f, 0.4f, 0.6f, 0.3f));
+        bool bAnySettingDirty = false;
+        
         if (ImGui::CollapsingHeader("Translation", ImGuiTreeNodeFlags_DefaultOpen))
         {
             ImGui::PushID("Translate");
@@ -1519,32 +1526,41 @@ namespace Lumina
             ImGui::Text("Presets:");
             ImGui::SameLine();
             
+            
             if (ImGui::Button("0.1"))
             {
                 GuizmoSnapTranslate = 0.1f;
+                bAnySettingDirty = true;
             }
             ImGui::SameLine();
             if (ImGui::Button("1.0"))
             {
                 GuizmoSnapTranslate = 1.0f;
+                bAnySettingDirty = true;
             }
             ImGui::SameLine();
             if (ImGui::Button("5.0"))
             {
                 GuizmoSnapTranslate = 5.0f;
+                bAnySettingDirty = true;
             }
             ImGui::SameLine();
             if (ImGui::Button("10"))
             {
                 GuizmoSnapTranslate = 10.0f;
+                bAnySettingDirty = true;
             }
             ImGui::SameLine();
             if (ImGui::Button("50"))
             {
                 GuizmoSnapTranslate = 50.0f;
+                bAnySettingDirty = true;
             }
             
-            ImGui::DragFloat("Value##Translation", &GuizmoSnapTranslate, 0.1f, 0.01f, 1000.0f, "%.2f units");
+            if (ImGui::DragFloat("Value##Translation", &GuizmoSnapTranslate, 0.1f, 0.01f, 1000.0f, "%.2f units"))
+            {
+                bAnySettingDirty = true;
+            }
             
             ImGui::EndDisabled();
             ImGui::Unindent();
@@ -1564,29 +1580,37 @@ namespace Lumina
             if (ImGui::Button("1 " LE_ICON_ANGLE_ACUTE))
             {
                 GuizmoSnapRotate = 1.0f;
+                bAnySettingDirty = true;
             }
             ImGui::SameLine();
             if (ImGui::Button("5 " LE_ICON_ANGLE_ACUTE))
             {
                 GuizmoSnapRotate = 5.0f;
+                bAnySettingDirty = true;
             }
             ImGui::SameLine();
             if (ImGui::Button("15 " LE_ICON_ANGLE_ACUTE))
             {
                 GuizmoSnapRotate = 15.0f;
+                bAnySettingDirty = true;
             }
             ImGui::SameLine();
             if (ImGui::Button("45 " LE_ICON_ANGLE_ACUTE))
             {
                 GuizmoSnapRotate = 45.0f;
+                bAnySettingDirty = true;
             }
             ImGui::SameLine();
             if (ImGui::Button("90 " LE_ICON_ANGLE_ACUTE))
             {
                 GuizmoSnapRotate = 90.0f;
+                bAnySettingDirty = true;
             }
             
-            ImGui::DragFloat("Value##Rotation", &GuizmoSnapRotate, 0.5f, 0.1f, 180.0f, "%.1f " LE_ICON_ANGLE_ACUTE);
+            if (ImGui::DragFloat("Value##Rotation", &GuizmoSnapRotate, 0.5f, 0.1f, 180.0f, "%.1f " LE_ICON_ANGLE_ACUTE))
+            {
+                bAnySettingDirty = true;
+            }
             
             ImGui::EndDisabled();
             ImGui::Unindent();
@@ -1606,30 +1630,44 @@ namespace Lumina
             if (ImGui::Button("0.1"))
             {
                 GuizmoSnapScale = 0.1f;
+                bAnySettingDirty = true;
             }
             ImGui::SameLine();
             if (ImGui::Button("0.25"))
             {
                 GuizmoSnapScale = 0.25f;
+                bAnySettingDirty = true;
             }
             ImGui::SameLine();
             if (ImGui::Button("0.5"))
             {
                 GuizmoSnapScale = 0.5f;
+                bAnySettingDirty = true;
             }
             ImGui::SameLine();
             if (ImGui::Button("1.0"))
             {
                 GuizmoSnapScale = 1.0f;
+                bAnySettingDirty = true;
             }
             
-            ImGui::DragFloat("Value##Scale", &GuizmoSnapScale, 0.01f, 0.01f, 10.0f, "%.2f");
+            if (ImGui::DragFloat("Value##Scale", &GuizmoSnapScale, 0.01f, 0.01f, 10.0f, "%.2f"))
+            {
+                bAnySettingDirty = true;
+            }
             
             ImGui::EndDisabled();
             ImGui::Unindent();
             ImGui::PopID();
         }
         
+        if (bAnySettingDirty)
+        {
+            GConfig->Set("Editor.WorldEditorTool.GuizmoSnapTranslate", GuizmoSnapTranslate);
+            GConfig->Set("Editor.WorldEditorTool.GuizmoSnapRotate", GuizmoSnapRotate);
+            GConfig->Set("Editor.WorldEditorTool.GuizmoSnapScale", GuizmoSnapScale);
+        }
+
         ImGui::PopStyleColor();
     }
 
