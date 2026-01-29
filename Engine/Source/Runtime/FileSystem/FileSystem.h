@@ -9,7 +9,7 @@
 #include "Core/Templates/SameAs.h"
 #include "Core/Variant/Variant.h"
 
-namespace Lumina::FileSystem
+namespace Lumina::VFS
 {
     template<typename T>
     concept CFileSystem = requires(T FS,    TVector<uint8>& OutBytes, FString& OutStr, 

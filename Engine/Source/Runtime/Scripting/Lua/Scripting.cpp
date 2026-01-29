@@ -100,14 +100,12 @@ namespace Lumina::Scripting
 
     void FScriptingContext::ProcessDeferredActions()
     {
-        namespace FS = FileSystem;
-        
         FWriteScopeLock Lock(SharedMutex);
         
         DeferredActions.ProcessAllOf<FScriptDelete>([&](const FScriptDelete& Reload)
         {
             FString ScriptData;
-            FS::ReadFile(ScriptData, Reload.Path);
+            VFS::ReadFile(ScriptData, Reload.Path);
             LoadScript(ScriptData);
         });
         
@@ -126,7 +124,7 @@ namespace Lumina::Scripting
         DeferredActions.ProcessAllOf<FScriptLoad>([&](const FScriptLoad& Reload)
         {
             FString ScriptData;
-            FS::ReadFile(ScriptData, Reload.Path);
+            VFS::ReadFile(ScriptData, Reload.Path);
             LoadScript(ScriptData);
         });
     }
@@ -168,15 +166,13 @@ namespace Lumina::Scripting
     {
         FWriteScopeLock Lock(SharedMutex);
         
-        namespace FS = FileSystem;
-        
         ScriptRegistry = {};
-        FS::RecursiveDirectoryIterator(Directory, [&](const FS::FFileInfo& Info)
+        VFS::RecursiveDirectoryIterator(Directory, [&](const VFS::FFileInfo& Info)
         {
             if (Info.IsLua())
             {
                 FString ScriptData;
-                FS::ReadFile(ScriptData, Info.VirtualPath);
+                VFS::ReadFile(ScriptData, Info.VirtualPath);
                 LoadScript(ScriptData);
             }
         });

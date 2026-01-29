@@ -167,7 +167,7 @@ namespace Lumina::Import::Textures
         ImageDescription.Extent = Result.Dimensions;
         ImageDescription.Flags.SetFlag(EImageCreateFlags::ShaderResource);
         ImageDescription.NumMips = 1;
-        ImageDescription.DebugName = FileSystem::FileName(RawFilePath, true);
+        ImageDescription.DebugName = VFS::FileName(RawFilePath, true);
         ImageDescription.InitialState = EResourceStates::ShaderResource;
         ImageDescription.bKeepInitialState = true;
         

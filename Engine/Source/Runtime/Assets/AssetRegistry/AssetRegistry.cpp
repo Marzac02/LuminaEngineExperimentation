@@ -19,14 +19,13 @@ namespace Lumina
     void FAssetRegistry::RunInitialDiscovery()
     {
         LUMINA_PROFILE_SCOPE();
-        namespace FS = FileSystem;
         
         ClearAssets();
         
         TVector<FFixedString> PackagePaths;
         PackagePaths.reserve(100);
         
-        auto Callback = [&](const FS::FFileInfo& File)
+        auto Callback = [&](const VFS::FFileInfo& File)
         {
             if (File.IsDirectory())
             {
@@ -39,8 +38,8 @@ namespace Lumina
             }
         };
         
-        FS::RecursiveDirectoryIterator("/Engine/Resources/Content", Callback);
-        FS::RecursiveDirectoryIterator("/Game/Content", Callback);
+        VFS::RecursiveDirectoryIterator("/Engine/Resources/Content", Callback);
+        VFS::RecursiveDirectoryIterator("/Game/Content", Callback);
 
         
         uint32 NumPackages = (uint32)PackagePaths.size();
@@ -106,7 +105,7 @@ namespace Lumina
 
         const TUniquePtr<FAssetData>& Data = *It;
         Data->Path.assign_convert(NewPath);
-        Data->AssetName = FileSystem::FileName(NewPath, true);
+        Data->AssetName = VFS::FileName(NewPath, true);
 
         GetOnAssetRegistryUpdated().Broadcast();
     }
@@ -162,13 +161,13 @@ namespace Lumina
     void FAssetRegistry::ProcessPackagePath(FStringView Path)
     {
         TVector<uint8> Data;
-        if (!FileSystem::ReadFile(Data, Path))
+        if (!VFS::ReadFile(Data, Path))
         {
             LOG_ERROR("Failed to load package file at path {}", Path);
             return;
         }
 
-        FName PackageFileName = FileSystem::FileName(Path, true);
+        FName PackageFileName = VFS::FileName(Path, true);
         
         FPackageHeader Header;
         FMemoryReader Reader(Data);

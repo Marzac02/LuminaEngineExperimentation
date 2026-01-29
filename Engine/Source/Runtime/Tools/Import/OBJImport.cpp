@@ -39,7 +39,7 @@ namespace Lumina::Import::Mesh::OBJ
         FMeshImportData ImportData;
         
         TUniquePtr<FMeshResource> MeshResource = MakeUnique<FMeshResource>();
-        MeshResource->Name = FileSystem::FileName(FilePath, true);
+        MeshResource->Name = VFS::FileName(FilePath, true);
 
         if (ImportOptions.bImportTextures)
         {

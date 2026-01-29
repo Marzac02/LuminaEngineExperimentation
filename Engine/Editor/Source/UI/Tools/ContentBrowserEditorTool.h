@@ -51,7 +51,7 @@ namespace Lumina
         {
         public:
             
-            FContentBrowserTileViewItem(FTileViewItem* InParent, const FileSystem::FFileInfo& InInfo)
+            FContentBrowserTileViewItem(FTileViewItem* InParent, const VFS::FFileInfo& InInfo)
                 : FTileViewItem(InParent)
                 , FileInfo(InInfo)
             {
@@ -73,10 +73,10 @@ namespace Lumina
 
             NODISCARD FStringView GetName() const override
             {
-                return FileSystem::FileName(FileInfo.PathSource, true);
+                return VFS::FileName(FileInfo.PathSource, true);
             }
             
-            NODISCARD const FileSystem::FFileInfo& GetFileInfo() const { return FileInfo; }
+            NODISCARD const VFS::FFileInfo& GetFileInfo() const { return FileInfo; }
             NODISCARD FStringView GetPathSource() const { return FileInfo.PathSource; }
             NODISCARD FStringView GetVirtualPath() const { return FileInfo.VirtualPath; }
             NODISCARD bool IsAsset() const { return FileInfo.IsLAsset(); }
@@ -86,7 +86,7 @@ namespace Lumina
             
         private:
             
-            FileSystem::FFileInfo FileInfo;
+            VFS::FFileInfo FileInfo;
         };
 
         LUMINA_SINGLETON_EDITOR_TOOL(FContentBrowserEditorTool)

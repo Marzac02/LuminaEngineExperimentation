@@ -212,7 +212,7 @@ namespace Lumina
                 auto CompileStart = std::chrono::high_resolution_clock::now();
 
                 const FString& Path = Paths[i];
-                FStringView Filename = FileSystem::FileName(Path);
+                FStringView Filename = VFS::FileName(Path);
                 const FShaderCompileOptions& Opt = Options[i];
                 
                 for (const FString& Macro : Opt.MacroDefinitions)

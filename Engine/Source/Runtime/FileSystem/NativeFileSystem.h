@@ -4,7 +4,7 @@
 #include "Containers/Array.h"
 #include "Containers/Function.h"
 
-namespace Lumina::FileSystem
+namespace Lumina::VFS
 {
     struct FFileInfo;
 

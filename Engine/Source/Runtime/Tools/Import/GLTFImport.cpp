@@ -82,7 +82,7 @@ namespace Lumina::Import::Mesh::GLTF
         const fastgltf::Asset& Asset = ExpectedAsset.Value();
         float ImportScale = 0.01f * ImportOptions.Scale;
         
-        FStringView Name = FileSystem::FileName(FilePath, true);
+        FStringView Name = VFS::FileName(FilePath, true);
         
         FMeshImportData ImportData;
         ImportData.Resources.reserve(Asset.meshes.size());

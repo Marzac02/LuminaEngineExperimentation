@@ -14,7 +14,7 @@ namespace Lumina
     
     bool FEditorEngine::Init()
     {
-        FileSystem::Mount<FileSystem::FNativeFileSystem>("/Editor", Paths::Combine(Paths::GetEngineDirectory(), "Editor"));
+        VFS::Mount<VFS::FNativeFileSystem>("/Editor", Paths::Combine(Paths::GetEngineDirectory(), "Editor"));
         
         GConfig->LoadPath("/Editor/Config");
         

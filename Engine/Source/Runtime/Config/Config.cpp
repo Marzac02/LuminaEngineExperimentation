@@ -3,7 +3,6 @@
 #include <nlohmann/json.hpp>
 #include "FileSystem/FileSystem.h"
 
-namespace FS = Lumina::FileSystem;
 using Json = nlohmann::json;
 
 namespace Lumina
@@ -12,7 +11,7 @@ namespace Lumina
     
     void FConfig::LoadPath(FStringView ConfigPath)
     {
-        FS::DirectoryIterator(ConfigPath, [&](const FS::FFileInfo& Info)
+        VFS::DirectoryIterator(ConfigPath, [&](const VFS::FFileInfo& Info)
         {
             if (Info.GetExt() != ".json")
             {
@@ -20,7 +19,7 @@ namespace Lumina
             }
             
             FString Result;
-            FS::ReadFile(Result, Info.VirtualPath);
+            VFS::ReadFile(Result, Info.VirtualPath);
             
             Json J = Json::parse(Result.c_str());
             
@@ -110,7 +109,7 @@ namespace Lumina
         (*Current)[PathParts.back().c_str()] = Value;
         
         FString JsonString = FileConfigs[SourceFile.c_str()].dump(4).c_str();
-        FS::WriteFile(SourceFile, JsonString);
+        VFS::WriteFile(SourceFile, JsonString);
     
         return true;
     }

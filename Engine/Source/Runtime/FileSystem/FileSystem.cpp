@@ -8,10 +8,9 @@
 #include "Paths/Paths.h"
 
 
-namespace Lumina::FileSystem
+namespace Lumina::VFS
 {
     static THashMap<FFixedString, TVector<FFileSystem>> FileSystemStorage;
-    
     
     namespace Detail
     {

@@ -6,7 +6,7 @@
 #include "Paths/Paths.h"
 
 
-namespace Lumina::FileSystem
+namespace Lumina::VFS
 {
     FNativeFileSystem::FNativeFileSystem(const FFixedString& InAliasPath, FStringView InBasePath) noexcept
         : AliasPath(Paths::Normalize(InAliasPath))

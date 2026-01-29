@@ -4,7 +4,7 @@
 #include "Core/LuminaMacros.h"
 #include "Platform/Platform.h"
 
-namespace Lumina::FileSystem
+namespace Lumina::VFS
 {
     
     enum class EFileFlags : uint8

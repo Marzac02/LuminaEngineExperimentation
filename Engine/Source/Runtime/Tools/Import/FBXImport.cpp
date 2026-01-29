@@ -47,7 +47,7 @@ namespace Lumina::Import::Mesh::FBX
         };
         
         FMeshImportData ImportData;
-        FStringView FileName = FileSystem::FileName(FilePath, true);
+        FStringView FileName = VFS::FileName(FilePath, true);
         
         
         int AnimStackCount = ImportOptions.bImportAnimations ? FBXScene->getAnimationStackCount() : 0;

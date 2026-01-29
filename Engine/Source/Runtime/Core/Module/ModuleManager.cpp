@@ -42,7 +42,7 @@ namespace Lumina
             return nullptr;
         }
         
-        FStringView ModuleName = FileSystem::FileName(ModulePath, true);
+        FStringView ModuleName = VFS::FileName(ModulePath, true);
 
         FModuleInfo* ModuleInfo = GetOrCreateModuleInfo(ModuleName);
         ModuleInfo->ModuleHandle = ModuleHandle;

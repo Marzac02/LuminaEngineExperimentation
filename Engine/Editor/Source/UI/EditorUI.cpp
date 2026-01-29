@@ -2793,7 +2793,7 @@ namespace Lumina
 
                     ImGui::TextColored(ImVec4(0.7f, 0.7f, 0.7f, 1.0f), "Size On Disk:");
                     ImGui::NextColumn();
-                    ImGui::TextColored(ImVec4(0.5f, 0.5f, 0.5f, 1.0f), "%s", ImGuiX::FormatSize(FileSystem::Size(Asset->Path)).c_str());
+                    ImGui::TextColored(ImVec4(0.5f, 0.5f, 0.5f, 1.0f), "%s", ImGuiX::FormatSize(VFS::Size(Asset->Path)).c_str());
                     ImGui::NextColumn();
                     
                     ImGui::Columns(1);

@@ -39,7 +39,7 @@ namespace Lumina
     {
         FFixedString SafePath = SanitizeObjectName(Path);
         CPackage* Package = CPackage::CreatePackage(SafePath);
-        FStringView FileName = FileSystem::FileName(Path, true);
+        FStringView FileName = VFS::FileName(Path, true);
 
         CObject* New = CreateNew(FileName, Package);
         Package->ExportTable.emplace_back(New);
@@ -53,7 +53,7 @@ namespace Lumina
     {
         FFixedString SafePath = SanitizeObjectName(Path);
         CPackage* Package = CPackage::CreatePackage(SafePath);
-        FStringView FileName = FileSystem::FileName(Path, true);
+        FStringView FileName = VFS::FileName(Path, true);
 
         CObject* New = NewObject(Class, Package, FileName, FGuid::New(), OF_Public);
         Package->ExportTable.emplace_back(New);

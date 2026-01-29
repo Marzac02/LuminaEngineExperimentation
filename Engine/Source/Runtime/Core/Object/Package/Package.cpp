@@ -62,8 +62,8 @@ namespace Lumina
 
     bool CPackage::Rename(const FName& NewName, CPackage* NewPackage)
     {
-		FStringView FileName = FileSystem::FileName(NewName.ToString(), true);
-		FStringView OldFileName = FileSystem::FileName(GetName().ToString(), true);
+		FStringView FileName = VFS::FileName(NewName.ToString(), true);
+		FStringView OldFileName = VFS::FileName(GetName().ToString(), true);
         bool bFileNameDirty = FileName != OldFileName;
      
         if (bFileNameDirty)
@@ -125,7 +125,7 @@ namespace Lumina
         }
         
         TVector<uint8> PackageBlob;
-        if (!FileSystem::ReadFile(PackageBlob, Path))
+        if (!VFS::ReadFile(PackageBlob, Path))
         {
             LOG_ERROR("Failed to load package file at path {}", Path);
             return false;
@@ -140,7 +140,7 @@ namespace Lumina
         TVector<FObjectExport> Exports;
         Reader << Exports;
 
-        FName PackageFileName = FileSystem::FileName(Path, true);
+        FName PackageFileName = VFS::FileName(Path, true);
 
         TOptional<FObjectExport> Export;
         for (const FObjectExport& E : Exports)
@@ -160,7 +160,7 @@ namespace Lumina
         
 
         FAssetRegistry::Get().AssetDeleted(Export->ObjectGUID);
-        FileSystem::Remove(Path);
+        VFS::Remove(Path);
 
         return true;
     }
@@ -201,7 +201,7 @@ namespace Lumina
 
         FAssetRegistry::Get().AssetDeleted(AssetGUID);
 
-        FileSystem::Remove(PackageToDestroy->GetPackagePath());
+        VFS::Remove(PackageToDestroy->GetPackagePath());
         
         return true;
     }
@@ -224,8 +224,8 @@ namespace Lumina
             return;
         }
 
-		FName NewFileName = FileSystem::FileName(NewPath, true);
-		FName OldFileName = FileSystem::FileName(OldPath, true);
+		FName NewFileName = VFS::FileName(NewPath, true);
+		FName OldFileName = VFS::FileName(OldPath, true);
         bool bFileNameDirty = NewFileName != OldFileName;
         if (!bFileNameDirty)
         {
@@ -234,7 +234,7 @@ namespace Lumina
 
 		// This is kind of weird but the file has already been moved, so we need to use the new path to load it.
         TVector<uint8> FileBlob;
-        if (!FileSystem::ReadFile(FileBlob, NewPath))
+        if (!VFS::ReadFile(FileBlob, NewPath))
         {
 			LOG_ERROR("Failed to load package file at path {}", NewPath);
             return;
@@ -262,7 +262,7 @@ namespace Lumina
             Writer.Seek(Header.ExportTableOffset);
             Writer << Exports;
 
-            FileSystem::WriteFile(NewPath, FileBlob);
+            VFS::WriteFile(NewPath, FileBlob);
         }
 	}
 
@@ -311,7 +311,7 @@ namespace Lumina
         auto Start = std::chrono::high_resolution_clock::now();
 
         TVector<uint8> FileBinary;
-        if (FileSystem::ReadFile(FileBinary, Path))
+        if (VFS::ReadFile(FileBinary, Path))
         {
             Package->CreateLoader(FileBinary);
         
@@ -391,7 +391,7 @@ namespace Lumina
         // Reload the package loader to match the new file binary.
         Package->CreateLoader(FileBinary);
         
-        if(!FileSystem::WriteFile(Path, FileBinary))
+        if(!VFS::WriteFile(Path, FileBinary))
         {
             LOG_ERROR("Failed to save package: {}", Path);
         }

@@ -43,7 +43,7 @@ namespace Lumina
         // Initialize core engine state.
         //-------------------------------------------------------------------------
         
-        FileSystem::Mount<FileSystem::FNativeFileSystem>("/Engine", Paths::GetEngineDirectory());
+        VFS::Mount<VFS::FNativeFileSystem>("/Engine", Paths::GetEngineDirectory());
         
         FCoreDelegates::OnPreEngineInit.BroadcastAndClear();
         
@@ -283,7 +283,6 @@ namespace Lumina
 
     void FEngine::LoadProject(FStringView Path)
     {
-        namespace FS = FileSystem;
         using Json = nlohmann::json;
         
         FString JsonData;
@@ -297,7 +296,7 @@ namespace Lumina
         DEBUG_ASSERT(!Data.empty());
         
         FGuid ProjectID                 = FGuid::FromString(Data["ProjectID"].get<std::string>().c_str());
-        ProjectPath                     .assign_convert(FS::Parent(Paths::Normalize(Path)));
+        ProjectPath                     .assign_convert(VFS::Parent(Paths::Normalize(Path)));
         ProjectName                     = Data["Name"].get<std::string>().c_str();
         
         FFixedString ConfigDir          = Paths::Combine(ProjectPath, "Config");
@@ -305,8 +304,8 @@ namespace Lumina
         FFixedString BinariesDirectory  = Paths::Combine(ProjectPath, "Binaries");
         FFixedString GameScriptsDir     = Paths::Combine(ProjectPath, "Game", "Scripts");
         
-        FS::Mount<FS::FNativeFileSystem>("/Game", GameDir);
-        FS::Mount<FS::FNativeFileSystem>("/Config", ConfigDir);
+        VFS::Mount<VFS::FNativeFileSystem>("/Game", GameDir);
+        VFS::Mount<VFS::FNativeFileSystem>("/Config", ConfigDir);
 
         GConfig->LoadPath("/Config");
         

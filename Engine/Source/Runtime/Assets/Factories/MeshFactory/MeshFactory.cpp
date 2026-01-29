@@ -38,7 +38,7 @@ namespace Lumina
             ImportedData = MakeShared<FMeshImportData>();
             ImportSettings = ImportedData;
             
-            FName FileExtension = FileSystem::Extension(RawPath);
+            FName FileExtension = VFS::Extension(RawPath);
             TExpected<FMeshImportData, FString> Expected;
             if (FileExtension == ".obj")
             {
@@ -72,7 +72,7 @@ namespace Lumina
         ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(12, 8));
     
         ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.9f, 0.9f, 0.9f, 1.0f));
-        ImGui::TextWrapped("Importing: %s", FileSystem::FileName(RawPath).data());
+        ImGui::TextWrapped("Importing: %s", VFS::FileName(RawPath).data());
         ImGui::PopStyleColor();
         ImGui::Spacing();
     
@@ -324,7 +324,7 @@ namespace Lumina
                         {
                             const FMeshImportImage& Image = TextureVector[i];
     
-                            FFixedString ImagePath = Paths::Combine(FileSystem::Parent(RawPath), Image.RelativePath);
+                            FFixedString ImagePath = Paths::Combine(VFS::Parent(RawPath), Image.RelativePath);
                             if (!Paths::Exists(ImagePath))
                             {
                                 continue;
@@ -346,7 +346,7 @@ namespace Lumina
 
                             ImGui::TableSetColumnIndex(1);
                             ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.9f, 0.9f, 0.9f, 1.0f));
-                            ImGuiX::TextWrapped("{0}", FileSystem::FileName(ImagePath));
+                            ImGuiX::TextWrapped("{0}", VFS::FileName(ImagePath));
                             ImGui::PopStyleColor();
                             ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.7f, 0.7f, 0.7f, 1.0f));
                             ImGuiX::TextWrapped("{0}", ImagePath);
@@ -647,10 +647,10 @@ namespace Lumina
                 
                 CTextureFactory* TextureFactory = CTextureFactory::StaticClass()->GetDefaultObject<CTextureFactory>();
                 
-                FStringView ParentPath = FileSystem::Parent(RawPath, true);
+                FStringView ParentPath = VFS::Parent(RawPath, true);
                 FFixedString TexturePath;
                 TexturePath.append_convert(ParentPath.data(), ParentPath.length()).append("/").append_convert(Texture.RelativePath);
-                FStringView TextureFileName = FileSystem::FileName(TexturePath, true);
+                FStringView TextureFileName = VFS::FileName(TexturePath, true);
                 
                 
                 size_t LastSlashPos = DestinationPath.find_last_of('/');
