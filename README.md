@@ -35,8 +35,6 @@
 
 ---
 
-https://github.com/user-attachments/assets/e95f8cc4-79d9-4186-8bc6-277dd8ca7487
-
 https://github.com/user-attachments/assets/3d797479-fc47-4b8f-baf4-87315709d0c2
 
 
