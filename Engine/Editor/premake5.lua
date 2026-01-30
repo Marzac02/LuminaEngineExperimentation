@@ -15,6 +15,11 @@ project "Editor"
 		LuminaConfig.RunReflection()
 	}
 
+	defines
+	{
+		"RUNTIME_API=DLL_IMPORT"
+	}
+
 	links
 	{
 		"Runtime",

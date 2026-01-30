@@ -133,18 +133,14 @@ namespace Lumina
         RegisterGraphNode(CMaterialExpression_TextureSample::StaticClass());
 
         ValidateGraph();
+        
     }
-
+    
     void CMaterialNodeGraph::Shutdown()
     {
         CEdNodeGraph::Shutdown();
     }
-
-    void CMaterialNodeGraph::OnDrawGraph()
-    {
-        
-    }
-
+    
     void CMaterialNodeGraph::CompileGraph(FMaterialCompiler& Compiler)
     {
         TVector<CEdGraphNode*> SortedNodes;

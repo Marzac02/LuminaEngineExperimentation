@@ -1,60 +1,90 @@
 ﻿#pragma once
-#include "Core/UpdateStage.h"
-#include "Core/Object/Object.h"
-#include "Core/Object/ObjectHandleTyped.h"
+
 #include "SystemContext.h"
-#include "EntitySystem.generated.h"
+#include "Core/Engine/Engine.h"
+#include "Scripting/ScriptTypes.h"
+#include "World/Entity/Traits.h"
 
 
 namespace Lumina
 {
-
-    REFLECT()
-    class RUNTIME_API CEntitySystemRegistry : public CObject
-    {
-        GENERATED_BODY()
-    public:
-
-        void RegisterSystem(CEntitySystem* NewSystem);
-
-        static CEntitySystemRegistry& Get();
-
-        void GetRegisteredSystems(TVector<TObjectPtr<CEntitySystem>>& Systems);
-
-        TVector<TObjectPtr<CEntitySystem>> RegisteredSystems;
-
-        static CEntitySystemRegistry* Singleton;
-
-    };
     
+#define ENTITY_SYSTEM( ... )\
+FUpdatePriorityList PriorityList = FUpdatePriorityList(__VA_ARGS__);
 
-    REFLECT()
-    class RUNTIME_API CEntitySystem : public CObject
+    namespace Meta
     {
-        GENERATED_BODY()
+        template<typename TSystem>
+        concept HasStartup = requires(TSystem Sys, const FSystemContext& Context)
+        {
+            { Sys.Startup(Context) } noexcept -> std::same_as<void>;
+        };
+    
+        template<typename TSystem>
+        concept HasUpdate = requires(TSystem Sys, const FSystemContext& Context)
+        {
+            { Sys.Update(Context) } noexcept -> std::same_as<void>;
+        };
+    
+        template<typename TSystem>
+        concept HasTeardown = requires(TSystem Sys, const FSystemContext& Context)
+        {
+            { Sys.Teardown(Context) } noexcept -> std::same_as<void>;
+        };
+    
+        template<typename TSystem>
+        concept IsSystem = HasStartup<TSystem> || HasUpdate<TSystem> || HasTeardown<TSystem>;
+    
+        template<IsSystem TSystem>
+        void RegisterECSSystem()
+        {
+            using namespace entt::literals;
+            auto Factory = entt::meta_factory<TSystem>(GEngine->GetEngineMetaContext())
+                .type()
+                .template traits<ECS::ETraits::System>();
         
-    public:
-
+            Factory. template data<&TSystem::PriorityList>("PriorityList"_hs);
+        
+            if constexpr (HasStartup<TSystem>)
+            {
+                Factory. template func<&TSystem::Startup>("Startup"_hs);
+            }
+        
+            if constexpr (HasUpdate<TSystem>)
+            {
+                Factory. template func<&TSystem::Update>("Update"_hs);
+            }
+        
+            if constexpr (HasTeardown<TSystem>)
+            {
+                Factory. template func<&TSystem::Teardown>("Teardown"_hs);
+            }
+        }
+    }
+    
+    struct FEntitySystemWrapper
+    {
         friend class CWorld;
         
-        void PostCreateCDO() override;
+        const FUpdatePriorityList& GetUpdatePriorityList() const;
+        void Startup(FSystemContext& SystemContext) noexcept;
+        void Update(FSystemContext& SystemContext) noexcept;
+        void Teardown(FSystemContext& SystemContext) noexcept;
         
-        /** Retrieves the update priority and stage for this system */
-        virtual const FUpdatePriorityList* GetRequiredUpdatePriorities() { return nullptr; }
-
-        /** Gives the system a chance to register itself to listeners via a dispatcher */
-        virtual void Init(FSystemContext& SystemContext) { }
+    private:
+        entt::meta_type Underlying;
+    };
+    
+    struct FEntityScriptSystem
+    {
+        friend class CWorld;
         
-        /** Called per-update, for each required system */
-        virtual void Update(FSystemContext& SystemContext) { }
+        const FUpdatePriorityList& GetUpdatePriorityList() const;
+        void Startup(FSystemContext& SystemContext) noexcept;
+        void Update(FSystemContext& SystemContext) noexcept;
+        void Teardown(FSystemContext& SystemContext) noexcept;
         
-        /** Called during world shutdown */
-        virtual void Shutdown(FSystemContext& SystemContext) { }
-
-        
+    private:
+        Scripting::FLuaSystemScriptEntry ScriptSystem;
     };
 }
-
-
-#define ENTITY_SYSTEM( ... )\
-virtual const FUpdatePriorityList* GetRequiredUpdatePriorities() override { static const FUpdatePriorityList PriorityList = FUpdatePriorityList(__VA_ARGS__); return &PriorityList; }

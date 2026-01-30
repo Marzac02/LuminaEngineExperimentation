@@ -75,26 +75,25 @@ namespace Lumina
             Memory::Memset(Priorities, (uint8) EUpdatePriority::Disabled, sizeof(Priorities));
         }
 
-        bool IsStageEnabled(EUpdateStage stage) const
+        bool IsStageEnabled(EUpdateStage Stage) const
         {
-            return Priorities[(uint8) stage] != (uint8) EUpdatePriority::Disabled;
+            return Priorities[(uint8)Stage] != (uint8) EUpdatePriority::Disabled;
         }
 
-        uint8 GetPriorityForStage(EUpdateStage stage) const
+        uint8 GetPriorityForStage(EUpdateStage Stage) const
         {
-            return Priorities[(uint8) stage];
+            return Priorities[(uint8)Stage];
         }
 
-        FUpdatePriorityList& SetStagePriority(FUpdateStagePriority&& stagePriority)
+        FUpdatePriorityList& SetStagePriority(FUpdateStagePriority&& StagePriority)
         {
-            Priorities[(uint8) stagePriority.Stage] = (uint8)stagePriority.Priority;
+            Priorities[(uint8) StagePriority.Stage] = (uint8)StagePriority.Priority;
             return *this;
         }
 
-        // Set a priority for a given stage
-        FUpdatePriorityList& operator<<(FUpdateStagePriority&& stagePriority)
+        FUpdatePriorityList& operator<<(FUpdateStagePriority&& StagePriority)
         {
-            Priorities[(uint8)stagePriority.Stage] = (uint8)stagePriority.Priority;
+            Priorities[(uint8)StagePriority.Stage] = (uint8)StagePriority.Priority;
             return *this;
         }
 

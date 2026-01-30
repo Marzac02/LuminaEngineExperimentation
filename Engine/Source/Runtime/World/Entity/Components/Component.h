@@ -4,6 +4,8 @@
 #include "Core/Engine/Engine.h"
 #include "Core/Object/Class.h"
 #include "Core/Serialization/Archiver.h"
+#include "Traits/ComponentTraits.h"
+#include "World/Entity/Traits.h"
 
 namespace Lumina
 {
@@ -55,14 +57,7 @@ namespace Lumina
             TComponent& Instance = Any.cast<TComponent&>();
             Struct->SerializeTaggedProperties(Ar, &Instance);
         }
-
-        template<typename TComponent>
-        TComponent CreateInstance()
-        {
-            return TComponent{};
-        }
-
-
+        
         template<typename TComponent>
         CStruct* GetStructType()
         {
@@ -222,34 +217,32 @@ namespace Lumina
         
         // End lua variants
         
-        
         template<typename TComponent>
         void RegisterComponentMeta()
         {
             using namespace entt::literals;
-            entt::hashed_string TypeName = entt::hashed_string(TComponent::StaticStruct()->GetName().c_str());
             auto Meta = entt::meta_factory<TComponent>(GEngine->GetEngineMetaContext())
-                .type(TypeName)
-                .template func<&CreateInstance<TComponent>>("create_instance"_hs)
+                .type(TComponent::StaticStruct()->GetName().c_str())
                 .template func<&GetStructType<TComponent>>("static_struct"_hs)
-                .template func<&HasComponent<TComponent>>("has"_hs)
-                .template func<&GetComponent<TComponent>>("get"_hs)
-                .template func<&RemoveComponent<TComponent>>("remove"_hs)
-                .template func<&ClearComponent<TComponent>>("clear"_hs)
-                .template func<&EmplaceComponent<TComponent>>("emplace"_hs)
-                .template func<&PatchComponent<TComponent>>("patch"_hs)
-                .template func<&Serialize<TComponent>>("serialize"_hs)
+                .traits(ECS::ETraits::Component);
             
-                .template func<&PatchComponentLua<TComponent>>("patch_lua"_hs)
-                .template func<&EmplaceComponentLua<TComponent>>("emplace_lua"_hs)
-                .template func<&GetComponentLua<TComponent>>("get_lua"_hs)
-                .template func<&TryGetComponentLua<TComponent>>("try_get_lua"_hs)
-                .template func<&OnConstruct_Lua<TComponent>>("on_construct_lua"_hs)
-                .template func<&OnDestroy_Lua<TComponent>>("on_destroy_lua"_hs)
+            Meta.template func<&HasComponent<TComponent>>("has"_hs)
+            .template func<&GetComponent<TComponent>>("get"_hs)
+            .template func<&RemoveComponent<TComponent>>("remove"_hs)
+            .template func<&ClearComponent<TComponent>>("clear"_hs)
+            .template func<&EmplaceComponent<TComponent>>("emplace"_hs)
+            .template func<&PatchComponent<TComponent>>("patch"_hs)
+            .template func<&Serialize<TComponent>>("serialize"_hs);
+            
+            Meta.template func<&PatchComponentLua<TComponent>>("patch_lua"_hs)
+            .template func<&EmplaceComponentLua<TComponent>>("emplace_lua"_hs)
+            .template func<&GetComponentLua<TComponent>>("get_lua"_hs)
+            .template func<&TryGetComponentLua<TComponent>>("try_get_lua"_hs)
+            .template func<&OnConstruct_Lua<TComponent>>("on_construct_lua"_hs)
+            .template func<&OnDestroy_Lua<TComponent>>("on_destroy_lua"_hs)
 
-                .template func<&ConnectListener_Lua<TComponent>>("connect_listener_lua"_hs)
-                .template func<&TriggerEvent_Lua<TComponent>>("trigger_event_lua"_hs);
-            
+            .template func<&ConnectListener_Lua<TComponent>>("connect_listener_lua"_hs)
+            .template func<&TriggerEvent_Lua<TComponent>>("trigger_event_lua"_hs);
         }
     }
 }

@@ -45,10 +45,7 @@ namespace Lumina
         
         void DrawGraph();
         virtual void DrawGraphContextMenu();
-        virtual void OnDrawGraph();
         
-        void RegisterGraphAction(const FString& ActionName, const TFunction<void()>& ActionCallback);
-
         virtual void ValidateGraph()  { }
         
         virtual CEdGraphNode* CreateNode(CClass* NodeClass);
@@ -57,6 +54,8 @@ namespace Lumina
 
         void SetNodeSelectedCallback(const TFunction<void(CEdGraphNode*)>& Callback) { NodeSelectedCallback = Callback; }
         void SetPreNodeDeletedCallback(const TFunction<void(CEdGraphNode*)>& Callback) { PreNodeDeletedCallback = Callback; }
+        
+        virtual bool CanCreateConnection(CEdNodeGraphPin* A, CEdNodeGraphPin* B) { return true; }
 
 
     private:
@@ -80,7 +79,6 @@ namespace Lumina
         FString GraphSaveData;
         
         THashSet<CClass*>                               SupportedNodes;
-        TVector<FAction>                                Actions;
         
         TFunction<void(CEdGraphNode*)>                  NodeSelectedCallback;
         TFunction<void(CEdGraphNode*)>                  PreNodeDeletedCallback;

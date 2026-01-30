@@ -18,7 +18,6 @@
 #include "Entity/Components/LuaComponent.h"
 #include "Entity/Components/NameComponent.h"
 #include "Entity/Components/SingletonEntityComponent.h"
-#include "Entity/Systems/ScriptEntitySystem.h"
 #include "Events/KeyCodes.h"
 #include "glm/gtx/matrix_decompose.hpp"
 #include "Physics/Physics.h"
@@ -55,6 +54,8 @@ namespace Lumina
     
     void CWorld::InitializeWorld()
     {
+        using namespace entt::literals;
+        
         GEngine->GetEngineSubsystem<FWorldManager>()->AddWorld(this);
 
         EntityRegistry.ctx().emplace<entt::dispatcher&>(SingletonDispatcher);
@@ -81,16 +82,19 @@ namespace Lumina
         
         ProcessAnyNewlyLoadedScripts();
         
-        TVector<TObjectPtr<CEntitySystem>> Systems;
-        CEntitySystemRegistry::Get().GetRegisteredSystems(Systems);
-        for (CEntitySystem* System : Systems)
+        for (auto&& [IdType, Meta] : entt::resolve())
         {
-            if (System->GetRequiredUpdatePriorities())
+            ECS::ETraits Traits = Meta.traits<ECS::ETraits>();
+            if (EnumHasAnyFlags(Traits, ECS::ETraits::System))
             {
-                RegisterSystem(System);
+                FEntitySystemWrapper Wrapper;
+                Wrapper.Underlying = Meta;
+                
+                FSystemVariant Variant = Wrapper;
+                RegisterSystem(Variant);
             }
         }
-
+        
         EntityRegistry.on_construct<SSineWaveMovementComponent>().connect<&ThisClass::OnSineWaveMovementComponentCreated>(this);
         EntityRegistry.on_destroy<FRelationshipComponent>().connect<&ThisClass::OnRelationshipComponentDestroyed>(this);
         SystemContext.EventSink<FSwitchActiveCameraEvent>().connect<&ThisClass::OnChangeCameraEvent>(this);
@@ -117,13 +121,7 @@ namespace Lumina
         SystemContext.Time = TimeSinceCreation;
         SystemContext.UpdateStage = Stage;
         
-        auto& SystemVector = SystemUpdateList[(uint32)Stage];
-        for(CEntitySystem* System : SystemVector)
-        {
-            System->Update(SystemContext);
-        }
-        
-        UpdateScripts();
+        TickSystems(SystemContext);
     }
 
     void CWorld::Paused(const FUpdateContext& Context)
@@ -137,13 +135,7 @@ namespace Lumina
         SystemContext.Time = TimeSinceCreation;
         SystemContext.UpdateStage = EUpdateStage::Paused;
 
-        auto& SystemVector = SystemUpdateList[(uint32)EUpdateStage::Paused];
-        for(CEntitySystem* System : SystemVector)
-        {
-            System->Update(SystemContext);
-        }
-        
-        UpdateScripts();
+        TickSystems(SystemContext);
     }
 
     void CWorld::Render(FRenderGraph& RenderGraph)
@@ -156,9 +148,6 @@ namespace Lumina
         RenderScene->RenderScene(RenderGraph, ViewVolume);
     }
 
-    void CWorld::UpdateScripts()
-    {
-    }
 
     void CWorld::ShutdownWorld()
     {
@@ -167,10 +156,10 @@ namespace Lumina
         
         EntityRegistry.clear<>();
         
-        ForEachUniqueSystem([&](CEntitySystem* System)
-        {
-           System->Shutdown(SystemContext); 
-        });
+        //ForEachUniqueSystem([&](const FSystemVariant& System)
+        //{
+        //   System->Shutdown(SystemContext); 
+        //});
         
         Scripting::FScriptingContext::Get().OnScriptLoaded.Remove(ScriptUpdatedDelegateHandle);
 
@@ -182,17 +171,15 @@ namespace Lumina
         GEngine->GetEngineSubsystem<FWorldManager>()->RemoveWorld(this);
     }
 
-    bool CWorld::RegisterSystem(CEntitySystem* NewSystem)
+    bool CWorld::RegisterSystem(const FSystemVariant& NewSystem)
     {
-        DEBUG_ASSERT(NewSystem != nullptr);
-
-        NewSystem->Init(SystemContext);
+        const FUpdatePriorityList& PriorityList = eastl::visit([&](auto& System) { return System.GetUpdatePriorityList(); }, NewSystem);
         
         bool StagesModified[(uint8)EUpdateStage::Max] = {};
 
         for (uint8 i = 0; i < (uint8)EUpdateStage::Max; ++i)
         {
-            if (NewSystem->GetRequiredUpdatePriorities()->IsStageEnabled((EUpdateStage)i))
+            if (PriorityList.IsStageEnabled((EUpdateStage)i))
             {
                 SystemUpdateList[i].push_back(NewSystem);
                 StagesModified[i] = true;
@@ -206,10 +193,12 @@ namespace Lumina
                 continue;
             }
 
-            auto Predicate = [i](CEntitySystem* A, CEntitySystem* B)
+            auto Predicate = [i](const FSystemVariant& A, const FSystemVariant& B)
             {
-                const uint8 PriorityA = A->GetRequiredUpdatePriorities()->GetPriorityForStage((EUpdateStage)i);
-                const uint8 PriorityB = B->GetRequiredUpdatePriorities()->GetPriorityForStage((EUpdateStage)i);
+                const FUpdatePriorityList& PrioListA = eastl::visit([&](auto& System) { return System.GetUpdatePriorityList(); }, A);
+                const FUpdatePriorityList& PrioListB = eastl::visit([&](auto& System) { return System.GetUpdatePriorityList(); }, B);
+                const uint8 PriorityA = PrioListA.GetPriorityForStage((EUpdateStage)i);
+                const uint8 PriorityB = PrioListB.GetPriorityForStage((EUpdateStage)i);
                 return PriorityA > PriorityB;
             };
 
@@ -355,6 +344,19 @@ namespace Lumina
         }
     }
 
+    void CWorld::SetSimulating(bool bSim)
+    {
+        bSimulating = bSim;
+        if (bSimulating)
+        {
+            PhysicsScene->OnWorldSimulate();
+        }
+        else
+        {
+            PhysicsScene->OnWorldStopSimulate();
+        }
+    }
+
     CWorld* CWorld::DuplicateWorld(CWorld* OwningWorld)
     {
         CPackage* OuterPackage = OwningWorld->GetPackage();
@@ -381,7 +383,7 @@ namespace Lumina
         return PIEWorld;
     }
 
-    const TVector<CEntitySystem*>& CWorld::GetSystemsForUpdateStage(EUpdateStage Stage)
+    const TVector<CWorld::FSystemVariant>& CWorld::GetSystemsForUpdateStage(EUpdateStage Stage)
     {
         return SystemUpdateList[static_cast<uint32>(Stage)];
     }
@@ -403,26 +405,13 @@ namespace Lumina
         using namespace Scripting;
         using namespace entt::literals;
         
-        auto View = EntityRegistry.view<FLuaScriptsContainerComponent>();
-        View.each([&](FLuaScriptsContainerComponent& LuaContainerComponent)
+        FScriptingContext::Get().ForEachScript<FLuaSystemScriptEntry>([&](FLuaSystemScriptEntry& Script)
         {
-            for (uint32 i = 0; i < static_cast<uint32>(EUpdateStage::Max); ++i)
-            {
-                LuaContainerComponent.Systems[i].clear();
-            }
+            FEntityScriptSystem ScriptSystem;
+            ScriptSystem.ScriptSystem = Script; //@TODO Figure out if this needs to be copied or not.
             
-            FScriptingContext::Get().ForEachScript<FLuaSystemScriptEntry>([&](FLuaSystemScriptEntry& Script)
-            {
-                if (!Script.bEnabled)
-                {
-                    return;
-                }
-                
-                LuaContainerComponent.Systems[Script.Stage].emplace_back(Script);
-            });
-
-            // Push updates to initialized lua files.
-            GetMutableDefault<CScriptEntitySystem>()->Init(SystemContext);
+            FSystemVariant Variant = ScriptSystem;
+            RegisterSystem(Variant);
         });
     }
 
@@ -524,6 +513,15 @@ namespace Lumina
     bool CWorld::IsSelected(entt::entity Entity) const
     {
         return EntityRegistry.any_of<FSelectedInEditorComponent>(Entity);
+    }
+
+    void CWorld::TickSystems(FSystemContext& Context)
+    {
+        auto& SystemVector = SystemUpdateList[(uint32)Context.GetUpdateStage()];
+        for(FSystemVariant& SystemVariant : SystemVector)
+        {
+            eastl::visit([&](auto& System) { System->Update(Context); }, SystemVariant);
+        }
     }
 
     FLineBatcherComponent& CWorld::GetOrCreateLineBatcher()

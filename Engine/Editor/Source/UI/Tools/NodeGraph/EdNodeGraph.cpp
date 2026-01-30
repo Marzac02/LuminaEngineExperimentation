@@ -388,17 +388,20 @@ namespace Lumina
                                 break;
                             }
                         }
-    
-                        bool bValid = StartPin && EndPin && 
-                                      StartPin != EndPin && 
-                                      StartPin->OwningNode != EndPin->OwningNode &&
-                                      !EndPin->HasConnection();
-    
-                        if (bValid)
+                        
+                        if (CanCreateConnection(StartPin, EndPin))
                         {
-                            StartPin->AddConnection(EndPin);
-                            EndPin->AddConnection(StartPin);
-                            ValidateGraph();
+                            bool bValid = StartPin && EndPin && 
+                                          StartPin != EndPin && 
+                                          StartPin->OwningNode != EndPin->OwningNode &&
+                                          !EndPin->HasConnection();
+    
+                            if (bValid)
+                            {
+                                StartPin->AddConnection(EndPin);
+                                EndPin->AddConnection(StartPin);
+                                ValidateGraph();
+                            }
                         }
                     }
                 }
@@ -417,7 +420,7 @@ namespace Lumina
                 // Realistically it shouldn't matter too much.
                 auto NodeItr = eastl::find_if(Nodes.begin(), Nodes.end(), [NodeId] (const TObjectPtr<CEdGraphNode>& A)
                 {
-                    return A->GetNodeID() == NodeId.Get() && A->IsDeletable();
+                    return std::cmp_equal(A->GetNodeID(), NodeId.Get()) && A->IsDeletable();
                 });
 
                 if (NodeItr != Nodes.end())
@@ -474,7 +477,7 @@ namespace Lumina
             {
                 if (NodeEditor::AcceptDeletedItem())
                 {
-                    uint32 LinkIndex = DeletedLinkId.Get() - 1;
+                    uint64 LinkIndex = DeletedLinkId.Get() - 1u;
                     if (LinkIndex < Links.size())
                     {
                         const TPair<CEdNodeGraphPin*, CEdNodeGraphPin*>& Pair = Links[LinkIndex];
@@ -567,7 +570,6 @@ namespace Lumina
             return LHS.ToString() < RHS.ToString(); 
         });
         
-        // Sort nodes within each category by relevance
         for (auto& [Category, NodesInMap] : CategoryMap)
         {
             eastl::sort(NodesInMap.begin(), NodesInMap.end(), [](const CEdGraphNode* A, const CEdGraphNode* B)
@@ -576,8 +578,8 @@ namespace Lumina
             });
         }
 
-        constexpr float HeaderHeight = 54; // Search bar + separator
-        constexpr float FooterHeight = 32; // Status bar
+        constexpr float HeaderHeight = 54;
+        constexpr float FooterHeight = 32;
         ImVec2 ChildSize = ImVec2(PopupSize.x, PopupSize.y - HeaderHeight - FooterHeight);
         
         ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
@@ -710,30 +712,14 @@ namespace Lumina
         
         ImGui::PopStyleVar(2);
     }
-
-
-    void CEdNodeGraph::OnDrawGraph()
-    {
-        
-    }
-
-    void CEdNodeGraph::RegisterGraphAction(const FString& ActionName, const TFunction<void()>& ActionCallback)
-    {
-        FAction NewAction;
-        NewAction.ActionName = ActionName;
-        NewAction.ActionCallback = ActionCallback;
-
-        Actions.push_back(NewAction);
-    }
-
+    
     CEdGraphNode* CEdNodeGraph::CreateNode(CClass* NodeClass)
     {
         CEdGraphNode* NewNode = NewObject<CEdGraphNode>(NodeClass);
         AddNode(NewNode);
         return NewNode;
     }
-
-
+    
     void CEdNodeGraph::RegisterGraphNode(CClass* InClass)
     {
         if (SupportedNodes.find(InClass) == SupportedNodes.end())

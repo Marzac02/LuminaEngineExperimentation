@@ -1,6 +1,7 @@
 ﻿#include "pch.h"
 #include "ScriptFactory_System.h"
 #include "World/Entity/Components/Component.h"
+#include "Core/UpdateStage.h"
 
 namespace Lumina
 {
@@ -22,12 +23,13 @@ namespace Lumina
         }
         
         entt::entity ScriptEntity = ScriptRegistry.create();
-
+        
+        EUpdatePriority Priority    = (EUpdatePriority)ScriptTable["Priority"].get_or(0);
+        EUpdateStage Stage          = (EUpdateStage)ScriptTable["Stage"].get_or(0);
+        
         FLuaSystemScriptEntry Entry;
         Entry.Name          = Name;
-        Entry.Priority      = ScriptTable["Priority"].get_or(0);
-        Entry.Stage         = ScriptTable["Stage"].get_or(0);
-        Entry.bEnabled      = ScriptTable["Enabled"];
+        Entry.PriorityList.SetStagePriority(FUpdateStagePriority(Stage, Priority));
         Entry.InitFunc      = ScriptTable["Init"];
         Entry.ExecuteFunc   = ScriptTable["Execute"];
         Entry.ShutdownFunc  = ScriptTable["Shutdown"];

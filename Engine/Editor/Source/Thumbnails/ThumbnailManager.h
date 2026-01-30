@@ -37,7 +37,7 @@ namespace Lumina
         TObjectPtr<CStaticMesh> PlaneMesh;
         
         
-        FMutex ThumbnailLock;
+        FSharedMutex ThumbnailLock;
         THashMap<FName, FPackageThumbnail*> Thumbnails;
         
     };

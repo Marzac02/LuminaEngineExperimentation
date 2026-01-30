@@ -1,5 +1,7 @@
 ﻿#pragma once
 
-#ifndef RUNTIME_API
-#define RUNTIME_API __declspec(dllexport)
+#ifdef RUNTIME_EXPORTS
+    #define RUNTIME_API DLL_EXPORT
+#else
+    #define RUNTIME_API DLL_IMPORT
 #endif

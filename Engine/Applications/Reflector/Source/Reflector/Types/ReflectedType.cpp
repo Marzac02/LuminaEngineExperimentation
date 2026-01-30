@@ -303,6 +303,11 @@ namespace Lumina::Reflection
             {
                 Stream += "\t\t::Lumina::Meta::RegisterComponentMeta<" + QualifiedName + ">();\n";
             }
+            
+            if (Data.Key == "System")
+            {
+                Stream += "\t\t::Lumina::Meta::RegisterECSSystem<" + QualifiedName + ">();\n";
+            }
         }
         
         Stream += "\t}\n";

@@ -140,7 +140,7 @@ namespace Lumina
             Thumbnail->LoadedImage = Image;
             Thumbnail->LoadState.store(FPackageThumbnail::EState::Loaded, std::memory_order_release);
 
-            FScopeLock Lock(ThumbnailLock);
+            FWriteScopeLock Lock(ThumbnailLock);
             Thumbnails.emplace(Package, Thumbnail);
             
         });
@@ -149,7 +149,7 @@ namespace Lumina
     FPackageThumbnail* CThumbnailManager::GetThumbnailForPackage(const FName& Package)
     {
         {
-            FScopeLock Lock(ThumbnailLock);
+            FReadScopeLock Lock(ThumbnailLock);
             auto It = Thumbnails.find(Package);
             if (It != Thumbnails.end())
             {

@@ -3,7 +3,7 @@
 #include "Containers/String.h"
 #include "Containers/Name.h"
 #include "Core/Object/ObjectHandleTyped.h"
-#include "Platform/GenericPlatform.h"
+#include "Core/UpdateStage.h"
 
 namespace sol 
 {
@@ -51,9 +51,8 @@ namespace Lumina::Scripting
     struct FLuaSystemScriptEntry : FLuaScriptEntry
     {
         FName                   Name;
-        int                     Stage;
-        int                     Priority;
-        bool                    bEnabled;
+        
+        FUpdatePriorityList     PriorityList;
         
         sol::protected_function InitFunc;
         sol::protected_function ExecuteFunc;

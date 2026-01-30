@@ -16,14 +16,13 @@
 #include "Core/Delegates/Delegate.h"
 #include "World.generated.h"
 #include "Core/Functional/FunctionRef.h"
+#include "Entity/Systems/EntitySystem.h"
 
 
 namespace Lumina
 {
     struct FLineBatcherComponent;
-    class CEntitySystem;
 }
-
 
 namespace Lumina
 {
@@ -37,6 +36,8 @@ namespace Lumina
         friend struct SRenderComponent;
         
     public:
+        
+        using FSystemVariant = TVariant<entt::meta_any, FEntityScriptSystem>;
 
         CWorld();
 
@@ -59,27 +60,19 @@ namespace Lumina
         void Update(const FUpdateContext& Context);
         void Paused(const FUpdateContext& Context);
         void Render(FRenderGraph& RenderGraph);
-
-        void UpdateScripts();
         
         /**
          * Called to shut down the world, destroys system, components, and entities.
          */
         void ShutdownWorld();
-
-        bool RegisterSystem(CEntitySystem* NewSystem);
-
+        
         entt::entity ConstructEntity(const FName& Name, const FTransform& Transform = FTransform());
         
         void CopyEntity(entt::entity& To, entt::entity From, TFunctionRef<bool(entt::type_info)> Callback);
         void DestroyEntity(entt::entity Entity);
 
-        //LUM_DEPRECATED("0.0.1", "Access to the registry has been deprecated")
         FEntityRegistry& GetEntityRegistry() { return EntityRegistry; }
-
-        //LUM_DEPRECATED("0.0.1", "Access to the registry has been deprecated")
-        const FEntityRegistry& GetEntityRegistry_Immutable() const { return EntityRegistry; }
-
+        
         uint32 GetNumEntities() const;
         void SetActiveCamera(entt::entity InEntity);
         SCameraComponent* GetActiveCamera();
@@ -104,18 +97,7 @@ namespace Lumina
         void SetActive(bool bNewActive);
         bool IsSuspended() const { return !bActive; }
 
-        void SetSimulating(bool bSim)
-        {
-            bSimulating = bSim;
-            if (bSimulating)
-            {
-                PhysicsScene->OnWorldSimulate();
-            }
-            else
-            {
-                PhysicsScene->OnWorldStopSimulate();
-            }
-        }
+        void SetSimulating(bool bSim);
         
         bool IsSimulating() const { return bSimulating; }
 
@@ -124,13 +106,13 @@ namespace Lumina
         IRenderScene* GetRenderer() const { return RenderScene.get(); }
         Physics::IPhysicsScene* GetPhysicsScene() const { return PhysicsScene.get(); }
 
-        const TVector<CEntitySystem*>& GetSystemsForUpdateStage(EUpdateStage Stage);
+        const TVector<FSystemVariant>& GetSystemsForUpdateStage(EUpdateStage Stage);
 
         void OnRelationshipComponentDestroyed(entt::registry& Registry, entt::entity Entity);
         void OnSineWaveMovementComponentCreated(entt::registry& Registry, entt::entity Entity);
 
         void ProcessAnyNewlyLoadedScripts();
-
+        
         //~ Begin Debug Drawing
         void DrawBillboard(FRHIImage* Image, const glm::vec3& Location, float Scale) override;
         void DrawLine(const glm::vec3& Start, const glm::vec3& End, const glm::vec4& Color, float Thickness = 1.0f, bool bDepthTest = true, float Duration = 0.0f) override;
@@ -152,10 +134,10 @@ namespace Lumina
         template<typename TFunc>
         void ForEachUniqueSystem(TFunc&& Func)
         {
-            TSet<CEntitySystem*> UniqueSystems;
+            THashSet<FSystemVariant> UniqueSystems;
             for (uint8 i = 0; i < (uint8)EUpdateStage::Max; i++)
             {
-                for (CEntitySystem* System : SystemUpdateList[i])
+                for (const FSystemVariant& System : SystemUpdateList[i])
                 {
                     if (UniqueSystems.count(System) == 0)
                     {
@@ -168,31 +150,33 @@ namespace Lumina
         
     private:
         
+        bool RegisterSystem(const FSystemVariant& NewSystem);
+        void TickSystems(FSystemContext& Context);
         FLineBatcherComponent& GetOrCreateLineBatcher();
     
     private:
         
-        FEntityRegistry                                 EntityRegistry;
-        entt::dispatcher                                SingletonDispatcher;
-        entt::entity                                    SingletonEntity;
+        FEntityRegistry                                     EntityRegistry;
+        entt::dispatcher                                    SingletonDispatcher;
+        entt::entity                                        SingletonEntity;
 
-        FSystemContext                                  SystemContext;
-        FDelegateHandle                                 ScriptUpdatedDelegateHandle;
+        FSystemContext                                      SystemContext;
+        FDelegateHandle                                     ScriptUpdatedDelegateHandle;
         
-        TUniquePtr<FCameraManager>                      CameraManager;
-        TUniquePtr<IRenderScene>                        RenderScene;
-        TUniquePtr<Physics::IPhysicsScene>              PhysicsScene;
+        TUniquePtr<FCameraManager>                          CameraManager;
+        TUniquePtr<IRenderScene>                            RenderScene;
+        TUniquePtr<Physics::IPhysicsScene>                  PhysicsScene;
         
-        TVector<CEntitySystem*>                         SystemUpdateList[(int32)EUpdateStage::Max];
+        TVector<FSystemVariant>                             SystemUpdateList[(int32)EUpdateStage::Max];
         
+        int64                                               WorldIndex = -1;
+        double                                              DeltaTime = 0.0;
+        double                                              TimeSinceCreation = 0.0;
         
-        int64                                           WorldIndex = -1;
-        double                                          DeltaTime = 0.0;
-        double                                          TimeSinceCreation = 0.0;
-
-        uint32                                          bPaused:1 = true;
-        uint32                                          bSimulating:1 = false;
-        uint32                                          bActive:1 = true;
-        uint32                                          bIsPlayWorld:1 = false;
+        uint32                                              bPaused:1 = true;
+        uint32                                              bSimulating:1 = false;
+        uint32                                              bActive:1 = true;
+        uint32                                              bIsPlayWorld:1 = false;
     };
 }
+

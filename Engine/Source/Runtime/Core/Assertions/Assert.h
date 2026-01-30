@@ -57,9 +57,9 @@ namespace Lumina::Assert
     }
     
     // ========================= LUMINA ASSERTION INFO =========================
-    // ASSERT_DEBUG(...)    - Checked in debug, no codegen in release.
-    // ASSERT(...)          - Checked in both debug and release.
-    // ASSUME(...)          - Checked in debug, compiler optimization hint in release.
+    // ASSERT_DEBUG(...)    - Checked in debug and development, no codegen in release.
+    // ASSERT(...)          - Checked in all configurations.
+    // ASSUME(...)          - Checked in debug and development, compiler optimization hint in shipping.
     // =========================================================================
     
 #define LUMINA_HANDLE_ASSERTION_HEADER \
@@ -104,7 +104,7 @@ namespace Lumina::Assert
     }()
     
 
-#ifdef LE_DEBUG
+#if defined(LE_DEBUG) || defined(LE_DEVELOPMENT)
 #define LUMINA_DEBUG_ASSERT(Expr, ...)  LUMINA_ASSERT_INVOKE(Expr,      DebugAssert,    __VA_ARGS__)
 #else
 #define LUMINA_DEBUG_ASSERT(...)        ((void)0)
@@ -113,7 +113,7 @@ namespace Lumina::Assert
 #define LUMINA_ASSERT(Expr, ...)        LUMINA_ASSERT_INVOKE(Expr,      DebugAssert,    __VA_ARGS__)
 
 
-#ifdef LE_DEBUG
+#if defined(LE_DEBUG) || defined(LE_DEVELOPMENT)
 #define LUMINA_ASSUME(Expr, ...)        LUMINA_ASSERT_INVOKE(Expr,      Assume,         __VA_ARGS__)
 #else
 #ifdef _MSC_VER

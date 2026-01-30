@@ -204,6 +204,7 @@ namespace Lumina::Reflection
 		Stream += "#include \"";
 		Stream += Header->HeaderPath + "\"\n";
 		Stream += "#include \"World/Entity/Components/Component.h\"\n";
+		Stream += "#include \"World/Entity/Systems/EntitySystems.h\"\n";
 		Stream += "#include \"Core/Object/Class.h\"\n";
 		Stream += "\n\n";
 

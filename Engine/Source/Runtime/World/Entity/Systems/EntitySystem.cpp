@@ -1,32 +1,50 @@
 #include "pch.h"
 #include "EntitySystem.h"
 
+#include "World/Entity/EntityUtils.h"
+
 namespace Lumina
 {
-    CEntitySystemRegistry* CEntitySystemRegistry::Singleton = nullptr;
-    
-    void CEntitySystemRegistry::RegisterSystem(class CEntitySystem* NewSystem)
+    using namespace entt::literals;
+
+    const FUpdatePriorityList& FEntitySystemWrapper::GetUpdatePriorityList() const
     {
-        RegisteredSystems.push_back(NewSystem);
+        auto Data = Underlying.data("PriorityList"_hs);
+        return Data.get({}).cast<const FUpdatePriorityList&>();
     }
 
-    CEntitySystemRegistry& CEntitySystemRegistry::Get()
+    void FEntitySystemWrapper::Startup(FSystemContext& SystemContext) noexcept
     {
-        if (Singleton == nullptr)
-        {
-            Singleton = NewObject<CEntitySystemRegistry>(nullptr, "CEntitySystemRegistry_Singleton");
-        }
-         
-        return *Singleton;
+        ECS::Utils::InvokeMetaFunc(Underlying, "Startup"_hs, entt::forward_as_meta(SystemContext));
     }
 
-    void CEntitySystemRegistry::GetRegisteredSystems(TVector<TObjectPtr<CEntitySystem>>& Systems)
+    void FEntitySystemWrapper::Update(FSystemContext& SystemContext) noexcept
     {
-        Systems = RegisteredSystems;
+        ECS::Utils::InvokeMetaFunc(Underlying, "Update"_hs, entt::forward_as_meta(SystemContext));
     }
 
-    void CEntitySystem::PostCreateCDO()
+    void FEntitySystemWrapper::Teardown(FSystemContext& SystemContext) noexcept
     {
-        CEntitySystemRegistry::Get().RegisterSystem(this);
+        ECS::Utils::InvokeMetaFunc(Underlying, "Teardown"_hs, entt::forward_as_meta(SystemContext));
+    }
+
+    const FUpdatePriorityList& FEntityScriptSystem::GetUpdatePriorityList() const
+    {
+        return ScriptSystem.PriorityList;
+    }
+
+    void FEntityScriptSystem::Startup(FSystemContext& SystemContext)
+    {
+        ScriptSystem.InitFunc(std::ref(SystemContext));
+    }
+
+    void FEntityScriptSystem::Update(FSystemContext& SystemContext)
+    {
+        ScriptSystem.ExecuteFunc(std::ref(SystemContext));
+    }
+
+    void FEntityScriptSystem::Teardown(FSystemContext& SystemContext)
+    {
+        ScriptSystem.ShutdownFunc(std::ref(SystemContext));
     }
 }

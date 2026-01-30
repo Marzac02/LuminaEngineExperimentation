@@ -23,7 +23,6 @@ namespace Lumina
         void Initialize() override;
         void Shutdown() override;
         
-        void OnDrawGraph() override;
         void CompileGraph(FMaterialCompiler& Compiler);
 
         void ValidateGraph() override;
