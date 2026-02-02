@@ -57,7 +57,7 @@ Lumina is a modern C++ game engine designed for learning and experimentation wit
 ### **Advanced Rendering**
 - **Vulkan-powered renderer** with automatic resource tracking and barrier placement
 - **Forward+ rendering pipeline** with clustered lighting for efficient multi-light scenes
-- **PBR materials**
+- **PBR materials using a material graph compiled into GLSL.**
 
 ### **Modern Architecture**
 - **Entity Component System (ECS)** using EnTT for high-performance gameplay code
@@ -76,10 +76,10 @@ Lumina is a modern C++ game engine designed for learning and experimentation wit
 
 ### **Lua Scripting**
 
-Full ECS access from Lua - Create systems, query entities, modify components
-Hot-reloadable scripts - Iterate on gameplay without recompiling
-Automatic binding generation - C++ components instantly available in Lua through reflection
-Performance profiling - Built-in Lua script profiling with Tracy
+- Full ECS access from Lua - Create systems, query entities, modify components
+- Hot-reloadable scripts - Iterate on gameplay without recompiling
+- Automatic binding generation - C++ components instantly available in Lua through reflection
+- Performance profiling - Built-in Lua script profiling with Tracy
 
 ---
 
@@ -146,6 +146,7 @@ setx LUMINA_DIR "C:\path\to\lumina"
 ## Supported Asset Formats
 
 - **GLTF**
+- **FBX**
 - **GLB**
 - **OBJ**
 - **PNG**
@@ -236,6 +237,7 @@ Lumina is inspired by and learns from these excellent open-source engines:
 
 - [**Spartan Engine**](https://github.com/PanosK92/SpartanEngine) - Feature-rich Vulkan engine
 - [**Kohi Game Engine**](https://kohiengine.com/) - Educational engine series
+- [**Lumix Game Engine**](https://github.com/nem0/LumixEngine) - Fully working indie engine.
 - [**ezEngine**](https://ezengine.net/) - Professional open-source engine
 - [**GoDot**](https://godotengine.org/) - AAA quality open source C++ game engine.
 - [**Unreal Engine**](https://www.unrealengine.com/) - Does it need an introduction?
