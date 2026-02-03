@@ -32,14 +32,16 @@ namespace Lumina
 
         FUNCTION(Script)
         FORCEINLINE glm::vec3 GetLocation() const    { return Transform.Location; }
+        
+        FUNCTION(Script)
+        FORCEINLINE glm::vec3 GetPosition() const    { return Transform.Location; }
 
         FUNCTION(Script)
         FORCEINLINE glm::quat GetRotation() const    { return Transform.Rotation; }
 
         FUNCTION(Script)
         FORCEINLINE glm::vec3 GetScale()    const    { return Transform.Scale; }
-
-
+        
         FUNCTION(Script)
         FORCEINLINE float MaxScale()        const    { return glm::max(Transform.Scale.x, glm::max(Transform.Scale.y, Transform.Scale.z)); }
 

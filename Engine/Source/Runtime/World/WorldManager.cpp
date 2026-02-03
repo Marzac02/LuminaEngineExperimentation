@@ -13,7 +13,7 @@ namespace Lumina
     {
         for (FManagedWorld& World : Worlds)
         {
-            World.World->ShutdownWorld();
+            World.World->TeardownWorld();
             World.World->ConditionalBeginDestroy();
         }
         

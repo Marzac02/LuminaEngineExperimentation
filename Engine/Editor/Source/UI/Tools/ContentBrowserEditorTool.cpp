@@ -169,6 +169,10 @@ namespace Lumina
                 {
                     ImTexture = ImGuiX::ToImTextureRef(MaybeThumbnail->LoadedImage);
                 }
+                else
+                {
+                    ImTexture = ImGuiX::ToImTextureRef(Paths::GetEngineResourceDirectory() + "/Textures/Asset.png");
+                }
             }
             else if (ContentItem->IsLuaScript())
             {

@@ -75,14 +75,14 @@ namespace Lumina
                     TOptional<FRayResult> Result = Self.CastRay(Start, End, bDrawDebug, DebugDuration);
                     return Result.has_value() ? sol::make_optional(Result.value()) : sol::nullopt;
                 },
-                [&](FSystemContext& Self, const glm::vec3& Start, const glm::vec3& End, bool bDrawDebug, uint32 LayerMask)
+                [&](FSystemContext& Self, const glm::vec3& Start, const glm::vec3& End, bool bDrawDebug, float DebugDuration, uint32 LayerMask)
                 {
-                    TOptional<FRayResult> Result = Self.CastRay(Start, End, bDrawDebug, 0.0f, LayerMask);
+                    TOptional<FRayResult> Result = Self.CastRay(Start, End, bDrawDebug, DebugDuration, LayerMask);
                     return Result.has_value() ? sol::make_optional(Result.value()) : sol::nullopt;
                 },
-                [&](FSystemContext& Self, const glm::vec3& Start, const glm::vec3& End, bool bDrawDebug, uint32 LayerMask, uint32 IgnoreBody)
+                [&](FSystemContext& Self, const glm::vec3& Start, const glm::vec3& End, bool bDrawDebug, float DebugDuration, uint32 LayerMask, uint32 IgnoreBody)
                 {
-                    TOptional<FRayResult> Result = Self.CastRay(Start, End, bDrawDebug, 0.0f, LayerMask, IgnoreBody);
+                    TOptional<FRayResult> Result = Self.CastRay(Start, End, bDrawDebug, DebugDuration, LayerMask, IgnoreBody);
                     return Result.has_value() ? sol::make_optional(Result.value()) : sol::nullopt;
                 }),
 

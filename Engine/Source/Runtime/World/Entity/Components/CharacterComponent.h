@@ -14,6 +14,9 @@ namespace Lumina
         GENERATED_BODY()
     
         JPH::Ref<JPH::CharacterVirtual> Character;
+        
+        FUNCTION(Script)
+        uint32 GetBodyID() const { return Character->GetInnerBodyID().GetIndexAndSequenceNumber(); }
     
         PROPERTY(Script, Editable, Category = "Collision")
         float HalfHeight = 1.8f;

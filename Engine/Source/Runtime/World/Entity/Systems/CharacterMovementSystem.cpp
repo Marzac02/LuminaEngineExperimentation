@@ -33,14 +33,14 @@ namespace Lumina
         
         Task::ParallelFor(Handle->size(), [&](uint32 Index)
         {
+            LUMINA_PROFILE_SECTION("Process Character Movement");
+            
             entt::entity Entity = (*Handle)[Index];
 
             if (!View.contains(Entity))
             {
                 return;
             }
-         
-            LUMINA_PROFILE_SECTION("Process Character Movement");
             
             SCharacterControllerComponent& Controller   = View.get<SCharacterControllerComponent>(Entity);
             const SCharacterPhysicsComponent& Physics   = View.get<SCharacterPhysicsComponent>(Entity);

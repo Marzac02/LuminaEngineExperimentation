@@ -64,7 +64,7 @@ namespace Lumina
         /**
          * Called to shut down the world, destroys system, components, and entities.
          */
-        void ShutdownWorld();
+        void TeardownWorld();
         
         entt::entity ConstructEntity(const FName& Name, const FTransform& Transform = FTransform());
         
@@ -134,15 +134,16 @@ namespace Lumina
         template<typename TFunc>
         void ForEachUniqueSystem(TFunc&& Func)
         {
-            THashSet<FSystemVariant> UniqueSystems;
+            THashSet<uint64> UniqueSystems;
             for (uint8 i = 0; i < (uint8)EUpdateStage::Max; i++)
             {
                 for (const FSystemVariant& System : SystemUpdateList[i])
                 {
-                    if (UniqueSystems.count(System) == 0)
+                    uint64 Hash = eastl::visit([&](const auto& Sys) { return Sys.GetHash(); }, System);
+                    if (UniqueSystems.count(Hash) == 0)
                     {
                         Func(System);
-                        UniqueSystems.emplace(System);
+                        UniqueSystems.emplace(Hash);
                     }
                 }
             }

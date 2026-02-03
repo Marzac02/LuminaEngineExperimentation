@@ -1,7 +1,6 @@
 ﻿#pragma once
 #include "Core/Object/Object.h"
 #include "ScriptTypes.h"
-#include "Core/Utils/Expected.h"
 #include "Memory/SmartPtr.h"
 #include "ScriptFactory.generated.h"
 

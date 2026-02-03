@@ -15,7 +15,7 @@ namespace Lumina
 
     FString FMaterialCompiler::BuildTree(size_t& StartReplacement, size_t& EndReplacement)
     {
-        FString FragmentPath = Paths::GetEngineResourceDirectory() + "/MaterialShader/ForwardBasePass.frag";
+        FString FragmentPath = Paths::GetEngineResourceDirectory() + "/Shaders/MaterialShader/ForwardBasePass.frag";
 
         FString LoadedString;
         if (!FileHelper::LoadFileIntoString(LoadedString, FragmentPath))

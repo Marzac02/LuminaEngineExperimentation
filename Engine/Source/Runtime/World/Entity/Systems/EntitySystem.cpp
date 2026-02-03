@@ -27,6 +27,16 @@ namespace Lumina
         ECS::Utils::InvokeMetaFunc(Underlying, "Teardown"_hs, entt::forward_as_meta(SystemContext));
     }
 
+    uint64 FEntitySystemWrapper::GetHash() const noexcept
+    {
+        return Underlying.id();
+    }
+
+    uint64 FEntityScriptSystem::GetHash() const noexcept
+    {
+        return (uint64)&ScriptSystem;
+    }
+
     const FUpdatePriorityList& FEntityScriptSystem::GetUpdatePriorityList() const
     {
         return ScriptSystem.PriorityList;

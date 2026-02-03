@@ -77,8 +77,12 @@ namespace Lumina
         EntityRegistry.ctx().emplace<FSystemContext&>(SystemContext);
         
         CreateRenderer();
-        
         RegisterSystems();
+        
+        ForEachUniqueSystem([&](const FSystemVariant& System)
+        {
+            eastl::visit([&](const auto& Sys) { Sys.Startup(SystemContext); }, System);
+        });
         
         EntityRegistry.on_construct<SSineWaveMovementComponent>().connect<&ThisClass::OnSineWaveMovementComponentCreated>(this);
         EntityRegistry.on_destroy<FRelationshipComponent>().connect<&ThisClass::OnRelationshipComponentDestroyed>(this);
@@ -132,19 +136,18 @@ namespace Lumina
         
         RenderScene->RenderScene(RenderGraph, ViewVolume);
     }
-
-
-    void CWorld::ShutdownWorld()
+    
+    void CWorld::TeardownWorld()
     {
         EntityRegistry.on_construct<SSineWaveMovementComponent>().disconnect<&ThisClass::OnSineWaveMovementComponentCreated>(this);
         EntityRegistry.on_destroy<FRelationshipComponent>().disconnect<&ThisClass::OnRelationshipComponentDestroyed>(this);
         
         EntityRegistry.clear<>();
         
-        //ForEachUniqueSystem([&](const FSystemVariant& System)
-        //{
-        //   System->Shutdown(SystemContext); 
-        //});
+        ForEachUniqueSystem([&](const FSystemVariant& System)
+        {
+            eastl::visit([&](const auto& Sys) { Sys.Teardown(SystemContext); }, System);
+        });
         
         Scripting::FScriptingContext::Get().OnScriptLoaded.Remove(ScriptUpdatedDelegateHandle);
 

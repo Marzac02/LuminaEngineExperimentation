@@ -3,6 +3,7 @@
 #include "String.h"
 #include "Core/DisableAllWarnings.h"
 #include "Core/LuminaMacros.h"
+#include "Core/Assertions/Assert.h"
 #include "Core/Math/Hash/Hash.h"
 #include "Core/Templates/CanBulkSerialize.h"
 #include "Core/Threading/Thread.h"
@@ -106,7 +107,9 @@ namespace Lumina
         FString ToString() const
         {
             const char* Str = c_str();
-            return { Str };
+            DEBUG_ASSERT(Str);
+            
+            return Str;
         }
 
         size_t Length() const

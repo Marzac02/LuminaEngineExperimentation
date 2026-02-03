@@ -967,6 +967,12 @@ namespace Lumina
                 
                 for(auto&& [_, MetaType]: entt::resolve())
                 {
+                    ECS::ETraits Traits = MetaType.traits<ECS::ETraits>();
+                    if (!EnumHasAllFlags(Traits, ECS::ETraits::Component))
+                    {
+                        continue;
+                    }
+                    
                     using namespace entt::literals;
                     entt::meta_any Any = ECS::Utils::InvokeMetaFunc(MetaType, "static_struct"_hs);
                     CStruct* Type = Any.cast<CStruct*>();
@@ -1437,6 +1443,20 @@ namespace Lumina
             ImGui::SetTooltip("View Mode Options");
         }
         
+        ImGui::SameLine();
+        
+        if (ImGuiX::IconButton(LE_ICON_PLUS, "##AddToWorld", 0xFFFFFFFF, BtnSize))
+        {
+            ImGui::OpenPopup("AddToEntityMenu");
+        }
+        
+        DrawAddToEntityOrWorldPopup();
+        
+        if (ImGui::IsItemHovered(ImGuiHoveredFlags_DelayShort))
+        {
+            ImGui::SetTooltip("Add something to the world.");
+        }
+        
         IRenderScene* RenderScene = World->GetRenderer();
         if (ImGui::BeginPopup("ViewModePopup", ImGuiWindowFlags_NoMove))
         {
@@ -1904,6 +1924,11 @@ namespace Lumina
                 for(auto &&[_, MetaType]: entt::resolve())
                 {
                     using namespace entt::literals;
+                    ECS::ETraits Traits = MetaType.traits<ECS::ETraits>();
+                    if (!EnumHasAllFlags(Traits, ECS::ETraits::Component))
+                    {
+                        continue;
+                    }
                     
                     entt::meta_any Any = ECS::Utils::InvokeMetaFunc(MetaType, "static_struct"_hs);
                     CStruct* Struct = Any.cast<CStruct*>();
@@ -2141,7 +2166,6 @@ namespace Lumina
         
         {
             ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 4.0f);
-
             
             constexpr float ButtonWidth = 30.0f;
             if (ImGui::Button(LE_ICON_PLUS, ImVec2(ButtonWidth, 0.0f)))
@@ -2811,8 +2835,12 @@ namespace Lumina
         auto View = World->GetEntityRegistry().view<FSelectedInEditorComponent>();
         View.each([&](entt::entity Entity)
         {
-            entt::meta_any Component = ECS::Utils::InvokeMetaFunc(TypeID, "get"_hs, entt::forward_as_meta(World->GetEntityRegistry()), Entity);
-            ECS::Utils::InvokeMetaFunc(TypeID, "patch"_hs, entt::forward_as_meta(World->GetEntityRegistry()), Entity, entt::forward_as_meta(Component));
+            entt::meta_any Has = ECS::Utils::InvokeMetaFunc(TypeID, "has"_hs, entt::forward_as_meta(World->GetEntityRegistry()), Entity);
+            if (Has.cast<bool>())
+            {
+                entt::meta_any Component = ECS::Utils::InvokeMetaFunc(TypeID, "get"_hs, entt::forward_as_meta(World->GetEntityRegistry()), Entity);
+                ECS::Utils::InvokeMetaFunc(TypeID, "patch"_hs, entt::forward_as_meta(World->GetEntityRegistry()), Entity, entt::forward_as_meta(Component));
+            }
         });
         
         if (World->GetPackage())

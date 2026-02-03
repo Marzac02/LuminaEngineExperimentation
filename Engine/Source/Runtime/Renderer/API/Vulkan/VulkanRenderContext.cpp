@@ -346,9 +346,9 @@ namespace Lumina
     {
         LUMINA_PROFILE_SCOPE();
 
-        VkSubmitInfo SubmitInfo = {};
-        SubmitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-        SubmitInfo.pSignalSemaphores = &SemaphoreToSignal;
+        VkSubmitInfo SubmitInfo         = {};
+        SubmitInfo.sType                = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+        SubmitInfo.pSignalSemaphores    = &SemaphoreToSignal;
         SubmitInfo.signalSemaphoreCount = 1;
         
         VK_CHECK(vkQueueSubmit(Queue, 1, &SubmitInfo, nullptr));
@@ -398,11 +398,11 @@ namespace Lumina
             return true;
         }
 
-        VkSemaphoreWaitInfo WaitInfo = {};
-        WaitInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_WAIT_INFO;
-        WaitInfo.semaphoreCount = 1;
-        WaitInfo.pSemaphores = &TimelineSemaphore;
-        WaitInfo.pValues = &CommandListID;
+        VkSemaphoreWaitInfo WaitInfo    = {};
+        WaitInfo.sType                  = VK_STRUCTURE_TYPE_SEMAPHORE_WAIT_INFO;
+        WaitInfo.semaphoreCount         = 1;
+        WaitInfo.pSemaphores            = &TimelineSemaphore;
+        WaitInfo.pValues                = &CommandListID;
 
         LUMINA_PROFILE_TAG(std::format("Waiting on command list ID: {} | Last Submitted ID {}", CommandListID, LastSubmittedID).c_str());
 
@@ -817,10 +817,10 @@ namespace Lumina
         Image->PopulateSliceRegions();
 
         FRHIBufferDesc BufDesc;
-        BufDesc.Size = Image->GetBufferSize();
-        BufDesc.DebugName = Desc.DebugName;
-        BufDesc.InitialState = EResourceStates::CopyDest;
-        BufDesc.bKeepInitialState = true;
+        BufDesc.Size                = Image->GetBufferSize();
+        BufDesc.DebugName           = Desc.DebugName;
+        BufDesc.InitialState        = EResourceStates::CopyDest;
+        BufDesc.bKeepInitialState   = true;
         if (Access == ERHIAccess::HostRead)
         {
             BufDesc.Usage.SetFlag(EBufferUsageFlags::CPUReadable);
@@ -1234,16 +1234,16 @@ namespace Lumina
         TVector<FString> Shaders;
 
         const FString ShaderDir(Paths::GetEngineResourceDirectory() + "/Shaders");
-        const THashSet<FName> ValidExts = { ".frag", ".vert", ".comp", ".geo", };
+        const THashSet<FStringView> ValidExts = { ".frag", ".vert", ".comp", ".geo", };
 
         for (const auto& entry : std::filesystem::directory_iterator(ShaderDir.c_str()))
         {
             if (!entry.is_directory())
             {
-                FName ext = entry.path().extension().string().c_str();
-                if (ValidExts.count(ext))
+                FString Extension = entry.path().extension().string().c_str();
+                if (ValidExts.count(Extension))
                 {
-                    Shaders.push_back(FString(entry.path().string().c_str()));
+                    Shaders.emplace_back(entry.path().string().c_str());
                 }
             }
         }

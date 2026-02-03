@@ -55,7 +55,7 @@ namespace Lumina
         
         if (HasWorld())
         {
-            World->ShutdownWorld();
+            World->TeardownWorld();
             World->ForceDestroyNow();
             World = nullptr;
         }
@@ -72,7 +72,7 @@ namespace Lumina
         
         if (World.IsValid())
         {
-            World->ShutdownWorld();
+            World->TeardownWorld();
             World->ForceDestroyNow();
             World = nullptr;
         }

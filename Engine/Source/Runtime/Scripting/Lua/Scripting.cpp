@@ -436,12 +436,6 @@ namespace Lumina::Scripting
             "FrameEnd",         EUpdateStage::FrameEnd,
             "Paused",           EUpdateStage::Paused);
         
-        FSystemContext::RegisterWithLua(State);
-        
-    }
-
-    void FScriptingContext::SetupInput()
-    {
         sol::table GLMTable = State.create_named_table("glm");
         
         // Vector operations
@@ -494,23 +488,26 @@ namespace Lumina::Scripting
         ColorTable.set_function("RandomColor3", []() ->glm::vec3 { return FColor::MakeRandom(1); });
         
         
+        FSystemContext::RegisterWithLua(State);
         
+    }
+
+    void FScriptingContext::SetupInput()
+    {
+        State.set_function("GetMouseX",        [] () { return FInputProcessor::Get().GetMouseX(); }),
+        State.set_function("GetMouseY",        [] () { return FInputProcessor::Get().GetMouseY(); }),
+        State.set_function("GetMouseDeltaX",   [] () { return FInputProcessor::Get().GetMouseDeltaX(); }),
+        State.set_function("GetMouseDeltaY",   [] () { return FInputProcessor::Get().GetMouseDeltaY(); }),
         
-        sol::table InputTable = State.create_named_table("Input");
-        InputTable.set_function("GetMouseX",        [] () { return FInputProcessor::Get().GetMouseX(); }),
-        InputTable.set_function("GetMouseY",        [] () { return FInputProcessor::Get().GetMouseY(); }),
-        InputTable.set_function("GetMouseDeltaX",   [] () { return FInputProcessor::Get().GetMouseDeltaX(); }),
-        InputTable.set_function("GetMouseDeltaY",   [] () { return FInputProcessor::Get().GetMouseDeltaY(); }),
+        State.set_function("EnableCursor",     [] () { FInputProcessor::Get().SetCursorMode(GLFW_CURSOR_NORMAL); }),
+        State.set_function("DisableCursor",    [] () { FInputProcessor::Get().SetCursorMode(GLFW_CURSOR_DISABLED); }),
+        State.set_function("HideCursor",       [] () { FInputProcessor::Get().SetCursorMode(GLFW_CURSOR_HIDDEN); }),
         
-        InputTable.set_function("EnableCursor",     [] () { FInputProcessor::Get().SetCursorMode(GLFW_CURSOR_NORMAL); }),
-        InputTable.set_function("DisableCursor",    [] () { FInputProcessor::Get().SetCursorMode(GLFW_CURSOR_DISABLED); }),
-        InputTable.set_function("HideCursor",       [] () { FInputProcessor::Get().SetCursorMode(GLFW_CURSOR_HIDDEN); }),
+        State.set_function("IsKeyDown",        [] (EKeyCode Key) { return FInputProcessor::Get().IsKeyDown(Key); }),
+        State.set_function("IsKeyUp",          [] (EKeyCode Key) { return FInputProcessor::Get().IsKeyUp(Key); }),
+        State.set_function("IsKeyRepeated",    [] (EKeyCode Key) { return FInputProcessor::Get().IsKeyRepeated(Key); }),
         
-        InputTable.set_function("IsKeyDown",        [] (EKeyCode Key) { return FInputProcessor::Get().IsKeyDown(Key); }),
-        InputTable.set_function("IsKeyUp",          [] (EKeyCode Key) { return FInputProcessor::Get().IsKeyUp(Key); }),
-        InputTable.set_function("IsKeyRepeated",    [] (EKeyCode Key) { return FInputProcessor::Get().IsKeyRepeated(Key); }),
-        
-        InputTable.new_enum("EKeyCode",
+        State.new_enum("EKeyCode",
             "Space",        EKeyCode::Space,
             "Apostrophe",   EKeyCode::Apostrophe,
             "Comma",        EKeyCode::Comma,
