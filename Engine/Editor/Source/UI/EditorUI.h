@@ -74,6 +74,7 @@ namespace Lumina
         void CreateGameViewportTool(const FUpdateContext& UpdateContext);
         void DestroyGameViewportTool(const FUpdateContext& UpdateContext);
 
+        void DrawScripts();
         void DrawObjectList();
         void DrawMemoryDialog();
         void DrawTitleBarMenu(const FUpdateContext& UpdateContext);
@@ -119,6 +120,7 @@ namespace Lumina
         bool                                            bShowImPlotDemoWindow = false;
         bool                                            bShowObjectDebug = false;
         bool                                            bShowRenderDebug = false;
+        bool                                            bShowScriptsDebug = false;
 
         float                                           SmoothedFPS = 60.0f;
         float                                           SmoothedFrameTime = 16.67f;

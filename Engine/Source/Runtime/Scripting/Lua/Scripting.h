@@ -85,7 +85,7 @@ namespace Lumina::Scripting
         void Lua_Warning(const sol::variadic_args& Args);
         void Lua_Error(const sol::variadic_args& Args);
 
-        TVector<entt::entity> LoadScript(FStringView ScriptData, bool bFailSilently = false);
+        void LoadScript(FStringView Path, FStringView ScriptData, bool bFailSilently = false);
     
     private:
         
@@ -95,9 +95,6 @@ namespace Lumina::Scripting
         
         FDeferredActionRegistry DeferredActions;
         entt::registry ScriptRegistry;
-        
-        THashMap<FStringView, TVector<entt::entity>> PathToScriptEntities;
-        
     };
 
     template <typename TScript, typename TFunc>

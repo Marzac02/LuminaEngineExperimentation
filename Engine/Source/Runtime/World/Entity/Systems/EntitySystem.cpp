@@ -39,6 +39,8 @@ namespace Lumina
 
     void FEntityScriptSystem::Update(const FSystemContext& SystemContext) const noexcept
     {
+        LUMINA_PROFILE_SCOPE();
+        LUMINA_PROFILE_TAG(std::format("Lua System: {}", ScriptSystem.Name).c_str());
         ScriptSystem.ExecuteFunc(std::ref(SystemContext));
     }
 

@@ -413,7 +413,6 @@ namespace Lumina
         {
             FEntityScriptSystem ScriptSystem;
             ScriptSystem.ScriptSystem = Script; //@TODO Figure out if this needs to be copied or not.
-            
             FSystemVariant Variant = Move(ScriptSystem);
             RegisterSystem(Variant);
         });

@@ -9,10 +9,7 @@ namespace Lumina
     {
         GENERATED_BODY()
         ENTITY_SYSTEM(RequiresUpdate(EUpdateStage::Paused, EUpdatePriority::Highest))
-    public:
-        
 
         static void Update(const FSystemContext& SystemContext) noexcept;
-        
     };
 }

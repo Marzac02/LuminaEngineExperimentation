@@ -102,30 +102,35 @@ namespace Lumina::Scripting
     {
         FWriteScopeLock Lock(SharedMutex);
         
-        DeferredActions.ProcessAllOf<FScriptDelete>([&](const FScriptDelete& Reload)
+        DeferredActions.ProcessAllOf<FScriptDelete>([&](const FScriptDelete& Delete)
         {
-            FString ScriptData;
-            VFS::ReadFile(ScriptData, Reload.Path);
-            LoadScript(ScriptData);
+            auto View = ScriptRegistry.view<FLuaScriptMetadata>();
+            View.each([&](entt::entity Entity, const FLuaScriptMetadata& Metadata)
+            {
+               if (Metadata.Path == Delete.Path)
+               {
+                   ScriptRegistry.destroy(Entity);
+               }
+            });
         });
         
         DeferredActions.ProcessAllOf<FScriptRename>([&](const FScriptRename& Reload)
         {
-            auto It = PathToScriptEntities.find(Reload.OldName);
-            if (It == PathToScriptEntities.end())
+            auto View = ScriptRegistry.view<FLuaScriptMetadata>();
+            View.each([&](entt::entity Entity, FLuaScriptMetadata& Metadata)
             {
-                return;
-            }
-            
-            PathToScriptEntities.emplace(Reload.NewName, Move(It->second));
-            PathToScriptEntities.erase(It);
+                if (Metadata.Path == Reload.OldName)
+                {
+                    Metadata.Path = Reload.NewName;
+                }
+            });
         });
         
         DeferredActions.ProcessAllOf<FScriptLoad>([&](const FScriptLoad& Reload)
         {
             FString ScriptData;
             VFS::ReadFile(ScriptData, Reload.Path);
-            LoadScript(ScriptData);
+            LoadScript(Reload.Path, ScriptData);
         });
     }
 
@@ -173,7 +178,7 @@ namespace Lumina::Scripting
             {
                 FString ScriptData;
                 VFS::ReadFile(ScriptData, Info.VirtualPath);
-                LoadScript(ScriptData);
+                LoadScript(Info.VirtualPath, ScriptData);
             }
         });
     }
@@ -752,16 +757,21 @@ namespace Lumina::Scripting
         LOG_ERROR("[Lua] {}", Output);
     }
 
-    TVector<entt::entity> FScriptingContext::LoadScript(FStringView ScriptData, bool bFailSilently)
+    void FScriptingContext::LoadScript(FStringView Path, FStringView ScriptData, bool bFailSilently)
     {
         sol::environment Environment(State, sol::create, State.globals());
         
-        for (entt::entity EntityToRemove : PathToScriptEntities[ScriptData])
+        auto View = ScriptRegistry.view<FLuaScriptMetadata>();
+        View.each([&](entt::entity Entity, const FLuaScriptMetadata& Metadata)
         {
-            ScriptRegistry.destroy(EntityToRemove);
-        };
+           if (Metadata.Path == Path)
+           {
+               LOG_INFO("Destroying {}", Metadata.Path);
+               ScriptRegistry.destroy(Entity);
+           }
+        });
         
-        PathToScriptEntities[ScriptData].clear();
+        State.collect_gc();
     
         sol::protected_function_result Result = State.safe_script(ScriptData.data(), Environment);
         if (!Result.valid())
@@ -771,7 +781,7 @@ namespace Lumina::Scripting
             {
                 LOG_ERROR("[Sol] - Error loading script! {}", Error.what());
             }
-            return {};
+            return;
         }
 
         TVector<CScriptFactory*> Factories;
@@ -780,11 +790,10 @@ namespace Lumina::Scripting
         sol::object ReturnedObject = Result;
         if (!ReturnedObject.is<sol::table>())
         {
-            return {};
+            return;
         }
 
         sol::table ScriptTable = ReturnedObject.as<sol::table>();
-        TVector<entt::entity> NewScriptEntities;
         
         for (const auto& [key, value] : ScriptTable)
         {
@@ -805,15 +814,16 @@ namespace Lumina::Scripting
             {
                 if (entt::entity Entity = Factory->ProcessScript(key.as<const char*>(), EntryTable, ScriptRegistry); Entity != entt::null)
                 {
-                    PathToScriptEntities[ScriptData].push_back(Entity);
-                    NewScriptEntities.push_back(Entity);
+                    FLuaScriptMetadata Metadata;
+                    Metadata.Name = key.as<const char*>();
+                    Metadata.Path = Path;
+                    
+                    ScriptRegistry.emplace<FLuaScriptMetadata>(Entity, Metadata);
                     break;
                 }
             }
         }
         
         OnScriptLoaded.Broadcast();
-        
-        return NewScriptEntities;
     }
 }

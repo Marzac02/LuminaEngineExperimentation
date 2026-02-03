@@ -63,6 +63,7 @@
 #include "Renderer/RenderManager.h"
 #include "Renderer/RHIGlobals.h"
 #include "Renderer/ShaderCompiler.h"
+#include "Scripting/Lua/Scripting.h"
 #include "Tools/ConsoleLogEditorTool.h"
 #include "Tools/ContentBrowserEditorTool.h"
 #include "Tools/EditorTool.h"
@@ -465,6 +466,11 @@ namespace Lumina
         if (bShowRenderDebug)
         {
             UpdateContext.GetSubsystem<FRenderManager>()->GetImGuiRenderer()->DrawRenderDebugInformationWindow(&bShowRenderDebug, UpdateContext);
+        }
+        
+        if (bShowScriptsDebug)
+        {
+            DrawScripts();
         }
 
         if (bShowObjectDebug)
@@ -1040,6 +1046,28 @@ namespace Lumina
         
     }
 
+    void FEditorUI::DrawScripts()
+    {
+        ImGui::SetNextWindowSize(ImVec2(1200.0f, 800.0f), ImGuiCond_FirstUseEver);
+
+        if (ImGui::Begin("Scripts", &bShowScriptsDebug, ImGuiWindowFlags_MenuBar))
+        {
+            auto& Context = Scripting::FScriptingContext::Get();
+            size_t MemoryUsage = Context.GetScriptMemoryUsage();
+            
+            ImGui::Text("Memory Usage %s", ImGuiX::FormatSize(MemoryUsage).c_str());
+            
+            ImGui::Separator();
+            
+            Context.ForEachScript<Scripting::FLuaScriptMetadata>([&](const Scripting::FLuaScriptMetadata& Metadata)
+            {
+                ImGui::TextUnformatted(Metadata.Path.c_str());
+            });
+            
+            ImGui::End();
+        }
+    }
+
     void FEditorUI::DrawObjectList()
     {
         // State management
@@ -1064,7 +1092,7 @@ namespace Lumina
         
         FString TitleText = "Object Browser";
         
-        if (ImGui::Begin(TitleText.c_str(), (bool*)&bShowObjectDebug, ImGuiWindowFlags_MenuBar))
+        if (ImGui::Begin(TitleText.c_str(), &bShowObjectDebug, ImGuiWindowFlags_MenuBar))
         {
             uint32 TotalObjects = GObjectArray.GetNumAliveObjects();
             
@@ -2204,6 +2232,8 @@ namespace Lumina
 
         ImGui::TextColored(ImVec4(0.6f, 0.6f, 0.62f, 1.0f), "Debug Windows");
         ImGui::Separator();
+        
+        ImGui::MenuItem(LE_ICON_LANGUAGE_LUA " Scripts Info", nullptr, &bShowScriptsDebug);
         
         ImGui::MenuItem(LE_ICON_CHART_LINE " Renderer Info", nullptr, &bShowRenderDebug);
         

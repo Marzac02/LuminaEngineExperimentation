@@ -37,10 +37,11 @@ namespace Lumina::Scripting
 {
     struct FLuaScriptMetadata
     {
-        FName Name;
-        FName Author;
-        FName Version;
-        FName Description;
+        FString Name;
+        FString Path;
+        FString Author;
+        FString Version;
+        FString Description;
     };
     
     struct FLuaScriptEntry

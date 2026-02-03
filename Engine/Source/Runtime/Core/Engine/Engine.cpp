@@ -140,6 +140,21 @@ namespace Lumina
                 
                 OnUpdateStage(UpdateContext);
             }
+            
+            // Paused
+            //-------------------------------------------------------------------
+            {
+                LUMINA_PROFILE_SECTION_COLORED("Paused", tracy::Color::Purple);
+                UpdateContext.UpdateStage = EUpdateStage::Paused;
+
+                #if USING(WITH_EDITOR)
+                DeveloperToolUI->Update(UpdateContext);
+                #endif
+
+                WorldManager->UpdateWorlds(UpdateContext);
+
+                OnUpdateStage(UpdateContext);
+            }
 
             // Pre Physics
             //-------------------------------------------------------------------
@@ -176,21 +191,6 @@ namespace Lumina
             {
                 LUMINA_PROFILE_SECTION_COLORED("Post-Physics", tracy::Color::Yellow);
                 UpdateContext.UpdateStage = EUpdateStage::PostPhysics;
-
-                #if USING(WITH_EDITOR)
-                DeveloperToolUI->Update(UpdateContext);
-                #endif
-
-                WorldManager->UpdateWorlds(UpdateContext);
-
-                OnUpdateStage(UpdateContext);
-            }
-
-            // Paused
-            //-------------------------------------------------------------------
-            {
-                LUMINA_PROFILE_SECTION_COLORED("Paused", tracy::Color::Purple);
-                UpdateContext.UpdateStage = EUpdateStage::Paused;
 
                 #if USING(WITH_EDITOR)
                 DeveloperToolUI->Update(UpdateContext);
