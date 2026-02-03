@@ -1,7 +1,5 @@
 #include "pch.h"
 #include "UpdateTransformEntitySystem.h"
-
-#include <execution>
 #include "glm/gtx/string_cast.hpp"
 #include "TaskSystem/TaskSystem.h"
 #include "World/Entity/EntityUtils.h"
@@ -11,7 +9,7 @@
 
 namespace Lumina
 {
-    void CUpdateTransformEntitySystem::Update(FSystemContext& SystemContext)
+    void SUpdateTransformEntitySystem::Update(const FSystemContext& SystemContext) noexcept
     {
         LUMINA_PROFILE_SCOPE();
 

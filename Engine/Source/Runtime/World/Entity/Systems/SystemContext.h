@@ -36,13 +36,13 @@ namespace Lumina
         }
 
         template<typename T, typename ... TArgs>
-        void DispatchEvent(TArgs&&... Args)
+        void DispatchEvent(TArgs&&... Args) const
         {
             Dispatcher.trigger<T>(Forward<TArgs>(Args)...);
         }
         
         template<typename... Ts, typename... TArgs>
-        NODISCARD auto CreateView(TArgs&&... Args) -> decltype(std::declval<entt::registry>().view<Ts...>(std::forward<TArgs>(Args)...))
+        NODISCARD auto CreateView(TArgs&&... Args) const -> decltype(std::declval<entt::registry>().view<Ts...>(std::forward<TArgs>(Args)...))
         {
             return Registry.view<Ts...>(std::forward<TArgs>(Args)...);
         }
@@ -82,7 +82,7 @@ namespace Lumina
         }
         
         template<typename... Ts, typename ... TArgs>
-        NODISCARD auto CreateGroup(TArgs&&... Args)
+        NODISCARD auto CreateGroup(TArgs&&... Args) const
         {
             return Registry.group<Ts...>(std::forward<TArgs>(Args)...);
         }
@@ -124,7 +124,7 @@ namespace Lumina
         }
 
         template<typename T, typename ... TArgs>
-        T& EmplaceOrReplace(entt::entity entity, TArgs&& ... Args)
+        T& EmplaceOrReplace(entt::entity entity, TArgs&& ... Args) const
         {
             return Registry.emplace_or_replace<T>(entity, std::forward<TArgs>(Args)...);
         }

@@ -1,7 +1,5 @@
 #include "pch.h"
 #include "World.h"
-
-#include "imgui.h"
 #include "WorldManager.h"
 #include "Core/Delegates/CoreDelegates.h"
 #include "Core/Engine/Engine.h"
@@ -69,7 +67,7 @@ namespace Lumina
         EntityRegistry.emplace<FHideInSceneOutliner>(SingletonEntity);
         EntityRegistry.emplace<FLuaScriptsContainerComponent>(SingletonEntity);
 
-        ScriptUpdatedDelegateHandle = Scripting::FScriptingContext::Get().OnScriptLoaded.AddMember(this, &ThisClass::ProcessAnyNewlyLoadedScripts);
+        ScriptUpdatedDelegateHandle = Scripting::FScriptingContext::Get().OnScriptLoaded.AddMember(this, &ThisClass::RegisterSystems);
         
         PhysicsScene    = Physics::GetPhysicsContext()->CreatePhysicsScene(this);
         CameraManager   = MakeUnique<FCameraManager>(this);
@@ -80,20 +78,7 @@ namespace Lumina
         
         CreateRenderer();
         
-        ProcessAnyNewlyLoadedScripts();
-        
-        for (auto&& [IdType, Meta] : entt::resolve())
-        {
-            ECS::ETraits Traits = Meta.traits<ECS::ETraits>();
-            if (EnumHasAnyFlags(Traits, ECS::ETraits::System))
-            {
-                FEntitySystemWrapper Wrapper;
-                Wrapper.Underlying = Meta;
-                
-                FSystemVariant Variant = Wrapper;
-                RegisterSystem(Variant);
-            }
-        }
+        RegisterSystems();
         
         EntityRegistry.on_construct<SSineWaveMovementComponent>().connect<&ThisClass::OnSineWaveMovementComponentCreated>(this);
         EntityRegistry.on_destroy<FRelationshipComponent>().connect<&ThisClass::OnRelationshipComponentDestroyed>(this);
@@ -173,7 +158,7 @@ namespace Lumina
 
     bool CWorld::RegisterSystem(const FSystemVariant& NewSystem)
     {
-        const FUpdatePriorityList& PriorityList = eastl::visit([&](auto& System) { return System.GetUpdatePriorityList(); }, NewSystem);
+        const FUpdatePriorityList& PriorityList = eastl::visit([&](const auto& System) { return System.GetUpdatePriorityList(); }, NewSystem);
         
         bool StagesModified[(uint8)EUpdateStage::Max] = {};
 
@@ -181,7 +166,7 @@ namespace Lumina
         {
             if (PriorityList.IsStageEnabled((EUpdateStage)i))
             {
-                SystemUpdateList[i].push_back(NewSystem);
+                SystemUpdateList[i].emplace_back(NewSystem);
                 StagesModified[i] = true;
             }
         }
@@ -195,8 +180,8 @@ namespace Lumina
 
             auto Predicate = [i](const FSystemVariant& A, const FSystemVariant& B)
             {
-                const FUpdatePriorityList& PrioListA = eastl::visit([&](auto& System) { return System.GetUpdatePriorityList(); }, A);
-                const FUpdatePriorityList& PrioListB = eastl::visit([&](auto& System) { return System.GetUpdatePriorityList(); }, B);
+                const FUpdatePriorityList& PrioListA = eastl::visit([&](const auto& System) { return System.GetUpdatePriorityList(); }, A);
+                const FUpdatePriorityList& PrioListB = eastl::visit([&](const auto& System) { return System.GetUpdatePriorityList(); }, B);
                 const uint8 PriorityA = PrioListA.GetPriorityForStage((EUpdateStage)i);
                 const uint8 PriorityB = PrioListB.GetPriorityForStage((EUpdateStage)i);
                 return PriorityA > PriorityB;
@@ -400,17 +385,36 @@ namespace Lumina
         MovementComponent.InitialPosition = Registry.get<STransformComponent>(Entity).GetLocation();
     }
 
-    void CWorld::ProcessAnyNewlyLoadedScripts()
+    void CWorld::RegisterSystems()
     {
         using namespace Scripting;
         using namespace entt::literals;
+
+        for (int i = 0; i < (int)EUpdateStage::Max; ++i)
+        {
+            SystemUpdateList[i].clear();
+        }
         
-        FScriptingContext::Get().ForEachScript<FLuaSystemScriptEntry>([&](FLuaSystemScriptEntry& Script)
+        for (auto&& [_, Meta] : entt::resolve())
+        {
+            ECS::ETraits Traits = Meta.traits<ECS::ETraits>();
+            if (EnumHasAnyFlags(Traits, ECS::ETraits::System))
+            {
+                FEntitySystemWrapper Wrapper;
+                Wrapper.Underlying = Meta;
+                Wrapper.Instance = Meta.construct();
+                
+                FSystemVariant Variant = Wrapper;
+                RegisterSystem(Variant);
+            }
+        }
+        
+        FScriptingContext::Get().ForEachScript<FLuaSystemScriptEntry>([&](const FLuaSystemScriptEntry& Script)
         {
             FEntityScriptSystem ScriptSystem;
             ScriptSystem.ScriptSystem = Script; //@TODO Figure out if this needs to be copied or not.
             
-            FSystemVariant Variant = ScriptSystem;
+            FSystemVariant Variant = Move(ScriptSystem);
             RegisterSystem(Variant);
         });
     }
@@ -520,7 +524,7 @@ namespace Lumina
         auto& SystemVector = SystemUpdateList[(uint32)Context.GetUpdateStage()];
         for(FSystemVariant& SystemVariant : SystemVector)
         {
-            eastl::visit([&](auto& System) { System->Update(Context); }, SystemVariant);
+            eastl::visit([&](auto& System) { System.Update(Context); }, SystemVariant);
         }
     }
 

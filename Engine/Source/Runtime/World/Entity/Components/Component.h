@@ -223,8 +223,8 @@ namespace Lumina
             using namespace entt::literals;
             auto Meta = entt::meta_factory<TComponent>(GEngine->GetEngineMetaContext())
                 .type(TComponent::StaticStruct()->GetName().c_str())
-                .template func<&GetStructType<TComponent>>("static_struct"_hs)
-                .traits(ECS::ETraits::Component);
+                .traits(ECS::ETraits::Component)
+                .template func<&GetStructType<TComponent>>("static_struct"_hs);
             
             Meta.template func<&HasComponent<TComponent>>("has"_hs)
             .template func<&GetComponent<TComponent>>("get"_hs)

@@ -9,21 +9,20 @@ namespace Lumina
 
     const FUpdatePriorityList& FEntitySystemWrapper::GetUpdatePriorityList() const
     {
-        auto Data = Underlying.data("PriorityList"_hs);
-        return Data.get({}).cast<const FUpdatePriorityList&>();
+        return Underlying.data("PriorityList"_hs).get(Instance).cast<const FUpdatePriorityList&>();
     }
 
-    void FEntitySystemWrapper::Startup(FSystemContext& SystemContext) noexcept
+    void FEntitySystemWrapper::Startup(const FSystemContext& SystemContext) const noexcept
     {
         ECS::Utils::InvokeMetaFunc(Underlying, "Startup"_hs, entt::forward_as_meta(SystemContext));
     }
 
-    void FEntitySystemWrapper::Update(FSystemContext& SystemContext) noexcept
+    void FEntitySystemWrapper::Update(const FSystemContext& SystemContext) const noexcept
     {
         ECS::Utils::InvokeMetaFunc(Underlying, "Update"_hs, entt::forward_as_meta(SystemContext));
     }
 
-    void FEntitySystemWrapper::Teardown(FSystemContext& SystemContext) noexcept
+    void FEntitySystemWrapper::Teardown(const FSystemContext& SystemContext) const noexcept
     {
         ECS::Utils::InvokeMetaFunc(Underlying, "Teardown"_hs, entt::forward_as_meta(SystemContext));
     }
@@ -33,17 +32,17 @@ namespace Lumina
         return ScriptSystem.PriorityList;
     }
 
-    void FEntityScriptSystem::Startup(FSystemContext& SystemContext)
+    void FEntityScriptSystem::Startup(const FSystemContext& SystemContext) const noexcept
     {
         ScriptSystem.InitFunc(std::ref(SystemContext));
     }
 
-    void FEntityScriptSystem::Update(FSystemContext& SystemContext)
+    void FEntityScriptSystem::Update(const FSystemContext& SystemContext) const noexcept
     {
         ScriptSystem.ExecuteFunc(std::ref(SystemContext));
     }
 
-    void FEntityScriptSystem::Teardown(FSystemContext& SystemContext)
+    void FEntityScriptSystem::Teardown(const FSystemContext& SystemContext) const noexcept
     {
         ScriptSystem.ShutdownFunc(std::ref(SystemContext));
     }

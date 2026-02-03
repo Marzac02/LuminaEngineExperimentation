@@ -5,15 +5,15 @@
 
 namespace Lumina
 {
-    REFLECT()
-    class RUNTIME_API CSimpleAnimationSystem : public CEntitySystem
+    REFLECT(System)
+    struct SSimpleAnimationSystem
     {
         GENERATED_BODY()
         ENTITY_SYSTEM(RequiresUpdate(EUpdateStage::PrePhysics), RequiresUpdate(EUpdateStage::Paused))
 
     public:
 
-        void Update(FSystemContext& SystemContext) override;
+        static void Update(const FSystemContext& SystemContext) noexcept;
     
     };
 }

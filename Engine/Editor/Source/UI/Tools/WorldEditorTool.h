@@ -32,7 +32,7 @@
         
         class FSystemListViewItemData
         {
-            TWeakObjectPtr<CEntitySystem> System;
+            TWeakObjectPtr<CWorld::FSystemVariant> System;
         };
 
         struct FEntityListFilterState

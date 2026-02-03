@@ -30,9 +30,9 @@ namespace Lumina
         FLuaSystemScriptEntry Entry;
         Entry.Name          = Name;
         Entry.PriorityList.SetStagePriority(FUpdateStagePriority(Stage, Priority));
-        Entry.InitFunc      = ScriptTable["Init"];
-        Entry.ExecuteFunc   = ScriptTable["Execute"];
-        Entry.ShutdownFunc  = ScriptTable["Shutdown"];
+        Entry.InitFunc      = ScriptTable["Startup"];
+        Entry.ExecuteFunc   = ScriptTable["Update"];
+        Entry.ShutdownFunc  = ScriptTable["Teardown"];
         
         ScriptRegistry.emplace<FLuaSystemScriptEntry>(ScriptEntity, Entry);
         

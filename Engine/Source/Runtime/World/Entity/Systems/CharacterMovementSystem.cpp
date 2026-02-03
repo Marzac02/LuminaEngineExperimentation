@@ -12,7 +12,7 @@
 
 namespace Lumina
 {
-    void CCharacterMovementSystem::Update(FSystemContext& SystemContext)
+    void SCharacterMovementSystem::Update(const FSystemContext& SystemContext) noexcept
     {
         LUMINA_PROFILE_SCOPE();
         

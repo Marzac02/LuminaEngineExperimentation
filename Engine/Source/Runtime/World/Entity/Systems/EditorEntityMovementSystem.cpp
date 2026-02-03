@@ -14,7 +14,7 @@
 namespace Lumina
 {
 
-    void CEditorEntityMovementSystem::Update(FSystemContext& SystemContext)
+    void SEditorEntityMovementSystem::Update(const FSystemContext& SystemContext) noexcept
     {
         LUMINA_PROFILE_SCOPE();
         
@@ -34,7 +34,7 @@ namespace Lumina
                 return;
             }
 
-            SystemContext.EmplaceOrReplace<FNeedsTransformUpdate>(EditorEntity);
+            (void)SystemContext.EmplaceOrReplace<FNeedsTransformUpdate>(EditorEntity);
             
             glm::vec3 Forward   = Transform.GetForward();
             glm::vec3 Right     = Transform.GetRight();

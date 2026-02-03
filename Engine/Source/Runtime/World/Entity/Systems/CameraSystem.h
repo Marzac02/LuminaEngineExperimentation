@@ -4,18 +4,14 @@
 
 namespace Lumina
 {
-    REFLECT()
-    class CCameraSystem : public CEntitySystem
+    REFLECT(System)
+    struct SCameraSystem
     {
         GENERATED_BODY()
         ENTITY_SYSTEM(RequiresUpdate(US_PostPhysics), RequiresUpdate(US_Paused))
-    public:
 
-        void Init(FSystemContext& SystemContext) override;
-
-        void NewCameraConstructed(entt::registry& Registry, entt::entity Entity);
-        void Update(FSystemContext& SystemContext) override;
-        
-    
+        static void Startup(const FSystemContext& Context) noexcept;
+        static void Update(const FSystemContext& Context) noexcept;
+        static void Teardown(const FSystemContext& Context) noexcept;
     };
 }

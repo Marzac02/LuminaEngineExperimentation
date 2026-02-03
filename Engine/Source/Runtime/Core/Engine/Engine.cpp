@@ -337,7 +337,7 @@ namespace Lumina
         
         FAssetRegistry::Get().RunInitialDiscovery();
         
-        Scripting::FScriptingContext::Get().LoadScripts(GameScriptsDir);
+        Scripting::FScriptingContext::Get().LoadScripts("/Game/Scripts");
         
         OnProjectLoaded.Broadcast();
     }

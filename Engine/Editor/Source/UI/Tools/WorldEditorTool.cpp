@@ -2282,7 +2282,6 @@ namespace Lumina
         
         if (ImGui::BeginChild("SystemList", ImVec2(0, 0), true))
         {
-            // Stage color palette
             constexpr ImVec4 StageColors[] = 
             {
                 ImVec4(0.3f, 0.5f, 0.7f, 1.0f),
@@ -2295,48 +2294,7 @@ namespace Lumina
             
             for (int i = 0; i < (int)EUpdateStage::Max; ++i)
             {
-                EUpdateStage Stage = (EUpdateStage)i;
-                const TVector<CEntitySystem*>& Systems = World->GetSystemsForUpdateStage(Stage);
-    
-                if (Systems.empty())
-                {
-                    continue;
-                }
-
-                TVector<TPair<uint8, CEntitySystem*>> SortedSystems;
-                for (CEntitySystem* System : Systems)
-                {
-                    const FUpdatePriorityList* List = System->GetRequiredUpdatePriorities();
-                    uint8 Priority = List->GetPriorityForStage(Stage);
-                    SortedSystems.emplace_back(Priority, System);
-                }
                 
-                eastl::sort(SortedSystems.begin(), SortedSystems.end(), [](const TPair<uint8, CEntitySystem*>& LHS, const TPair<uint8, CEntitySystem*>& RHS)
-                {
-                    return LHS.first > RHS.first;
-                });
-    
-                ImGui::PushStyleColor(ImGuiCol_Header, StageColors[i]);
-                ImGui::PushStyleColor(ImGuiCol_HeaderHovered, ImVec4(
-                    StageColors[i].x * 1.2f, 
-                    StageColors[i].y * 1.2f, 
-                    StageColors[i].z * 1.2f, 
-                    1.0f));
-                ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 3.0f);
-                
-                bool IsOpen = ImGui::CollapsingHeader(FFixedString().sprintf("%s (%zu)", GUpdateStageNames[i], Systems.size()).c_str(), ImGuiTreeNodeFlags_DefaultOpen);
-                
-                ImGui::PopStyleVar();
-                ImGui::PopStyleColor(2);
-    
-                if (IsOpen)
-                {
-
-                }
-                else if (i < (int)EUpdateStage::Max - 1)
-                {
-                    ImGui::Spacing();
-                }
             }
         }
         ImGui::EndChild();

@@ -257,22 +257,6 @@ namespace Lumina::Scripting
         
         Glue::RegisterRegistry(EnttModule);
         Glue::RegisterRuntimeView(EnttModule);
-
-        State.set_function("System", [](const sol::table& Descriptor)
-        {
-            sol::state_view lua(Descriptor.lua_state());
-            
-            return lua.create_table_with(
-                "Type",     "System",
-                "Name",     Descriptor.get_or("Name", std::string("UnnamedSystem")),
-                "Stage",    Descriptor.get_or("Stage", 0),
-                "Enabled",  Descriptor.get_or("Enabled", true),
-                "Priority", Descriptor.get_or("Priority", 0),
-                "Init",     Descriptor["Init"],
-                "Execute",  Descriptor["Execute"],
-                "Shutdown", Descriptor["Shutdown"],
-                "Query",    Descriptor.get_or("Query", lua.create_table()));
-        });
         
         State.new_usertype<FGuid>("FGuid",
             sol::call_constructor,

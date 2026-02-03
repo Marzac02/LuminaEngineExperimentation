@@ -119,7 +119,6 @@ namespace Lumina::VFS
     RUNTIME_API bool WriteFile(FStringView Path, TSpan<const uint8> Data);
     
     RUNTIME_API bool Exists(FStringView Path);
-    RUNTIME_API bool CreateFile(FStringView Path);
     
     RUNTIME_API bool HasExtension(FStringView Path, FStringView Ext);
     

@@ -64,20 +64,21 @@ namespace Lumina
         }
 
         template<typename... Args>
+        requires (sizeof...(Args) > 0) && (eastl::is_constructible_v<FUpdateStagePriority, Args> && ...)
         FUpdatePriorityList(Args&&... args)
         {
             Reset();
-            ((*this << static_cast<Args&&>(args)), ...);
+            ((*this << eastl::forward<Args>(args)), ...);
         }
 
         void Reset()
         {
-            Memory::Memset(Priorities, (uint8) EUpdatePriority::Disabled, sizeof(Priorities));
+            Memory::Memset(Priorities, (uint8)EUpdatePriority::Disabled, sizeof(Priorities));
         }
 
         bool IsStageEnabled(EUpdateStage Stage) const
         {
-            return Priorities[(uint8)Stage] != (uint8) EUpdatePriority::Disabled;
+            return Priorities[(uint8)Stage] != (uint8)EUpdatePriority::Disabled;
         }
 
         uint8 GetPriorityForStage(EUpdateStage Stage) const

@@ -5,15 +5,15 @@
 
 namespace Lumina
 {
-    REFLECT()
-    class RUNTIME_API CUpdateTransformEntitySystem : public CEntitySystem
+    REFLECT(System)
+    struct SUpdateTransformEntitySystem
     {
         GENERATED_BODY()
         ENTITY_SYSTEM(RequiresUpdate(EUpdateStage::PostPhysics, EUpdatePriority::Highest), RequiresUpdate(EUpdateStage::Paused))
     public:
 
         
-        void Update(FSystemContext& SystemContext) override;
+        static void Update(const FSystemContext& SystemContext) noexcept;
         
     };
 }

@@ -5,14 +5,14 @@
 
 namespace Lumina
 {
-    REFLECT()
-    class RUNTIME_API CCharacterMovementSystem : public CEntitySystem
+    REFLECT(System)
+    struct SCharacterMovementSystem
     {
         GENERATED_BODY()
         ENTITY_SYSTEM(RequiresUpdate(EUpdateStage::PrePhysics, EUpdatePriority::Highest))
         
     public:
         
-        void Update(FSystemContext& SystemContext) override;
+        static void Update(const FSystemContext& SystemContext) noexcept;
     };
 }

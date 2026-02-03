@@ -410,12 +410,7 @@ namespace Lumina::VFS
     
         return {};
     }
-
-    bool CreateFile(FStringView Path)
-    {
-        return std::filesystem::create_directory(Path.data());
-    }
-
+    
     FFileSystem& Detail::AddFileSystemImpl(const FFixedString& Alias, FFileSystem&& System)
     {
         FFixedString Normalized = Paths::Normalize(Alias);

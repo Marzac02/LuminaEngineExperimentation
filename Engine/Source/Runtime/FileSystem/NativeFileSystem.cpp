@@ -142,7 +142,7 @@ namespace Lumina::VFS
 
     bool FNativeFileSystem::CreateDir(FStringView Path) const
     {
-        return std::filesystem::create_directory(ResolveVirtualPath(Path).c_str());
+        return std::filesystem::create_directories(ResolveVirtualPath(Path).c_str());
     }
 
     bool FNativeFileSystem::Remove(FStringView Path) const

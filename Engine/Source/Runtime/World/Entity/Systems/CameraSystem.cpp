@@ -1,35 +1,39 @@
 ﻿#include "pch.h"
 #include "CameraSystem.h"
-
-#include "Input/InputProcessor.h"
-#include "Renderer/RendererUtils.h"
 #include "World/Entity/Components/CameraComponent.h"
 
 namespace Lumina
 {
-    
-    void CCameraSystem::Init(FSystemContext& SystemContext)
+    namespace Detail
     {
-        SystemContext.GetRegistry().on_construct<SCameraComponent>().connect<&ThisClass::NewCameraConstructed>(this);
-    }
-
-    void CCameraSystem::NewCameraConstructed(entt::registry& Registry, entt::entity Entity)
-    {
-        SCameraComponent& Camera = Registry.get<SCameraComponent>(Entity);
-        if (Camera.bAutoActivate)
+        static void NewCameraConstructed(entt::registry& Registry, entt::entity Entity)
         {
-            Registry.ctx().get<entt::dispatcher&>().trigger<FSwitchActiveCameraEvent>(FSwitchActiveCameraEvent{Entity});
-        }
-    }
-
-    void CCameraSystem::Update(FSystemContext& SystemContext)
-    {
-        {
-            auto View = SystemContext.CreateView<SCameraComponent, STransformComponent>();
-            View.each([](SCameraComponent& CameraComponent, const STransformComponent& TransformComponent)
+            SCameraComponent& Camera = Registry.get<SCameraComponent>(Entity);
+            if (Camera.bAutoActivate)
             {
-                CameraComponent.SetView(TransformComponent.WorldTransform.Location, TransformComponent.GetForward(), TransformComponent.GetUp());
-            });
+                Registry.ctx().get<entt::dispatcher&>().trigger<FSwitchActiveCameraEvent>(FSwitchActiveCameraEvent{Entity});
+            }
         }
+    }
+
+    void SCameraSystem::Startup(const FSystemContext& Context) noexcept
+    {
+        Context.GetRegistry().on_construct<SCameraComponent>().connect<&Detail::NewCameraConstructed>();
+    }
+
+    void SCameraSystem::Teardown(const FSystemContext& Context) noexcept
+    {
+        
+    }
+
+    void SCameraSystem::Update(const FSystemContext& SystemContext) noexcept
+    {
+        LUMINA_PROFILE_SCOPE();
+
+        auto View = SystemContext.CreateView<SCameraComponent, STransformComponent>();
+        View.each([](SCameraComponent& CameraComponent, const STransformComponent& TransformComponent)
+        {
+            CameraComponent.SetView(TransformComponent.WorldTransform.Location, TransformComponent.GetForward(), TransformComponent.GetUp());
+        });
     }
 }

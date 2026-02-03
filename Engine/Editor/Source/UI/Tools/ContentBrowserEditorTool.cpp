@@ -163,16 +163,16 @@ namespace Lumina
                 ImTexture = ImGuiX::ToImTextureRef(Paths::GetEngineResourceDirectory() + "/Textures/Folder.png");
                 TintColor = ImVec4(1.0f, 0.9f, 0.6f, 1.0f);
             }
-            else
+            else if (ContentItem->IsAsset())
             {
                 if (FPackageThumbnail* MaybeThumbnail = CThumbnailManager::Get().GetThumbnailForPackage(ContentItem->GetVirtualPath()))
                 {
                     ImTexture = ImGuiX::ToImTextureRef(MaybeThumbnail->LoadedImage);
                 }
-                else
-                {
-                    ImTexture = ImGuiX::ToImTextureRef(Paths::GetEngineResourceDirectory() + "/Textures/File.png");
-                }
+            }
+            else if (ContentItem->IsLuaScript())
+            {
+                ImTexture = ImGuiX::ToImTextureRef(Paths::GetEngineResourceDirectory() + "/Textures/LuaScript.png");
             }
             
             ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.16f, 0.16f, 0.17f, 1.0f)); 
@@ -909,7 +909,7 @@ namespace Lumina
                 RefreshContentBrowser();
             }
 
-            if (VFS::IsUnderDirectory(GEditorEngine->GetProjectScriptDirectory(), SelectedPath))
+            if (SelectedPath.find("/Game/Scripts") != FString::npos)
             {
                 DrawScriptsDirectoryContextMenu();
             }
@@ -1100,10 +1100,7 @@ namespace Lumina
         if (ImGui::MenuItem(LE_ICON_OPEN_IN_NEW " New Script"))
         {
             FFixedString NewScriptPath = SelectedPath + "/" + "NewScript.lua";
-            
-            FileHelper::CreateNewFile(NewScriptPath);
-
-            Platform::LaunchURL(StringUtils::ToWideString(NewScriptPath.data()).c_str());
+            VFS::WriteFile(NewScriptPath, "-- New Lua Script");
         }
     }
 

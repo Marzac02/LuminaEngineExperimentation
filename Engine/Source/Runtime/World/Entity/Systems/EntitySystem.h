@@ -35,29 +35,28 @@ FUpdatePriorityList PriorityList = FUpdatePriorityList(__VA_ARGS__);
         template<typename TSystem>
         concept IsSystem = HasStartup<TSystem> || HasUpdate<TSystem> || HasTeardown<TSystem>;
     
-        template<IsSystem TSystem>
+        template<typename TSystem>
         void RegisterECSSystem()
         {
             using namespace entt::literals;
-            auto Factory = entt::meta_factory<TSystem>(GEngine->GetEngineMetaContext())
-                .type()
-                .template traits<ECS::ETraits::System>();
-        
-            Factory. template data<&TSystem::PriorityList>("PriorityList"_hs);
+            auto Meta = entt::meta_factory<TSystem>(GEngine->GetEngineMetaContext())
+                .type(TSystem::StaticStruct()->GetName().c_str())
+                .traits(ECS::ETraits::System)
+                .template data<&TSystem::PriorityList, entt::as_is_t>("PriorityList"_hs);
         
             if constexpr (HasStartup<TSystem>)
             {
-                Factory. template func<&TSystem::Startup>("Startup"_hs);
+                Meta.template func<&TSystem::Startup>("Startup"_hs);
             }
         
             if constexpr (HasUpdate<TSystem>)
             {
-                Factory. template func<&TSystem::Update>("Update"_hs);
+                Meta.template func<&TSystem::Update>("Update"_hs);
             }
         
             if constexpr (HasTeardown<TSystem>)
             {
-                Factory. template func<&TSystem::Teardown>("Teardown"_hs);
+                Meta.template func<&TSystem::Teardown>("Teardown"_hs);
             }
         }
     }
@@ -67,12 +66,13 @@ FUpdatePriorityList PriorityList = FUpdatePriorityList(__VA_ARGS__);
         friend class CWorld;
         
         const FUpdatePriorityList& GetUpdatePriorityList() const;
-        void Startup(FSystemContext& SystemContext) noexcept;
-        void Update(FSystemContext& SystemContext) noexcept;
-        void Teardown(FSystemContext& SystemContext) noexcept;
+        void Startup(const FSystemContext& SystemContext) const noexcept;
+        void Update(const FSystemContext& SystemContext) const noexcept;
+        void Teardown(const FSystemContext& SystemContext) const noexcept;
         
     private:
         entt::meta_type Underlying;
+        entt::meta_any  Instance;
     };
     
     struct FEntityScriptSystem
@@ -80,9 +80,9 @@ FUpdatePriorityList PriorityList = FUpdatePriorityList(__VA_ARGS__);
         friend class CWorld;
         
         const FUpdatePriorityList& GetUpdatePriorityList() const;
-        void Startup(FSystemContext& SystemContext) noexcept;
-        void Update(FSystemContext& SystemContext) noexcept;
-        void Teardown(FSystemContext& SystemContext) noexcept;
+        void Startup(const FSystemContext& SystemContext) const noexcept;
+        void Update(const FSystemContext& SystemContext) const noexcept;
+        void Teardown(const FSystemContext& SystemContext) const noexcept;
         
     private:
         Scripting::FLuaSystemScriptEntry ScriptSystem;

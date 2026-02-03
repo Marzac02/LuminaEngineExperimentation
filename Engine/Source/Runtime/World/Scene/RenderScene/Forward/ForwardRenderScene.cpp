@@ -160,6 +160,8 @@ namespace Lumina
             TFixedHashMap<uint64, uint64, 4> BatchedDraws;
             
             {
+                LUMINA_PROFILE_SECTION("Process Static Mesh Primitives");
+
                 StaticView.each([&](entt::entity Entity, const SStaticMeshComponent& MeshComponent, const STransformComponent& TransformComponent)
                 {
                     CMesh* Mesh = MeshComponent.StaticMesh;
@@ -179,6 +181,20 @@ namespace Lumina
                     glm::vec3 Extents       = BoundingBox.Max - Center;
                     float Radius            = glm::length(Extents);
                     glm::vec4 SphereBounds  = glm::vec4(Center, Radius);
+                    
+                    EInstanceFlags Flags = EInstanceFlags::None;
+                    if (World->IsSelected(Entity))
+                    {
+                        Flags |= EInstanceFlags::Selected;
+                    }
+                    if (MeshComponent.bCastShadow)
+                    {
+                        Flags |= EInstanceFlags::CastShadow;
+                    }
+                    if (MeshComponent.bReceiveShadow)
+                    {
+                        Flags |= EInstanceFlags::ReceiveShadow;
+                    }
                     
                     int SurfaceIndex = 0;
                     for (const FGeometrySurface& Surface : Resource.GeometrySurfaces)
@@ -202,10 +218,10 @@ namespace Lumina
                             SortKey = entt::to_integral(Entity);
                         }
                         
-                        if (BatchedDraws.find(SortKey) == BatchedDraws.end())
+                        auto [It, bInserted] = BatchedDraws.try_emplace(SortKey, IndirectDrawArguments.size());
+                        uint64 ArgumentIndex = It->second;
+                        if (bInserted)
                         {
-                            BatchedDraws[SortKey] = IndirectDrawArguments.size();
-        
                             DrawCommands.emplace_back(FMeshDrawCommand
                             {
                                 .VertexShader       = Material->GetVertexShader(EVertexFormat::Static),
@@ -230,21 +246,7 @@ namespace Lumina
                         }
                         else
                         {
-                            IndirectDrawArguments[BatchedDraws[SortKey]].InstanceCount++;
-                        }
-                        
-                        EInstanceFlags Flags = EInstanceFlags::None;
-                        if (World->IsSelected(Entity))
-                        {
-                            Flags |= EInstanceFlags::Selected;
-                        }
-                        if (MeshComponent.bCastShadow)
-                        {
-                            Flags |= EInstanceFlags::CastShadow;
-                        }
-                        if (MeshComponent.bReceiveShadow)
-                        {
-                            Flags |= EInstanceFlags::ReceiveShadow;
+                            IndirectDrawArguments[ArgumentIndex].InstanceCount++;
                         }
                         
                         InstanceData.emplace_back(FInstanceData
@@ -252,7 +254,7 @@ namespace Lumina
                             .Transform      = TransformMatrix,
                             .SphereBounds   = SphereBounds,
                             .EntityID       = entt::to_integral(Entity),
-                            .BatchedDrawID  = (uint32)BatchedDraws[SortKey],
+                            .BatchedDrawID  = (uint32)ArgumentIndex,
                             .Flags          = Flags,
                             .BoneOffset     = 0,
                         });   
@@ -261,6 +263,8 @@ namespace Lumina
             }
             
             {
+                LUMINA_PROFILE_SECTION("Process Skeletal Mesh Primitives");
+
                 SkeletalView.each([&](entt::entity Entity, const SSkeletalMeshComponent& MeshComponent, const STransformComponent& TransformComponent)
                 {
                     CSkeletalMesh* Mesh = MeshComponent.SkeletalMesh;
@@ -383,6 +387,8 @@ namespace Lumina
         //========================================================================================================================
         
         {
+            LUMINA_PROFILE_SECTION("Process Billboard Primitives");
+
             uint32 NumBillboards = 0;
             auto View = World->GetEntityRegistry().view<SBillboardComponent, STransformComponent>();
             View.each([this, NumBillboards](const SBillboardComponent& BillboardComponent, const STransformComponent& TransformComponent)
@@ -760,7 +766,7 @@ namespace Lumina
         
         //========================================================================================================================
         
-            
+        
         {
             LUMINA_PROFILE_SECTION("Environment Processing");
 

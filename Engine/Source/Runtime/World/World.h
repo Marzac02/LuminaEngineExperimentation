@@ -37,7 +37,7 @@ namespace Lumina
         
     public:
         
-        using FSystemVariant = TVariant<entt::meta_any, FEntityScriptSystem>;
+        using FSystemVariant = TVariant<FEntitySystemWrapper, FEntityScriptSystem>;
 
         CWorld();
 
@@ -111,7 +111,7 @@ namespace Lumina
         void OnRelationshipComponentDestroyed(entt::registry& Registry, entt::entity Entity);
         void OnSineWaveMovementComponentCreated(entt::registry& Registry, entt::entity Entity);
 
-        void ProcessAnyNewlyLoadedScripts();
+        void RegisterSystems();
         
         //~ Begin Debug Drawing
         void DrawBillboard(FRHIImage* Image, const glm::vec3& Location, float Scale) override;

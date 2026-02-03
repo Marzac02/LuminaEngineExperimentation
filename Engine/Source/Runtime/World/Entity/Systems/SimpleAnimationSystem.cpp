@@ -10,7 +10,7 @@
 
 namespace Lumina
 {
-    void CSimpleAnimationSystem::Update(FSystemContext& SystemContext)
+    void SSimpleAnimationSystem::Update(const FSystemContext& SystemContext) noexcept
     {
         LUMINA_PROFILE_SCOPE();
         auto View = SystemContext.CreateView<SSimpleAnimationComponent, SSkeletalMeshComponent>();
