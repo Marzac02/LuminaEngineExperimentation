@@ -45,37 +45,31 @@ namespace Lumina
         }
     }
     
-    void FTaskSystem::Initialize()
+    namespace Task
     {
-        GTaskSystem = Memory::New<FTaskSystem>();
+        void Initialize()
+        {
+            GTaskSystem = Memory::New<FTaskSystem>();
 
-        GTaskSystem->NumWorkers                             = Threading::GetNumThreads() - 2;
+            GTaskSystem->NumWorkers                             = Threading::GetNumThreads() - 2;
         
-        enki::TaskSchedulerConfig config;
-        config.numTaskThreadsToCreate                       = GTaskSystem->NumWorkers;
-        config.customAllocator.alloc                        = CustomAllocFunc;
-        config.customAllocator.free                         = CustomFreeFunc;
-        config.profilerCallbacks.threadStart                = OnStartThread;
-        config.profilerCallbacks.waitForTaskCompleteStart   = ObWaitForTaskCompleteStart;
-        config.profilerCallbacks.threadStop                 = OnStopThread;
+            enki::TaskSchedulerConfig config;
+            config.numTaskThreadsToCreate                       = GTaskSystem->NumWorkers;
+            config.customAllocator.alloc                        = CustomAllocFunc;
+            config.customAllocator.free                         = CustomFreeFunc;
+            config.profilerCallbacks.threadStart                = OnStartThread;
+            config.profilerCallbacks.waitForTaskCompleteStart   = ObWaitForTaskCompleteStart;
+            config.profilerCallbacks.threadStop                 = OnStopThread;
 
-        GTaskSystem->Scheduler.Initialize(config);
-    }
+            GTaskSystem->Scheduler.Initialize(config);
+        }
 
-    void FTaskSystem::Shutdown()
-    {
-        GTaskSystem->Scheduler.WaitforAllAndShutdown();
-
-        //while (!GTaskSystem->LambdaTaskPool.empty())
-        //{
-        //    FLambdaTask* Task = GTaskSystem->LambdaTaskPool.front();
-        //    GTaskSystem->LambdaTaskPool.pop();
-        //    Memory::Delete(Task);
-        //}
-        
-        Memory::Delete(GTaskSystem);
-        
-        GTaskSystem = nullptr;
+        void Shutdown()
+        {
+            GTaskSystem->Scheduler.WaitforAllAndShutdown();
+            Memory::Delete(GTaskSystem);
+            GTaskSystem = nullptr;
+        }
     }
 
     FTaskHandle FTaskSystem::ScheduleLambda(uint32 Num, uint32 MinRange, TaskSetFunction&& Function, ETaskPriority Priority)

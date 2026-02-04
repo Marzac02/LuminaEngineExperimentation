@@ -62,6 +62,7 @@ project "Runtime"
 
     links
     {
+        "MiniAudio",
         "GLFW",
         "ImGui",
         "EA",

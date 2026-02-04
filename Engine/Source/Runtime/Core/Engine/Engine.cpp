@@ -1,6 +1,8 @@
 ﻿#include "pch.h"
 #include "Engine.h"
 #include "Assets/AssetRegistry/AssetRegistry.h"
+#include "Audio/AudioContext.h"
+#include "Audio/AudioGlobals.h"
 #include "Config/Config.h"
 #include "Core/Application/Application.h"
 #include "Core/Console/ConsoleVariable.h"
@@ -49,7 +51,8 @@ namespace Lumina
         
         FConsoleRegistry::Get().LoadFromConfig();
         
-        FTaskSystem::Initialize();
+        Audio::Initialize();
+        Task::Initialize();
         Physics::Initialize();
         Scripting::Initialize();
         
@@ -98,8 +101,8 @@ namespace Lumina
 
         Physics::Shutdown();
         Scripting::Shutdown();
-        
-        FTaskSystem::Shutdown();
+        Task::Shutdown();
+        Audio::Shutdown();
         
         FModuleManager::Get().UnloadAllModules();
         

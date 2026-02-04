@@ -101,7 +101,6 @@ namespace Lumina
         
 
         FProjectLoadedDelegate  OnProjectLoaded;
-
         
         bool                    bCloseRequested = false;
         bool                    bEngineReadyToClose = false;

@@ -13,6 +13,10 @@ namespace Lumina
 
     namespace Task
     {
+        
+        void Initialize();
+        void Shutdown();
+        
         struct FParallelRange
         {
             uint32 Start;
@@ -29,9 +33,6 @@ namespace Lumina
         
         bool IsBusy() const { return Scheduler.GetIsShutdownRequested(); }
         uint32_t GetNumWorkers() const { return NumWorkers; }
-
-        static void Initialize();
-        static void Shutdown();
         
         enki::TaskScheduler& GetScheduler() { return Scheduler; }
 
@@ -184,7 +185,6 @@ namespace Lumina
         
         RUNTIME_API void WaitForAll();
     
-    private:
 
         enki::TaskScheduler                 Scheduler;
         uint32                              NumWorkers = 0;
