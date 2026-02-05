@@ -166,6 +166,7 @@ setx LUMINA_DIR "C:\path\to\lumina"
 - **Tracy** - Real-time frame profiler with GPU profiling, memory tracking, and remote access capabilities
 - **SPDLog** - Fast C++ logging library with async mode, custom formatting, and multiple sink support
 - **NlohmannJson** - Modern JSON library with intuitive syntax and full STL compatibility
+- **Miniaudio** - An audio playback and capture library in a single source file.
 - **XXHash** - Extremely fast non-cryptographic hash algorithm optimized for speed over collision resistance
 - **ConcurrentQueue** - Industrial-strength lock-free queue supporting multiple producers and consumers
 - **EASTL** - Electronic Arts Standard Template Library optimized for game development with custom allocators
