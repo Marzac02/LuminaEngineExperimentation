@@ -8,8 +8,22 @@ Script = {
     CameraSystem = {
         Type = "System",
         Stage = UpdateStage.PostPhysics
+    },
+    TestSystem = {
+        Type = "System",
+        Stage = UpdateStage.PostPhysics
     }
 }
+
+Script.TestSystem.Update = function(Ctx)
+
+    Ctx:View(STransformComponent):Each(function(Entity)
+        local Transform = Ctx:Get(Entity, STransformComponent)
+        
+    
+    end)
+
+end
 
 Script.PlayerSystem.Update = function(Ctx)
 

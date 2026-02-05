@@ -1,7 +1,6 @@
 #pragma once
-#include "Subsystems/Subsystem.h"
-#include "Lumina.h"
 #include "Core/Delegates/Delegate.h"
+#include "Subsystems/Subsystem.h"
 
 
 namespace Lumina

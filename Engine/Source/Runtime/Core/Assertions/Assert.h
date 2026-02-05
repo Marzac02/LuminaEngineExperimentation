@@ -1,7 +1,8 @@
 #pragma once
 #include <source_location>
-#include "Log/Log.h"
 
+#include "Containers/String.h"
+#include "Platform/GenericPlatform.h"
 
 
 #if __has_include(<stacktrace>) && defined(__cpp_lib_stacktrace)
@@ -39,7 +40,7 @@ namespace Lumina::Assert
     namespace Detail
     {
         FORCENOINLINE RUNTIME_API void HandleAssertion(const FAssertion& Assertion);
-        FORCENOINLINE RUNTIME_API void Abort();
+        [[noreturn]] FORCENOINLINE RUNTIME_API void Abort();
         
         constexpr bool ShouldAbortOnAssertion(EAssertionType Type)
         {

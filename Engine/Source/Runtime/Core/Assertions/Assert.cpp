@@ -1,7 +1,7 @@
 ﻿#include "PCH.h"
 #include "Assert.h"
-
 #include "Core/Threading/Thread.h"
+#include "Log/Log.h"
 
 
 namespace Lumina::Assert

@@ -221,7 +221,7 @@ namespace Lumina
         
         To = EntityRegistry.create();
         
-        for (auto [ID, Storage]: EntityRegistry.storage())
+        for (auto&& [ID, Storage]: EntityRegistry.storage())
         {
             if (!Callback(Storage.info()))
             {
@@ -234,18 +234,6 @@ namespace Lumina
                 Storage.push(To, Storage.value(From));
             }
         }
-
-        FString OldName = EntityRegistry.get<SNameComponent>(From).Name.ToString();
-
-        FString BaseName = OldName;
-        size_t Pos = OldName.find_last_of('_');
-        if (Pos != FString::npos && Pos + 1 < OldName.size())
-        {
-            BaseName = OldName.substr(0, Pos);
-        }
-
-        FString NewName = BaseName + "_" +  eastl::to_string(entt::to_integral(To));
-        EntityRegistry.get<SNameComponent>(To).Name = NewName;
     }
 
     void CWorld::DestroyEntity(entt::entity Entity)

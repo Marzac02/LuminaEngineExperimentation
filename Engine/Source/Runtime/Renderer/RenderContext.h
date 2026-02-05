@@ -18,7 +18,6 @@ namespace Lumina
     class IShaderCompiler;
     struct FCommandListInfo;
     class ICommandList;
-    struct FGPUBarrier;
 }
 
 namespace Lumina

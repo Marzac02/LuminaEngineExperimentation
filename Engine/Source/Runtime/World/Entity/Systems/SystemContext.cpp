@@ -208,8 +208,8 @@ namespace Lumina
     entt::entity FSystemContext::Create(const FName& Name, const FTransform& Transform) const
     {
         entt::entity EntityID = Registry.create();
-        Registry.emplace<STransformComponent>(EntityID, Transform);
-        Registry.emplace<SNameComponent>(EntityID, Name);
+        Registry.emplace<STransformComponent>(EntityID).Transform = Transform;
+        Registry.emplace<SNameComponent>(EntityID).Name = Name;
         Registry.emplace_or_replace<FNeedsTransformUpdate>(EntityID);
         return EntityID;
     }
