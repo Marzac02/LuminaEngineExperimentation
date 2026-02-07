@@ -18,6 +18,7 @@ namespace Lumina
     struct FSystemContext : INonCopyable
     {
         friend class CWorld;
+        friend struct SScriptSystem;
         
         FSystemContext(CWorld* InWorld);
         ~FSystemContext() = default;
@@ -155,7 +156,7 @@ namespace Lumina
         RUNTIME_API void DrawDebugArrow(const glm::vec3& Start, const glm::vec3& Direction, float Length, const glm::vec4& Color, float Thickness = 1.0f, float Duration = 1.0f, float HeadSize = 0.2f);
         //~ End Debug Drawing
         
-        RUNTIME_API entt::runtime_view CreateRuntimeView(const THashSet<entt::id_type>& Components);
+        RUNTIME_API entt::runtime_view CreateRuntimeView(const THashSet<entt::id_type>& Components) const;
 
         RUNTIME_API entt::entity Create(const FName& Name, const FTransform& Transform = FTransform()) const;
         RUNTIME_API entt::entity Create() const { return Registry.create(); }
@@ -168,21 +169,21 @@ namespace Lumina
         
     private:
         
-        void Lua_DispatchEvent(const sol::object& Event);
-        entt::meta_any Lua_ConnectEvent(const sol::object& Event, const sol::function& Listener);
-        entt::meta_any Lua_OnConstruct(const sol::object& Event, const sol::function& Listener);
+        void Lua_DispatchEvent(const sol::object& Event) const ;
+        entt::meta_any Lua_ConnectEvent(const sol::object& Event, const sol::function& Listener) const ;
+        entt::meta_any Lua_OnConstruct(const sol::object& Event, const sol::function& Listener) const;
 
-        bool Lua_HasAllOf(entt::entity Entity, const sol::variadic_args& Args);
-        bool Lua_HasAnyOf(entt::entity Entity, const sol::variadic_args& Args);
-        bool Lua_Has(entt::entity Entity, const sol::object& Type);
+        bool Lua_HasAllOf(entt::entity Entity, const sol::variadic_args& Args) const;
+        bool Lua_HasAnyOf(entt::entity Entity, const sol::variadic_args& Args) const;
+        bool Lua_Has(entt::entity Entity, const sol::object& Type) const;
         
-        entt::runtime_view Lua_View(const sol::variadic_args& Args);
-        void Lua_SetActiveCamera(uint32 Entity);
+        entt::runtime_view Lua_View(const sol::variadic_args& Args) const;
+        void Lua_SetActiveCamera(uint32 Entity) const;
         
-        void Lua_Remove(entt::entity Entity, const sol::object& Component);
-        sol::object Lua_Emplace(entt::entity Entity, const sol::table& Component);
-        sol::variadic_results Lua_Get(entt::entity Entity, const sol::variadic_args& Args);
-        sol::variadic_results Lua_Try_Get(entt::entity Entity, const sol::variadic_args& Args);
+        void Lua_Remove(entt::entity Entity, const sol::object& Component) const;
+        sol::object Lua_Emplace(entt::entity Entity, const sol::table& Component) const;
+        sol::variadic_results Lua_Get(entt::entity Entity, const sol::variadic_args& Args) const;
+        sol::variadic_results Lua_Try_Get(entt::entity Entity, const sol::variadic_args& Args) const;
 
     private:
 

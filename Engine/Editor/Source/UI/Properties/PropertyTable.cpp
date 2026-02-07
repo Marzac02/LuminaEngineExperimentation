@@ -532,16 +532,51 @@ namespace Lumina
                 
                 FCategoryPropertyRow* CategoryRow = FindOrCreateCategoryRow(Category);
 
-                TSharedPtr<FPropertyHandle> PropertyHandle = MakeShared<FPropertyHandle>(Object, Current);
-                CategoryRow->AddProperty(PropertyHandle);
+                TSharedPtr<FPropertyHandle> Property = MakeShared<FPropertyHandle>(Object, Current);
+                CategoryRow->AddProperty(Property);
             }
             
             Current = static_cast<FProperty*>(Current->Next);
         }
     }
 
+    void FPropertyTable::MarkDirty()
+    {
+        bDirty = true;
+    }
+
     void FPropertyTable::DrawTree(bool bReadOnly)
     {
+        if (bDirty)
+        {
+            FPropertyCustomizationRegistry* Registry = GEngine->GetDevelopmentToolsUI()->GetPropertyCustomizationRegistry();
+            Customization = Registry->GetPropertyCustomizationForType(Struct->GetName());
+            
+            if (Customization == nullptr)
+            {
+                RebuildTree();
+            }
+            bDirty = false;
+        }
+        
+        if (Customization)
+        {
+            if (PropertyHandle == nullptr)
+            {
+                PropertyHandle = MakeShared<FPropertyHandle>(Object, nullptr);
+            }
+            
+            EPropertyChangeOp ChangeOp = Customization->UpdateAndDraw(PropertyHandle, bReadOnly);
+            if (ChangeOp == EPropertyChangeOp::Updated)
+            {
+                Customization->UpdatePropertyValue(PropertyHandle);
+            }
+            
+            bDirty = false;
+            return;
+        }
+        
+        
         constexpr ImGuiTableFlags Flags = 
             ImGuiTableFlags_BordersOuter | 
             ImGuiTableFlags_BordersInnerH | 
@@ -551,7 +586,7 @@ namespace Lumina
         
         ImGui::PushStyleVar(ImGuiStyleVar_CellPadding, ImVec2(4, 8));
         ImGui::PushID(this);
-
+        
         if (ImGui::BeginTable("GridTable", 2, Flags))
         {
             ImGui::TableSetupColumn("##Header", ImGuiTableColumnFlags_WidthStretch, 0.4f);

@@ -58,11 +58,13 @@
 #include "Memory/Memory.h"
 #include "Platform/Process/PlatformProcess.h"
 #include "Properties/Customizations/CoreTypeCustomization.h"
+#include "Properties/Customizations/ScriptComponentCustomization.h"
 #include "Renderer/RenderContext.h"
 #include "Renderer/RenderDocImpl.h"
 #include "Renderer/RenderManager.h"
 #include "Renderer/RHIGlobals.h"
 #include "Renderer/ShaderCompiler.h"
+#include "Scripting/ScriptPath.h"
 #include "Scripting/Lua/Scripting.h"
 #include "Tools/ConsoleLogEditorTool.h"
 #include "Tools/ContentBrowserEditorTool.h"
@@ -127,6 +129,10 @@ namespace Lumina
         PropertyCustomizationRegistry->RegisterPropertyCustomization(TBaseStructure<FTransform>::Get()->GetName(), []
         {
             return FTransformPropertyCustomization::MakeInstance();
+        });
+        PropertyCustomizationRegistry->RegisterPropertyCustomization(SScriptComponent::StaticStruct()->GetName(), []
+        {
+           return FScriptComponentPropertyCustomization::MakeInstance(); 
         });
         
         
@@ -1058,11 +1064,6 @@ namespace Lumina
             ImGui::Text("Memory Usage %s", ImGuiX::FormatSize(MemoryUsage).c_str());
             
             ImGui::Separator();
-            
-            Context.ForEachScript<Scripting::FLuaScriptMetadata>([&](const Scripting::FLuaScriptMetadata& Metadata)
-            {
-                ImGui::TextUnformatted(Metadata.Path.c_str());
-            });
             
             ImGui::End();
         }

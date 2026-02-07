@@ -77,6 +77,7 @@ namespace Lumina::Reflection
             case Hash("int64"):                     return EPropertyTypeFlags::Int64;
             case Hash("float"):                     return EPropertyTypeFlags::Float;
             case Hash("double"):                    return EPropertyTypeFlags::Double;
+            case Hash("entt::entity"):              return EPropertyTypeFlags::Int32;
             case Hash("Lumina::CClass"):            return EPropertyTypeFlags::Class;
             case Hash("Lumina::FName"):             return EPropertyTypeFlags::Name;
             case Hash("Lumina::FString"):           return EPropertyTypeFlags::String;

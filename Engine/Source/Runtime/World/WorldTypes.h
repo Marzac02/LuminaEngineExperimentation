@@ -1,7 +1,7 @@
 #pragma once
 
-#include "WorldTypes.generated.h"
 #include "Core/Object/ObjectMacros.h"
+#include "WorldTypes.generated.h"
 
 namespace Lumina
 {
@@ -12,8 +12,7 @@ namespace Lumina
         None,
         Game,
         Editor,
-        EditorPreview,
-        Inactive,
+        Tool,
     };
     
 }

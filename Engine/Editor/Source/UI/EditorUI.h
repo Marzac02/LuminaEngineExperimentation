@@ -56,6 +56,7 @@ namespace Lumina
         void OpenAssetEditor(const FGuid& AssetGUID) override;
         void OnDestroyAsset(CObject* InAsset) override;
         
+        
         template<typename T, typename... Args>
         requires eastl::is_base_of_v<FEditorTool, T> && eastl::is_constructible_v<T, Args...>
         T* CreateTool(Args&&... args);

@@ -4,6 +4,7 @@
 
 namespace Lumina
 {
+    class CWorld;
     class FCamera;
     class FEditorSettings;
     class FEditorLayer;
@@ -16,6 +17,8 @@ namespace Lumina
     public:
         bool Init() override;
         bool Shutdown() override;
+        
+        CWorld* GetCurrentEditorWorld() const;
         
         #if WITH_EDITOR
         IDevelopmentToolUI* CreateDevelopmentTools() override;

@@ -145,6 +145,8 @@ namespace Lumina
     
     class FPropertyTable
     {
+        friend class FStructPropertyRow;
+        
     public:
 
         FPropertyTable() = default;
@@ -156,7 +158,7 @@ namespace Lumina
         bool operator = (const FPropertyTable&) const = delete;
         bool operator = (FPropertyTable&&) = delete;
 
-        void RebuildTree();
+        void MarkDirty();
         void DrawTree(bool bReadOnly = false);
 
         CStruct* GetType() const { return Struct; }
@@ -169,8 +171,15 @@ namespace Lumina
 
         FPropertyChangedEventCallbacks ChangeEventCallbacks;
         
+    protected:
+        
+        void RebuildTree();
+
     private:
         
+        bool                                                bDirty = true;
+        TSharedPtr<IPropertyTypeCustomization>              Customization;
+        TSharedPtr<FPropertyHandle>                         PropertyHandle;
         CStruct*                                            Struct = nullptr;
         void*                                               Object = nullptr;
         THashMap<FName, TUniquePtr<FCategoryPropertyRow>>   CategoryMap;

@@ -80,13 +80,14 @@ FUpdatePriorityList PriorityList = FUpdatePriorityList(__VA_ARGS__);
     {
         friend class CWorld;
         
-        const FUpdatePriorityList& GetUpdatePriorityList() const;
+        FUpdatePriorityList GetUpdatePriorityList() const;
         void Startup(const FSystemContext& SystemContext) const noexcept;
         void Update(const FSystemContext& SystemContext) const noexcept;
         void Teardown(const FSystemContext& SystemContext) const noexcept;
         uint64 GetHash() const noexcept;
 
     private:
-        Scripting::FLuaSystemScriptEntry ScriptSystem;
+        
+        TWeakPtr<Scripting::FLuaScript> WeakScript;
     };
 }

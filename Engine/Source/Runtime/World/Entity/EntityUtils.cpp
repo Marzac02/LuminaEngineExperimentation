@@ -1,9 +1,10 @@
 ﻿#include "pch.h"
 #include "EntityUtils.h"
-
+#include "Scripting/ScriptTypes.h"
 #include "Components/DirtyComponent.h"
 #include "Components/EditorComponent.h"
 #include "Components/RelationshipComponent.h"
+#include "Components/ScriptComponent.h"
 #include "Components/SingletonEntityComponent.h"
 #include "components/tagcomponent.h"
 #include "Components/TransformComponent.h"
@@ -62,6 +63,12 @@ namespace Lumina::ECS::Utils
                         int64 StartOfComponentData = Ar.Tell();
 
                         StructType->SerializeTaggedProperties(Ar, ComponentPointer);
+                        
+                        if (StructType == SScriptComponent::StaticStruct())
+                        {
+                            SScriptComponent* ScriptComponent = static_cast<SScriptComponent*>(ComponentPointer);
+                            Ar << ScriptComponent->CustomData;
+                        }
 
                         int64 EndOfComponentData = Ar.Tell();
 
@@ -114,9 +121,16 @@ namespace Lumina::ECS::Utils
 
                 if (CStruct* Struct = FindObject<CStruct>(TypeName))
                 {
-                    using namespace entt::literals;
+                    using namespace entt::literals; 
 
-                    if (Struct == STagComponent::StaticStruct())
+                    if (Struct == SScriptComponent::StaticStruct())
+                    {
+                        SScriptComponent NewScriptComponent;
+                        Struct->SerializeTaggedProperties(Ar, &NewScriptComponent);
+                        Ar << NewScriptComponent.CustomData;
+                        Registry.emplace<SScriptComponent>(Entity, NewScriptComponent);
+                    }
+                    else if (Struct == STagComponent::StaticStruct())
                     {
                         STagComponent NewTagComponent;
                         Struct->SerializeTaggedProperties(Ar, &NewTagComponent);

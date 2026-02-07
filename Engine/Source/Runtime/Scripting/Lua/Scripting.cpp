@@ -5,16 +5,13 @@
 #include "Containers/Name.h"
 #include "Core/Math/Color.h"
 #include "Events/KeyCodes.h"
-#ifdef _WIN32
-    #include <Windows.h>
-#endif
 #include "FileSystem/FileSystem.h"
 #include "GLFW/glfw3.h"
 #include "Input/InputProcessor.h"
 #include "Memory/SmartPtr.h"
 #include "Paths/Paths.h"
 #include "Scripting/DeferredScriptRegistry.h"
-#include "Scripting/ScriptFactory.h"
+#include "Scripting/ScriptTypes.h"
 #include "Scripting/EnttGlue/EnttGlue.h"
 #include "World/Entity/Systems/SystemContext.h"
 
@@ -95,7 +92,7 @@ namespace Lumina::Scripting
 
     void FScriptingContext::Shutdown()
     {
-        ScriptRegistry = {};
+        State.collect_gc();
     }
 
     void FScriptingContext::ProcessDeferredActions()
@@ -104,33 +101,17 @@ namespace Lumina::Scripting
         
         DeferredActions.ProcessAllOf<FScriptDelete>([&](const FScriptDelete& Delete)
         {
-            auto View = ScriptRegistry.view<FLuaScriptMetadata>();
-            View.each([&](entt::entity Entity, const FLuaScriptMetadata& Metadata)
-            {
-               if (Metadata.Path == Delete.Path)
-               {
-                   ScriptRegistry.destroy(Entity);
-               }
-            });
+            OnScriptDeleted.Broadcast(Delete.Path);
         });
         
         DeferredActions.ProcessAllOf<FScriptRename>([&](const FScriptRename& Reload)
         {
-            auto View = ScriptRegistry.view<FLuaScriptMetadata>();
-            View.each([&](entt::entity Entity, FLuaScriptMetadata& Metadata)
-            {
-                if (Metadata.Path == Reload.OldName)
-                {
-                    Metadata.Path = Reload.NewName;
-                }
-            });
+            
         });
         
-        DeferredActions.ProcessAllOf<FScriptLoad>([&](const FScriptLoad& Reload)
+        DeferredActions.ProcessAllOf<FScriptLoad>([&](const FScriptLoad& Load)
         {
-            FString ScriptData;
-            VFS::ReadFile(ScriptData, Reload.Path);
-            LoadScript(Reload.Path, ScriptData);
+            OnScriptLoaded.Broadcast(Load.Path);
         });
     }
 
@@ -139,48 +120,60 @@ namespace Lumina::Scripting
         return State.memory_used();
     }
 
-    void FScriptingContext::OnScriptReloaded(FStringView ScriptPath)
+    void FScriptingContext::ScriptReloaded(FStringView ScriptPath)
     {
         FWriteScopeLock Lock(SharedMutex);
         
         DeferredActions.EnqueueAction<FScriptLoad>(ScriptPath);
     }
 
-    void FScriptingContext::OnScriptCreated(FStringView ScriptPath)
+    void FScriptingContext::ScriptCreated(FStringView ScriptPath)
     {
         FWriteScopeLock Lock(SharedMutex);
-
-        DeferredActions.EnqueueAction<FScriptLoad>(ScriptPath);
     }
 
-    void FScriptingContext::OnScriptRenamed(FStringView NewPath, FStringView OldPath)
+    void FScriptingContext::ScriptRenamed(FStringView NewPath, FStringView OldPath)
     {
         FWriteScopeLock Lock(SharedMutex);
         
         DeferredActions.EnqueueAction<FScriptRename>(NewPath, OldPath);
     }
 
-    void FScriptingContext::OnScriptDeleted(FStringView ScriptPath)
+    void FScriptingContext::ScriptDeleted(FStringView ScriptPath)
     {
         FWriteScopeLock Lock(SharedMutex);
         
         DeferredActions.EnqueueAction<FScriptDelete>(ScriptPath);
     }
-    
-    void FScriptingContext::LoadScripts(FStringView Directory)
+
+    TSharedPtr<FLuaScript> FScriptingContext::LoadUniqueScript(FStringView Path)
     {
-        FWriteScopeLock Lock(SharedMutex);
+        State.collect_gc();
+    
+        sol::environment Environment(State, sol::create, State.globals());
+        FString ScriptData;
         
-        ScriptRegistry = {};
-        VFS::RecursiveDirectoryIterator(Directory, [&](const VFS::FFileInfo& Info)
+        VFS::ReadFile(ScriptData, Path);
+        sol::protected_function_result Result = State.safe_script(ScriptData.c_str(), Environment);
+        if (!Result.valid())
         {
-            if (Info.IsLua())
-            {
-                FString ScriptData;
-                VFS::ReadFile(ScriptData, Info.VirtualPath);
-                LoadScript(Info.VirtualPath, ScriptData);
-            }
-        });
+            return {};
+        }
+
+        sol::object ReturnedObject = Result;
+        if (!ReturnedObject.is<sol::table>())
+        {
+            return {};
+        }
+
+        sol::table ScriptTable = ReturnedObject.as<sol::table>();
+        
+        auto NewScript = MakeShared<FLuaScript>();
+        NewScript->Environment = Environment;
+        NewScript->ScriptTable = ScriptTable;
+        NewScript->Name = VFS::FileName(Path, true);
+        
+        return NewScript;
     }
 
     void FScriptingContext::RegisterCoreTypes()
@@ -195,6 +188,7 @@ namespace Lumina::Scripting
             for (size_t i = 0; i < args.size(); ++i)
             {
                 sol::object Obj = args[i];
+                
         
                 sol::protected_function_result Result = LuaStringFunc(Obj);
         
@@ -242,6 +236,7 @@ namespace Lumina::Scripting
 		    "trim", [](FString& Self) { return Self.trim(); },
 	        sol::meta_function::to_string, [](const FString &s) { return s.c_str(); },
 	        sol::meta_function::length, &FString::size,
+	        sol::meta_function::concatenation, [](const FString& LHS, const FString& RHS) { return LHS + RHS; },
 	        sol::meta_function::index, [](const FString &s, size_t i) { return s.at(i - 1); },
 	        "append", sol::overload(
 			    [](FString &self, const FString &other) { self.append(other); },
@@ -427,6 +422,10 @@ namespace Lumina::Scripting
             "AngleAxis", [](float angle, const glm::vec3& axis){ return glm::angleAxis(angle, axis); },
             "FromEuler", [](const glm::vec3& euler){ return glm::quat(euler); }
         );
+        
+        State.new_enum("ScriptType",
+            "WorldSystem",       EScriptType::WorldSystem,
+            "EntitySystem",      EScriptType::EntitySystem);
         
         State.new_enum("UpdateStage",
             "FrameStart",       EUpdateStage::FrameStart,
@@ -752,75 +751,5 @@ namespace Lumina::Scripting
         }
             
         LOG_ERROR("[Lua] {}", Output);
-    }
-
-    void FScriptingContext::LoadScript(FStringView Path, FStringView ScriptData, bool bFailSilently)
-    {
-        sol::environment Environment(State, sol::create, State.globals());
-        
-        auto View = ScriptRegistry.view<FLuaScriptMetadata>();
-        View.each([&](entt::entity Entity, const FLuaScriptMetadata& Metadata)
-        {
-           if (Metadata.Path == Path)
-           {
-               LOG_INFO("Destroying {}", Metadata.Path);
-               ScriptRegistry.destroy(Entity);
-           }
-        });
-        
-        State.collect_gc();
-    
-        sol::protected_function_result Result = State.safe_script(ScriptData.data(), Environment);
-        if (!Result.valid())
-        {
-            sol::error Error = Result;
-            if (!bFailSilently)
-            {
-                LOG_ERROR("[Sol] - Error loading script! {}", Error.what());
-            }
-            return;
-        }
-
-        TVector<CScriptFactory*> Factories;
-        CScriptFactoryRegistry::Get().GetFactories(Factories);
-
-        sol::object ReturnedObject = Result;
-        if (!ReturnedObject.is<sol::table>())
-        {
-            return;
-        }
-
-        sol::table ScriptTable = ReturnedObject.as<sol::table>();
-        
-        for (const auto& [key, value] : ScriptTable)
-        {
-            if (!value.is<sol::table>() || !key.is<const char*>())
-            {
-                continue;
-            }
-            
-            sol::table EntryTable = value.as<sol::table>();
-    
-            sol::object TypeObj = EntryTable["Type"];
-            if (!TypeObj.valid() || !TypeObj.is<const char*>())
-            {
-                continue;
-            }
-    
-            for (CScriptFactory* Factory : Factories)
-            {
-                if (entt::entity Entity = Factory->ProcessScript(key.as<const char*>(), EntryTable, ScriptRegistry); Entity != entt::null)
-                {
-                    FLuaScriptMetadata Metadata;
-                    Metadata.Name = key.as<const char*>();
-                    Metadata.Path = Path;
-                    
-                    ScriptRegistry.emplace<FLuaScriptMetadata>(Entity, Metadata);
-                    break;
-                }
-            }
-        }
-        
-        OnScriptLoaded.Broadcast();
     }
 }

@@ -20,7 +20,7 @@ namespace Lumina
             , bAssetLoadBroadcasted(false)
         {
             Asset = InAsset;
-            PropertyTable.RebuildTree();
+            PropertyTable.MarkDirty();
             PropertyTable.SetPostEditCallback([&](const FPropertyChangedEvent&)
             {
                Asset->GetPackage()->MarkDirty();

@@ -13,8 +13,8 @@
 #include "Entity/Components/EditorComponent.h"
 #include "Entity/Components/InterpolatingMovementComponent.h"
 #include "Entity/Components/LineBatcherComponent.h"
-#include "Entity/Components/LuaComponent.h"
 #include "Entity/Components/NameComponent.h"
+#include "Entity/Components/ScriptComponent.h"
 #include "Entity/Components/SingletonEntityComponent.h"
 #include "Events/KeyCodes.h"
 #include "glm/gtx/matrix_decompose.hpp"
@@ -42,7 +42,7 @@ namespace Lumina
 
     void CWorld::PreLoad()
     {
-        //...
+        EntityRegistry.on_construct<SScriptComponent>().connect<&ThisClass::OnScriptComponentCreated>(this);
     }
 
     void CWorld::PostLoad()
@@ -50,9 +50,11 @@ namespace Lumina
         //...
     }
     
-    void CWorld::InitializeWorld()
+    void CWorld::InitializeWorld(EWorldType InWorldType)
     {
         using namespace entt::literals;
+        
+        WorldType = InWorldType;
         
         GEngine->GetEngineSubsystem<FWorldManager>()->AddWorld(this);
 
@@ -65,9 +67,6 @@ namespace Lumina
         
         EntityRegistry.emplace<FSingletonEntityTag>(SingletonEntity);
         EntityRegistry.emplace<FHideInSceneOutliner>(SingletonEntity);
-        EntityRegistry.emplace<FLuaScriptsContainerComponent>(SingletonEntity);
-
-        ScriptUpdatedDelegateHandle = Scripting::FScriptingContext::Get().OnScriptLoaded.AddMember(this, &ThisClass::RegisterSystems);
         
         PhysicsScene    = Physics::GetPhysicsContext()->CreatePhysicsScene(this);
         CameraManager   = MakeUnique<FCameraManager>(this);
@@ -84,9 +83,28 @@ namespace Lumina
             eastl::visit([&](const auto& Sys) { Sys.Startup(SystemContext); }, System);
         });
         
-        EntityRegistry.on_construct<SSineWaveMovementComponent>().connect<&ThisClass::OnSineWaveMovementComponentCreated>(this);
         EntityRegistry.on_destroy<FRelationshipComponent>().connect<&ThisClass::OnRelationshipComponentDestroyed>(this);
         SystemContext.EventSink<FSwitchActiveCameraEvent>().connect<&ThisClass::OnChangeCameraEvent>(this);
+    }
+    
+    void CWorld::TeardownWorld()
+    {
+        EntityRegistry.clear<>();
+        
+        EntityRegistry.on_destroy<FRelationshipComponent>().disconnect<&ThisClass::OnRelationshipComponentDestroyed>(this);
+        EntityRegistry.on_destroy<SScriptComponent>().disconnect<&ThisClass::OnScriptComponentCreated>(this);
+        
+        ForEachUniqueSystem([&](const FSystemVariant& System)
+        {
+            eastl::visit([&](const auto& Sys) { Sys.Teardown(SystemContext); }, System);
+        });
+        
+        PhysicsScene.reset();
+        DestroyRenderer();
+        
+        FCoreDelegates::PostWorldUnload.Broadcast();
+        
+        GEngine->GetEngineSubsystem<FWorldManager>()->RemoveWorld(this);
     }
     
     void CWorld::Update(const FUpdateContext& Context)
@@ -137,28 +155,6 @@ namespace Lumina
         RenderScene->RenderScene(RenderGraph, ViewVolume);
     }
     
-    void CWorld::TeardownWorld()
-    {
-        EntityRegistry.on_construct<SSineWaveMovementComponent>().disconnect<&ThisClass::OnSineWaveMovementComponentCreated>(this);
-        EntityRegistry.on_destroy<FRelationshipComponent>().disconnect<&ThisClass::OnRelationshipComponentDestroyed>(this);
-        
-        EntityRegistry.clear<>();
-        
-        ForEachUniqueSystem([&](const FSystemVariant& System)
-        {
-            eastl::visit([&](const auto& Sys) { Sys.Teardown(SystemContext); }, System);
-        });
-        
-        Scripting::FScriptingContext::Get().OnScriptLoaded.Remove(ScriptUpdatedDelegateHandle);
-
-        PhysicsScene.reset();
-        DestroyRenderer();
-        
-        FCoreDelegates::PostWorldUnload.Broadcast();
-        
-        GEngine->GetEngineSubsystem<FWorldManager>()->RemoveWorld(this);
-    }
-
     bool CWorld::RegisterSystem(const FSystemVariant& NewSystem)
     {
         const FUpdatePriorityList& PriorityList = eastl::visit([&](const auto& System) { return System.GetUpdatePriorityList(); }, NewSystem);
@@ -350,7 +346,7 @@ namespace Lumina
         FObjectProxyArchiver ReaderProxy(Reader, true);
         
         CWorld* PIEWorld = NewObject<CWorld>(OF_Transient);
-        PIEWorld->InitializeWorld();
+        PIEWorld->InitializeWorld(EWorldType::Editor);
         
         PIEWorld->PreLoad();
         PIEWorld->Serialize(ReaderProxy);
@@ -370,10 +366,39 @@ namespace Lumina
         ECS::Utils::DestroyEntityHierarchy(Registry, Entity);
     }
 
-    void CWorld::OnSineWaveMovementComponentCreated(entt::registry& Registry, entt::entity Entity)
+
+    void CWorld::OnScriptComponentCreated(entt::registry& Registry, entt::entity Entity)
     {
-        SSineWaveMovementComponent& MovementComponent = Registry.get<SSineWaveMovementComponent>(Entity);
-        MovementComponent.InitialPosition = Registry.get<STransformComponent>(Entity).GetLocation();
+        SScriptComponent& ScriptComponent = Registry.get<SScriptComponent>(Entity);
+        if (!ScriptComponent.ScriptPath.Path.empty())
+        {
+            if (TSharedPtr<Scripting::FLuaScript> Script = Scripting::FScriptingContext::Get().LoadUniqueScript(ScriptComponent.ScriptPath.Path))
+            {
+                ScriptComponent.Script = Script;
+                
+                auto ScriptVarVisitor = [&]<typename T>(TVector<TNamedScriptVar<T>>& Vector)
+                {
+                    for (const TNamedScriptVar<T>& Var : Vector)
+                    {
+                        const char* KeyName = Var.Name.c_str();
+                        sol::object ExistingValue = Script->ScriptTable[KeyName];
+            
+                        if (!ExistingValue.valid() || !ExistingValue.is<T>())
+                        {
+                            continue;
+                        }
+                        
+                        Script->ScriptTable[KeyName] = Var.Value;
+                    }
+                };
+        
+                eastl::apply([&](auto&... Vectors)
+                {
+                    (ScriptVarVisitor(Vectors), ...);
+                }, ScriptComponent.CustomData);
+                
+            }
+        }
     }
 
     void CWorld::RegisterSystems()
@@ -400,13 +425,18 @@ namespace Lumina
             }
         }
         
-        FScriptingContext::Get().ForEachScript<FLuaSystemScriptEntry>([&](const FLuaSystemScriptEntry& Script)
-        {
-            FEntityScriptSystem ScriptSystem;
-            ScriptSystem.ScriptSystem = Script; //@TODO Figure out if this needs to be copied or not.
-            FSystemVariant Variant = Move(ScriptSystem);
-            RegisterSystem(Variant);
-        });
+        //FScriptingContext::Get().ForEachScript([&](FName Path, const TSharedPtr<FLuaScript>& Script)
+        //{
+        //    if (!Script->ScriptTable["Type"].valid() || Script->ScriptTable["Type"] != EScriptType::WorldSystem)
+        //    {
+        //        return;
+        //    }
+        //    
+        //    FEntityScriptSystem ScriptSystem;
+        //    ScriptSystem.WeakScript = Script;
+        //    FSystemVariant Variant = Move(ScriptSystem);
+        //    RegisterSystem(Variant);
+        //});
     }
 
     void CWorld::DrawBillboard(FRHIImage* Image, const glm::vec3& Location, float Scale)

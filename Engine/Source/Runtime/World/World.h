@@ -14,9 +14,10 @@
 #include "Physics/Ray/RayCast.h"
 #include "Renderer/PrimitiveDrawInterface.h"
 #include "Core/Delegates/Delegate.h"
-#include "World.generated.h"
+#include "WorldTypes.h"
 #include "Core/Functional/FunctionRef.h"
 #include "Entity/Systems/EntitySystem.h"
+#include "World.generated.h"
 
 
 namespace Lumina
@@ -51,9 +52,13 @@ namespace Lumina
         /**
          * Initializes systems and renderer. Must be called before anything is done with the world.
          */
-        void InitializeWorld();
+        void InitializeWorld(EWorldType InWorldType);
         
-
+        /**
+         * Called to shut down the world, destroys system, components, and entities.
+         */
+        void TeardownWorld();
+        
         /**
          * Called on every update stage and runs systems attached to this world.
          */
@@ -61,10 +66,6 @@ namespace Lumina
         void Paused(const FUpdateContext& Context);
         void Render(FRenderGraph& RenderGraph);
         
-        /**
-         * Called to shut down the world, destroys system, components, and entities.
-         */
-        void TeardownWorld();
         
         entt::entity ConstructEntity(const FName& Name, const FTransform& Transform = FTransform());
         
@@ -84,6 +85,8 @@ namespace Lumina
         
         double GetWorldDeltaTime() const { return DeltaTime; }
         double GetTimeSinceWorldCreation() const { return TimeSinceCreation; }
+        
+        NODISCARD EWorldType GetWorldType() const { return WorldType; }
 
         void BeginPlay();
         void EndPlay();
@@ -109,7 +112,7 @@ namespace Lumina
         const TVector<FSystemVariant>& GetSystemsForUpdateStage(EUpdateStage Stage);
 
         void OnRelationshipComponentDestroyed(entt::registry& Registry, entt::entity Entity);
-        void OnSineWaveMovementComponentCreated(entt::registry& Registry, entt::entity Entity);
+        void OnScriptComponentCreated(entt::registry& Registry, entt::entity Entity);
 
         void RegisterSystems();
         
@@ -162,13 +165,14 @@ namespace Lumina
         entt::entity                                        SingletonEntity;
 
         FSystemContext                                      SystemContext;
-        FDelegateHandle                                     ScriptUpdatedDelegateHandle;
         
         TUniquePtr<FCameraManager>                          CameraManager;
         TUniquePtr<IRenderScene>                            RenderScene;
         TUniquePtr<Physics::IPhysicsScene>                  PhysicsScene;
         
         TVector<FSystemVariant>                             SystemUpdateList[(int32)EUpdateStage::Max];
+        
+        EWorldType                                          WorldType;
         
         int64                                               WorldIndex = -1;
         double                                              DeltaTime = 0.0;

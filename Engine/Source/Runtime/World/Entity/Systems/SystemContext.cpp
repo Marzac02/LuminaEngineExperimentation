@@ -92,7 +92,7 @@ namespace Lumina
         
     }
     
-    entt::runtime_view FSystemContext::CreateRuntimeView(const THashSet<entt::id_type>& Components)
+    entt::runtime_view FSystemContext::CreateRuntimeView(const THashSet<entt::id_type>& Components) const
     {
         entt::runtime_view RuntimeView;
         
@@ -229,7 +229,7 @@ namespace Lumina
         return World->IsPlayWorld();
     }
 
-    void FSystemContext::Lua_DispatchEvent(const sol::object& Event)
+    void FSystemContext::Lua_DispatchEvent(const sol::object& Event) const
     {
         using namespace entt::literals;
 
@@ -239,7 +239,7 @@ namespace Lumina
         }
     }
 
-    entt::meta_any FSystemContext::Lua_ConnectEvent(const sol::object& Event, const sol::function& Listener)
+    entt::meta_any FSystemContext::Lua_ConnectEvent(const sol::object& Event, const sol::function& Listener) const
     {
         using namespace entt::literals;
         
@@ -256,7 +256,7 @@ namespace Lumina
         return entt::meta_any{};
     }
 
-    entt::meta_any FSystemContext::Lua_OnConstruct(const sol::object& Event, const sol::function& Listener)
+    entt::meta_any FSystemContext::Lua_OnConstruct(const sol::object& Event, const sol::function& Listener) const
     {
         using namespace entt::literals;
         
@@ -273,7 +273,7 @@ namespace Lumina
         return entt::meta_any{};
     }
 
-    bool FSystemContext::Lua_HasAllOf(entt::entity Entity, const sol::variadic_args& Args)
+    bool FSystemContext::Lua_HasAllOf(entt::entity Entity, const sol::variadic_args& Args) const
     {
         return eastl::all_of(Args.cbegin(), Args.cend(), [&](const sol::object& Object)
         {
@@ -281,7 +281,7 @@ namespace Lumina
         });
     }
 
-    bool FSystemContext::Lua_HasAnyOf(entt::entity Entity, const sol::variadic_args& Args)
+    bool FSystemContext::Lua_HasAnyOf(entt::entity Entity, const sol::variadic_args& Args) const
     {
         return eastl::any_of(Args.cbegin(), Args.cend(), [&](const sol::object& Object)
         {
@@ -289,25 +289,25 @@ namespace Lumina
         });
     }
 
-    bool FSystemContext::Lua_Has(entt::entity Entity, const sol::object& Type)
+    bool FSystemContext::Lua_Has(entt::entity Entity, const sol::object& Type) const
     {
         using namespace entt::literals;
         entt::meta_any Any = ECS::Utils::InvokeMetaFunc(ECS::Utils::DeduceType(Type), "has"_hs, entt::forward_as_meta(Registry), Entity);
         return Any ? Any.cast<bool>() : false;
     }
 
-    entt::runtime_view FSystemContext::Lua_View(const sol::variadic_args& Args)
+    entt::runtime_view FSystemContext::Lua_View(const sol::variadic_args& Args) const
     {
         const THashSet<entt::id_type>& Types = ECS::Utils::CollectTypes(Args);
         return CreateRuntimeView(Types);
     }
 
-    void FSystemContext::Lua_SetActiveCamera(uint32 Entity)
+    void FSystemContext::Lua_SetActiveCamera(uint32 Entity) const
     {
         Dispatcher.trigger<FSwitchActiveCameraEvent>(FSwitchActiveCameraEvent{(entt::entity)Entity});
     }
 
-    void FSystemContext::Lua_Remove(entt::entity Entity, const sol::object& Component)
+    void FSystemContext::Lua_Remove(entt::entity Entity, const sol::object& Component) const
     {
         LUMINA_PROFILE_SCOPE();
 
@@ -317,7 +317,7 @@ namespace Lumina
         ECS::Utils::InvokeMetaFunc(TypeID, "remove"_hs, entt::forward_as_meta(Registry), Entity);
     }
 
-    sol::object FSystemContext::Lua_Emplace(entt::entity Entity, const sol::table& Component)
+    sol::object FSystemContext::Lua_Emplace(entt::entity Entity, const sol::table& Component) const
     {
         LUMINA_PROFILE_SCOPE();
 
@@ -330,7 +330,7 @@ namespace Lumina
         return MaybeAny ? MaybeAny.cast<sol::reference>() : sol::nil;
     }
 
-    sol::variadic_results FSystemContext::Lua_Get(entt::entity Entity, const sol::variadic_args& Args)
+    sol::variadic_results FSystemContext::Lua_Get(entt::entity Entity, const sol::variadic_args& Args) const
     {
         LUMINA_PROFILE_SCOPE();
 
@@ -358,7 +358,7 @@ namespace Lumina
         return Results;
     }
 
-    sol::variadic_results FSystemContext::Lua_Try_Get(entt::entity Entity, const sol::variadic_args& Args)
+    sol::variadic_results FSystemContext::Lua_Try_Get(entt::entity Entity, const sol::variadic_args& Args) const
     {
         LUMINA_PROFILE_SCOPE();
 

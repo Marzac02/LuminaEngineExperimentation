@@ -31,8 +31,11 @@ namespace Lumina
         void RemoveWorld(CWorld* World);
         void AddWorld(CWorld* World);
     
+        CWorld* GetCurrentEditorWorld();
+        
     private:
 
+        TWeakObjectPtr<CWorld> CurrentEditorWorld;
         TVector<FManagedWorld> Worlds;
         
     };

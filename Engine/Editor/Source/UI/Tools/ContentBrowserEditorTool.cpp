@@ -593,19 +593,19 @@ namespace Lumina
             {
             case EFileAction::Added:
                 {
-                    Scripting::FScriptingContext::Get().OnScriptCreated(RelativePath);
+                    Scripting::FScriptingContext::Get().ScriptCreated(RelativePath);
                     RefreshContentBrowser();
                 }
                 break;
             case EFileAction::Modified:
                 {
-                    Scripting::FScriptingContext::Get().OnScriptReloaded(RelativePath);
+                    Scripting::FScriptingContext::Get().ScriptReloaded(RelativePath);
                     RefreshContentBrowser();
                 }
                 break;
             case EFileAction::Removed:
                 {
-                    Scripting::FScriptingContext::Get().OnScriptDeleted(RelativePath);
+                    Scripting::FScriptingContext::Get().ScriptDeleted(RelativePath);
                     RefreshContentBrowser();
                 }
                 break;
@@ -619,7 +619,7 @@ namespace Lumina
                     }
                     
                     RelativePath.append_convert(Prefix.data(), Prefix.size()).append_convert(Event.OldPath.substr(OldPos + Prefix.size()));
-                    Scripting::FScriptingContext::Get().OnScriptRenamed(RelativePath, RelativeOldPath);
+                    Scripting::FScriptingContext::Get().ScriptRenamed(RelativePath, RelativeOldPath);
                     RefreshContentBrowser();
                 }
                 break;

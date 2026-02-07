@@ -34,28 +34,49 @@ namespace Lumina
 
     uint64 FEntityScriptSystem::GetHash() const noexcept
     {
-        return (uint64)&ScriptSystem;
+        if (WeakScript.expired())
+        {
+            return 0;
+        }
+        
+        return (uint64)WeakScript.lock().get();
     }
 
-    const FUpdatePriorityList& FEntityScriptSystem::GetUpdatePriorityList() const
+    FUpdatePriorityList FEntityScriptSystem::GetUpdatePriorityList() const
     {
-        return ScriptSystem.PriorityList;
+        if (const TSharedPtr<Scripting::FLuaScript>& Script = WeakScript.lock())
+        {
+            FUpdatePriorityList PriorityList;
+            PriorityList.SetStagePriority(FUpdateStagePriority(Script->ScriptTable["Stage"], Script->ScriptTable["Priority"]));
+            return PriorityList;
+        }
+        
+        return {};
     }
 
     void FEntityScriptSystem::Startup(const FSystemContext& SystemContext) const noexcept
     {
-        ScriptSystem.InitFunc(std::ref(SystemContext));
+        if (const TSharedPtr<Scripting::FLuaScript>& Script = WeakScript.lock())
+        {
+            Script->ScriptTable["Startup"](std::ref(SystemContext));
+        }
     }
 
     void FEntityScriptSystem::Update(const FSystemContext& SystemContext) const noexcept
     {
         LUMINA_PROFILE_SCOPE();
-        LUMINA_PROFILE_TAG(std::format("Lua System: {}", ScriptSystem.Name).c_str());
-        ScriptSystem.ExecuteFunc(std::ref(SystemContext));
+        
+        if (const TSharedPtr<Scripting::FLuaScript>& Script = WeakScript.lock())
+        {
+            Script->ScriptTable["Update"](std::ref(SystemContext));
+        }
     }
 
     void FEntityScriptSystem::Teardown(const FSystemContext& SystemContext) const noexcept
     {
-        ScriptSystem.ShutdownFunc(std::ref(SystemContext));
+        if (const TSharedPtr<Scripting::FLuaScript>& Script = WeakScript.lock())
+        {
+            Script->ScriptTable["Teardown"](std::ref(SystemContext));
+        }
     }
 }

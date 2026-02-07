@@ -703,6 +703,14 @@ namespace Lumina
                 }
                 ImGui::PopStyleColor();
                 
+                ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.8f, 0.8f, 0.6f, 1.0f));
+                if (ImGui::MenuItem("Copy Entity ID"))
+                {
+                    ImGui::SetClipboardText(std::to_string(entt::to_integral(LastSelectedEntity)).c_str());
+                    ImGui::CloseCurrentPopup();
+                }
+                ImGui::PopStyleColor();
+                
                 
                 if (ECS::Utils::IsChild(Registry, LastSelectedEntity))
                 {
@@ -2952,7 +2960,7 @@ namespace Lumina
                     OnPostPropertyChangeEvent(Event);
                 });
                 
-                PropertyTables.emplace_back(Move(NewTable))->RebuildTree();
+                PropertyTables.emplace_back(Move(NewTable))->MarkDirty();
             }
         }
     }

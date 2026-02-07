@@ -7,6 +7,7 @@
 #include "FileSystem/FileSystem.h"
 #include "Paths/Paths.h"
 #include "UI/EditorUI.h"
+#include "World/WorldManager.h"
 
 namespace Lumina
 {
@@ -29,7 +30,12 @@ namespace Lumina
     {
         return FEngine::Shutdown();
     }
-    
+
+    CWorld* FEditorEngine::GetCurrentEditorWorld() const
+    {
+        return nullptr;
+    }
+
     IDevelopmentToolUI* FEditorEngine::CreateDevelopmentTools()
     {
         return Memory::New<FEditorUI>();

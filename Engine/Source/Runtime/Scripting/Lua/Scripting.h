@@ -3,6 +3,8 @@
 #include "Core/Delegates/Delegate.h"
 #include "Core/Object/Class.h"
 #include "Core/Reflection/Type/LuminaTypes.h"
+#include "Memory/SmartPtr.h"
+#include "Scripting/ScriptTypes.h"
 #include "sol/sol.hpp"
 #include "Tools/Actions/DeferredActions.h"
 #include "World/Entity/Components/Component.h"
@@ -13,11 +15,15 @@ namespace Lumina
     class CStruct;
 }
 
-DECLARE_MULTICAST_DELEGATE(FScriptReloadedDelegate);
+
 
 
 namespace Lumina::Scripting
 {
+    DECLARE_MULTICAST_DELEGATE(FScriptTransactionDelegate, FStringView);
+    
+    
+    struct FLuaScriptMetadata;
     void Initialize();
     void Shutdown();
     
@@ -63,29 +69,24 @@ namespace Lumina::Scripting
         void ProcessDeferredActions();
 
         RUNTIME_API size_t GetScriptMemoryUsage() const;
-        RUNTIME_API void OnScriptReloaded(FStringView ScriptPath);
-        RUNTIME_API void OnScriptCreated(FStringView ScriptPath);
-        RUNTIME_API void OnScriptRenamed(FStringView NewPath, FStringView OldPath);
-        RUNTIME_API void OnScriptDeleted(FStringView ScriptPath);
-        RUNTIME_API void LoadScripts(FStringView Directory);
-        
+        RUNTIME_API void ScriptReloaded(FStringView ScriptPath);
+        RUNTIME_API void ScriptCreated(FStringView ScriptPath);
+        RUNTIME_API void ScriptRenamed(FStringView NewPath, FStringView OldPath);
+        RUNTIME_API void ScriptDeleted(FStringView ScriptPath);
+        RUNTIME_API TSharedPtr<FLuaScript> LoadUniqueScript(FStringView Path);
         
         void RegisterCoreTypes();
         void SetupInput();
-
-        template<typename TScript, typename TFunc>
-        void ForEachScript(TFunc&& Func);
         
-        FScriptReloadedDelegate OnScriptLoaded;
-
+        
+        FScriptTransactionDelegate OnScriptLoaded;
+        FScriptTransactionDelegate OnScriptDeleted;
 
     private:
         
         void Lua_Info(const sol::variadic_args& Args);
         void Lua_Warning(const sol::variadic_args& Args);
         void Lua_Error(const sol::variadic_args& Args);
-
-        void LoadScript(FStringView Path, FStringView ScriptData, bool bFailSilently = false);
     
     private:
         
@@ -94,14 +95,9 @@ namespace Lumina::Scripting
         sol::state State;
         
         FDeferredActionRegistry DeferredActions;
-        entt::registry ScriptRegistry;
+        
     };
-
-    template <typename TScript, typename TFunc>
-    void FScriptingContext::ForEachScript(TFunc&& Func)
-    {
-        ScriptRegistry.view<TScript>().each(Forward<TFunc>(Func));
-    }
+    
 }
 
 namespace sol
