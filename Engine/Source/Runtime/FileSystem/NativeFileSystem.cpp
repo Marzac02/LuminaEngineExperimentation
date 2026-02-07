@@ -4,6 +4,7 @@
 
 #include "FileInfo.h"
 #include "Paths/Paths.h"
+#include "Platform/Process/PlatformProcess.h"
 
 
 namespace Lumina::VFS
@@ -175,6 +176,11 @@ namespace Lumina::VFS
     bool FNativeFileSystem::IsEmpty(FStringView Path) const
     {
         return std::filesystem::is_empty(ResolveVirtualPath(Path).c_str());
+    }
+
+    void FNativeFileSystem::PlatformOpen(FStringView Path) const
+    {
+        Platform::LaunchURL(StringUtils::ToWideString(ResolveVirtualPath(Path)).c_str());
     }
 
     void FNativeFileSystem::DirectoryIterator(FStringView Path, const TFunction<void(const FFileInfo&)>& Callback) const

@@ -1055,15 +1055,104 @@ namespace Lumina
     void FEditorUI::DrawScripts()
     {
         ImGui::SetNextWindowSize(ImVec2(1200.0f, 800.0f), ImGuiCond_FirstUseEver);
-
+    
         if (ImGui::Begin("Scripts", &bShowScriptsDebug, ImGuiWindowFlags_MenuBar))
         {
             auto& Context = Scripting::FScriptingContext::Get();
             size_t MemoryUsage = Context.GetScriptMemoryUsage();
             
-            ImGui::Text("Memory Usage %s", ImGuiX::FormatSize(MemoryUsage).c_str());
+            ImGui::Text("Loaded Scripts: %zu", Context.GetAllRegisteredScripts().size());
+            ImGui::SameLine();
+            ImGui::TextColored(ImVec4(0.7f, 0.7f, 0.7f, 1.0f), "|");
+            ImGui::SameLine();
+            ImGui::Text("Memory Usage: %s", ImGuiX::FormatSize(MemoryUsage).c_str());
             
             ImGui::Separator();
+            
+            static ImGuiTextFilter SearchFilter;
+            ImGui::SetNextItemWidth(300.0f);
+            SearchFilter.Draw();
+            
+            ImGui::Separator();
+            
+            static ImGuiTableFlags TableFlags = ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg | 
+                                               ImGuiTableFlags_Resizable | ImGuiTableFlags_ScrollY;
+            
+            if (ImGui::BeginTable("ScriptsTable", 3, TableFlags))
+            {
+                ImGui::TableSetupScrollFreeze(0, 1);
+                ImGui::TableSetupColumn("Script Name", ImGuiTableColumnFlags_WidthFixed, 250.0f);
+                ImGui::TableSetupColumn("Path", ImGuiTableColumnFlags_WidthStretch);
+                ImGui::TableSetupColumn("Actions", ImGuiTableColumnFlags_WidthFixed, 150.0f);
+                ImGui::TableHeadersRow();
+                
+                for (TSharedPtr<Scripting::FLuaScript>& Script : Context.GetAllRegisteredScripts())
+                {
+                    if (!SearchFilter.PassFilter(Script->Path.c_str()))
+                    {
+                        continue;
+                    }
+                    
+                    ImGui::TableNextRow();
+                    
+                    ImGui::TableNextColumn();
+                    ImGui::PushID(Script.get());
+                    
+                    bool bNodeOpen = ImGui::TreeNodeEx(Script->Name.c_str(), ImGuiTreeNodeFlags_SpanFullWidth);
+                    
+                    ImGui::TableNextColumn();
+                    ImGui::TextDisabled("%s",Script->Path.c_str());
+                    
+                    ImGui::TableNextColumn();
+                    if (ImGui::SmallButton("Reload"))
+                    {
+                        
+                    }
+                    ImGui::SameLine();
+                    if (ImGui::SmallButton("Edit"))
+                    {
+                        
+                    }
+                    
+                    if (bNodeOpen)
+                    {
+                        ImGui::TableNextRow();
+                        ImGui::TableNextColumn();
+                        ImGui::Indent();
+                        
+                        if (ImGui::TreeNode("Environment"))
+                        {
+                            ImGui::Text("Global count: %zu", Script->Environment.size());
+                            
+                            for (const auto& [key, value] : Script->Environment)
+                            {
+                                sol::type ValueType = value.get_type();
+                                ImGui::BulletText("%s: %s", key.as<std::string>().c_str(), sol::type_name(value.lua_state(), ValueType).c_str());
+                            }
+                            
+                            ImGui::TreePop();
+                        }
+                        
+                        if (Script->ScriptTable.valid() && ImGui::TreeNode("Script Table"))
+                        {
+                            for (const auto& [key, value] : Script->ScriptTable)
+                            {
+                                sol::type ValueType = value.get_type();
+                                ImGui::BulletText("%s: %s",key.as<std::string>().c_str(), sol::type_name(value.lua_state(), ValueType).c_str());
+                            }
+                            
+                            ImGui::TreePop();
+                        }
+                        
+                        ImGui::Unindent();
+                        ImGui::TreePop();
+                    }
+                    
+                    ImGui::PopID();
+                }
+                
+                ImGui::EndTable();
+            }
             
             ImGui::End();
         }

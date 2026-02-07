@@ -172,8 +172,32 @@ namespace Lumina::Scripting
         NewScript->Environment = Environment;
         NewScript->ScriptTable = ScriptTable;
         NewScript->Name = VFS::FileName(Path, true);
+        RegisteredScripts[Path].emplace_back(NewScript);
         
         return NewScript;
+    }
+
+    TVector<TSharedPtr<FLuaScript>> FScriptingContext::GetAllRegisteredScripts()
+    {
+        TVector<TSharedPtr<FLuaScript>> ReturnValue;
+
+        for (auto& [Path, Vector] : RegisteredScripts)
+        {
+            for (TWeakPtr<FLuaScript>& WeakPtr : Vector)
+            {
+                if (auto StrongPtr = WeakPtr.lock())
+                {
+                    ReturnValue.emplace_back(Move(StrongPtr));
+                }
+            }
+        }
+        
+        return ReturnValue;
+    }
+
+    void FScriptingContext::RunGC()
+    {
+        State.collect_garbage();
     }
 
     void FScriptingContext::RegisterCoreTypes()

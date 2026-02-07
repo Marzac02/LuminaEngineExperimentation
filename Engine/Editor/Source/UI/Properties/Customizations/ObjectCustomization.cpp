@@ -88,7 +88,7 @@ namespace Lumina
         
             ImGui::InputText("##ObjectPathText", PathString.data(), PathString.max_size(), ImGuiInputTextFlags_AutoSelectAll | ImGuiInputTextFlags_ReadOnly);
         
-            ImGuiX::ItemTooltip(PathString.c_str());
+            ImGuiX::ItemTooltip("{}", PathString);
         
             ImGui::PopStyleColor();
 

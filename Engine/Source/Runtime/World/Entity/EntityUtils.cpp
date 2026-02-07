@@ -10,9 +10,10 @@
 #include "Components/TransformComponent.h"
 #include "Core/Object/Class.h"
 
+using namespace entt::literals; 
+
 namespace Lumina::ECS::Utils
 {
-    
     bool SerializeEntity(FArchive& Ar, FEntityRegistry& Registry, entt::entity& Entity)
     {
         using namespace entt::literals;
@@ -121,8 +122,6 @@ namespace Lumina::ECS::Utils
 
                 if (CStruct* Struct = FindObject<CStruct>(TypeName))
                 {
-                    using namespace entt::literals; 
-
                     if (Struct == SScriptComponent::StaticStruct())
                     {
                         SScriptComponent NewScriptComponent;
@@ -134,7 +133,6 @@ namespace Lumina::ECS::Utils
                     {
                         STagComponent NewTagComponent;
                         Struct->SerializeTaggedProperties(Ar, &NewTagComponent);
-
                         Registry.storage<STagComponent>(entt::hashed_string(NewTagComponent.Tag.c_str())).emplace(Entity, NewTagComponent);
                     }
                     else

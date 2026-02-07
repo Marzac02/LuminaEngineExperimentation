@@ -179,11 +179,8 @@ namespace Lumina
 
             ImGui::EndDragDropTarget();
         }
-
-        if (!Display.TooltipText.empty())
-        {
-            ImGuiX::ItemTooltip(Display.TooltipText.c_str());
-        }
+        
+        ImGuiX::ItemTooltip("{}", Display.TooltipText);
         
 
         if (Context.ItemContextMenuFunction)

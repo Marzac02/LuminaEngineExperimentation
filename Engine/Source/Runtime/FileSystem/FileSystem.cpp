@@ -119,6 +119,11 @@ namespace Lumina::VFS
         return eastl::visit([&](const auto& fs) { return fs.IsEmpty(Path); }, Storage);
     }
 
+    void FFileSystem::PlatformOpen(FStringView Path) const
+    {
+        eastl::visit([&](const auto& fs) { return fs.PlatformOpen(Path); }, Storage);
+    }
+
     FStringView FFileSystem::GetAliasPath() const
     {
         return eastl::visit([](const auto& fs) { return fs.GetAliasPath(); }, Storage);
@@ -302,6 +307,17 @@ namespace Lumina::VFS
         });
         
         return VisitResult;
+    }
+
+    void PlatformOpen(FStringView Path)
+    {
+        Detail::VisitFileSystems(Path, [&](FFileSystem& FS)
+        {
+            if (FS.Exists(Path))
+            {
+                FS.PlatformOpen(Path);
+            }
+        });
     }
 
     bool Exists(FStringView Path)

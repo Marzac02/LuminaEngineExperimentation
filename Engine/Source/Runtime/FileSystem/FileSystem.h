@@ -31,6 +31,7 @@ namespace Lumina::VFS
         { FS.RecursiveDirectoryIterator(Path, Callback) }       -> Concept::TSameAs<void>;
         { FS.GetAliasPath() }                                   -> std::convertible_to<FStringView>;
         { FS.GetBasePath() }                                    -> std::convertible_to<FStringView>;
+        { FS.PlatformOpen(Path) }                               -> Concept::TSameAs<void>;
     };
     
     class RUNTIME_API FFileSystem
@@ -56,7 +57,7 @@ namespace Lumina::VFS
         void DirectoryIterator(FStringView Path, const TFunction<void(const FFileInfo&)>& Callback) const;
         void RecursiveDirectoryIterator(FStringView Path, const TFunction<void(const FFileInfo&)>& Callback) const;
         bool IsEmpty(FStringView Path) const;
-
+        void PlatformOpen(FStringView Path) const;
         
         FStringView GetAliasPath() const;
         FStringView GetBasePath() const;
@@ -117,6 +118,8 @@ namespace Lumina::VFS
     RUNTIME_API bool ReadFile(FString& OutString, FStringView Path);
     RUNTIME_API bool WriteFile(FStringView Path, FStringView Data);
     RUNTIME_API bool WriteFile(FStringView Path, TSpan<const uint8> Data);
+    
+    RUNTIME_API void PlatformOpen(FStringView Path);
     
     RUNTIME_API bool Exists(FStringView Path);
     

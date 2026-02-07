@@ -74,6 +74,8 @@ namespace Lumina::Scripting
         RUNTIME_API void ScriptRenamed(FStringView NewPath, FStringView OldPath);
         RUNTIME_API void ScriptDeleted(FStringView ScriptPath);
         RUNTIME_API TSharedPtr<FLuaScript> LoadUniqueScript(FStringView Path);
+        RUNTIME_API TVector<TSharedPtr<FLuaScript>> GetAllRegisteredScripts();
+        RUNTIME_API void RunGC();
         
         void RegisterCoreTypes();
         void SetupInput();
@@ -91,11 +93,10 @@ namespace Lumina::Scripting
     private:
         
         FSharedMutex SharedMutex;
-        
         sol::state State;
-        
         FDeferredActionRegistry DeferredActions;
         
+        THashMap<FName, TVector<TWeakPtr<FLuaScript>>> RegisteredScripts;
     };
     
 }

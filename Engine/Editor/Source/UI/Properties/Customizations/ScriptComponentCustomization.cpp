@@ -1,6 +1,7 @@
 ﻿#include "ScriptComponentCustomization.h"
 #include "imgui.h"
 #include "Core/Reflection/Type/LuminaTypes.h"
+#include "Platform/Process/PlatformProcess.h"
 #include "Scripting/Lua/Scripting.h"
 #include "UI/Tools/ContentBrowserEditorTool.h"
 
@@ -18,6 +19,70 @@ namespace Lumina
         bool bWasChanged = false;
 
         ImGui::PushItemWidth(ImGui::GetContentRegionAvail().x);
+        
+        
+        auto LoadScript = [&](FStringView Path)
+        {
+            FScriptCustomData OldCustomData = Value.CustomData;
+            
+            Value.CustomData = {};
+            Value.ScriptPath.Path = Path;
+            Value.Script = Scripting::FScriptingContext::Get().LoadUniqueScript(Path);
+            
+            for (auto&& [K, V] : Value.Script->ScriptTable)
+            {
+                FName KeyName = K.as<const char*>();
+                            
+                if (V.is<bool>())
+                {
+                    bool AsBool = V.as<bool>();
+                    eastl::get<0>(Value.CustomData).emplace_back(KeyName, AsBool);
+                }
+                else if (V.is<float>() || V.is<double>())
+                {
+                    float AsFloat = V.as<float>();
+                    eastl::get<1>(Value.CustomData).emplace_back(KeyName, AsFloat);
+                }
+                else if (V.is<int>())
+                {
+                    int AsInt = V.as<int>();
+                    eastl::get<2>(Value.CustomData).emplace_back(KeyName, AsInt);
+                }
+                else if (V.is<const char*>())
+                {
+                    const char* AsChar = V.as<const char*>();
+                    eastl::get<3>(Value.CustomData).emplace_back(KeyName, AsChar);
+                }
+            }
+            
+            auto RestoreValues = [&]<typename T>(const TVector<TNamedScriptVar<T>>& OldVector, TVector<TNamedScriptVar<T>>& NewVector)
+            {
+                for (const auto& OldVar : OldVector)
+                {
+                    for (auto& NewVar : NewVector)
+                    {
+                        if (NewVar.Name == OldVar.Name)
+                        {
+                            sol::object MaybeValue = Value.Script->ScriptTable[NewVar.Name.c_str()];
+                            
+                            if (MaybeValue.valid() && MaybeValue.is<T>())
+                            {
+                                Value.Script->ScriptTable[NewVar.Name.c_str()] = OldVar.Value;
+                                NewVar.Value = OldVar.Value;
+                                break;
+                            }
+                        }
+                    }
+                }
+            };
+            
+            RestoreValues(eastl::get<0>(OldCustomData), eastl::get<0>(Value.CustomData));
+            RestoreValues(eastl::get<1>(OldCustomData), eastl::get<1>(Value.CustomData));
+            RestoreValues(eastl::get<2>(OldCustomData), eastl::get<2>(Value.CustomData));
+            RestoreValues(eastl::get<3>(OldCustomData), eastl::get<3>(Value.CustomData));
+            
+        };
+        
 
         ImGui::PushID(this);
         if (ImGui::BeginChild("OP", ImVec2(-1, 0), ImGuiChildFlags_AutoResizeY, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse))
@@ -38,7 +103,7 @@ namespace Lumina
         
             ImGui::InputText("##ScriptPathText", PathString.data(), PathString.max_size(), ImGuiInputTextFlags_AutoSelectAll | ImGuiInputTextFlags_ReadOnly);
         
-            ImGuiX::ItemTooltip(PathString.c_str());
+            ImGuiX::ItemTooltip("{}", PathString);
         
             ImGui::PopStyleColor();
 
@@ -47,69 +112,6 @@ namespace Lumina
             ImGui::SameLine(0, 0);
         
             bool bComboOpen = ImGui::BeginCombo("##ScriptPath", "", ImGuiComboFlags_HeightLarge | ImGuiComboFlags_PopupAlignLeft | ImGuiComboFlags_NoPreview);
-
-            
-            auto LoadScript = [&](FStringView Path)
-            {
-                FScriptCustomData OldCustomData = Value.CustomData;
-                
-                Value.CustomData = {};
-                Value.ScriptPath.Path = Path;
-                Value.Script = Scripting::FScriptingContext::Get().LoadUniqueScript(Path);
-                
-                for (auto&& [K, V] : Value.Script->ScriptTable)
-                {
-                    FName KeyName = K.as<const char*>();
-                                
-                    if (V.is<bool>())
-                    {
-                        bool AsBool = V.as<bool>();
-                        eastl::get<0>(Value.CustomData).emplace_back(KeyName, AsBool);
-                    }
-                    else if (V.is<float>() || V.is<double>())
-                    {
-                        float AsFloat = V.as<float>();
-                        eastl::get<1>(Value.CustomData).emplace_back(KeyName, AsFloat);
-                    }
-                    else if (V.is<int>())
-                    {
-                        int AsInt = V.as<int>();
-                        eastl::get<2>(Value.CustomData).emplace_back(KeyName, AsInt);
-                    }
-                    else if (V.is<const char*>())
-                    {
-                        const char* AsChar = V.as<const char*>();
-                        eastl::get<3>(Value.CustomData).emplace_back(KeyName, AsChar);
-                    }
-                }
-                
-                auto RestoreValues = [&]<typename T>(const TVector<TNamedScriptVar<T>>& OldVector, TVector<TNamedScriptVar<T>>& NewVector)
-                {
-                    for (const auto& OldVar : OldVector)
-                    {
-                        for (auto& NewVar : NewVector)
-                        {
-                            if (NewVar.Name == OldVar.Name)
-                            {
-                                sol::object MaybeValue = Value.Script->ScriptTable[NewVar.Name.c_str()];
-                                
-                                if (MaybeValue.valid() && MaybeValue.is<T>())
-                                {
-                                    Value.Script->ScriptTable[NewVar.Name.c_str()] = OldVar.Value;
-                                    NewVar.Value = OldVar.Value;
-                                    break;
-                                }
-                            }
-                        }
-                    }
-                };
-                
-                RestoreValues(eastl::get<0>(OldCustomData), eastl::get<0>(Value.CustomData));
-                RestoreValues(eastl::get<1>(OldCustomData), eastl::get<1>(Value.CustomData));
-                RestoreValues(eastl::get<2>(OldCustomData), eastl::get<2>(Value.CustomData));
-                RestoreValues(eastl::get<3>(OldCustomData), eastl::get<3>(Value.CustomData));
-                
-            };
             
             if (bComboOpen)
             {
@@ -159,6 +161,46 @@ namespace Lumina
                 ImGui::EndChild();
                 ImGui::EndCombo();
             }
+            
+            if (ImGui::Button(LE_ICON_OPEN_IN_NEW "##Open", GButtonSize))
+            {
+                VFS::PlatformOpen(Value.ScriptPath.Path);
+            }
+            
+            ImGuiX::ItemTooltip("Open the script in your native editor");
+            
+            ImGui::SameLine();
+            
+            if (ImGui::Button(LE_ICON_CONTENT_COPY "##Copy", GButtonSize))
+            {
+                ImGui::SetClipboardText(Value.ScriptPath.Path.c_str());
+            }
+            
+            ImGuiX::ItemTooltip("Copy the script-path to your native clipboard");
+
+            ImGui::SameLine();
+            
+            if (ImGui::Button(LE_ICON_REFRESH "##Refresh", GButtonSize))
+            {
+                LoadScript(Value.ScriptPath.Path);
+                bWasChanged = true;
+            }
+            
+            ImGuiX::ItemTooltip("Reload the script, will attempt to keep any matching values");
+
+            ImGui::SameLine();
+        
+            ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.6f, 0.2f, 0.2f, 1.0f));
+            ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.7f, 0.25f, 0.25f, 1.0f));
+            ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.5f, 0.15f, 0.15f, 1.0f));
+
+            if (ImGui::Button(LE_ICON_CLOSE_CIRCLE "##Clear", GButtonSize))
+            {
+                Value = {};
+                bWasChanged = true;
+            }
+            
+            ImGuiX::ItemTooltip("Clears the script from this component");
             
             ImGui::Separator();
             
@@ -260,40 +302,6 @@ namespace Lumina
                 ImGui::PopStyleVar(2);
             }
             
-            ImGui::Separator();
-        
-            if (ImGui::Button(LE_ICON_CONTENT_COPY "##Copy", GButtonSize))
-            {
-                ImGui::SetClipboardText(Value.ScriptPath.Path.c_str());
-            }
-
-            ImGui::SameLine();
-            
-            if (ImGui::Button(LE_ICON_REFRESH "##Refresh", GButtonSize))
-            {
-                LoadScript(Value.ScriptPath.Path);
-                bWasChanged = true;                            
-            }
-
-            ImGui::SameLine();
-            
-            if (ImGui::Button(LE_ICON_COG "##Options", GButtonSize))
-            {
-                
-            }
-
-            ImGui::SameLine();
-        
-            ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.6f, 0.2f, 0.2f, 1.0f));
-            ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.7f, 0.25f, 0.25f, 1.0f));
-            ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.5f, 0.15f, 0.15f, 1.0f));
-
-            if (ImGui::Button(LE_ICON_CLOSE_CIRCLE "##Clear", GButtonSize))
-            {
-                Value = {};
-                bWasChanged = true;
-            }
-        
             ImGui::PopStyleColor(3);
             
             ImGui::EndGroup();

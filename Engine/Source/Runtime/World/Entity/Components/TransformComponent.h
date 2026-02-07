@@ -6,7 +6,7 @@
 
 namespace Lumina
 {
-    REFLECT(Component)
+    REFLECT(Component, HideInComponentList)
     struct RUNTIME_API STransformComponent
     {
         GENERATED_BODY()

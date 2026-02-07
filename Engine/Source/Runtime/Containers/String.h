@@ -37,6 +37,9 @@ namespace Lumina
     }
 }
 
+#define TCHAR_TO_UTF8(X) FWString(FWString::CtorConvert(), pStr).c_str()
+#define UTF8_TO_TCHAR(X) FString(FString::CtorConvert(), Str).c_str()
+
 namespace std
 {
     template <>

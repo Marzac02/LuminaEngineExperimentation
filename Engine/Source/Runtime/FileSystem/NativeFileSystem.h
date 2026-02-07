@@ -34,6 +34,8 @@ namespace Lumina::VFS
         
         bool IsEmpty(FStringView Path) const;
         
+        void PlatformOpen(FStringView Path) const;
+        
         void DirectoryIterator(FStringView Path, const TFunction<void(const FFileInfo&)>& Callback) const;
         void RecursiveDirectoryIterator(FStringView Path, const TFunction<void(const FFileInfo&)>& Callback) const;
 

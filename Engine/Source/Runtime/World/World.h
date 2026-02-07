@@ -172,7 +172,7 @@ namespace Lumina
         
         TVector<FSystemVariant>                             SystemUpdateList[(int32)EUpdateStage::Max];
         
-        EWorldType                                          WorldType;
+        EWorldType                                          WorldType = EWorldType::None;
         
         int64                                               WorldIndex = -1;
         double                                              DeltaTime = 0.0;

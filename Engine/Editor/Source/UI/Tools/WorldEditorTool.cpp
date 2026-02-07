@@ -1929,9 +1929,12 @@ namespace Lumina
             
             if (ImGui::BeginChild("TemplateList", ImVec2(0, -35.0f), true))
             {
-                for(auto &&[_, MetaType]: entt::resolve())
+                using namespace entt::literals;
+
+                TVector<TPair<entt::id_type, CStruct*>> SortedComponents;
+                
+                for(auto &&[ID, MetaType]: entt::resolve())
                 {
-                    using namespace entt::literals;
                     ECS::ETraits Traits = MetaType.traits<ECS::ETraits>();
                     if (!EnumHasAllFlags(Traits, ECS::ETraits::Component))
                     {
@@ -1947,18 +1950,23 @@ namespace Lumina
                         continue;
                     }
                     
-                    if (Struct == STransformComponent::StaticStruct() || Struct == SNameComponent::StaticStruct() || Struct == STagComponent::StaticStruct())
-                    {
-                        continue;
-                    }
-                    
                     FFixedString DisplayName = Struct->MakeDisplayName();
                     if (!AddEntityComponentFilter.PassFilter(DisplayName.c_str()))
                     {
                         continue;
                     }
 
-                    
+                    SortedComponents.emplace_back(ID, Struct);
+                }
+                
+                
+                eastl::sort(SortedComponents.begin(), SortedComponents.end(), [](const auto& LHS, const auto& RHS)
+                {
+                   return LHS.second->GetName().ToString() < RHS.second->GetName().ToString(); 
+                });
+
+                for (auto&& [ID, Struct] : SortedComponents)
+                {
                     ImGui::PushID(Struct);
                     
                     ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.18f, 0.18f, 0.21f, 1.0f));
@@ -1969,11 +1977,11 @@ namespace Lumina
                     
                     const float ButtonWidth = ImGui::GetContentRegionAvail().x;
                     
+                    FFixedString DisplayName = Struct->MakeDisplayName();
                     if (ImGui::Button(DisplayName.c_str(), ImVec2(ButtonWidth, 0.0f)))
                     {
                         if (Entity != entt::null)
                         {
-                            entt::id_type ID = ECS::Utils::GetTypeID(Struct);
                             ECS::Utils::InvokeMetaFunc(ID, "emplace"_hs, entt::forward_as_meta(World->GetEntityRegistry()), Entity, entt::forward_as_meta(entt::meta_any{}));
                             OutlinerListView.MarkTreeDirty();
                             RebuildPropertyTables(Entity);
@@ -1992,6 +2000,7 @@ namespace Lumina
                     ImGui::PopID();
                     ImGui::Spacing();
                 }
+                
             }
             ImGui::EndChild();
             

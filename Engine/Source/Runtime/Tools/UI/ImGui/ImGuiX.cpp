@@ -12,32 +12,20 @@
 #include "Paths/Paths.h"
 #include "Renderer/RenderManager.h"
 
-#define IMDRAW_DEBUG
-
 namespace Lumina::ImGuiX
 {
-    void ItemTooltip(const char* fmt, ...)
+    void ItemTooltip_Internal(FStringView String)
     {
         ImGui::PushStyleVar( ImGuiStyleVar_WindowPadding, ImVec2( 4, 4 ) );
-        if ( ImGui::IsItemHovered() && GImGui->HoveredIdTimer > 0.4f )
+        if (ImGui::IsItemHovered(ImGuiHoveredFlags_DelayShort))
         {
-            va_list args;
-            va_start( args, fmt );
-            ImGui::SetTooltipV( fmt, args );
-            va_end( args );
-        }
-        ImGui::PopStyleVar();
-    }
-
-    void TextTooltip(const char* fmt, ...)
-    {
-        ImGui::PushStyleVar( ImGuiStyleVar_WindowPadding, ImVec2( 4, 4 ) );
-        if ( ImGui::IsItemHovered() )
-        {
-            va_list args;
-            va_start( args, fmt );
-            ImGui::SetTooltipV( fmt, args );
-            va_end( args );
+        	if (!ImGui::BeginTooltipEx(ImGuiTooltipFlags_OverridePrevious, ImGuiWindowFlags_None))
+        	{
+        		return;
+        	}
+        	
+        	ImGui::TextUnformatted(String.data());
+        	ImGui::EndTooltip();
         }
         ImGui::PopStyleVar();
     }

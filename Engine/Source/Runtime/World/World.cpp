@@ -105,6 +105,8 @@ namespace Lumina
         FCoreDelegates::PostWorldUnload.Broadcast();
         
         GEngine->GetEngineSubsystem<FWorldManager>()->RemoveWorld(this);
+        
+        Scripting::FScriptingContext::Get().RunGC();
     }
     
     void CWorld::Update(const FUpdateContext& Context)
@@ -365,8 +367,7 @@ namespace Lumina
         ECS::Utils::RemoveFromParent(Registry, Entity);
         ECS::Utils::DestroyEntityHierarchy(Registry, Entity);
     }
-
-
+    
     void CWorld::OnScriptComponentCreated(entt::registry& Registry, entt::entity Entity)
     {
         SScriptComponent& ScriptComponent = Registry.get<SScriptComponent>(Entity);
