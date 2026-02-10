@@ -1444,6 +1444,7 @@ namespace Lumina
         UpdateGraphicsDynamicBuffers();
 
         CommandListStats.NumDrawCalls++;
+        
         TracyVkZone(CurrentCommandBuffer->TracyContext, CurrentCommandBuffer->CommandBuffer, "vkCmdDrawIndirect")
         vkCmdDrawIndirect(CurrentCommandBuffer->CommandBuffer, CurrentGraphicsState.IndirectParams->GetAPI<VkBuffer>(), Offset, DrawCount, sizeof(FDrawIndirectArguments));
     }

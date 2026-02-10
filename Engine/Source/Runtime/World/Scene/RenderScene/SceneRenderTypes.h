@@ -335,6 +335,9 @@ namespace Lumina
         uint32          BatchedDrawID;
         EInstanceFlags  Flags;
         uint32          BoneOffset;
+        
+        glm::uvec2      VertexBufferAddress;
+        glm::uvec2      IndexBufferAddress;
     };
     
     VERIFY_SSBO_ALIGNMENT(FInstanceData)
@@ -393,4 +396,21 @@ namespace Lumina
         uint8 bOcclusionCull:1          = false; //@ TODO Fix AABBs
         uint8 bWireframe:1              = false;
     };
+    
+    struct FDrawKey
+    {
+        const CMaterial*    Material;
+        uint64              VertexBufferAddress;
+        uint64              UniqueID;
+    };
+
+    static uint64 GetTypeHash(const FDrawKey& K)
+    {
+        size_t Seed;
+        Hash::HashCombine(Seed, K.Material);
+        Hash::HashCombine(Seed, K.VertexBufferAddress);
+        Hash::HashCombine(Seed, K.UniqueID);
+        return Seed;
+    }
+    
 }

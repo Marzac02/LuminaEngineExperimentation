@@ -719,6 +719,7 @@ namespace Lumina
         Features12.shaderOutputViewportIndex        = VK_TRUE; // Should not stay.
         Features12.shaderOutputLayer                = VK_TRUE; // Should not stay.
         Features12.samplerFilterMinmax              = VK_TRUE;
+        Features12.bufferDeviceAddress              = VK_TRUE;
 
         VkPhysicalDeviceVulkan13Features Features13 = {};
         Features13.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_3_FEATURES;

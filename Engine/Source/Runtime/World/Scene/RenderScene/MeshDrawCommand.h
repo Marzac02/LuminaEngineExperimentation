@@ -17,11 +17,8 @@ namespace Lumina
     {
         FRHIVertexShader*   VertexShader = nullptr;
         FRHIPixelShader*    PixelShader = nullptr;
-        FRHIBuffer*         IndexBuffer = nullptr;
-        FRHIBuffer*         VertexBuffer = nullptr;
         FRHIBindingLayout*  BindingLayout = nullptr;
         FRHIBindingSet*     BindingSet = nullptr;
-        FRHIInputLayout*    InputLayout = nullptr;
         uint32              IndirectDrawOffset = 0;
         bool                bSkinned = false;
     };

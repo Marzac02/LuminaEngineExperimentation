@@ -169,6 +169,7 @@ namespace Lumina
         uint64 GetSize() const override { return Description.Size; }
         uint32 GetStride() const override { return Description.Stride; }
         const TBitFlags<EBufferUsageFlags>& GetUsage() const override { return Description.Usage; }
+        uint64 GetAddress() const override { return BufferAddress; }
 
     private:
         
@@ -181,6 +182,7 @@ namespace Lumina
         TFixedVector<FBufferVersionItem, 4> VersionTracking;
 
         uint32                              VersionSearchStart = 0;
+        VkDeviceAddress                     BufferAddress = 0;
         ECommandQueue                       LastUseQueue = ECommandQueue::Graphics;
 
     };

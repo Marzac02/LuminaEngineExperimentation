@@ -157,7 +157,7 @@ namespace Lumina
             IndirectDrawArguments.reserve(EstimatedProxies);
 			DrawCommands.reserve(EstimatedProxies);
             
-            TFixedHashMap<uint64, uint64, 4> BatchedDraws;
+            TFixedHashMap<FDrawKey, uint64, 4> BatchedDraws;
             
             {
                 LUMINA_PROFILE_SECTION("Process Static Mesh Primitives");
@@ -171,8 +171,6 @@ namespace Lumina
                     }
         
                     const FMeshResource& Resource = Mesh->GetMeshResource();
-                    const uintptr_t MeshPtr = reinterpret_cast<uintptr_t>(Mesh);
-                    const uint64 MeshID = (MeshPtr & 0xFFFFFull) << 24;
 
                     glm::mat4 TransformMatrix = TransformComponent.GetMatrix();
                     
@@ -196,29 +194,16 @@ namespace Lumina
                         Flags |= EInstanceFlags::ReceiveShadow;
                     }
                     
-                    int SurfaceIndex = 0;
                     for (const FGeometrySurface& Surface : Resource.GeometrySurfaces)
                     {
                         CMaterialInterface* Material = MeshComponent.GetMaterialForSlot(Surface.MaterialIndex);
                     
-                        if (!IsValid(Material) || !Material->IsReadyForRender())
+                        if (!IsValid(Material) || !IsValid(Material->GetMaterial()) || !Material->IsReadyForRender())
                         {
                             Material = CMaterial::GetDefaultMaterial();
                         }
-                    
-                        const uintptr_t MaterialPtr = reinterpret_cast<uintptr_t>(Material);
-                        const uint64 MaterialID = (MaterialPtr & 0xFFFFFFFull) << 28;
-                        const uint64 SurfaceID = (SurfaceIndex & 0xFFFFull);
-                        uint64 SortKey = MaterialID | MeshID | SurfaceID;
                         
-                        SurfaceIndex++;
-                        
-                        if (RenderSettings.bUseInstancing == false)
-                        {
-                            SortKey = entt::to_integral(Entity);
-                        }
-                        
-                        auto [It, bInserted] = BatchedDraws.try_emplace(SortKey, IndirectDrawArguments.size());
+                        auto [It, bInserted] = BatchedDraws.try_emplace(FDrawKey{Material->GetMaterial(), Mesh->GetVertexBuffer()->GetAddress(), Surface.StartIndex}, IndirectDrawArguments.size());
                         uint64 ArgumentIndex = It->second;
                         if (bInserted)
                         {
@@ -226,38 +211,34 @@ namespace Lumina
                             {
                                 .VertexShader       = Material->GetVertexShader(EVertexFormat::Static),
                                 .PixelShader        = Material->GetPixelShader(), 
-                                .IndexBuffer        = Mesh->GetIndexBuffer(),
-                                .VertexBuffer       = Mesh->GetVertexBuffer(),
                                 .BindingLayout      = Material->GetBindingLayout(),
                                 .BindingSet         = Material->GetBindingSet(),
-                                .InputLayout        = Mesh->GetMeshResource().VertexLayout,
                                 .IndirectDrawOffset = (uint32)IndirectDrawArguments.size(),
                                 .bSkinned           = false,
                             });
                         
-                            IndirectDrawArguments.emplace_back(FDrawIndexedIndirectArguments
+                            IndirectDrawArguments.emplace_back(FDrawIndirectArguments
                             {
-                                .IndexCount = Surface.IndexCount,
-                                .InstanceCount = 1,
-                                .StartIndexLocation = Surface.StartIndex,
-                                .BaseVertexLocation = 0,
-                                .StartInstanceLocation = 0,
+                                .VertexCount            = (uint32)Surface.IndexCount,
+                                .InstanceCount          = 0,
+                                .StartVertexLocation    = Surface.StartIndex,
+                                .StartInstanceLocation  = 0,
                             });
                         }
-                        else
-                        {
-                            IndirectDrawArguments[ArgumentIndex].InstanceCount++;
-                        }
+                        
+                        IndirectDrawArguments[ArgumentIndex].InstanceCount++;
                         
                         InstanceData.emplace_back(FInstanceData
                         {
-                            .Transform      = TransformMatrix,
-                            .SphereBounds   = SphereBounds,
-                            .EntityID       = entt::to_integral(Entity),
-                            .BatchedDrawID  = (uint32)ArgumentIndex,
-                            .Flags          = Flags,
-                            .BoneOffset     = 0,
-                        });   
+                            .Transform              = TransformMatrix,
+                            .SphereBounds           = SphereBounds,
+                            .EntityID               = entt::to_integral(Entity),
+                            .BatchedDrawID          = (uint32)ArgumentIndex,
+                            .Flags                  = Flags,
+                            .BoneOffset             = 0,
+                            .VertexBufferAddress    = RenderUtils::SplitAddress(Mesh->GetVertexBuffer()->GetAddress()),
+                            .IndexBufferAddress     = RenderUtils::SplitAddress(Mesh->GetIndexBuffer()->GetAddress()),
+                        });
                     }
                 });
             }
@@ -277,8 +258,6 @@ namespace Lumina
                     BonesData.insert(BonesData.end(), MeshComponent.BoneTransforms.begin(), MeshComponent.BoneTransforms.end());
                     
                     const FMeshResource& Resource = Mesh->GetMeshResource();
-                    const uintptr_t MeshPtr = reinterpret_cast<uintptr_t>(Mesh);
-                    const uint64 MeshID = (MeshPtr & 0xFFFFFull) << 24;
 
                     glm::mat4 TransformMatrix = TransformComponent.GetMatrix();
                     
@@ -297,80 +276,16 @@ namespace Lumina
                         {
                             Material = CMaterial::GetDefaultMaterial();
                         }
-                    
-                        const uintptr_t MaterialPtr = reinterpret_cast<uintptr_t>(Material);
-                        const uint64 MaterialID = (MaterialPtr & 0xFFFFFFFull) << 28;
-                        const uint64 SurfaceID = (SurfaceIndex & 0xFFFFull);
-                        uint64 SortKey = MaterialID | MeshID | SurfaceID;
                         
                         SurfaceIndex++;
                         
-                        if (RenderSettings.bUseInstancing == false)
-                        {
-                            SortKey = entt::to_integral(Entity);
-                        }
-                        
-                        if (BatchedDraws.find(SortKey) == BatchedDraws.end())
-                        {
-                            BatchedDraws[SortKey] = IndirectDrawArguments.size();
-        
-                            DrawCommands.emplace_back(FMeshDrawCommand
-                            {
-                                .VertexShader       = Material->GetVertexShader(EVertexFormat::Skinned),
-                                .PixelShader        = Material->GetPixelShader(), 
-                                .IndexBuffer        = Mesh->GetIndexBuffer(),
-                                .VertexBuffer       = Mesh->GetVertexBuffer(),
-                                .BindingLayout      = Material->GetBindingLayout(),
-                                .BindingSet         = Material->GetBindingSet(),
-                                .InputLayout        = Mesh->GetMeshResource().VertexLayout,
-                                .IndirectDrawOffset = (uint32)IndirectDrawArguments.size(),
-                                .bSkinned           = true,
-                            });
-                        
-                            IndirectDrawArguments.emplace_back(FDrawIndexedIndirectArguments
-                            {
-                                .IndexCount = Surface.IndexCount,
-                                .InstanceCount = 1,
-                                .StartIndexLocation = Surface.StartIndex,
-                                .BaseVertexLocation = 0,
-                                .StartInstanceLocation = 0,
-                            });
-                        }
-                        else
-                        {
-                            IndirectDrawArguments[BatchedDraws[SortKey]].InstanceCount++;
-                        }
-                        
-                        EInstanceFlags Flags = EInstanceFlags::Skinned;
-                        if (World->IsSelected(Entity))
-                        {
-                            Flags |= EInstanceFlags::Selected;
-                        }
-                        if (MeshComponent.bCastShadow)
-                        {
-                            Flags |= EInstanceFlags::CastShadow;
-                        }
-                        if (MeshComponent.bReceiveShadow)
-                        {
-                            Flags |= EInstanceFlags::ReceiveShadow;
-                        }
-                        
-                        InstanceData.emplace_back(FInstanceData
-                        {
-                            .Transform      = TransformMatrix,
-                            .SphereBounds   = SphereBounds,
-                            .EntityID       = entt::to_integral(Entity),
-                            .BatchedDrawID  = (uint32)BatchedDraws[SortKey],
-                            .Flags          = Flags,
-                            .BoneOffset     = BoneDataOffset,
-                        });   
                     }
                 });
             }
         
             // Give each indirect draw command the correct start instance offset index.
             uint32 CumulativeInstanceCount = 0;
-            for (FDrawIndexedIndirectArguments& Arg : IndirectDrawArguments)
+            for (FDrawIndirectArguments& Arg : IndirectDrawArguments)
             {
                 Arg.StartInstanceLocation = CumulativeInstanceCount;
                 CumulativeInstanceCount += Arg.InstanceCount;
@@ -378,7 +293,7 @@ namespace Lumina
         
             // Since this value will be written in the shader, we no longer need it, since we've generated unique StartInstanceIndex per draw.
             // It must be reset to 0 because the computer shader atomically increments it, assuming 0 as the start.
-            for (FDrawIndexedIndirectArguments& DrawArgs : IndirectDrawArguments)
+            for (FDrawIndirectArguments& DrawArgs : IndirectDrawArguments)
             {
                 DrawArgs.InstanceCount = 0;
             }
@@ -793,7 +708,7 @@ namespace Lumina
                 const SIZE_T SimpleVertexSize   = SimpleVertices.size() * sizeof(FSimpleElementVertex);
                 const SIZE_T InstanceDataSize   = InstanceData.size() * sizeof(FInstanceData);
                 const SIZE_T BoneDataSize       = BonesData.size() * sizeof(glm::mat4);
-                const SIZE_T IndirectArgsSize   = IndirectDrawArguments.size() * sizeof(FDrawIndexedIndirectArguments);
+                const SIZE_T IndirectArgsSize   = IndirectDrawArguments.size() * sizeof(FDrawIndirectArguments);
                 const SIZE_T ActiveLightsSize   = LightData.NumLights * sizeof(FLight);
                 const SIZE_T LightUploadSize    = offsetof(FSceneLightData, Lights) + ActiveLightsSize;
                 
@@ -951,7 +866,6 @@ namespace Lumina
                 
                 FGraphicsPipelineDesc Desc; Desc
                 .SetRenderState(RenderState)
-                .SetInputLayout(Batch.InputLayout)
                 .AddBindingLayout(SceneBindingLayout)
                 .AddBindingLayout(SceneBindlessLayout)
                 .SetVertexShader(VertexShader);
@@ -959,8 +873,6 @@ namespace Lumina
                 FRHIGraphicsPipelineRef Pipeline = GRenderContext->CreateGraphicsPipeline(Desc, RenderPass);
                 
                 FGraphicsState GraphicsState;
-                GraphicsState.AddVertexBuffer({ Batch.VertexBuffer });
-                GraphicsState.SetIndexBuffer({ Batch.IndexBuffer });
                 GraphicsState.SetRenderPass(RenderPass);
                 GraphicsState.SetViewportState(SceneViewportState);
                 GraphicsState.SetPipeline(Pipeline);
@@ -970,7 +882,7 @@ namespace Lumina
                 
                 CmdList.SetGraphicsState(GraphicsState);
                 
-                CmdList.DrawIndexedIndirect(1, Batch.IndirectDrawOffset * sizeof(FDrawIndexedIndirectArguments));
+                CmdList.DrawIndirect(1, Batch.IndirectDrawOffset * sizeof(FDrawIndirectArguments));
             }
         });
     }
@@ -1218,23 +1130,19 @@ namespace Lumina
                     FGraphicsPipelineDesc Desc; Desc
                         .SetDebugName("Point Light Shadow Pass")
                         .SetRenderState(RenderState)
-                        .SetInputLayout(Batch.InputLayout)
                         .AddBindingLayout(SceneBindingLayout)
                         .AddBindingLayout(SceneBindlessLayout)
                         .SetVertexShader(VertexShader)
                         .SetPixelShader(PixelShader);
                     
                     FRHIGraphicsPipelineRef Pipeline = GRenderContext->CreateGraphicsPipeline(Desc, RenderPass);
-
-                    GraphicsState.SetVertexBuffer({ Batch.VertexBuffer });
-                    GraphicsState.SetIndexBuffer({ Batch.IndexBuffer });
+                    
                     GraphicsState.SetPipeline(Pipeline);
                     
-
                     CmdList.SetGraphicsState(GraphicsState);
                     
                     CmdList.SetPushConstants(&LightShadow.LightIndex, sizeof(uint32));
-                    CmdList.DrawIndexedIndirect(1, Batch.IndirectDrawOffset * sizeof(FDrawIndexedIndirectArguments));
+                    CmdList.DrawIndirect(1, Batch.IndirectDrawOffset * sizeof(FDrawIndirectArguments));
                 }
             }
 
@@ -1329,7 +1237,6 @@ namespace Lumina
                     FGraphicsPipelineDesc Desc; Desc
                         .SetDebugName("Spot Shadow Pass")
                         .SetRenderState(RenderState)
-                        .SetInputLayout(Batch.InputLayout)
                         .AddBindingLayout(SceneBindingLayout)
                         .AddBindingLayout(SceneBindlessLayout)
                         .SetVertexShader(VertexShader)
@@ -1338,12 +1245,10 @@ namespace Lumina
                     FRHIGraphicsPipelineRef Pipeline = GRenderContext->CreateGraphicsPipeline(Desc, RenderPass);
                     
                     GraphicsState.SetPipeline(Pipeline);
-                    GraphicsState.SetVertexBuffer({Batch.VertexBuffer});
-                    GraphicsState.SetIndexBuffer({Batch.IndexBuffer});
                     CmdList.SetGraphicsState(GraphicsState);
                     
                     CmdList.SetPushConstants(&Shadow.LightIndex, sizeof(uint32));
-                    CmdList.DrawIndexedIndirect(1, Batch.IndirectDrawOffset * sizeof(FDrawIndexedIndirectArguments));
+                    CmdList.DrawIndirect(1, Batch.IndirectDrawOffset * sizeof(FDrawIndirectArguments));
                 }
             }
 
@@ -1398,7 +1303,6 @@ namespace Lumina
                 FGraphicsPipelineDesc Desc; Desc
                     .SetDebugName("Cascaded Shadow Maps")
                     .SetRenderState(RenderState)
-                    .SetInputLayout(Batch.InputLayout)
                     .AddBindingLayout(SceneBindingLayout)
                     .AddBindingLayout(SceneBindlessLayout)
                     .SetVertexShader(VertexShader);
@@ -1411,15 +1315,13 @@ namespace Lumina
                     .SetPipeline(Pipeline)
                     .AddBindingSet(SceneBindingSet)
                     .AddBindingSet(SceneDescriptorTable)
-                    .SetIndirectParams(GetNamedBuffer(ENamedBuffer::Indirect))
-                    .AddVertexBuffer({Batch.VertexBuffer})
-                    .SetIndexBuffer({Batch.IndexBuffer});
+                    .SetIndirectParams(GetNamedBuffer(ENamedBuffer::Indirect));
                 
                 CmdList.SetGraphicsState(GraphicsState);
         
                 uint32 LightIndex = 0;
                 CmdList.SetPushConstants(&LightIndex, sizeof(uint32));
-                CmdList.DrawIndexedIndirect(1, Batch.IndirectDrawOffset * sizeof(FDrawIndexedIndirectArguments));
+                CmdList.DrawIndirect(1, Batch.IndirectDrawOffset * sizeof(FDrawIndirectArguments));
             }
         });
     }
@@ -1474,7 +1376,6 @@ namespace Lumina
                 FGraphicsPipelineDesc Desc; Desc
                     .SetDebugName("Forward Base Pass")
                     .SetRenderState(RenderState)
-                    .SetInputLayout(Batch.InputLayout)
                     .SetVertexShader(Batch.VertexShader)
                     .SetPixelShader(Batch.PixelShader)
                     .AddBindingLayout(SceneBindingLayout)
@@ -1482,8 +1383,6 @@ namespace Lumina
                 
                 FGraphicsState GraphicsState; GraphicsState
                     .SetRenderPass(RenderPass)
-                    .AddVertexBuffer({ Batch.VertexBuffer })
-                    .SetIndexBuffer({ Batch.IndexBuffer })
                     .SetViewportState(SceneViewportState)
                     .SetPipeline(GRenderContext->CreateGraphicsPipeline(Desc, RenderPass))
                     .SetIndirectParams(GetNamedBuffer(ENamedBuffer::Indirect))
@@ -1491,7 +1390,7 @@ namespace Lumina
                     .AddBindingSet(SceneDescriptorTable);
                 
                 CmdList.SetGraphicsState(GraphicsState);
-                CmdList.DrawIndexedIndirect(1, Batch.IndirectDrawOffset * sizeof(FDrawIndexedIndirectArguments));
+                CmdList.DrawIndirect(1, Batch.IndirectDrawOffset * sizeof(FDrawIndirectArguments));
             }
         });
     }
@@ -1988,8 +1887,8 @@ namespace Lumina
 
         {
             FRHIBufferDesc BufferDesc;
-            BufferDesc.Size = sizeof(FDrawIndexedIndirectArguments);
-            BufferDesc.Stride = sizeof(FDrawIndexedIndirectArguments);
+            BufferDesc.Size = sizeof(FDrawIndirectArguments);
+            BufferDesc.Stride = sizeof(FDrawIndirectArguments);
             BufferDesc.Usage.SetMultipleFlags(BUF_Indirect, BUF_StorageBuffer);
             BufferDesc.InitialState = EResourceStates::IndirectArgument;
             BufferDesc.bKeepInitialState = true;

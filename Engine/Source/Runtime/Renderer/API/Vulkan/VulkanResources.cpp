@@ -138,12 +138,12 @@ namespace Lumina
         UNREACHABLE();
     }
 
-    VkBufferUsageFlags ToVkBufferUsage(const TBitFlags<EBufferUsageFlags>& Usage) 
+    static VkBufferUsageFlags ToVkBufferUsage(const TBitFlags<EBufferUsageFlags>& Usage) 
     {
         VkBufferUsageFlags result = VK_NO_FLAGS;
 
         // Always include TRANSFER_SRC since hardware vendors confirmed it wouldn't have any performance cost.
-        result |= VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
+        result |= VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT;
         
         if (Usage.IsFlagSet(EBufferUsageFlags::VertexBuffer))
         {
@@ -639,16 +639,24 @@ namespace Lumina
             VmaFlags |= VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT | VMA_ALLOCATION_CREATE_MAPPED_BIT;
         }
         
+        
         VkBufferCreateInfo BufferCreateInfo = {};
-        BufferCreateInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-        BufferCreateInfo.size = Size;
-        BufferCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-        BufferCreateInfo.usage = ToVkBufferUsage(InDescription.Usage);
-        BufferCreateInfo.flags = 0;
+        BufferCreateInfo.sType          = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+        BufferCreateInfo.size           = Size;
+        BufferCreateInfo.sharingMode    = VK_SHARING_MODE_EXCLUSIVE;
+        BufferCreateInfo.usage          = ToVkBufferUsage(InDescription.Usage);
+        BufferCreateInfo.flags          = 0;
         
         Allocation = Device->GetAllocator()->AllocateBuffer(&BufferCreateInfo, VmaFlags, &Buffer, Description.DebugName.c_str());
         
+        
         static_cast<FVulkanRenderContext*>(GRenderContext)->SetVulkanObjectName(Description.DebugName, VK_OBJECT_TYPE_BUFFER, (uintptr_t)Buffer);
+        
+        VkBufferDeviceAddressInfo AddressInfo = {};
+        AddressInfo.sType       = VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO;
+        AddressInfo.buffer      = Buffer;
+        
+        BufferAddress = vkGetBufferDeviceAddress(Device->GetDevice(), &AddressInfo);
     }
 
     FVulkanBuffer::~FVulkanBuffer()

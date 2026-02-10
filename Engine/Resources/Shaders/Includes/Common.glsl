@@ -2,6 +2,7 @@
 //// ---------------------------------------------------------------------------------
 ////  Constants
 
+
 const float PHI     = 1.618033988749895; // Golden ratio
 const float PI      = 3.1415926535897932384626433832795;
 const float TWO_PI  = 6.28318530718;
@@ -64,10 +65,9 @@ vec3 UnpackNormal(uint packed)
     return normalize(normal);
 }
 
-// Unpack uint16 UV to float
-vec2 UnpackUV(uvec2 packed)
+vec2 UnpackUV(uint packed) 
 {
-    return vec2(packed) / 65535.0;
+    return unpackHalf2x16(packed);
 }
 
 vec2 VogelDiskSample(int SampleIndex, int SamplesCount, float Angle)
@@ -86,6 +86,41 @@ vec3 ScreenSpaceDither(vec2 vScreenPos, float Time)
     vDither.rgb = fract(vDither.rgb / vec3(103.0, 71.0, 97.0)) - vec3(0.5, 0.5, 0.5);
     return (vDither.rgb / 255.0) * 0.375;
 }
+
+struct FVertex
+{
+    vec3    Position;
+    uint    Normal;
+    uint    UV;
+    uint    Color;
+};
+
+struct FSkinnedVertex
+{
+    vec3  Position;
+    uint  Normal;
+    uint  UV;
+    uint  Color;
+    uvec4 JointIndices;
+    uvec4 JointWeights;
+};
+
+// Data actually used in shader after access.
+struct FVertexData
+{
+    vec3 Position;
+    vec3 Normal;
+    vec2 UV;
+    vec4 Color;
+};
+
+struct FDrawIndirectArguments
+{
+    uint VertexCount;
+    uint InstanceCount;
+    uint VertexOffset;
+    uint FirstInstance;
+};
 
 struct FDrawIndexedIndirectArguments
 {
@@ -128,13 +163,16 @@ struct FSSAOSettings
 
 struct FInstanceData
 {
-    mat4    ModelMatrix;
-    vec4    SphereBounds;
+    mat4        ModelMatrix;
+    vec4        SphereBounds;
+                
+    uint        EntityID;
+    uint        BatchedDrawID;
+    uint        Flags;          // (INSTANCE_FLAG_XXX)
+    uint        BoneOffset;
     
-    uint    EntityID;
-    uint    BatchedDrawID;
-    uint    Flags;          // (INSTANCE_FLAG_XXX)
-    uint    BoneOffset;
+    uvec2       VertexBufferAddress;
+    uvec2       IndexBufferAddress;
 };
 
 struct FLightShadow

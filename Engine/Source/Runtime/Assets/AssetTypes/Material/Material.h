@@ -13,6 +13,7 @@ namespace Lumina
 {
     class CTexture;
 }
+
 namespace Lumina
 {
     REFLECT()

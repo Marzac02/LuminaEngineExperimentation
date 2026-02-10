@@ -19,6 +19,7 @@ project "Runtime"
         "JPH_FLOATING_POINT_EXCEPTIONS_ENABLED",
         "JPH_EXTERNAL_PROFILE",
         "JPH_ENABLE_ASSERTS",
+        --"WITH_AFTERMATH",
     }
 
     files

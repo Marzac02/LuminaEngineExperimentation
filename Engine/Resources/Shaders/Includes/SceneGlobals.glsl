@@ -1,6 +1,28 @@
 //////////////////////////////////////////////////////////
 
+#extension GL_EXT_buffer_reference : require
+#extension GL_EXT_buffer_reference_uvec2 : require
+
 #include "Common.glsl"
+
+//////////////////////////////////////////////////////////
+// BUFFER REFERENCES
+//////////////////////////////////////////////////////////
+
+layout(std430, buffer_reference, buffer_reference_align = 4) readonly buffer IndexBuffer
+{
+    uint Indices[];
+};
+
+layout(std430, buffer_reference, buffer_reference_align = 16) readonly buffer VertexBuffer
+{
+    FVertex Vertices[];
+};
+
+layout(std430, buffer_reference, buffer_reference_align = 16) readonly buffer SkinnedVertexBuffer
+{
+    FSkinnedVertex Vertices[];
+};
 
 //////////////////////////////////////////////////////////
 // BINDING SET 0
@@ -16,7 +38,7 @@ layout(set = 0, binding = 1) restrict readonly buffer SceneLightData
     FLightData LightData;
 };
 
-layout(set = 0, binding = 2) restrict readonly buffer BufferInstanceData
+layout(set = 0, binding = 2) restrict buffer BufferInstanceData
 {
     FInstanceData Instances[];
 } InstanceData;
@@ -28,7 +50,7 @@ layout(set = 0, binding = 3) restrict buffer InstanceMappingData
 
 layout(set = 0, binding = 4) restrict buffer FIndirectDrawBuffer
 {
-    FDrawIndexedIndirectArguments Args[];
+    FDrawIndirectArguments Args[];
 } IndirectDrawData;
 
 layout(set = 0, binding = 5) restrict readonly buffer FBoneData
@@ -63,7 +85,51 @@ layout(set = 1, binding = 0) uniform sampler2D uGlobalTextures[];
 
 //////////////////////////////////////////////////////////
 
+FVertexData LoadStaticVertex(uvec2 VertexAddress, uvec2 IndexAddress, uint VertexID)
+{
+    IndexBuffer IBuf    = IndexBuffer(IndexAddress);
+    uint Index          = IBuf.Indices[VertexID];
+    
+    VertexBuffer VBuf   = VertexBuffer(VertexAddress);
+    FVertex V           = VBuf.Vertices[Index];
 
+    FVertexData Data;
+    Data.Position   = V.Position;
+    Data.Normal     = UnpackNormal(V.Normal);
+    Data.UV         = UnpackUV(V.UV);
+    Data.Color      = UnpackColor(V.Color);
+    
+    return Data;
+}
+
+FVertexData LoadSkinnedVertex(uvec2 VertexAddress, uvec2 IndexAddress, uint VertexID, uint BoneOffset)
+{
+    IndexBuffer IBuf = IndexBuffer(IndexAddress);
+    uint Index = IBuf.Indices[VertexID];
+    
+    SkinnedVertexBuffer VBuf = SkinnedVertexBuffer(VertexAddress);
+    FSkinnedVertex V = VBuf.Vertices[Index];
+
+    vec3 LocalPos = V.Position;
+    vec3 LocalNormal = UnpackNormal(V.Normal);
+
+    uvec4 JointIndices = V.JointIndices;
+    vec4 Weights = vec4(V.JointWeights) / 255.0;
+
+    mat4 SkinMatrix =
+    BoneData.BoneMatrices[BoneOffset + JointIndices.x] * Weights.x +
+    BoneData.BoneMatrices[BoneOffset + JointIndices.y] * Weights.y +
+    BoneData.BoneMatrices[BoneOffset + JointIndices.z] * Weights.z +
+    BoneData.BoneMatrices[BoneOffset + JointIndices.w] * Weights.w;
+
+    FVertexData Data;
+    Data.Position       = (SkinMatrix * vec4(LocalPos, 1.0)).xyz;
+    Data.Normal         = normalize(mat3(SkinMatrix) * LocalNormal);
+    Data.UV             = UnpackUV(V.UV);
+    Data.Color          = UnpackColor(V.Color);
+    
+    return Data;
+}
 
 float GetMaterialScalar(uint Index)
 {

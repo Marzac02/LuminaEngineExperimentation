@@ -32,6 +32,11 @@ namespace Lumina::RenderUtils
         }
         return Levels;
     }
+    
+    constexpr glm::uvec2 SplitAddress(uint64 Address) 
+    {
+        return glm::uvec2(static_cast<uint32>(Address & 0xFFFFFFFFull), static_cast<uint32>(Address >> 32));
+    }
 
     inline uint32 GetMipDim(uint32 BaseWidth, uint32 Level)
     {

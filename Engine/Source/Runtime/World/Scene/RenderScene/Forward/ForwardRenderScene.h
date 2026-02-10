@@ -144,6 +144,6 @@ namespace Lumina
         TVector<FMeshDrawCommand>               DrawCommands;
 
         /** Packed indirect draw arguments, gets sent directly to the GPU */
-        TVector<FDrawIndexedIndirectArguments>  IndirectDrawArguments;
+        TVector<FDrawIndirectArguments>         IndirectDrawArguments;
     };
 }

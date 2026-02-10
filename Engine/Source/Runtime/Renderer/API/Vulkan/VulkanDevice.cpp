@@ -25,14 +25,10 @@ namespace Lumina
         Info.pVulkanFunctions = &Functions;
         Info.pAllocationCallbacks = VK_ALLOC_CALLBACK;
         
-        Info.flags = VMA_ALLOCATOR_CREATE_EXT_MEMORY_BUDGET_BIT | VMA_ALLOCATOR_CREATE_EXT_MEMORY_PRIORITY_BIT;
+        Info.flags = VMA_ALLOCATOR_CREATE_EXT_MEMORY_BUDGET_BIT | VMA_ALLOCATOR_CREATE_EXT_MEMORY_PRIORITY_BIT | VMA_ALLOCATOR_CREATE_BUFFER_DEVICE_ADDRESS_BIT;
         
-        // Enable buffer device address if needed
-        // Info.flags |= VMA_ALLOCATOR_CREATE_BUFFER_DEVICE_ADDRESS_BIT;
-    
         VK_CHECK(vmaCreateAllocator(&Info, &Allocator));
         RenderContext = InCxt;
-        
     }
 
     FVulkanMemoryAllocator::~FVulkanMemoryAllocator()
@@ -58,6 +54,7 @@ namespace Lumina
         {
             Info.flags |= VMA_ALLOCATION_CREATE_MAPPED_BIT;
         }
+        
     
         VmaAllocation Allocation = nullptr;
         VmaAllocationInfo AllocationInfo;

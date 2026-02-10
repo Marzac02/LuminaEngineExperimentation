@@ -4,7 +4,6 @@
 #pragma shader_stage(vertex)
 
 #include "Includes/SceneGlobals.glsl"
-#include "Includes/VertexInputs.glsl"
 
 precise invariant gl_Position;
 
@@ -13,28 +12,24 @@ precise invariant gl_Position;
 
 void main()
 {
-    vec3 Position = inPosition;
+    FInstanceData InstanceData  = GetInstanceData(gl_InstanceIndex);
     
-    #ifdef SKINNED_VERTEX
-    vec4 Weights = vec4(inJointWeights) / 255.0;
+    FVertexData VertexData;
+    if(HasFlag(InstanceData.Flags, INSTANCE_FLAG_SKINNED))
+    {
+        VertexData = LoadSkinnedVertex(InstanceData.VertexBufferAddress, InstanceData.IndexBufferAddress, gl_VertexIndex, InstanceData.BoneOffset);
+    }
+    else
+    {
+        VertexData = LoadStaticVertex(InstanceData.VertexBufferAddress, InstanceData.IndexBufferAddress, gl_VertexIndex);
+    }
     
-    FInstanceData Instance = GetInstanceData(gl_InstanceIndex);
-    uint BoneOffset = Instance.BoneOffset;
-    
-    mat4 SkinMatrix =
-    BoneData.BoneMatrices[BoneOffset + inJointIndices.x] * Weights.x +
-    BoneData.BoneMatrices[BoneOffset + inJointIndices.y] * Weights.y +
-    BoneData.BoneMatrices[BoneOffset + inJointIndices.z] * Weights.z +
-    BoneData.BoneMatrices[BoneOffset + inJointIndices.w] * Weights.w;
-
-    Position = (SkinMatrix * vec4(inPosition, 1.0)).xyz;
-    #endif
     
     mat4 ModelMatrix = GetModelMatrix(gl_InstanceIndex);
     mat4 View = GetCameraView();
     mat4 Projection = GetCameraProjection();
 
-    vec4 WorldPos = ModelMatrix * vec4(Position, 1.0);
+    vec4 WorldPos = ModelMatrix * vec4(VertexData.Position, 1.0);
     vec4 ViewPos = View * WorldPos;
     
     gl_Position = Projection * ViewPos;

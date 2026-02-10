@@ -1,11 +1,11 @@
 #version 460 core
 
 #extension GL_ARB_shader_draw_parameters : enable
+#extension GL_EXT_buffer_reference_uvec2 : require
 
 #pragma shader_stage(vertex)
 
 #include "Includes/SceneGlobals.glsl"
-#include "Includes/VertexInputs.glsl"
 
 // Outputs
 layout(location = 0) out vec4 outFragColor;
@@ -24,51 +24,40 @@ precise invariant gl_Position;
 
 void main()
 {
-    vec3 Position = inPosition;
-    vec3 NormalOS = UnpackNormal(inNormal);
-
-    #ifdef SKINNED_VERTEX
-    vec4 Weights = vec4(inJointWeights) / 255.0;
-
-    FInstanceData Instance = GetInstanceData(gl_InstanceIndex);
-    uint BoneOffset = Instance.BoneOffset;
+    FInstanceData InstanceData  = GetInstanceData(gl_InstanceIndex);
     
-    mat4 SkinMatrix =
-    BoneData.BoneMatrices[BoneOffset + inJointIndices.x] * Weights.x +
-    BoneData.BoneMatrices[BoneOffset + inJointIndices.y] * Weights.y +
-    BoneData.BoneMatrices[BoneOffset + inJointIndices.z] * Weights.z +
-    BoneData.BoneMatrices[BoneOffset + inJointIndices.w] * Weights.w;
-
-    Position = (SkinMatrix * vec4(inPosition, 1.0)).xyz;
-    NormalOS = mat3(SkinMatrix) * NormalOS;
-    #endif
+    FVertexData VertexData;
+    if(HasFlag(InstanceData.Flags, INSTANCE_FLAG_SKINNED))
+    {
+        VertexData = LoadSkinnedVertex(InstanceData.VertexBufferAddress, InstanceData.IndexBufferAddress, gl_VertexIndex, InstanceData.BoneOffset);
+    }
+    else
+    {
+        VertexData = LoadStaticVertex(InstanceData.VertexBufferAddress, InstanceData.IndexBufferAddress, gl_VertexIndex);
+    }
     
-    vec2 uv = UnpackUV(inUV);
+    mat4 ModelMatrix    = GetModelMatrix(gl_InstanceIndex);
+    mat4 View           = GetCameraView();
+    mat4 Projection     = GetCameraProjection();
 
-    mat4 ModelMatrix = GetModelMatrix(gl_InstanceIndex);
-    mat4 View = GetCameraView();
-    mat4 Projection = GetCameraProjection();
-
-    vec4 WorldPos = ModelMatrix * vec4(Position, 1.0);
-    vec4 ViewPos = View * WorldPos;
+    vec4 WorldPos       = ModelMatrix * vec4(VertexData.Position, 1.0);
+    vec4 ViewPos        = View * WorldPos;
     
-
     // World-space
     mat3 NormalMatrixWS = transpose(inverse(mat3(ModelMatrix)));
-    vec3 NormalWS = NormalMatrixWS * NormalOS;
+    vec3 NormalWS       = NormalMatrixWS * VertexData.Normal;
     
     // View-space
     mat3 NormalMatrixVS = transpose(inverse(mat3(View * ModelMatrix)));
-    vec3 NormalVS = NormalMatrixVS * NormalOS;
-
-    FInstanceData InstanceData = GetInstanceData(gl_InstanceIndex);
-
+    vec3 NormalVS       = NormalMatrixVS * VertexData.Normal;
+    
+    
     // Outputs
-    outUV               = vec2(uv.x, uv.y);
+    outUV               = VertexData.UV;
     outFragPos          = ViewPos;
     outNormal           = vec4(NormalVS, 1.0);
     outNormalWS         = vec4(NormalWS, 1.0);
-    outFragColor        = inColor;
+    outFragColor        = VertexData.Color;
     outEntityID         = InstanceData.EntityID;
     outReceiveShadow    = uint(HasFlag(InstanceData.Flags, INSTANCE_FLAG_RECEIVE_SHADOW));
     outSelected         = uint(HasFlag(InstanceData.Flags, INSTANCE_FLAG_SELECTED));

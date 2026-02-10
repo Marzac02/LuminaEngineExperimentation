@@ -192,11 +192,11 @@ namespace Lumina::Hash
 }
 
 template<typename T>
-	requires (Lumina::Hash::HasHasher<T>)
+requires (Lumina::Hash::HasHasher<T>)
 struct eastl::hash<T>
 {
 	size_t operator()(const T& Value) const
 	{
-		return ::Lumina::Hash::GetHash(Value);
+		return GetTypeHash(Value);
 	}
 };

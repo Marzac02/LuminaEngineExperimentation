@@ -24,7 +24,6 @@ namespace Lumina
 
             return Ar;
         }
-        
     };
 
     struct RUNTIME_API FMeshResource : INonCopyable

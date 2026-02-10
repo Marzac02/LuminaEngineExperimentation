@@ -1,7 +1,6 @@
 ﻿#pragma once
 
 #include <mutex>
-#include <vector>
 #include <string>
 #include <volk/volk.h>
 #include "Containers/Name.h"
