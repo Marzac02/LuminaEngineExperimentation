@@ -48,6 +48,8 @@ Lumina is a modern C++ game engine designed for learning and experimentation wit
 - Building prototypes with a clean, modular codebase
 - Understanding how engines like Unreal and Godot work under the hood
 
+Contributions to Lumina are recognized in several ways, including Steam keys for popular games and public acknowledgment in our Discord community. Lumina improves through the work of motivated, like-minded contributors who help push the engine forward.
+
 > [!CAUTION]
 > Lumina is an educational project in active development. APIs may change, and some features are experimental. If you encounter build issues, please reach out on [Discord](https://discord.gg/xQSB7CRzQE) for assistance.
 
