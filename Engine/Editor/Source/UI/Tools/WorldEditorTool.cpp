@@ -25,7 +25,6 @@
 #include "World/Entity/Components/RelationshipComponent.h"
 #include "World/Entity/Components/TagComponent.h"
 #include "World/Entity/Components/VelocityComponent.h"
-#include "World/Entity/Systems/EditorEntityMovementSystem.h"
 #include "World/Scene/RenderScene/RenderScene.h"
 #include "World/Scene/RenderScene/SceneRenderTypes.h"
 
@@ -323,7 +322,24 @@ namespace Lumina
 
     void FWorldEditorTool::DrawToolMenu(const FUpdateContext& UpdateContext)
     {
+        FEditorTool::DrawToolMenu(UpdateContext);
         
+        if (ImGui::BeginMenu(LE_ICON_CHART_HISTOGRAM " Render Stats"))
+        {
+            const FSceneRenderStats& Stats = World->GetRenderer()->GetRenderStats();
+            
+            ImGui::SeparatorText("Geometry");
+            ImGuiX::Text("Vertices:  {:L}", Stats.NumVertices);
+            ImGuiX::Text("Triangles: {:L}", Stats.NumTriangles);
+            ImGuiX::Text("Instances: {:L}", Stats.NumInstances);
+        
+            ImGui::SeparatorText("Draw Calls");
+            ImGuiX::Text("Batches:   {:L}", Stats.NumBatches);
+            ImGuiX::Text("Draws:     {:L}", Stats.NumDraws);
+            ImGuiX::Text("Materials: {:L}", Stats.NumMaterials);
+            
+            ImGui::EndMenu();
+        }
     }
 
     void FWorldEditorTool::InitializeDockingLayout(ImGuiID InDockspaceID, const ImVec2& InDockspaceSize) const

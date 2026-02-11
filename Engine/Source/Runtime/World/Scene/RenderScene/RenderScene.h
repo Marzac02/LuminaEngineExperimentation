@@ -21,6 +21,7 @@ namespace Lumina
         RUNTIME_API virtual void SetViewVolume(const FViewVolume& ViewVolume) = 0;
         RUNTIME_API virtual void CompileDrawCommands(FRenderGraph& RenderGraph) = 0;
         RUNTIME_API virtual FRHIImage* GetRenderTarget() const = 0;
+        RUNTIME_API virtual const FSceneRenderStats& GetRenderStats() const = 0;
         RUNTIME_API virtual FSceneRenderSettings& GetSceneRenderSettings() = 0;
 
         RUNTIME_API virtual entt::entity GetEntityAtPixel(uint32 X, uint32 Y) const = 0;

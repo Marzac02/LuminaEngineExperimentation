@@ -71,6 +71,11 @@ namespace Lumina
             return Indices.size();
         }
         
+        FORCEINLINE size_t GetNumTriangles() const
+        {
+            return Indices.size() / 3;
+        }
+        
         void SetPositionAt(size_t Index, glm::vec3 Position)
         {
             eastl::visit([&]<typename T0>(T0& Vector)

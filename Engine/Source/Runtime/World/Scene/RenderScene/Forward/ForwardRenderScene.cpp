@@ -171,7 +171,12 @@ namespace Lumina
                     }
         
                     const FMeshResource& Resource = Mesh->GetMeshResource();
-
+                    
+                    
+                    RenderStats.NumVertices += Resource.GetNumVertices();
+                    RenderStats.NumTriangles += Resource.GetNumTriangles();
+                    
+                    
                     glm::mat4 TransformMatrix = TransformComponent.GetMatrix();
                     
                     FAABB BoundingBox       = Mesh->GetAABB().ToWorld(TransformMatrix);
@@ -262,6 +267,9 @@ namespace Lumina
                     }
         
                     const FMeshResource& Resource = Mesh->GetMeshResource();
+                    
+                    RenderStats.NumVertices += Resource.GetNumVertices();
+                    RenderStats.NumTriangles += Resource.GetNumTriangles();
 
                     glm::mat4 TransformMatrix = TransformComponent.GetMatrix();
                     
@@ -352,6 +360,8 @@ namespace Lumina
             {
                 DrawCommand.DrawCount           = (uint32)DrawCommand.DrawArgumentIndexMap.size();
                 DrawCommand.IndirectDrawOffset  = Counter;
+                
+                RenderStats.NumDraws            += DrawCommand.DrawCount;
 
                 for (auto& [Key, OldIndex] : DrawCommand.DrawArgumentIndexMap)
                 {
@@ -360,6 +370,9 @@ namespace Lumina
                     FDrawIndirectArguments Args = IndirectDrawArguments[OldIndex];
                     Args.StartInstanceLocation = CumulativeInstanceCount;
                     CumulativeInstanceCount += Args.InstanceCount;
+                    
+                    RenderStats.NumInstances += Args.InstanceCount;
+                    
                     Args.InstanceCount = 0;
         
                     ReorderedIndirectDrawArguments.push_back(Args);
@@ -374,6 +387,7 @@ namespace Lumina
                 Instance.BatchedDrawID = IndexRemap[Instance.BatchedDrawID];
             }
             
+            RenderStats.NumBatches = DrawCommands.size();
         }
         
         //========================================================================================================================
@@ -864,6 +878,7 @@ namespace Lumina
         ShadowAtlas.FreeTiles();
         BonesData.clear();
         BillboardInstances.clear();
+        RenderStats = {};
 
         for (int i = 0; i < (int)ELightType::Num; ++i)
         {
@@ -2107,6 +2122,11 @@ namespace Lumina
     FRHIImage* FForwardRenderScene::GetRenderTarget() const
     {
         return SceneViewport->GetRenderTarget();
+    }
+
+    const FSceneRenderStats& FForwardRenderScene::GetRenderStats() const
+    {
+        return RenderStats;
     }
 
     FSceneRenderSettings& FForwardRenderScene::GetSceneRenderSettings()

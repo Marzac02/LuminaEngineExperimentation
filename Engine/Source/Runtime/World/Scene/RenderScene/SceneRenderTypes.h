@@ -384,6 +384,22 @@ namespace Lumina
         uint32 IndirectDrawOffset;
     };
     
+    struct FSceneRenderStats
+    {
+        uint64 NumVertices = 0;
+        uint64 NumBatches = 0;
+        uint64 NumDraws = 0;
+        uint64 NumTriangles = 0;          // Total triangles submitted
+        uint64 NumInstances = 0;          // Total instances rendered
+        uint64 NumMeshes = 0;             // Unique meshes
+        uint64 NumMaterials = 0;          // Unique materials used
+        uint64 NumDrawCallsCulled = 0;    // Draws culled by frustum/occlusion
+        uint64 NumInstancesCulled = 0;    // Instances culled
+        uint64 NumShadowDraws = 0;        // Shadow pass draws
+        uint64 NumSkinnedMeshes = 0;      // Skinned vs static count
+        uint64 NumStaticMeshes = 0;
+    };
+    
     struct FSceneRenderSettings
     {
         ERenderSceneDebugFlags Flags    = ERenderSceneDebugFlags::None;

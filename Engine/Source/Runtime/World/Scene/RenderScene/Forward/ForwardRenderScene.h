@@ -92,6 +92,7 @@ namespace Lumina
         FRHIImage* GetNamedImage(ENamedImage Image) const { return NamedImages[(int)Image];}
         
         FRHIImage* GetRenderTarget() const override;
+        const FSceneRenderStats& GetRenderStats() const override;
         FSceneRenderSettings& GetSceneRenderSettings() override;
         entt::entity GetEntityAtPixel(uint32 X, uint32 Y) const override;
         THashSet<entt::entity> GetEntitiesInPixelRange(uint32 MinX, uint32 MinY, uint32 MaxX, uint32 MaxY) const override;
@@ -100,6 +101,7 @@ namespace Lumina
         FDelegateHandle                     SwapchainResizedHandle;
         CWorld*                             World = nullptr;
         
+        FSceneRenderStats                   RenderStats;
         FSceneRenderSettings                RenderSettings;
         FSceneLightData                     LightData;
 
