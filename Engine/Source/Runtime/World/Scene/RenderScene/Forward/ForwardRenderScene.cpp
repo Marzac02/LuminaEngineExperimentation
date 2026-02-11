@@ -250,7 +250,102 @@ namespace Lumina
                 });
             }
             
+            {
+                LUMINA_PROFILE_SECTION("Process Skeletal Mesh Primitives");
+
+                SkeletalView.each([&](entt::entity Entity, const SSkeletalMeshComponent& MeshComponent, const STransformComponent& TransformComponent)
+                {
+                    CMesh* Mesh = MeshComponent.SkeletalMesh;
+                    if (!IsValid(Mesh))
+                    {
+                        return;
+                    }
+        
+                    const FMeshResource& Resource = Mesh->GetMeshResource();
+
+                    glm::mat4 TransformMatrix = TransformComponent.GetMatrix();
+                    
+                    FAABB BoundingBox       = Mesh->GetAABB().ToWorld(TransformMatrix);
+                    glm::vec3 Center        = (BoundingBox.Min + BoundingBox.Max) * 0.5f;
+                    glm::vec3 Extents       = BoundingBox.Max - Center;
+                    float Radius            = glm::length(Extents);
+                    glm::vec4 SphereBounds  = glm::vec4(Center, Radius);
+                    
+                    EInstanceFlags Flags = EInstanceFlags::Skinned;
+                    if (World->IsSelected(Entity))
+                    {
+                        Flags |= EInstanceFlags::Selected;
+                    }
+                    if (MeshComponent.bCastShadow)
+                    {
+                        Flags |= EInstanceFlags::CastShadow;
+                    }
+                    if (MeshComponent.bReceiveShadow)
+                    {
+                        Flags |= EInstanceFlags::ReceiveShadow;
+                    }
+                    
+                    for (const FGeometrySurface& Surface : Resource.GeometrySurfaces)
+                    {
+                        CMaterialInterface* Material = MeshComponent.GetMaterialForSlot(Surface.MaterialIndex);
+                    
+                        if (!IsValid(Material) || !IsValid(Material->GetMaterial()) || !Material->IsReadyForRender())
+                        {
+                            Material = CMaterial::GetDefaultMaterial();
+                        }
+                        
+                        auto [BatchIt, bBatchInserted] = BatchedDraws.try_emplace(Material->GetMaterial(), DrawCommands.size());
+                        uint64 DrawID = BatchIt->second;
+                        
+                        if (bBatchInserted)
+                        {
+                            DrawCommands.emplace_back(FMeshDrawCommand
+                            {
+                                .VertexShader           = Material->GetVertexShader(EVertexFormat::Skinned),
+                                .PixelShader            = Material->GetPixelShader(),
+                                .IndirectDrawOffset     = 0,
+                                .DrawArgumentIndexMap   = {},
+                                .DrawCount              = 0,
+                            });
+                        }
+                        
+                        auto& DrawArguments = DrawCommands[DrawID].DrawArgumentIndexMap;
+                        
+                        auto [DrawIt, bDrawInserted] = DrawArguments.try_emplace(FDrawKey{Surface.StartIndex, Surface.IndexCount}, IndirectDrawArguments.size());
+                        
+                        if (bDrawInserted)
+                        {
+                            IndirectDrawArguments.emplace_back(FDrawIndirectArguments
+                            {
+                                .VertexCount            = (uint32)Surface.IndexCount,
+                                .InstanceCount          = 0,
+                                .StartVertexLocation    = Surface.StartIndex,
+                                .StartInstanceLocation  = 0,
+                            });
+                        }
+
+                        IndirectDrawArguments[DrawIt->second].InstanceCount++;
+                        
+                        InstanceData.emplace_back(FInstanceData
+                        {
+                            .Transform              = TransformMatrix,
+                            .SphereBounds           = SphereBounds,
+                            .EntityID               = entt::to_integral(Entity),
+                            .BatchedDrawID          = DrawIt->second,
+                            .Flags                  = Flags,
+                            .BoneOffset             = 0,
+                            .VertexBufferAddress    = RenderUtils::SplitAddress(Mesh->GetVertexBuffer()->GetAddress()),
+                            .IndexBufferAddress     = RenderUtils::SplitAddress(Mesh->GetIndexBuffer()->GetAddress()),
+                        });
+                    }
+                });
+            }
             
+            
+            TVector<uint32> IndexRemap(IndirectDrawArguments.size());
+            TVector<FDrawIndirectArguments> ReorderedIndirectDrawArguments;
+            ReorderedIndirectDrawArguments.reserve(IndirectDrawArguments.size());
+
             uint32 Counter = 0;
             uint32 CumulativeInstanceCount = 0;
             for (FMeshDrawCommand& DrawCommand : DrawCommands)
@@ -258,15 +353,27 @@ namespace Lumina
                 DrawCommand.DrawCount           = (uint32)DrawCommand.DrawArgumentIndexMap.size();
                 DrawCommand.IndirectDrawOffset  = Counter;
 
-                for (auto& [Key, Index] : DrawCommand.DrawArgumentIndexMap)
+                for (auto& [Key, OldIndex] : DrawCommand.DrawArgumentIndexMap)
                 {
-                    IndirectDrawArguments[Index].StartInstanceLocation = CumulativeInstanceCount;
-                    CumulativeInstanceCount += IndirectDrawArguments[Index].InstanceCount;
-                    
-                    IndirectDrawArguments[Index].InstanceCount = 0;
+                    IndexRemap[OldIndex] = Counter;
+        
+                    FDrawIndirectArguments Args = IndirectDrawArguments[OldIndex];
+                    Args.StartInstanceLocation = CumulativeInstanceCount;
+                    CumulativeInstanceCount += Args.InstanceCount;
+                    Args.InstanceCount = 0;
+        
+                    ReorderedIndirectDrawArguments.push_back(Args);
                     Counter++;
                 }
             }
+
+            IndirectDrawArguments = std::move(ReorderedIndirectDrawArguments);
+
+            for (FInstanceData& Instance : InstanceData)
+            {
+                Instance.BatchedDrawID = IndexRemap[Instance.BatchedDrawID];
+            }
+            
         }
         
         //========================================================================================================================
