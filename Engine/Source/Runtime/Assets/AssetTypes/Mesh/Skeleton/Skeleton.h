@@ -9,6 +9,8 @@
 namespace Lumina
 {
     class CSkeletalMesh;
+    
+    
     REFLECT()
     class RUNTIME_API CSkeleton : public CObject
     {
