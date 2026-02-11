@@ -133,8 +133,7 @@ namespace Lumina::RHI
             LOG_ERROR("Unexpected crash dump status");
         }
 #endif
-
-        std::abort();
+        PANIC("Vulkan detected a crash");
     }
 
     void FVulkanCrashTracker::EnableDeviceFeatures(vkb::DeviceBuilder& Builder)

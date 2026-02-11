@@ -6,7 +6,6 @@
 #include "Platform/GenericPlatform.h"
 #include "Renderer/RenderContext.h"
 #include "Renderer/RenderResource.h"
-#include "Renderer/RHIFwd.h"
 #include "Renderer/RHIGlobals.h"
 
 #define MAX_LIGHTS 1728
@@ -396,21 +395,4 @@ namespace Lumina
         uint8 bOcclusionCull:1          = false; //@ TODO Fix AABBs
         uint8 bWireframe:1              = false;
     };
-    
-    struct FDrawKey
-    {
-        const CMaterial*    Material;
-        uint64              VertexBufferAddress;
-        uint64              UniqueID;
-    };
-
-    static uint64 GetTypeHash(const FDrawKey& K)
-    {
-        size_t Seed;
-        Hash::HashCombine(Seed, K.Material);
-        Hash::HashCombine(Seed, K.VertexBufferAddress);
-        Hash::HashCombine(Seed, K.UniqueID);
-        return Seed;
-    }
-    
 }

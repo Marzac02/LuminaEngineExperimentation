@@ -33,6 +33,8 @@ project "Runtime"
 
     prebuildcommands 
     {
+        LuminaConfig.CopyFile(LuminaConfig.EnginePath("Engine/Source/ThirdParty/NvidiaAftermath/lib/GFSDK_Aftermath_Lib.x64.dll"), LuminaConfig.GetTargetDirectory()),
+        LuminaConfig.CopyFile(LuminaConfig.EnginePath("Engine/Source/ThirdParty/NvidiaAftermath/lib/GFSDK_Aftermath_Lib.lib"), LuminaConfig.GetTargetDirectory()),
         LuminaConfig.RunReflection()
     }
 
@@ -43,7 +45,7 @@ project "Runtime"
     
     libdirs
     {
-        "%{LuminaConfig.EngineDirectory}/Engine/Source/ThirdParty/NvidiaAftermath/lib",
+        LuminaConfig.EnginePath("Engine/Source/ThirdParty/NvidiaAftermath/lib"),
         LuminaConfig.EnginePath("Engine/Source/ThirdParty/lua"),
         "%{LuminaConfig.EngineDirectory}/External/ShaderC",
     }
@@ -81,7 +83,8 @@ project "Runtime"
         "FastGLTF",
         "OpenFBX",
         "shaderc_combined",
-        "GFSDK_Aftermath_Lib",
+        "GFSDK_Aftermath_Lib.lib",
+        "GFSDK_Aftermath_Lib.x64.dll",
     }
 
     filter "configurations:Debug or configurations:DebugEditor"

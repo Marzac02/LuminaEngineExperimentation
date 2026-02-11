@@ -7,6 +7,26 @@ namespace Lumina
     class FRHIInputLayout;
     class FRHIBuffer;
     class CMaterialInterface;
+    
+    
+    struct FDrawKey
+    {
+        uint64 StartIndex;
+        uint64 IndexCount;
+        
+        bool operator == (const FDrawKey& Key) const
+        {
+            return StartIndex == Key.StartIndex && IndexCount == Key.IndexCount;
+        }
+    };
+
+    static uint64 GetTypeHash(const FDrawKey& K)
+    {
+        size_t Seed = 0;
+        Hash::HashCombine(Seed, K.StartIndex);
+        Hash::HashCombine(Seed, K.IndexCount);
+        return Seed;
+    }
 
 
     /**
@@ -15,11 +35,10 @@ namespace Lumina
      */
     struct FMeshDrawCommand
     {
-        FRHIVertexShader*   VertexShader = nullptr;
-        FRHIPixelShader*    PixelShader = nullptr;
-        FRHIBindingLayout*  BindingLayout = nullptr;
-        FRHIBindingSet*     BindingSet = nullptr;
-        uint32              IndirectDrawOffset = 0;
-        bool                bSkinned = false;
+        FRHIVertexShader*                          VertexShader = nullptr;
+        FRHIPixelShader*                           PixelShader = nullptr;
+        uint32                                     IndirectDrawOffset = 0;
+        THashMap<FDrawKey, uint32>                 DrawArgumentIndexMap;
+        uint32                                     DrawCount = 0;
     };
 }
