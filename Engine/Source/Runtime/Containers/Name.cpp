@@ -126,6 +126,12 @@ namespace Lumina
         GNameTable = nullptr;
     }
 
+    FName::FName(EName Name)
+        : ID((uint64)Name)
+    {
+        View = GNameTable->GetString(ID);
+    }
+
     FName::FName(const char* Str)
     {
         ID = GNameTable->GetOrCreateID(Str);

@@ -78,7 +78,7 @@ namespace Lumina
     {
     public:
 
-        FMemoryWriter(TVector<uint8>& InBytes, bool bSetOffset = false);
+        FMemoryWriter(TVector<uint8>& InBytes, uint32 StartOffset = 0);
         int64 TotalSize() override { return static_cast<int64>(Bytes.size()); }
         void Serialize(void* Data, int64 Size) override;
         

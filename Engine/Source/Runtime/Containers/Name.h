@@ -79,7 +79,7 @@ namespace Lumina
     public:
         
         FName() = default;
-        FName(EName) {}
+        FName(EName Name);
         
         FName(const char* Str);
         FName(const char* Str, size_t Length);
@@ -123,7 +123,7 @@ namespace Lumina
             return strlen(GNameTable->GetString(ID));
         }
 
-        FName& operator=(const EName) { ID = 0; return *this; }
+        FName& operator=(const EName InName) { *this = FName(InName); return *this; }
         
         bool operator==(const FName& Other) const { return ID == Other.ID; }
         bool operator!=(const FName& Other) const { return ID != Other.ID; }
@@ -132,8 +132,8 @@ namespace Lumina
         bool operator>(const FName& Other) const { return ID > Other.ID; }
         bool operator>=(const FName& Other) const { return ID >= Other.ID; }
     
-        bool operator==(const EName) const { return ID == 0; }
-        bool operator!=(const EName) const { return ID != 0; }
+        bool operator==(const EName Name) const { return ID == (uint64)Name; }
+        bool operator!=(const EName Name) const { return ID != (uint64)Name; }
         
         size_t hash() const { return ID; }
 

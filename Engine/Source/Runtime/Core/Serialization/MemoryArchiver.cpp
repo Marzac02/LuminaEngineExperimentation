@@ -88,9 +88,10 @@ namespace Lumina
         ReaderPos += Size;
     }
     
-    FMemoryWriter::FMemoryWriter(TVector<uint8>& InBytes, bool bSetOffset)
+    FMemoryWriter::FMemoryWriter(TVector<uint8>& InBytes, uint32 StartOffset)
         :Bytes(InBytes)
     {
+        Offset = StartOffset;
         this->SetFlag(EArchiverFlags::Writing);
     }
 

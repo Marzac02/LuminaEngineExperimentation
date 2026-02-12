@@ -567,6 +567,12 @@ namespace Lumina
 
                 if (Object == nullptr)
                 {
+                    // Solves a random issue of corruption, there should only be one asset per package anyway.
+                    if (ObjectClass->GetDefaultObject()->IsAsset())
+                    {
+                        Export.ObjectName = VFS::FileName(GetPackagePath(), true);
+                    }
+                    
                     Object = NewObject(ObjectClass, this, Export.ObjectName, Export.ObjectGUID);
                     Object->SetFlag(OF_NeedsLoad);
                     

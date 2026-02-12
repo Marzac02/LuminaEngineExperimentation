@@ -10,6 +10,8 @@ DECLARE_MULTICAST_DELEGATE(FAssetRegistryUpdatedDelegate);
 
 namespace Lumina
 {
+	struct FObjectExport;
+	struct FPackageHeader;
 	class CPackage;
 	struct FAssetData;
 	class CClass;
@@ -70,8 +72,11 @@ namespace Lumina
 		FAssetRegistryUpdatedDelegate& GetOnAssetRegistryUpdated() { return OnAssetRegistryUpdated; }
 
 		const FAssetDataMap& GetAssets() const { return Assets; }
+		const TVector<FString>& GetFailedAssets() const { return FailedAssets; }
 
 	private:
+		
+		bool TryRecoverPackage(FStringView Path, TSpan<FObjectExport> Exports);
 
 		void ProcessPackagePath(FStringView Path);
 
@@ -86,6 +91,9 @@ namespace Lumina
 
 		/** Global hash of all registered assets */
 		FAssetDataMap 					Assets;
+		
+		/** Assets that failed to load */
+		TVector<FString>				FailedAssets;
 	};
 
 }

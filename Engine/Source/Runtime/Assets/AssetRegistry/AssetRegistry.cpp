@@ -157,7 +157,24 @@ namespace Lumina
         
         return Datas;
     }
-    
+
+    bool FAssetRegistry::TryRecoverPackage(FStringView Path, TSpan<FObjectExport> Exports)
+    {
+        bool bRecovered = false;
+        for (FObjectExport& Export : Exports)
+        {
+            CClass* Class = FindObject<CClass>(Export.ClassName);
+            if (Class && Class->GetDefaultObject()->IsAsset())
+            {
+                Export.ObjectName = VFS::FileName(Path, true);
+                bRecovered = true;
+            }
+        }
+        
+        
+        return bRecovered;
+    }
+
     void FAssetRegistry::ProcessPackagePath(FStringView Path)
     {
         TVector<uint8> Data;
@@ -185,7 +202,21 @@ namespace Lumina
         
         if (ALERT_IF(Export == Exports.end(), "Package name was not found in exports!"))
         {
-            return;
+            if (!TryRecoverPackage(Path, Exports))
+            {
+                return;
+            }
+            
+            Export = eastl::find_if(Exports.begin(), Exports.end(), [&](const FObjectExport& E)
+            {
+                return E.ObjectName == PackageFileName; 
+            });
+            
+            if (Export == Exports.end())
+            {
+                LOG_ERROR("Could not recover package {}", Path);
+            }
+            
         }
         
         auto AssetData = MakeUnique<FAssetData>();
@@ -193,6 +224,7 @@ namespace Lumina
         AssetData->AssetGUID    = Export->ObjectGUID;
         AssetData->AssetName    = Export->ObjectName;
         AssetData->Path         .assign_convert(Path);
+        
 
         FWriteScopeLock Lock(AssetsMutex);
         ASSERT(Assets.find(AssetData) == Assets.end());
