@@ -68,8 +68,6 @@ namespace Lumina::Import::Mesh::GLTF
             return Move(Asset.get());
         }
     }
-    
-    
 
     TExpected<FMeshImportData, FString> ImportGLTF(const FMeshImportOptions& ImportOptions, FStringView FilePath)
     {

@@ -1947,7 +1947,7 @@ namespace Lumina
             {
                 using namespace entt::literals;
 
-                TVector<TPair<entt::id_type, CStruct*>> SortedComponents;
+                TVector<TPair<entt::meta_type, CStruct*>> SortedComponents;
                 
                 for(auto &&[ID, MetaType]: entt::resolve())
                 {
@@ -1972,7 +1972,7 @@ namespace Lumina
                         continue;
                     }
 
-                    SortedComponents.emplace_back(ID, Struct);
+                    SortedComponents.emplace_back(MetaType, Struct);
                 }
                 
                 
@@ -1981,7 +1981,7 @@ namespace Lumina
                    return LHS.second->GetName().ToString() < RHS.second->GetName().ToString(); 
                 });
 
-                for (auto&& [ID, Struct] : SortedComponents)
+                for (auto&& [MetaType, Struct] : SortedComponents)
                 {
                     ImGui::PushID(Struct);
                     
@@ -1996,9 +1996,9 @@ namespace Lumina
                     FFixedString DisplayName = Struct->MakeDisplayName();
                     if (ImGui::Button(DisplayName.c_str(), ImVec2(ButtonWidth, 0.0f)))
                     {
-                        if (Entity != entt::null)
+                        if (World->GetEntityRegistry().valid(Entity))
                         {
-                            ECS::Utils::InvokeMetaFunc(ID, "emplace"_hs, entt::forward_as_meta(World->GetEntityRegistry()), Entity, entt::forward_as_meta(entt::meta_any{}));
+                            ECS::Utils::InvokeMetaFunc(MetaType, "emplace"_hs, entt::forward_as_meta(World->GetEntityRegistry()), Entity, entt::forward_as_meta(entt::meta_any{}));
                             OutlinerListView.MarkTreeDirty();
                             RebuildPropertyTables(Entity);
                         }

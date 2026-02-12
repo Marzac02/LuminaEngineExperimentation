@@ -28,6 +28,10 @@ namespace Lumina
             Value.CustomData = {};
             Value.ScriptPath.Path = Path;
             Value.Script = Scripting::FScriptingContext::Get().LoadUniqueScript(Path);
+            if (!Value.Script || !Value.Script->ScriptTable.valid())
+            {
+                return false;
+            }
             
             for (auto&& [K, V] : Value.Script->ScriptTable)
             {
@@ -80,6 +84,8 @@ namespace Lumina
             RestoreValues(eastl::get<1>(OldCustomData), eastl::get<1>(Value.CustomData));
             RestoreValues(eastl::get<2>(OldCustomData), eastl::get<2>(Value.CustomData));
             RestoreValues(eastl::get<3>(OldCustomData), eastl::get<3>(Value.CustomData));
+            
+            return true;
             
         };
         
@@ -149,7 +155,10 @@ namespace Lumina
                         SelectableLabel.append(LE_ICON_LANGUAGE_LUA).append(" ").append(FileInfo.VirtualPath.c_str());
                         if (ImGui::Selectable(SelectableLabel.c_str()))
                         {
-                            LoadScript(FileInfo.VirtualPath);
+                            if (!LoadScript(FileInfo.VirtualPath))
+                            {
+                                ImGuiX::Notifications::NotifyError("Failed to load script! {}", FileInfo.VirtualPath);
+                            }
                             
                             ImGui::CloseCurrentPopup();
                         
@@ -182,7 +191,10 @@ namespace Lumina
             
             if (ImGui::Button(LE_ICON_REFRESH "##Refresh", GButtonSize))
             {
-                LoadScript(Value.ScriptPath.Path);
+                if (!LoadScript(Value.ScriptPath.Path))
+                {
+                    ImGuiX::Notifications::NotifyError("Failed to load script! {}", Value.ScriptPath.Path);
+                }
                 bWasChanged = true;
             }
             
