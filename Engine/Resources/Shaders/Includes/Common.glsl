@@ -70,6 +70,21 @@ vec2 UnpackUV(uint packed)
     return unpackHalf2x16(packed);
 }
 
+mat3 CalculateNormalMatrix(mat4 ModelMatrix)
+{
+    vec3 C0 = ModelMatrix[0].xyz;
+    vec3 C1 = ModelMatrix[1].xyz;
+    vec3 C2 = ModelMatrix[2].xyz;
+    
+    vec3 R0 = cross(C1, C2);
+    vec3 R1 = cross(C2, C0);
+    vec3 R2 = cross(C0, C1);
+    
+    float InvDet = 1.0 / dot(C0, R0);
+    
+    return mat3(R0 * InvDet, R1 * InvDet, R2 * InvDet);
+}
+
 vec2 VogelDiskSample(int SampleIndex, int SamplesCount, float Angle)
 {
     float GoldenAngle   = 2.0 * PI * (1.0 - 1.0 / PHI);
@@ -87,7 +102,7 @@ vec3 ScreenSpaceDither(vec2 vScreenPos, float Time)
     return (vDither.rgb / 255.0) * 0.375;
 }
 
-uvec4 UnpackUInt(uint packed)
+uvec4 UnpackUIntToUVec4(uint packed)
 {
     return uvec4(
     (packed      ) & 0xFFu,

@@ -44,13 +44,12 @@ void main()
     vec4 ViewPos        = View * WorldPos;
     
     // World-space
-    mat3 NormalMatrixWS = transpose(inverse(mat3(ModelMatrix)));
+    mat3 NormalMatrixWS = CalculateNormalMatrix(ModelMatrix);
     vec3 NormalWS       = NormalMatrixWS * VertexData.Normal;
     
     // View-space
-    mat3 NormalMatrixVS = transpose(inverse(mat3(View * ModelMatrix)));
-    vec3 NormalVS       = NormalMatrixVS * VertexData.Normal;
-    
+    vec3 NormalVS       = normalize(mat3(View) * NormalWS);
+
     // Outputs
     outUV               = VertexData.UV;
     outFragPos          = ViewPos;

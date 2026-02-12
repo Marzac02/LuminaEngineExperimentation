@@ -509,7 +509,7 @@ namespace Lumina
             LUMINA_PROFILE_SECTION("Point Light Processing");
 
             auto View = World->GetEntityRegistry().view<SPointLightComponent, STransformComponent>();
-            View.each([&] (SPointLightComponent& PointLightComponent, STransformComponent& TransformComponent)
+            View.each([&] (const SPointLightComponent& PointLightComponent, const STransformComponent& TransformComponent)
             {
                 FLight Light;
                 Light.Flags                 = LIGHT_TYPE_POINT;
