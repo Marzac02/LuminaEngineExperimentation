@@ -3,7 +3,6 @@ LightFlicker = {
     BaseIntensity = 12,      -- Base brightness
     FlickerSpeed = 5.0,      -- How fast it flickers
     FlickerAmount = 0.3,     -- How much it varies (0.0 to 1.0)
-
 }
 
 function LightFlicker:Update(DeltaTime)

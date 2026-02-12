@@ -56,7 +56,7 @@ namespace Lumina
         
         WorldType = InWorldType;
         
-        GEngine->GetEngineSubsystem<FWorldManager>()->AddWorld(this);
+        GWorldManager->AddWorld(this);
 
         EntityRegistry.ctx().emplace<entt::dispatcher&>(SingletonDispatcher);
         
@@ -104,7 +104,7 @@ namespace Lumina
         
         FCoreDelegates::PostWorldUnload.Broadcast();
         
-        GEngine->GetEngineSubsystem<FWorldManager>()->RemoveWorld(this);
+        GWorldManager->RemoveWorld(this);
         
         Scripting::FScriptingContext::Get().RunGC();
     }

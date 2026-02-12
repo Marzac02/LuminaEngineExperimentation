@@ -266,7 +266,7 @@ namespace Lumina::ImGuiX
     ImTextureRef ToImTextureRef(FRHIImage* Image)
     {
 		#if WITH_EDITOR
-        return GEngine->GetEngineSubsystem<FRenderManager>()->GetImGuiRenderer()->GetOrCreateImTexture(Image);
+        return GRenderManager->GetImGuiRenderer()->GetOrCreateImTexture(Image);
 		#else 
     	return {};
 		#endif
@@ -275,7 +275,7 @@ namespace Lumina::ImGuiX
     ImTextureRef ToImTextureRef(FStringView Path)
     {
 		#if WITH_EDITOR
-        return GEngine->GetEngineSubsystem<FRenderManager>()->GetImGuiRenderer()->GetOrCreateImTexture(Path);
+        return GRenderManager->GetImGuiRenderer()->GetOrCreateImTexture(Path);
 		#else
     	return {};
 		#endif

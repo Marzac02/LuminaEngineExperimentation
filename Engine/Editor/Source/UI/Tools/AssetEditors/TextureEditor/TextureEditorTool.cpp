@@ -25,8 +25,7 @@ namespace Lumina
                 return;
             }
 
-            FRenderManager& RenderManager = GetEngineSystem<FRenderManager>();
-            ImTextureID TextureID = RenderManager.GetImGuiRenderer()->GetOrCreateImTexture(Texture->TextureResource->RHIImage, FTextureSubresourceSet(CurrentMipLevel, 1, 0, 1));
+            ImTextureID TextureID = GRenderManager->GetImGuiRenderer()->GetOrCreateImTexture(Texture->TextureResource->RHIImage, FTextureSubresourceSet(CurrentMipLevel, 1, 0, 1));
 
             const FRHIImageDesc& ImageDesc = Texture->TextureResource->ImageDescription;
             ImVec2 WindowSize = ImGui::GetContentRegionAvail();

@@ -5,11 +5,9 @@
 
 namespace Lumina
 {
-    void FWorldManager::Initialize()
-    {
-    }
+    RUNTIME_API FWorldManager* GWorldManager = nullptr;
 
-    void FWorldManager::Deinitialize()
+    FWorldManager::~FWorldManager()
     {
         for (FManagedWorld& World : Worlds)
         {

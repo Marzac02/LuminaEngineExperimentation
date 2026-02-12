@@ -55,14 +55,13 @@ namespace Lumina
         Physics::Initialize();
         Scripting::Initialize();
         
-        RenderManager = EngineSubsystems.AddSubsystem<FRenderManager>();
+        GRenderManager = Memory::New<FRenderManager>();
+        GRenderManager->Initialize();
         EngineViewport = GRenderContext->CreateViewport(Windowing::GetPrimaryWindowHandle()->GetExtent(), "Engine Viewport");
 
         ProcessNewlyLoadedCObjects();
         
-        WorldManager = EngineSubsystems.AddSubsystem<FWorldManager>();
-        
-        UpdateContext.SubsystemManager = &EngineSubsystems;
+        GWorldManager = Memory::New<FWorldManager>();
 
         #if USING(WITH_EDITOR)
         DeveloperToolUI = CreateDevelopmentTools();
@@ -90,13 +89,13 @@ namespace Lumina
         delete DeveloperToolUI;
         #endif
 
-        EngineSubsystems.RemoveSubsystem<FWorldManager>();
+        Memory::Delete(GWorldManager);
         
         ShutdownCObjectSystem();
         
         EngineViewport.SafeRelease();
         
-        EngineSubsystems.RemoveSubsystem<FRenderManager>();
+        Memory::Delete(GRenderManager);
 
         Physics::Shutdown();
         Scripting::Shutdown();
@@ -131,14 +130,14 @@ namespace Lumina
                 
                 MainThread::ProcessQueue();
                 
-                RenderManager->FrameStart(UpdateContext);
+                GRenderManager->FrameStart(UpdateContext);
 
                 #if USING(WITH_EDITOR)
                 DeveloperToolUI->StartFrame(UpdateContext);
                 DeveloperToolUI->Update(UpdateContext);
                 #endif
                 
-                WorldManager->UpdateWorlds(UpdateContext);
+                GWorldManager->UpdateWorlds(UpdateContext);
                 
                 OnUpdateStage(UpdateContext);
             }
@@ -153,7 +152,7 @@ namespace Lumina
                 DeveloperToolUI->Update(UpdateContext);
                 #endif
 
-                WorldManager->UpdateWorlds(UpdateContext);
+                GWorldManager->UpdateWorlds(UpdateContext);
 
                 OnUpdateStage(UpdateContext);
             }
@@ -168,7 +167,7 @@ namespace Lumina
                 DeveloperToolUI->Update(UpdateContext);
                 #endif
                 
-                WorldManager->UpdateWorlds(UpdateContext);
+                GWorldManager->UpdateWorlds(UpdateContext);
 
                 OnUpdateStage(UpdateContext);
             }
@@ -183,7 +182,7 @@ namespace Lumina
                 DeveloperToolUI->Update(UpdateContext);
                 #endif
                 
-                WorldManager->UpdateWorlds(UpdateContext);
+                GWorldManager->UpdateWorlds(UpdateContext);
 
                 OnUpdateStage(UpdateContext);
             }
@@ -198,7 +197,7 @@ namespace Lumina
                 DeveloperToolUI->Update(UpdateContext);
                 #endif
 
-                WorldManager->UpdateWorlds(UpdateContext);
+                GWorldManager->UpdateWorlds(UpdateContext);
 
                 OnUpdateStage(UpdateContext);
             }
@@ -215,14 +214,14 @@ namespace Lumina
                 DeveloperToolUI->Update(UpdateContext);
                 #endif
 
-                WorldManager->UpdateWorlds(UpdateContext);
-                WorldManager->RenderWorlds(RenderGraph);
+                GWorldManager->UpdateWorlds(UpdateContext);
+                GWorldManager->RenderWorlds(RenderGraph);
                 
                 #if USING(WITH_EDITOR)
                 DeveloperToolUI->EndFrame(UpdateContext);
                 #endif
                 
-                RenderManager->FrameEnd(UpdateContext, RenderGraph);
+                GRenderManager->FrameEnd(UpdateContext, RenderGraph);
                 
                 Scripting::FScriptingContext::Get().ProcessDeferredActions();
 

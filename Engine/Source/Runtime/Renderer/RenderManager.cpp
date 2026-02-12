@@ -11,20 +11,13 @@
 namespace Lumina
 {
     TMulticastDelegate<void, glm::vec2> FRenderManager::OnSwapchainResized;
-    
-    void FRenderManager::Initialize()
+    RUNTIME_API FRenderManager* GRenderManager = nullptr;
+
+    FRenderManager::FRenderManager()
     {
-        GRenderContext = Memory::New<FVulkanRenderContext>();
-        
-        GRenderContext->Initialize(FRenderContextDesc{true});
-        
-        #if WITH_EDITOR
-        ImGuiRenderer = Memory::New<FVulkanImGuiRender>();
-        ImGuiRenderer->Initialize();
-        #endif
     }
 
-    void FRenderManager::Deinitialize()
+    FRenderManager::~FRenderManager()
     {
         
         #if WITH_EDITOR
@@ -37,6 +30,18 @@ namespace Lumina
         GRenderContext->Deinitialize();
         Memory::Delete(GRenderContext);
         GRenderContext = nullptr;
+    }
+
+    void FRenderManager::Initialize()
+    {
+        GRenderContext = Memory::New<FVulkanRenderContext>();
+        
+        GRenderContext->Initialize(FRenderContextDesc{true});
+        
+        #if WITH_EDITOR
+        ImGuiRenderer = Memory::New<FVulkanImGuiRender>();
+        ImGuiRenderer->Initialize();
+        #endif
     }
 
     void FRenderManager::FrameStart(const FUpdateContext& UpdateContext)

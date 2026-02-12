@@ -76,13 +76,6 @@ namespace Lumina
         RUNTIME_API NODISCARD FFixedString GetProjectScriptDirectory() const;
         RUNTIME_API NODISCARD FFixedString GetProjectGameDirectory() const;
         RUNTIME_API NODISCARD FFixedString GetProjectContentDirectory() const;
-        
-        template<typename T>
-        requires(eastl::is_base_of_v<ISubsystem, T>)
-        T* GetEngineSubsystem()
-        {
-            return EngineSubsystems.GetSubsystem<T>();
-        }
     
     protected:
         
@@ -91,10 +84,6 @@ namespace Lumina
         #if WITH_EDITOR
         IDevelopmentToolUI*     DeveloperToolUI =       nullptr;
         #endif
-
-        FSubsystemManager       EngineSubsystems;
-        FWorldManager*          WorldManager =          nullptr;
-        FRenderManager*         RenderManager =         nullptr;
         
         FString                 ProjectName;
         FFixedString            ProjectPath;
@@ -107,12 +96,4 @@ namespace Lumina
     };
     
     RUNTIME_API extern FEngine* GEngine;
-    
-    template<typename T>
-    requires(eastl::is_base_of_v<ISubsystem, T>)
-    static T& GetEngineSystem()
-    {
-        return *GEngine->GetEngineSubsystem<T>();
-    }
-    
 }

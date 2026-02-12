@@ -12,7 +12,7 @@ namespace Lumina
 
 namespace Lumina
 {
-    class RUNTIME_API FWorldManager : public ISubsystem
+    class RUNTIME_API FWorldManager
     {
     public:
 
@@ -22,9 +22,8 @@ namespace Lumina
             TObjectPtr<CWorld>  World;
         };
 
-        void Initialize() override;
-        void Deinitialize() override;
-
+        ~FWorldManager();
+        
         void UpdateWorlds(const FUpdateContext& UpdateContext);
         void RenderWorlds(FRenderGraph& RenderGraph);
 
@@ -37,6 +36,7 @@ namespace Lumina
 
         TWeakObjectPtr<CWorld> CurrentEditorWorld;
         TVector<FManagedWorld> Worlds;
-        
     };
+    
+    RUNTIME_API extern FWorldManager* GWorldManager;
 }

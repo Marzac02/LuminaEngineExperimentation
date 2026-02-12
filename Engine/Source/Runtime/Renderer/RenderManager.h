@@ -12,15 +12,16 @@ namespace Lumina
 
 namespace Lumina
 {
-    class FRenderManager : public ISubsystem
+    class FRenderManager
     {
     public:
 
         static TMulticastDelegate<void, glm::vec2> OnSwapchainResized;
 
-
-        void Initialize() override;
-        void Deinitialize() override;
+        FRenderManager();
+        ~FRenderManager();
+        
+        void Initialize();
 
         void FrameStart(const FUpdateContext& UpdateContext);
         void FrameEnd(const FUpdateContext& UpdateContext, FRenderGraph& RenderGraph);
@@ -41,6 +42,8 @@ namespace Lumina
         #endif
         
         uint8               CurrentFrameIndex = 0;
-        
     };
+    
+    
+    RUNTIME_API extern FRenderManager* GRenderManager;
 }

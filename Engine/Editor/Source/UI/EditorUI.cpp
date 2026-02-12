@@ -104,8 +104,8 @@ namespace Lumina
 
     void FEditorUI::Initialize(const FUpdateContext& UpdateContext)
     {
-        ImGuiContext* Context = GetEngineSystem<FRenderManager>().GetImGuiRenderer()->GetImGuiContext();
-        ImPlotContext* PlotContext = GetEngineSystem<FRenderManager>().GetImGuiRenderer()->GetImPlotContext();
+        ImGuiContext* Context = GRenderManager->GetImGuiRenderer()->GetImGuiContext();
+        ImPlotContext* PlotContext = GRenderManager->GetImGuiRenderer()->GetImPlotContext();
         ImGui::SetCurrentContext(Context);
         ImPlot::SetCurrentContext(PlotContext);
         
@@ -161,8 +161,11 @@ namespace Lumina
         (void)WorldEditorTool->GetOnPreviewStopRequestedDelegate().AddLambda([this]
         {
             FInputProcessor::Get().SetCursorMode(GLFW_CURSOR_NORMAL);
-            GamePreviewTool->World->EndPlay();
-            ToolsPendingDestroy.push(GamePreviewTool);
+            if (GamePreviewTool)
+            {
+                GamePreviewTool->World->EndPlay();
+                ToolsPendingDestroy.push(GamePreviewTool);   
+            }
         });
 
         
@@ -471,7 +474,7 @@ namespace Lumina
 
         if (bShowRenderDebug)
         {
-            UpdateContext.GetSubsystem<FRenderManager>()->GetImGuiRenderer()->DrawRenderDebugInformationWindow(&bShowRenderDebug, UpdateContext);
+            GRenderManager->GetImGuiRenderer()->DrawRenderDebugInformationWindow(&bShowRenderDebug, UpdateContext);
         }
         
         if (bShowScriptsDebug)

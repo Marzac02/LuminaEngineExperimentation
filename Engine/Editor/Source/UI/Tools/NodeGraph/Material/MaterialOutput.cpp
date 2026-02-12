@@ -61,7 +61,7 @@ namespace Lumina
                     {
                         if (FRHIImageRef& Image = Texture->TextureResource->RHIImage)
                         {
-                            ImTextureRef ImText = GEngine->GetEngineSubsystem<FRenderManager>()->GetImGuiRenderer()->GetOrCreateImTexture(Image);
+                            ImTextureRef ImText = GRenderManager->GetImGuiRenderer()->GetOrCreateImTexture(Image);
                             ImGui::Image(ImText, ImVec2(164.0f, 164.0f));
                         }
                     }
