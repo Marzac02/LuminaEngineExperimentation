@@ -334,6 +334,11 @@ namespace Lumina
 		}
 
 		FRHIImageRef Image = Import::Textures::CreateTextureFromImport(Path, false);
+		if (Image == nullptr)
+		{
+			return SquareWhiteTexture.second->ImTexture.GetTexID();
+		}
+		
 		ReferencedImages.push_back(Image);
 		
 		const FTextureSubresourceSet Subresource = AllSubresources;

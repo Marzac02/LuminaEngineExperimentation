@@ -25,12 +25,12 @@ void main()
     }
     
     
-    mat4 ModelMatrix = GetModelMatrix(gl_InstanceIndex);
-    mat4 View = GetCameraView();
-    mat4 Projection = GetCameraProjection();
+    mat4 ModelMatrix    = GetModelMatrix(gl_InstanceIndex);
+    mat4 View           = GetCameraView();
+    mat4 Projection     = GetCameraProjection();
 
-    vec4 WorldPos = ModelMatrix * vec4(VertexData.Position, 1.0);
-    vec4 ViewPos = View * WorldPos;
+    vec4 WorldPos   = ModelMatrix * vec4(VertexData.Position, 1.0);
+    vec4 ViewPos    = View * WorldPos;
     
-    gl_Position = Projection * ViewPos;
+    gl_Position     = Projection * ViewPos;
 }

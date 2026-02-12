@@ -91,7 +91,7 @@ float GeometrySmith(vec3 N, vec3 V, vec3 L, float roughness)
 
 // ----------------------------------------------------------------------------
 
-vec3 fresnelSchlick(float cosTheta, vec3 F0)
+vec3 FresnelSchlick(float cosTheta, vec3 F0)
 {
     return F0 + (1.0 - F0) * pow(1.0 - cosTheta, 5.0);
 }
@@ -317,11 +317,11 @@ vec3 EvaluateLightContribution(FLight Light, vec3 Position, vec3 N, vec3 V, vec3
 
     // Half vector
     vec3 H = normalize(V + L);
-
+    
     // BRDF terms
     float NDF = DistributionGGX(N, H, Roughness);
     float G   = GeometrySmith(N, V, L, Roughness);
-    vec3  F   = fresnelSchlick(max(dot(H, V), 0.0), F0);
+    vec3  F   = FresnelSchlick(max(dot(H, V), 0.5), F0);
 
     vec3 Numerator      = NDF * G * F;
     float Denominator   = 4.0 * max(dot(N, V), 0.0) * max(dot(N, L), 0.0) + 0.0001;
@@ -344,6 +344,7 @@ void main()
     SMaterialInputs Material = GetMaterialInputs();
 
     vec3 Albedo     = Material.Diffuse;
+    vec3 Normal     = Material.Normal;
     float Alpha     = Material.Opacity;
     float AO        = Material.AmbientOcclusion;
     float Roughness = Material.Roughness;
@@ -353,7 +354,7 @@ void main()
     vec3 Position   = (GetInverseCameraView() * vec4(ViewPosition, 1.0f)).xyz;
 
     // Setup geometry
-    vec3 TSN        = normalize(Material.Normal);
+    vec3 TSN        = Normal;
     vec3 N          = GetWorldNormal(WorldNormal, inUV, WorldPosition, TSN);
     vec3 V          = normalize(GetCameraPosition() - WorldPosition);
     
