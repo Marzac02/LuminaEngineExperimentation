@@ -299,7 +299,7 @@ namespace Lumina
         auto View = World->GetEntityRegistry().view<FSelectedInEditorComponent>();
         View.each([&] (entt::entity SelectedEntity)
         {
-            ECS::Utils::ForEachComponent([&](void*, entt::basic_sparse_set<>& Set, const entt::meta_type& Type)
+            ECS::Utils::ForEachComponent(World->GetEntityRegistry(), SelectedEntity, [&](void*, entt::basic_sparse_set<>& Set, const entt::meta_type& Type)
             {
                 if (entt::meta_any ReturnValue = ECS::Utils::InvokeMetaFunc(Type, "static_struct"_hs))
                 {
@@ -311,7 +311,7 @@ namespace Lumina
                     }
                 
                 }
-            }, World->GetEntityRegistry(), SelectedEntity);
+            });
         });
     }
 
@@ -672,12 +672,11 @@ namespace Lumina
                     ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(8, 6));
                     ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 0.6f, 0.4f, 1.0f));
                     
-                    ECS::Utils::ForEachComponent([&](void*, const entt::basic_sparse_set<>& Set, entt::meta_type Type)
+                    ECS::Utils::ForEachComponent(Registry, LastSelectedEntity, [&](void*, const entt::basic_sparse_set<>& Set, entt::meta_type Meta)
                     {
                         using namespace entt::literals;
                         
-                        entt::meta_type MetaType = entt::resolve(Set.info());
-                        if (entt::meta_any ReturnValue = ECS::Utils::InvokeMetaFunc(MetaType, "static_struct"_hs))
+                        if (entt::meta_any ReturnValue = ECS::Utils::InvokeMetaFunc(Meta, "static_struct"_hs))
                         {
                             CStruct* StructType = ReturnValue.cast<CStruct*>();
                             if (StructType == SNameComponent::StaticStruct() || StructType == STransformComponent::StaticStruct())
@@ -690,7 +689,7 @@ namespace Lumina
                                 ComponentDestroyRequests.push(FComponentDestroyRequest{StructType, LastSelectedEntity});
                             }
                         }
-                    }, Registry, LastSelectedEntity);
+                    });
                     
                     ImGui::PopStyleColor();
                     ImGui::PopStyleVar();
@@ -1570,7 +1569,6 @@ namespace Lumina
             ImGui::Text("Presets:");
             ImGui::SameLine();
             
-            
             if (ImGui::Button("0.1"))
             {
                 GuizmoSnapTranslate = 0.1f;
@@ -1729,7 +1727,6 @@ namespace Lumina
         if (bRebuild)
         {
             RebuildPropertyTables(Entity);
-            OutlinerListView.MarkTreeDirty();
         }
     }
 
@@ -2139,6 +2136,15 @@ namespace Lumina
                 FTreeNodeState& State = Tree.Get<FTreeNodeState>(ItemEntity);
                 State.bSelected = true;
             }
+            
+            ECS::Utils::ForEachComponent(World->GetEntityRegistry(), WorldEntity, [&](void* Component, entt::basic_sparse_set<>& Set, entt::meta_type Meta)
+            {
+                FFixedString NameString;
+                NameString.assign(LE_ICON_PUZZLE).append(" ").append(Meta.name());
+                entt::entity ComponentEntity = Tree.CreateNode(ItemEntity, NameString);
+                Tree.Get<FTreeNodeDisplay>(ComponentEntity).TooltipText = Meta.name();
+                Tree.EmplaceUserData<FEntityListViewItemData>(ComponentEntity).Entity = WorldEntity;
+            });
             
             ECS::Utils::ForEachChild(World->GetEntityRegistry(), WorldEntity, [&](entt::entity Child)
             {
@@ -2788,7 +2794,7 @@ namespace Lumina
             return;
         }
         
-        ECS::Utils::ForEachComponent([&](void* Component, entt::basic_sparse_set<>& Set, const entt::meta_type& Type)
+        ECS::Utils::ForEachComponent(World->GetEntityRegistry(), Entity, [&](void* Component, entt::basic_sparse_set<>& Set, const entt::meta_type& Type)
         {
             using namespace entt::literals;
             
@@ -2802,7 +2808,7 @@ namespace Lumina
                     bWasRemoved = true;
                 }
             }
-        }, World->GetEntityRegistry(), Entity);
+        });
         
         
         if (bWasRemoved)
@@ -2924,7 +2930,7 @@ namespace Lumina
         {
             using PairType = TPair<void*, CStruct*>;
             TVector<PairType> Sorted;
-            ECS::Utils::ForEachComponent([&](void* Component, entt::basic_sparse_set<>& Set, const entt::meta_type& Type)
+            ECS::Utils::ForEachComponent(World->GetEntityRegistry(), Entity, [&](void* Component, entt::basic_sparse_set<>& Set, const entt::meta_type& Type)
             {
                 entt::meta_any Any = ECS::Utils::InvokeMetaFunc(Type, "static_struct"_hs);
                 if (!Any)
@@ -2936,7 +2942,7 @@ namespace Lumina
 
                 Sorted.emplace_back(Component, Struct);
                 
-            }, World->GetEntityRegistry(), Entity);
+            });
             
             
             eastl::sort(Sorted.begin(), Sorted.end(), [&](const PairType& LHS, const PairType& RHS)

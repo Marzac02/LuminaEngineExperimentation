@@ -272,13 +272,6 @@ namespace Lumina::ECS::Utils
 
         ParentRelationship.First = Child;
         ParentRelationship.Children++;
-        
-        Registry.sort<FRelationshipComponent>([&Registry](const entt::entity lhs, const entt::entity rhs)
-        {
-            const auto &clhs = Registry.get<FRelationshipComponent>(lhs);
-            const auto &crhs = Registry.get<FRelationshipComponent>(rhs);
-            return crhs.Parent == lhs || clhs.Next == rhs || (!(clhs.Parent == rhs || crhs.Next == lhs) && (clhs.Parent < crhs.Parent || (clhs.Parent == crhs.Parent && &clhs < &crhs)));
-        });
     }
     
     void ReparentEntity(FEntityRegistry& Registry, entt::entity Child, entt::entity Parent)
@@ -420,13 +413,6 @@ namespace Lumina::ECS::Utils
         
         Registry.emplace_or_replace<STransformComponent>(Child, TransformComponent);
         Registry.emplace_or_replace<FNeedsTransformUpdate>(Child);
-        
-        Registry.sort<FRelationshipComponent>([&Registry](const entt::entity lhs, const entt::entity rhs)
-        {
-            const auto &clhs = Registry.get<FRelationshipComponent>(lhs);
-            const auto &crhs = Registry.get<FRelationshipComponent>(rhs);
-            return crhs.Parent == lhs || clhs.Next == rhs || (!(clhs.Parent == rhs || crhs.Next == lhs) && (clhs.Parent < crhs.Parent || (clhs.Parent == crhs.Parent && &clhs < &crhs)));
-        });
     }
 
     bool IsDescendantOf(FEntityRegistry& Registry, entt::entity Potential, entt::entity Ancestor)

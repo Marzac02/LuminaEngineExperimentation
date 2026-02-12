@@ -43,12 +43,12 @@ namespace Lumina
         return true;
     }
     
-    size_t CEdNodeGraph::GraphLoadSettings(char* data, void* userPointer)
+    size_t CEdNodeGraph::GraphLoadSettings(char* Data, void* UserPointer)
     {
-        CEdNodeGraph* ThisGraph = (CEdNodeGraph*)userPointer;
-        if (data)
+        CEdNodeGraph* ThisGraph = (CEdNodeGraph*)UserPointer;
+        if (Data)
         {
-            memcpy(data, ThisGraph->GraphSaveData.data(), ThisGraph->GraphSaveData.size());
+            Memory::Memcpy(Data, ThisGraph->GraphSaveData.data(), ThisGraph->GraphSaveData.size());
         }
         return ThisGraph->GraphSaveData.size();
     }
@@ -56,13 +56,13 @@ namespace Lumina
 
     void CEdNodeGraph::Initialize()
     {
-        ax::NodeEditor::Config config;
-        config.EnableSmoothZoom = true;
-        config.UserPointer = this;
-        config.SaveSettings = GraphSaveSettings;
-        config.LoadSettings = GraphLoadSettings;
-        config.SettingsFile = nullptr;
-        Context = ax::NodeEditor::CreateEditor(&config);
+        ax::NodeEditor::Config Config;
+        Config.EnableSmoothZoom = true;
+        Config.UserPointer = this;
+        Config.SaveSettings = GraphSaveSettings;
+        Config.LoadSettings = GraphLoadSettings;
+        Config.SettingsFile = nullptr;
+        Context = ax::NodeEditor::CreateEditor(&Config);
     }
 
     void CEdNodeGraph::Shutdown()
@@ -92,11 +92,12 @@ namespace Lumina
         uint32 Index = 0;
         for (CEdGraphNode* Node : Nodes)
         {
+            NodeBuilder.Begin(Node->GetNodeID());
+            
             ImVec2 Position = NodeEditor::GetNodePosition(Node->GetNodeID());
             Node->GridX = Position.x;
             Node->GridY = Position.y;
             
-            NodeBuilder.Begin(Node->GetNodeID());
             
             if (!Node->WantsTitlebar())
             {
@@ -115,7 +116,7 @@ namespace Lumina
             
             if (bDebug)
             {
-                ImGui::Text("(ID - %llu)", Node->GetNodeID());
+                ImGui::Text("(ID - %lld)", Node->GetNodeID());
             }
             
             ImGui::Spring(1);
@@ -730,11 +731,15 @@ namespace Lumina
 
     uint64 CEdNodeGraph::AddNode(CEdGraphNode* InNode)
     {
-        int64 NodeID = NextID++;
+        int64 NodeID;
         
         if (InNode->NodeID != 0)
         {
             NodeID = InNode->GetNodeID();
+        }
+        else
+        {
+            NodeID = Math::RandRange(0u, UINT32_MAX);
         }
         
         InNode->FullName = InNode->GetNodeDisplayName() + "_" + eastl::to_string(NodeID);
@@ -750,7 +755,7 @@ namespace Lumina
         
         ValidateGraph();
 
-        return NextID;
+        return NodeID;
     }
     
 }

@@ -86,14 +86,16 @@ namespace Lumina::ECS::Utils
 
     template<typename TFunc>
     requires(eastl::is_invocable_v<TFunc, void*, entt::basic_sparse_set<>&, entt::meta_type>)
-    void ForEachComponent(TFunc&& Func, FEntityRegistry& Registry, entt::entity Entity)
+    void ForEachComponent(FEntityRegistry& Registry, entt::entity Entity, TFunc&& Func)
     {
         for (auto&& [ID, Storage] : Registry.storage())
         {
             if (Storage.contains(Entity))
             {
-                entt::meta_type MetaType = entt::resolve(Storage.info());
-                eastl::invoke(Func, Storage.value(Entity), Storage, MetaType);
+                if (entt::meta_type MetaType = entt::resolve(Storage.info()))
+                {
+                    eastl::invoke(Func, Storage.value(Entity), Storage, MetaType);
+                }
             }
         }
     }

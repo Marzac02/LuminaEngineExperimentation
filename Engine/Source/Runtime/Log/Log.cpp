@@ -33,8 +33,6 @@ namespace Lumina::Logging
 
 	void Init()
 	{
-		std::locale::global(std::locale(""));
-
 		spdlog::set_pattern("%^[%T] %n: %v%$");
 		Logger = spdlog::stdout_color_mt("Lumina");
 		Logger->sinks().push_back(std::make_shared<FConsoleSink>(Logs));

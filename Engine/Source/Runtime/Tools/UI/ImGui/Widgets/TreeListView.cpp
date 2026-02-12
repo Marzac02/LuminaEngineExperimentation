@@ -200,7 +200,11 @@ namespace Lumina
         {
             for (entt::entity Child : TreeNode.Children)
             {
+                ImGui::Indent(8);
+
                 DrawListItem(Child, Context);
+                
+                ImGui::Unindent(8);
             }
             
             ImGui::TreePop();
@@ -210,6 +214,7 @@ namespace Lumina
         ImGui::PopStyleColor();
         
         ImGui::PopID();
+        
     }
 
     entt::entity FTreeListView::CreateNode(entt::entity Parent, const FFixedString& Name, uint64 Hash)
@@ -225,7 +230,6 @@ namespace Lumina
             ParentNode.Children.push_back(NewNode);
         }
         
-        
         FTreeNodeDisplay& Display = Registry.emplace<FTreeNodeDisplay>(NewNode);
         Display.DisplayName = Name;
         Display.TooltipText = Name;
@@ -239,7 +243,6 @@ namespace Lumina
         {
             Registry.emplace<FLeafNode>(NewNode);            
         }
-        
         
         return NewNode;
     }

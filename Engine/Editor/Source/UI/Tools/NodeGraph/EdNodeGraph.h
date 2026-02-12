@@ -83,7 +83,7 @@ namespace Lumina
         TFunction<void(CEdGraphNode*)>                  NodeSelectedCallback;
         TFunction<void(CEdGraphNode*)>                  PreNodeDeletedCallback;
 
-        int64                                           NextID = 1;
+        int64                                           NextID = 0;
 
         
         ImGuiTextFilter                                 Filter;
