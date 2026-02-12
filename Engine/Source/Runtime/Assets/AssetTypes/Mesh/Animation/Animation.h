@@ -2,8 +2,8 @@
 
 #include "Core/Math/AABB.h"
 #include "Core/Object/Object.h"
-#include "Animation.generated.h"
 #include "Memory/SmartPtr.h"
+#include "Animation.generated.h"
 
 namespace Lumina
 {

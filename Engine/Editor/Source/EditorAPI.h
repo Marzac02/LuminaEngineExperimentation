@@ -1,7 +1,9 @@
 ﻿#pragma once
 
-#if defined(EDITOR_EXPORTS)
-    #define EDITOR_API __declspec(dllexport)
+#ifndef REFLECTION_PARSER
+#ifdef EDITOR_EXPORTS
+    #define EDITOR_API DLL_EXPORT
 #else
-    #define EDITOR_API __declspec(dllimport)
+    #define EDITOR_API DLL_IMPORT
+#endif
 #endif
