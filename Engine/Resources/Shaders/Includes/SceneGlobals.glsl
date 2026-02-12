@@ -113,14 +113,14 @@ FVertexData LoadSkinnedVertex(uvec2 VertexAddress, uvec2 IndexAddress, uint Vert
     vec3 LocalPos = V.Position;
     vec3 LocalNormal = UnpackNormal(V.Normal);
 
-    uvec4 JointIndices = V.JointIndices;
-    vec4 Weights = vec4(V.JointWeights) / 255.0;
+    vec4 JointIndices = UnpackUInt(V.JointIndices);
+    vec4 Weights = unpackUnorm4x8(V.JointWeights);
 
     mat4 SkinMatrix =
-    BoneData.BoneMatrices[BoneOffset + JointIndices.x] * Weights.x +
-    BoneData.BoneMatrices[BoneOffset + JointIndices.y] * Weights.y +
-    BoneData.BoneMatrices[BoneOffset + JointIndices.z] * Weights.z +
-    BoneData.BoneMatrices[BoneOffset + JointIndices.w] * Weights.w;
+    BoneData.BoneMatrices[BoneOffset + uint(JointIndices.x)] * Weights.x +
+    BoneData.BoneMatrices[BoneOffset + uint(JointIndices.y)] * Weights.y +
+    BoneData.BoneMatrices[BoneOffset + uint(JointIndices.z)] * Weights.z +
+    BoneData.BoneMatrices[BoneOffset + uint(JointIndices.w)] * Weights.w;
 
     FVertexData Data;
     Data.Position       = (SkinMatrix * vec4(LocalPos, 1.0)).xyz;

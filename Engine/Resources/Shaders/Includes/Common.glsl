@@ -87,6 +87,16 @@ vec3 ScreenSpaceDither(vec2 vScreenPos, float Time)
     return (vDither.rgb / 255.0) * 0.375;
 }
 
+uvec4 UnpackUInt(uint packed)
+{
+    return uvec4(
+    (packed      ) & 0xFFu,
+    (packed >> 8 ) & 0xFFu,
+    (packed >> 16) & 0xFFu,
+    (packed >> 24) & 0xFFu
+    );
+}
+
 struct FVertex
 {
     vec3    Position;
@@ -101,8 +111,9 @@ struct FSkinnedVertex
     uint  Normal;
     uint  UV;
     uint  Color;
-    uvec4 JointIndices;
-    uvec4 JointWeights;
+    
+    uint JointIndices;
+    uint JointWeights;
 };
 
 // Data actually used in shader after access.

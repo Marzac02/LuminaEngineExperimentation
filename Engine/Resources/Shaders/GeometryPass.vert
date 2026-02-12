@@ -51,7 +51,6 @@ void main()
     mat3 NormalMatrixVS = transpose(inverse(mat3(View * ModelMatrix)));
     vec3 NormalVS       = NormalMatrixVS * VertexData.Normal;
     
-    
     // Outputs
     outUV               = VertexData.UV;
     outFragPos          = ViewPos;

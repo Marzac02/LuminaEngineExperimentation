@@ -268,6 +268,9 @@ namespace Lumina
         
                     const FMeshResource& Resource = Mesh->GetMeshResource();
                     
+                    uint32 BoneDataOffset = static_cast<uint32>(BonesData.size());
+                    BonesData.insert(BonesData.end(), MeshComponent.BoneTransforms.begin(), MeshComponent.BoneTransforms.end());
+                    
                     RenderStats.NumVertices += Resource.GetNumVertices();
                     RenderStats.NumTriangles += Resource.GetNumTriangles();
 
@@ -341,7 +344,7 @@ namespace Lumina
                             .EntityID               = entt::to_integral(Entity),
                             .BatchedDrawID          = DrawIt->second,
                             .Flags                  = Flags,
-                            .BoneOffset             = 0,
+                            .BoneOffset             = BoneDataOffset,
                             .VertexBufferAddress    = RenderUtils::SplitAddress(Mesh->GetVertexBuffer()->GetAddress()),
                             .IndexBufferAddress     = RenderUtils::SplitAddress(Mesh->GetIndexBuffer()->GetAddress()),
                         });
