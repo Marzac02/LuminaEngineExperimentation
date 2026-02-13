@@ -12,10 +12,7 @@ namespace Lumina
         for (FManagedWorld& World : Worlds)
         {
             World.World->TeardownWorld();
-            World.World->ConditionalBeginDestroy();
-        }
-        
-        Worlds.clear();
+        }        
     }
 
     void FWorldManager::UpdateWorlds(const FUpdateContext& UpdateContext) 

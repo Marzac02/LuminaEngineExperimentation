@@ -2697,10 +2697,19 @@ namespace Lumina
 
     void FWorldEditorTool::DrawComponentHeader(const TUniquePtr<FPropertyTable>& Table, entt::entity Entity)
     {
+        using namespace entt::literals;
+        
         const bool bIsRequired = (Table->GetType() == STransformComponent::StaticStruct() || Table->GetType() == SNameComponent::StaticStruct());
     
         if (Table->GetType() == STagComponent::StaticStruct())
         {
+            return;
+        }
+        
+        entt::meta_type MetaType = entt::resolve(entt::hashed_string(Table->GetType()->GetName().c_str()));
+        if (!ECS::Utils::HasComponent(World->GetEntityRegistry(), Entity, MetaType))
+        {
+            LOG_WARN("Entity does not have component to draw: {}", MetaType.name());
             return;
         }
         

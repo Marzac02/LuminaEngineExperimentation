@@ -5,6 +5,7 @@
 #include "LuminaEditor.h"
 #endif
 #include <print>
+#include <exception>
 #include "Config/Config.h"
 #include "Core/CommandLine/CommandLine.h"
 

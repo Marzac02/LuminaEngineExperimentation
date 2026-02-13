@@ -10,6 +10,11 @@ project "Editor"
 		LuminaConfig.EnginePath("Engine/Source/ThirdParty/NvidiaAftermath/lib"),
     }
 
+	linkoptions
+    {
+        "/NODEFAULTLIB:LIBCMT"
+    }
+
 	prebuildcommands
 	{
 		LuminaConfig.RunReflection()

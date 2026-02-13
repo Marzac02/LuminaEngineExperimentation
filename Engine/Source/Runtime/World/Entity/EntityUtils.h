@@ -25,6 +25,7 @@ namespace Lumina::ECS::Utils
     RUNTIME_API size_t GetSiblingIndex(FEntityRegistry& Registry, entt::entity Entity);
     RUNTIME_API void CollectDescendants(FEntityRegistry& Registry, entt::entity Entity, TVector<entt::entity>& OutDescendants);
     RUNTIME_API void CollectChildren(FEntityRegistry& Registry, entt::entity Entity, TVector<entt::entity>& OutChildren);
+    RUNTIME_API bool HasComponent(FEntityRegistry& Registry, entt::entity Entity, entt::meta_type Type);
     
     NODISCARD RUNTIME_API entt::id_type GetTypeID(const sol::table& Data);
     NODISCARD RUNTIME_API entt::id_type GetTypeID(const sol::userdata& Data);

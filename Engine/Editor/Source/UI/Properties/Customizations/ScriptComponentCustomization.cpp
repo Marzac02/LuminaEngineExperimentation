@@ -57,6 +57,12 @@ namespace Lumina
                     const char* AsChar = V.as<const char*>();
                     eastl::get<3>(Value.CustomData).emplace_back(KeyName, AsChar);
                 }
+                else if (V.is<sol::table>())
+                {
+					sol::table AsTable = V.as<sol::table>();
+                    FStringView Type = AsTable["__type"].get<const char*>();
+                    LOG_INFO("Type : {}", Type);
+                }
             }
             
             auto RestoreValues = [&]<typename T>(const TVector<TNamedScriptVar<T>>& OldVector, TVector<TNamedScriptVar<T>>& NewVector)

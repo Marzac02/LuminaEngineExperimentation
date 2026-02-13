@@ -518,6 +518,16 @@ namespace Lumina::ECS::Utils
         }
     }
 
+    bool HasComponent(FEntityRegistry& Registry, entt::entity Entity, entt::meta_type Type)
+    {
+        if (entt::meta_any Any = InvokeMetaFunc(Type, "has"_hs, entt::forward_as_meta(Registry), Entity))
+        {
+            return Any.cast<bool>();
+        }
+        
+        return false;
+    }
+
     entt::id_type GetTypeID(const sol::table& Data)
     {
         auto Name = Data["__type"].get<const char*>();

@@ -389,7 +389,14 @@ namespace Lumina
                             continue;
                         }
                         
-                        Script->ScriptTable[KeyName] = Var.Value;
+                        if constexpr (eastl::is_same_v<T, FString>)
+                        {
+                            Script->ScriptTable[KeyName] = Var.Value.c_str();
+                        }
+                        else
+                        {
+                            Script->ScriptTable[KeyName] = Var.Value;
+                        }
                     }
                 };
         

@@ -19,6 +19,12 @@ namespace Lumina
         FUNCTION(Script)
         FAABB GetAABB() const;
         
+        FUNCTION(Script)
+        void SetStaticMesh(CStaticMesh* InMesh) { StaticMesh = InMesh; }
+        
+        FUNCTION(Script)
+        CStaticMesh* GetStaticMesh() const { return StaticMesh; }
+        
         PROPERTY(Editable, Category = "Mesh")
         TObjectPtr<CStaticMesh> StaticMesh;
         

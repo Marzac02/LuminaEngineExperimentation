@@ -24,6 +24,8 @@ namespace Lumina
         IDevelopmentToolUI* CreateDevelopmentTools() override;
         #endif
         
+        void CreateProject(FStringView NewProjectName, FStringView NewProjectPath);
+        
     };
     
     

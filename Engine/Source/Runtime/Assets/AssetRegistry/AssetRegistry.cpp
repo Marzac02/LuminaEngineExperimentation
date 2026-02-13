@@ -132,10 +132,11 @@ namespace Lumina
     FAssetData* FAssetRegistry::GetAssetByPath(FStringView Path) const
     {
         FReadScopeLock Lock(AssetsMutex);
-
+        
+        FStringView PathNoExt = VFS::RemoveExtension(Path);
         auto It = eastl::find_if(Assets.begin(), Assets.end(), [&](const TUniquePtr<FAssetData>& Data)
         {
-            return Data->Path == Path;
+            return VFS::RemoveExtension(Data->Path) == PathNoExt;
         });
         
         return It == Assets.end() ? nullptr : It->get();

@@ -2272,10 +2272,10 @@ namespace Lumina
             return;
         }
 
-        if (ImGui::MenuItem(LE_ICON_FOLDER_OPEN " Open Project...", "Ctrl+O"))
-        {
-            OpenProjectDialog();
-        }
+        //if (ImGui::MenuItem(LE_ICON_FOLDER_OPEN " Open Project...", "Ctrl+O"))
+        //{
+        //    OpenProjectDialog();
+        //}
     
         if (ImGui::MenuItem(LE_ICON_FOLDER_PLUS " New Project...", "Ctrl+N"))
         {
@@ -2604,23 +2604,27 @@ namespace Lumina
             ImGui::Separator();
             ImGui::Spacing();
             
-            static char ProjectName[256] = "MyProject";
-            static char ProjectPath[512] = "";
+            static char NewProjectName[256] = "MyProject";
+            static char NewProjectPath[512] = "";
             
             ImGui::Text("Project Name:");
             ImGui::SetNextItemWidth(-1);
-            ImGui::InputText("##ProjectName", ProjectName, sizeof(ProjectName));
-            
+            ImGui::InputText("##ProjectName", NewProjectName, sizeof(NewProjectName));
+        
             ImGui::Spacing();
-            
+        
             ImGui::Text("Project Location:");
             ImGui::SetNextItemWidth(-120);
-            ImGui::InputText("##ProjectPath", ProjectPath, sizeof(ProjectPath));
-            ImGui::SameLine();
-            if (ImGui::Button("Browse...", ImVec2(110, 0)))
-            {
-                // Open folder browser
-            }
+            ImGui::InputText("##ProjectPath", NewProjectPath, sizeof(NewProjectPath));
+            //ImGui::SameLine();
+            //if (ImGui::Button("Browse...", ImVec2(110, 0)))
+            //{
+            //    //FFixedString File;
+            //    //if (Platform::OpenFileDialogue(File))
+            //    //{
+            //    //    NewProjectPath = File;
+            //    //}
+            //}
             
             ImGui::Spacing();
             ImGui::Separator();
@@ -2641,6 +2645,10 @@ namespace Lumina
             ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.25f, 0.55f, 0.3f, 1.0f));
             if (ImGui::Button(LE_ICON_CHECK " Create Project", ImVec2(140, 0)))
             {
+                GEditorEngine->CreateProject(NewProjectName, NewProjectPath);
+                ImGui::PopStyleColor();
+                
+                ImGuiX::Notifications::NotifySuccess("Successfully created project, please close the engine and relaunch");
                 return true;
             }
             ImGui::PopStyleColor();

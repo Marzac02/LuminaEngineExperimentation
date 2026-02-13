@@ -90,12 +90,14 @@ namespace Lumina
         #endif
 
         Memory::Delete(GWorldManager);
+		GWorldManager = nullptr;
         
         ShutdownCObjectSystem();
         
         EngineViewport.SafeRelease();
         
         Memory::Delete(GRenderManager);
+        GRenderManager = nullptr;
 
         Physics::Shutdown();
         Scripting::Shutdown();

@@ -250,7 +250,8 @@ namespace Lumina::Scripting
         
         State.set_function("LoadObject", [](const sol::object& Name)
         {
-            CObject* Object = LoadObject<CObject>(Name.as<const char*>());
+            const char* Char = Name.as<const char*>();
+            CObject* Object = LoadObject<CObject>(Char);
             return Object ? Object->AsLua(Name.lua_state()) : sol::nil;
         });
         

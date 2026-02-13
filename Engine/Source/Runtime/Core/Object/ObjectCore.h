@@ -35,7 +35,7 @@ namespace Lumina
     RUNTIME_API CObject* FindObjectImpl(const FName& Name, CClass* Class);
     RUNTIME_API CObject* StaticLoadObject(const FGuid& GUID);
     RUNTIME_API void AsyncLoadObject(const FGuid& GUID, const TFunction<void(CObject*)>& Callback);
-    RUNTIME_API CObject* StaticLoadObject(const FString& PathName);
+    RUNTIME_API CObject* StaticLoadObject(FStringView Name);
     RUNTIME_API FFixedString SanitizeObjectName(FStringView Name);
 
     RUNTIME_API bool IsValid(const CObjectBase* Obj);
@@ -66,7 +66,7 @@ namespace Lumina
     }
     
     template<Concept::IsACObject T>
-    T* LoadObject(const FString& Name)
+    T* LoadObject(FStringView Name)
     {
         return static_cast<T*>(StaticLoadObject(Name));
     }
