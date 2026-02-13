@@ -7,9 +7,9 @@ PlayerScript = {
 
 function PlayerScript:Update(DeltaTime)
 
-    local CharacterController = Context:TryGet(Entity, SCharacterControllerComponent)
-    local CharacterMovement = Context:TryGet(Entity, SCharacterMovementComponent)
-    local InputComponent = Context:TryGet(Entity, SInputComponent)
+    local CharacterController = Context:Get(Entity, SCharacterControllerComponent)
+    local CharacterMovement = Context:Get(Entity, SCharacterMovementComponent)
+    local InputComponent = Context:Get(Entity, SInputComponent)
     
     if InputComponent:IsKeyDown(EKeyCode.W) then
         CharacterController:AddMovementInput(vec3(0, 0, 1))

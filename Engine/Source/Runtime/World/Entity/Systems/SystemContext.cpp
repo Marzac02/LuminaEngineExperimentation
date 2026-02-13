@@ -45,8 +45,8 @@ namespace Lumina
             "ConnectEvent",         &FSystemContext::Lua_ConnectEvent,
             "DispatchEvent",        &FSystemContext::Lua_DispatchEvent,
             "Emplace",              &FSystemContext::Lua_Emplace,
+            "GetUnsafe",            &FSystemContext::Lua_GetUnsafe,
             "Get",                  &FSystemContext::Lua_Get,
-            "TryGet",               &FSystemContext::Lua_Try_Get,
 
             "Remove",               &FSystemContext::Lua_Remove,
             "SetActiveCamera",      &FSystemContext::Lua_SetActiveCamera,
@@ -343,7 +343,7 @@ namespace Lumina
         return MaybeAny ? MaybeAny.cast<sol::reference>() : sol::nil;
     }
 
-    sol::variadic_results FSystemContext::Lua_Get(entt::entity Entity, const sol::variadic_args& Args) const
+    sol::variadic_results FSystemContext::Lua_GetUnsafe(entt::entity Entity, const sol::variadic_args& Args) const
     {
         LUMINA_PROFILE_SCOPE();
 
@@ -371,7 +371,7 @@ namespace Lumina
         return Results;
     }
 
-    sol::variadic_results FSystemContext::Lua_Try_Get(entt::entity Entity, const sol::variadic_args& Args) const
+    sol::variadic_results FSystemContext::Lua_Get(entt::entity Entity, const sol::variadic_args& Args) const
     {
         LUMINA_PROFILE_SCOPE();
 

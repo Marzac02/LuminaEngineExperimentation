@@ -73,8 +73,7 @@ namespace Lumina
     {
         DEBUG_ASSERT(Context.RebuildTreeFunction);
         DEBUG_ASSERT(bDirty);
-
-
+        
         THashSet<uint64> CachedExpandedItems;
         auto BeforeView = Registry.view<FTreeNodeState, FTreeNode>();
         BeforeView.each([&](const FTreeNodeState& State, const FTreeNode& Node)

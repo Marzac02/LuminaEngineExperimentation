@@ -182,8 +182,8 @@ namespace Lumina
         
         void Lua_Remove(entt::entity Entity, const sol::object& Component) const;
         sol::object Lua_Emplace(entt::entity Entity, const sol::table& Component) const;
+        sol::variadic_results Lua_GetUnsafe(entt::entity Entity, const sol::variadic_args& Args) const;
         sol::variadic_results Lua_Get(entt::entity Entity, const sol::variadic_args& Args) const;
-        sol::variadic_results Lua_Try_Get(entt::entity Entity, const sol::variadic_args& Args) const;
 
     private:
 

@@ -59,9 +59,6 @@ namespace Lumina
                 }
                 else if (V.is<sol::table>())
                 {
-					sol::table AsTable = V.as<sol::table>();
-                    FStringView Type = AsTable["__type"].get<const char*>();
-                    LOG_INFO("Type : {}", Type);
                 }
             }
             
@@ -163,7 +160,7 @@ namespace Lumina
                         {
                             if (!LoadScript(FileInfo.VirtualPath))
                             {
-                                ImGuiX::Notifications::NotifyError("Failed to load script! {}", FileInfo.VirtualPath);
+                                ImGuiX::Notifications::NotifyError("Failed to load script! {}, Please check console for details.", FileInfo.VirtualPath);
                             }
                             
                             ImGui::CloseCurrentPopup();
@@ -199,7 +196,7 @@ namespace Lumina
             {
                 if (!LoadScript(Value.ScriptPath.Path))
                 {
-                    ImGuiX::Notifications::NotifyError("Failed to load script! {}", Value.ScriptPath.Path);
+                    ImGuiX::Notifications::NotifyError("Failed to load script! {}, Please check console for details.", Value.ScriptPath.Path);
                 }
                 bWasChanged = true;
             }
