@@ -272,7 +272,7 @@ namespace Lumina::Platform
         if (!Filter)
             pFileDialog->SetOptions(options | FOS_PICKFOLDERS | FOS_FORCEFILESYSTEM);
         else
-            pFileDialog->SetOptions(options | FOS_FORCEFILESYSTEM | FOS_FILEMUSTEXIST , );
+            pFileDialog->SetOptions(options | FOS_FORCEFILESYSTEM | FOS_FILEMUSTEXIST  );
 
         if (Title)
         {
