@@ -1734,6 +1734,11 @@ namespace Lumina
 
     void FWorldEditorTool::RemoveSelectedEntity(entt::entity Entity, bool bRebuild)
     {
+        if (World == nullptr)
+        {
+            return;
+        }
+        
         if (World->GetEntityRegistry().valid(Entity))
         {
             return;

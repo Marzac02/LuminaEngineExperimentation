@@ -21,11 +21,12 @@ function CubeSpawner:Update(DeltaTime)
             SpawnTimer = 0
             NextSpawnDelay = math.random(self.MinSpawnDelay, self.MaxSpawnDelay) * 0.5
             
-            --print(self.CubeMesh)
+            --print("Hello")
             local Test = LoadObject(self.CubeMesh)
             local Location = vec3(math.random(-20, 20), 50, math.random(-20, 20))
             local NewEntity = Context:Create(Location)
             local TransformComponent = Context:Get(NewEntity, STransformComponent)
+            TransformComponent:SetScale(vec3(0.1))
             TransformComponent:SetRotationFromEuler(vec3(math.random(0, 360), math.random(0, 360), math.random(0, 360)))
 
             local BoxCollider = SBoxColliderComponent()

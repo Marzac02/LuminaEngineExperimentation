@@ -77,6 +77,7 @@ namespace Lumina::Scripting
         RUNTIME_API TVector<TSharedPtr<FLuaScript>> GetAllRegisteredScripts();
         RUNTIME_API void RunGC();
         
+        
         void RegisterCoreTypes();
         void SetupInput();
         
@@ -85,6 +86,8 @@ namespace Lumina::Scripting
         FScriptTransactionDelegate OnScriptDeleted;
 
     private:
+        
+        void ReloadScripts(FStringView Path);
         
         void Lua_Info(const sol::variadic_args& Args);
         void Lua_Warning(const sol::variadic_args& Args);
