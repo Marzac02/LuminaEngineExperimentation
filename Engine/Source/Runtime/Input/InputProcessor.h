@@ -16,9 +16,10 @@ namespace Lumina
     	
 		RUNTIME_API FORCEINLINE double GetMouseX() const { return MouseX; }
 		RUNTIME_API FORCEINLINE double GetMouseY() const { return MouseY; }
+        RUNTIME_API FORCEINLINE double GetMouseZ() const { return MouseZ; }
 		RUNTIME_API FORCEINLINE double GetMouseDeltaX() const { return MouseDeltaX; }
         RUNTIME_API FORCEINLINE double GetMouseDeltaY() const { return MouseDeltaY; }
-        
+
         RUNTIME_API FORCEINLINE Input::EKeyState GetKeyState(EKeyCode KeyCode) const { return KeyStates[static_cast<uint32>(KeyCode)]; }
 		RUNTIME_API FORCEINLINE Input::EMouseState GetMouseButtonState(EMouseCode MouseCode) const { return MouseStates[static_cast<uint32>(MouseCode)]; }
 
@@ -32,7 +33,7 @@ namespace Lumina
 
 		RUNTIME_API void SetCursorMode(int Mode);
 
-    	void EndFrame();
+        void EndFrame();
 
     private:
 
@@ -41,6 +42,10 @@ namespace Lumina
         double MouseX = 0.0;
         double MouseY = 0.0;
     	
+        //Scroll Functionality.
+        double MouseZ = 0.0;
+
+
         double MouseDeltaX = 0.0;
         double MouseDeltaY = 0.0;
 

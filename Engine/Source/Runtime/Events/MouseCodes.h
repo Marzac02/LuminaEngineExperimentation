@@ -12,12 +12,13 @@ namespace Lumina
         Button5                = 5,
         Button6                = 6,
         Button7                = 7,
-    
+        Scroll                 = 8,
+
         ButtonLast             = Button7,
         ButtonLeft             = Button0,
         ButtonRight            = Button1,
         ButtonMiddle           = Button2,
-    
-        Num = 8,
+
+        Num = 9,
     };
 }
