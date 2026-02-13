@@ -244,126 +244,98 @@ namespace Lumina::Platform
 
     bool OpenFileDialogue(FFixedString& OutFile, const char* Title, const char* Filter, const char* InitialDir)
     {
-        // ------------------------------------------------------------------
-        // COM Initialization
-        // ------------------------------------------------------------------
-        HRESULT hr = CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED | COINIT_DISABLE_OLE1DDE);
-        if (FAILED(hr))
-            assert(false && "Failed to initialize COM library");
 
-        IFileDialog* pFileDialog = nullptr;
-        hr = CoCreateInstance(CLSID_FileOpenDialog, nullptr, CLSCTX_ALL,
-            IID_IFileDialog, reinterpret_cast<void**>(&pFileDialog));
+        IFileDialog* FileDialog = nullptr;
+        HRESULT Result = CoCreateInstance(CLSID_FileOpenDialog, nullptr, CLSCTX_ALL, IID_IFileDialog, reinterpret_cast<void**>(&FileDialog));
 
-        if (FAILED(hr))
+        if (FAILED(Result))
         {
             CoUninitialize();
-            assert(false && "Failed to create File Open Dialog");
-            return false;
+            PANIC("Failed to create File Open Dialog");
         }
+        
+        DWORD Options;
+        FileDialog->GetOptions(&Options);
 
-        // ------------------------------------------------------------------
-        // Set Dialog Options
-        // ------------------------------------------------------------------
-        DWORD options;
-        pFileDialog->GetOptions(&options);
-
-        // If no filter is provided, we assume folder selection mode
         if (!Filter)
-            pFileDialog->SetOptions(options | FOS_PICKFOLDERS | FOS_FORCEFILESYSTEM);
+        {
+            FileDialog->SetOptions(Options | FOS_PICKFOLDERS | FOS_FORCEFILESYSTEM);
+        }
         else
-            pFileDialog->SetOptions(options | FOS_FORCEFILESYSTEM | FOS_FILEMUSTEXIST  );
+        {
+            FileDialog->SetOptions(Options | FOS_FORCEFILESYSTEM | FOS_FILEMUSTEXIST);
+        }
 
         if (Title)
         {
-            std::wstring wTitle(Title, Title + strlen(Title));
-            pFileDialog->SetTitle(wTitle.c_str());
+            FileDialog->SetTitle(UTF8_TO_TCHAR(Title));
         }
 
         if (InitialDir)
         {
-            std::wstring wDir(InitialDir, InitialDir + strlen(InitialDir));
             IShellItem* pFolder = nullptr;
-            if (SUCCEEDED(SHCreateItemFromParsingName(wDir.c_str(), nullptr,
-                IID_PPV_ARGS(&pFolder))))
+            if (SUCCEEDED(SHCreateItemFromParsingName(UTF8_TO_TCHAR(InitialDir), nullptr, IID_PPV_ARGS(&pFolder))))
             {
-                pFileDialog->SetFolder(pFolder);
+                FileDialog->SetFolder(pFolder);
                 pFolder->Release();
             }
         }
-
-        // ------------------------------------------------------------------
-        // FIX: Dynamic Filter Setup
-        // ------------------------------------------------------------------
-        std::vector<COMDLG_FILTERSPEC> fileTypes;
-        // Important: wstrings must remain in memory until the Show() method returns
-        std::vector<std::wstring> wstringStorage;
+        
+        TVector<COMDLG_FILTERSPEC> fileTypes;
+        TVector<FString> StringStorage;
 
         if (Filter && strlen(Filter) > 0)
         {
-            // Expected Filter format: "Description1\0Extension1\0Description2\0Extension2\0"
             const char* p = Filter;
             while (*p)
             {
-                std::wstring name;
-                std::wstring spec;
+                FString Name;
+                FString Spec;
 
-                // Extract Name
                 size_t len = strlen(p);
-                name.assign(p, p + len);
+                Name.assign(p, p + len);
                 p += len + 1;
 
-                // Extract Extension
                 len = strlen(p);
-                spec.assign(p, p + len);
+                Spec.assign(p, p + len);
                 p += len + 1;
 
-                wstringStorage.push_back(name);
-                wstringStorage.push_back(spec);
+                StringStorage.push_back(Name);
+                StringStorage.push_back(Spec);
 
-                // Use c_str() pointers from the storage vector
-                fileTypes.push_back({ wstringStorage[wstringStorage.size() - 2].c_str(),
-                                      wstringStorage[wstringStorage.size() - 1].c_str() });
+                fileTypes.push_back({ UTF8_TO_TCHAR(StringStorage[StringStorage.size() - 2].c_str()),
+                                      UTF8_TO_TCHAR(StringStorage[StringStorage.size() - 1].c_str()) });
             }
         }
 
         if (!fileTypes.empty())
         {
-            pFileDialog->SetFileTypes(static_cast<UINT>(fileTypes.size()), fileTypes.data());
+            FileDialog->SetFileTypes(static_cast<UINT>(fileTypes.size()), fileTypes.data());
         }
-        // If no filter is provided, we don't explicitly set file types,
-        // or you could add a default "All Files" here if needed.
-
-        // ------------------------------------------------------------------
-        // Show Dialog
-        // ------------------------------------------------------------------
-        bool result = false;
-        if (SUCCEEDED(pFileDialog->Show(nullptr)))
+        bool bResult = false;
+        if (SUCCEEDED(FileDialog->Show(nullptr)))
         {
-            IShellItem* pItem = nullptr;
-            if (SUCCEEDED(pFileDialog->GetResult(&pItem)))
+            IShellItem* Item = nullptr;
+            if (SUCCEEDED(FileDialog->GetResult(&Item)))
             {
                 PWSTR pszPath = nullptr;
-                if (SUCCEEDED(pItem->GetDisplayName(SIGDN_FILESYSPATH, &pszPath)))
+                if (SUCCEEDED(Item->GetDisplayName(SIGDN_FILESYSPATH, &pszPath)))
                 {
-                    std::wstring wPath = pszPath;
-                    // Convert to string for storage
-                    std::string path(wPath.begin(), wPath.end());
+                    FWString wPath = pszPath;
 
-                    OutFile = path.c_str();
-                    // Normalize path separators
+                    OutFile = TCHAR_TO_UTF8(wPath.c_str());
                     eastl::replace(OutFile.begin(), OutFile.end(), '\\', '/');
 
                     CoTaskMemFree(pszPath);
-                    result = true;
+                    bResult = true;
                 }
-                pItem->Release();
+                Item->Release();
             }
         }
 
-        pFileDialog->Release();
+        FileDialog->Release();
         CoUninitialize();
-        return result;
+        return bResult;
     }
 }
 
