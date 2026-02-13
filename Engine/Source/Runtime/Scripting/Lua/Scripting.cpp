@@ -112,6 +112,7 @@ namespace Lumina::Scripting
         DeferredActions.ProcessAllOf<FScriptLoad>([&](const FScriptLoad& Load)
         {
             OnScriptLoaded.Broadcast(Load.Path);
+            ReloadScripts(Load.Path);
         });
     }
 
@@ -196,9 +197,10 @@ namespace Lumina::Scripting
         }
         
         auto NewScript = MakeShared<FLuaScript>();
-        NewScript->Environment = std::move(Environment);
-        NewScript->ScriptTable = std::move(ScriptTable);
-        NewScript->Name = VFS::FileName(Path, true);
+        NewScript->Environment  = std::move(Environment);
+        NewScript->ScriptTable  = std::move(ScriptTable);
+        NewScript->Name         = VFS::FileName(Path, true);
+        NewScript->Path         = Path;
         
         RegisteredScripts[Path].emplace_back(NewScript);
         
@@ -692,6 +694,71 @@ namespace Lumina::Scripting
             "RightSuper",   EKeyCode::RightSuper,
             "Menu",         EKeyCode::Menu
         );
+    }
+
+    void FScriptingContext::ReloadScripts(FStringView Path)
+    {
+        TVector<TWeakPtr<FLuaScript>>& ScriptVector = RegisteredScripts[Path];
+        for (const TWeakPtr<FLuaScript>& WeakScript : ScriptVector)
+        {
+            if (TSharedPtr<FLuaScript> Script = WeakScript.lock())
+            {
+                State.collect_gc();
+
+                FString ScriptData;
+                if (!VFS::ReadFile(ScriptData, Path))
+                {
+                    LOG_ERROR("Lua - Failed to read script file: {}", Path);
+                    return;
+                }
+        
+                if (ScriptData.empty())
+                {
+                    LOG_WARN("Lua - Script file is empty: {}", Path);
+                    return;
+                }
+
+                sol::environment Environment(State, sol::create, State.globals());
+        
+                sol::protected_function_result Result = State.safe_script(ScriptData.c_str(), Environment);
+        
+                if (!Result.valid())
+                {
+                    sol::error Error = Result;
+                    LOG_ERROR("Lua - Failed to execute script '{}': {}", Path, Error.what());
+                    return;
+                }
+
+                if (Result.get_type() == sol::type::none || Result.get_type() == sol::type::lua_nil)
+                {
+                    LOG_ERROR("Lua - Script '{}' did not return a value", Path);
+                    return;
+                }
+
+                sol::object ReturnedObject = Result;
+        
+                if (!ReturnedObject.is<sol::table>())
+                {
+                    LOG_ERROR("Lua - Script '{}' must return a table, got: {}", Path, sol::type_name(ReturnedObject.lua_state(), ReturnedObject.get_type()));
+                    return;
+                }
+
+                sol::table ScriptTable = ReturnedObject.as<sol::table>();
+        
+                if (ScriptTable.empty())
+                {
+                    LOG_WARN("Lua - Script '{}' returned an empty table", Path);
+                    return;
+                }
+        
+                Script->Environment  = std::move(Environment);
+                Script->ScriptTable  = std::move(ScriptTable);
+                Script->Name         = VFS::FileName(Path, true);
+                Script->Path         = Path;
+            }
+        }
+        
+        LOG_INFO("Reloaded Scripts: {}", Path);
     }
 
     void FScriptingContext::Lua_Info(const sol::variadic_args& Args)

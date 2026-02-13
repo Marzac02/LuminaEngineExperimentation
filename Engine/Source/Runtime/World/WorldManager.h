@@ -30,8 +30,8 @@ namespace Lumina
         void RemoveWorld(CWorld* World);
         void AddWorld(CWorld* World);
     
-        CWorld* GetCurrentEditorWorld();
-        
+        const TVector<FManagedWorld>& GetManagedWorlds() const { return Worlds; }
+    
     private:
 
         TWeakObjectPtr<CWorld> CurrentEditorWorld;

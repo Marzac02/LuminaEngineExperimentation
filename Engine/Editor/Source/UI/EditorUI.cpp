@@ -84,6 +84,7 @@
 #include "Tools/UI/ImGui/ImGuiDesignIcons.h"
 #include "Tools/UI/ImGui/ImGuiRenderer.h"
 #include "Tools/UI/ImGui/ImGuiX.h"
+#include "World/WorldManager.h"
 #include "World/Entity/Components/EditorComponent.h"
 #include "World/Scene/RenderScene/RenderScene.h"
 
@@ -1136,7 +1137,7 @@ namespace Lumina
                     ImGui::TableNextColumn();
                     if (ImGui::SmallButton("Reload"))
                     {
-                        
+                        //Scripting::FScriptingContext::Get().R
                     }
                     ImGui::SameLine();
                     if (ImGui::SmallButton("Edit"))
