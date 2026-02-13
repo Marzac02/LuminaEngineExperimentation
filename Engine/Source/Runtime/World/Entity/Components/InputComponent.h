@@ -5,6 +5,7 @@
 #include "Events/MouseCodes.h"
 #include "Input/InputProcessor.h"
 #include "InputComponent.generated.h"
+#include "GLFW/glfw3.h"
 
 namespace Lumina
 {

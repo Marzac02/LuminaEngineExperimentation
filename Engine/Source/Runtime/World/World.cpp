@@ -16,6 +16,7 @@
 #include "Entity/Components/NameComponent.h"
 #include "Entity/Components/ScriptComponent.h"
 #include "Entity/Components/SingletonEntityComponent.h"
+#include "Entity/Events/WorldEvents.h"
 #include "Events/KeyCodes.h"
 #include "glm/gtx/matrix_decompose.hpp"
 #include "Physics/Physics.h"
@@ -272,13 +273,21 @@ namespace Lumina
         SetActiveCamera(Event.NewActiveEntity);
     }
 
+    void CWorld::InitializeForPlay()
+    {
+        SetIsPlayWorld(true);
+        SetPaused(false);
+    }
+
     void CWorld::BeginPlay()
     {
+        SystemContext.DispatchEvent<FBeginPlayEvent>(FBeginPlayEvent{this});
         PhysicsScene->OnWorldSimulate();
     }
 
     void CWorld::EndPlay()
     {
+        SystemContext.DispatchEvent<FEndPlayEvent>(FEndPlayEvent{this});
         PhysicsScene->OnWorldStopSimulate();
     }
 
@@ -404,7 +413,6 @@ namespace Lumina
                 {
                     (ScriptVarVisitor(Vectors), ...);
                 }, ScriptComponent.CustomData);
-                
             }
         }
     }

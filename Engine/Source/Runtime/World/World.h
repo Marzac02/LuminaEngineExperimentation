@@ -87,6 +87,8 @@ namespace Lumina
         
         NODISCARD EWorldType GetWorldType() const { return WorldType; }
 
+        void InitializeForPlay();
+        
         void BeginPlay();
         void EndPlay();
         
@@ -150,6 +152,8 @@ namespace Lumina
                 }
             }
         }
+        
+        const FSystemContext& GetSystemContext() const { return SystemContext; }
         
     private:
         

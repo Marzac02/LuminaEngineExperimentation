@@ -88,6 +88,10 @@
         void DrawCameraControls(float ButtonSize);
         void DrawViewportOptions(float ButtonSize);
         void DrawSnapSettingsPopup();
+        
+        bool HasSimulatingWorld() const { return bSimulatingWorld || bGamePreviewRunning; }
+        
+        void StopAllSimulations();
 
     protected:
         
@@ -124,8 +128,7 @@
         void OnPostPropertyChangeEvent(const FPropertyChangedEvent& Event);
         
         bool IsUnsavedDocument() override;
-
-
+        
         void DrawEntityEditor(bool bFocused, entt::entity Entity);
 
         void DrawPropertyEditor(bool bFocused);
@@ -138,7 +141,7 @@
         void CopyEntity(entt::entity& To, entt::entity From);
 
         void CycleGuizmoOp();
-
+    
     private:
 
         struct FSelectionBox
@@ -172,7 +175,7 @@
 		bool									bGuizmoSnapEnabled = true;
         bool                                    bGamePreviewRunning = false;
         bool                                    bSimulatingWorld = false;
-
+        
         /** IDK, this thing will return IsUsing = true always if it's never been used */
         bool                                    bImGuizmoUsedOnce = false;
     };

@@ -342,7 +342,7 @@ namespace Lumina
         
         OnProjectLoaded.Broadcast();
     }
-    
+
     FFixedString FEngine::GetProjectScriptDirectory() const
     {
         if (!HasLoadedProject())

@@ -306,7 +306,6 @@ namespace Lumina
                     {
                         Visualizer->Draw(World, World->GetEntityRegistry(), SelectedEntity);
                     }
-                
                 }
             });
         });
@@ -314,7 +313,7 @@ namespace Lumina
 
     void FWorldEditorTool::OnEntityCreated(entt::registry& Registry, entt::entity Entity)
     {
-        OutlinerListView.MarkTreeDirty();
+        // OutlinerListView.MarkTreeDirty(); @TODO Too expensive to enable.
     }
 
     const char* FWorldEditorTool::GetTitlebarIcon() const
@@ -1188,7 +1187,6 @@ namespace Lumina
                 if (ImGuiX::IconButton(LE_ICON_PLAY, "##PlayBtn", 0xFFFFFFFF, BtnSize))
                 {
                     SetWorldPlayInEditor(true);
-                    //OnGamePreviewStartRequested.Broadcast();
                 }
                 ImGui::PopStyleColor(2);
                 
@@ -1715,6 +1713,12 @@ namespace Lumina
         ImGui::PopStyleColor();
     }
 
+    void FWorldEditorTool::StopAllSimulations()
+    {
+        SetWorldNewSimulate(false);
+        SetWorldPlayInEditor(false);
+    }
+
     void FWorldEditorTool::AddSelectedEntity(entt::entity Entity, bool bRebuild)
     {
         if (!World->GetEntityRegistry().valid(Entity))
@@ -1805,9 +1809,9 @@ namespace Lumina
             
             World->SetActive(false);
             ProxyWorld = World;
+            
             World = CWorld::DuplicateWorld(ProxyWorld);
-            World->SetIsPlayWorld(true);
-            World->SetPaused(false);
+            World->InitializeForPlay();
             World->BeginPlay();
             
             OutlinerListView.ClearTree();

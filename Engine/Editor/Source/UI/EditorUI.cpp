@@ -144,32 +144,7 @@ namespace Lumina
         EditorWindowClass.ParentViewportId              = 0; // Top level window
         EditorWindowClass.DockingAlwaysTabBar           = true;
 
-        CWorld* TemporaryWorld = NewObject<CWorld>(nullptr, "Transient World", FGuid::New(), OF_Transient);
-        WorldEditorTool = CreateTool<FWorldEditorTool>(this, TemporaryWorld);
-        
-        (void)WorldEditorTool->GetOnPreviewStartRequestedDelegate().AddLambda([this]
-        {
-            if (CWorld* PreviewWorld = CWorld::DuplicateWorld(WorldEditorTool->GetWorld()))
-            {
-                PreviewWorld->SetIsPlayWorld(true);
-                PreviewWorld->SetPaused(false);
-                GamePreviewTool = CreateTool<FGamePreviewTool>(this, PreviewWorld);
-                WorldEditorTool->NotifyPlayInEditorStart();
-                PreviewWorld->BeginPlay();
-            }
-        });
-
-        (void)WorldEditorTool->GetOnPreviewStopRequestedDelegate().AddLambda([this]
-        {
-            FInputProcessor::Get().SetCursorMode(GLFW_CURSOR_NORMAL);
-            if (GamePreviewTool)
-            {
-                GamePreviewTool->World->EndPlay();
-                ToolsPendingDestroy.push(GamePreviewTool);   
-            }
-        });
-
-        
+        WorldEditorTool = CreateTool<FWorldEditorTool>(this, NewObject<CWorld>(nullptr, "Transient World", FGuid::New(), OF_Transient));
         ConsoleLogTool = CreateTool<FConsoleLogEditorTool>(this);
         ContentBrowser = CreateTool<FContentBrowserEditorTool>(this);
     }
@@ -713,6 +688,11 @@ namespace Lumina
         }
         else if (Asset->IsA<CWorld>())
         {
+            if (WorldEditorTool->HasSimulatingWorld())
+            {
+                WorldEditorTool->StopAllSimulations();
+            }
+            
             WorldEditorTool->SetWorld(Cast<CWorld>(Asset));
         }
 

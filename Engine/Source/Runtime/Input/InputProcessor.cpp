@@ -66,7 +66,6 @@ namespace Lumina
 		DesiredInputMode = Mode;
 	}
 
-
 	void FInputProcessor::EndFrame()
 	{
 		if (DesiredInputMode != glfwGetInputMode(Windowing::GetPrimaryWindowHandle()->GetWindow(), GLFW_CURSOR))
