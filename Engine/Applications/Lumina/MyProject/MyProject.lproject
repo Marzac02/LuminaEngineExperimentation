@@ -1,0 +1,9 @@
+{
+    "Name": "MyProject",
+    "ProjectID": "$PROJECTGUID",
+    "Description": "$PROJECTDESCRIPTION",
+    "Version": "0.0.1",
+    "Plugins": [
+        
+    ]
+}
