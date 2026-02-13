@@ -399,7 +399,6 @@ namespace Lumina
                 ImGui::Spacing();
                 ImGui::Spacing();
 
-                // Contributors Section
                 ImGui::TextColored(ImVec4(0.9f, 0.9f, 0.9f, 1.0f), "Development Team");
                 ImGui::Spacing();
 
@@ -424,7 +423,6 @@ namespace Lumina
                 ImGui::Separator();
                 ImGui::Spacing();
 
-                // Footer
                 ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.5f, 0.5f, 0.5f, 1.0f));
                 ImGui::Text("Licensed under the MIT License");
                 ImGui::Text("Copyright (c) 2025 Lumina Engine Contributors");
@@ -432,7 +430,6 @@ namespace Lumina
 
                 ImGui::Spacing();
 
-                // Action Buttons
                 ImGui::Separator();
                 ImGui::Spacing();
 
