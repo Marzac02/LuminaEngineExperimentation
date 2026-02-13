@@ -100,15 +100,18 @@ namespace Lumina
         World->SetActiveCamera(EditorEntity);
     }
 
-    entt::entity FEditorTool::CreateFloorPlane(float ScaleX, float ScaleY)
+    entt::entity FEditorTool::CreateFloorPlane(float YOffset, float ScaleX, float ScaleY)
     {
         FTransform Transform;
         Transform.Rotate({-90.0f, 0.0f, 0.0f});
-        Transform.Scale = glm::vec3(ScaleX, ScaleY, 1.0f);
+        Transform.SetScale(glm::vec3(ScaleX, ScaleY, 1.0f));
+        Transform.Translate(glm::vec3(0.0f, YOffset, 0.0f));
+        
         entt::entity FloorEntity = World->ConstructEntity("FloorPlane", Transform);
         World->GetEntityRegistry().emplace<FHideInSceneOutliner>(FloorEntity);
         SStaticMeshComponent& MeshComponent = World->GetEntityRegistry().emplace<SStaticMeshComponent>(FloorEntity);
         MeshComponent.StaticMesh = CThumbnailManager::Get().PlaneMesh;
+        
         return FloorEntity;
     }
 
