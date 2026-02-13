@@ -2611,7 +2611,7 @@ namespace Lumina
             }
 
             return bShouldClose;
-        });
+        }, true, false);
     }
 
     void FEditorUI::NewProjectDialog()
