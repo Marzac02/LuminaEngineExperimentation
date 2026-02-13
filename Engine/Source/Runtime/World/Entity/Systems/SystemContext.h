@@ -158,8 +158,8 @@ namespace Lumina
         
         RUNTIME_API entt::runtime_view CreateRuntimeView(const THashSet<entt::id_type>& Components) const;
 
-        RUNTIME_API entt::entity Create(const FName& Name, const FTransform& Transform = FTransform()) const;
-        RUNTIME_API entt::entity Create() const { return Registry.create(); }
+        RUNTIME_API entt::entity Create(glm::vec3 Location) const;
+        RUNTIME_API entt::entity Create() const;
         RUNTIME_API void Destroy(entt::entity Entity) const { Registry.destroy(Entity); }
 
         RUNTIME_API size_t GetNumEntities() const;

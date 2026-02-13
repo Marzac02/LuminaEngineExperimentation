@@ -2,7 +2,6 @@
 
 
 PartyLight = {
-
 }
 
 function PartyLight:Update(DeltaTime)

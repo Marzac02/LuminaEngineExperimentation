@@ -55,6 +55,10 @@ namespace Lumina
             "SetEntityRotation",    &FSystemContext::SetEntityRotation,
             "SetEntityScale",       &FSystemContext::SetEntityScale,
             
+            "Create",               sol::overload(
+                [&](const FSystemContext& Self) { return Self.Create(); },
+                [&](const FSystemContext& Self, const glm::vec3& Location) { return Self.Create(Location); }),
+            
             "DirtyTransform",       sol::overload(
                 [&](FSystemContext& Self, entt::entity Entity)
                 {
@@ -204,12 +208,21 @@ namespace Lumina
     {
         World->DrawArrow(Start, Direction, Length, Color, Thickness, true, Duration, HeadSize);
     }
-
-    entt::entity FSystemContext::Create(const FName& Name, const FTransform& Transform) const
+    
+    entt::entity FSystemContext::Create(glm::vec3 Location) const
     {
         entt::entity EntityID = Registry.create();
-        Registry.emplace<STransformComponent>(EntityID).Transform = Transform;
-        Registry.emplace<SNameComponent>(EntityID).Name = Name;
+        Registry.emplace<STransformComponent>(EntityID).SetLocation(Location);
+        Registry.emplace<SNameComponent>(EntityID).Name = "Entity";
+        Registry.emplace_or_replace<FNeedsTransformUpdate>(EntityID);
+        return EntityID;
+    }
+    
+    entt::entity FSystemContext::Create() const
+    {
+        entt::entity EntityID = Registry.create();
+        Registry.emplace<STransformComponent>(EntityID);
+        Registry.emplace<SNameComponent>(EntityID).Name = "Entity";
         Registry.emplace_or_replace<FNeedsTransformUpdate>(EntityID);
         return EntityID;
     }

@@ -88,9 +88,9 @@ namespace Lumina
         });
     }
 
-    CObject* StaticLoadObject(const FString& PathName)
+    CObject* StaticLoadObject(FStringView Name)
     {
-        if (const FAssetData* Data = FAssetRegistry::Get().GetAssetByPath(PathName))
+        if (const FAssetData* Data = FAssetRegistry::Get().GetAssetByPath(Name))
         {
             return StaticLoadObject(Data->AssetGUID);
         }
