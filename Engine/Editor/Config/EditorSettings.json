@@ -1,7 +1,9 @@
 {
     "Editor": {
         "RecentProjects": [
-            "Sandbox"
+            "Sandbox",
+            "MyProject",
+            "TopDownRPG"
         ],
         "StartupProject": "NULL",
         "WorldEditorTool": {

@@ -1,5 +1,7 @@
 
-include "BuildScripts/Logger"
+local LuminaDir = os.getenv("LUMINA_DIR")
+
+include (path.join(LuminaDir, "BuildScripts/Logger"))
 
 function Capitalize(str)
     if not str or str == "" then
