@@ -5,7 +5,7 @@ PartyLight = {
 }
 
 function PartyLight:Update(DeltaTime)
-    local LightComponent = Context:TryGet(Entity, SPointLightComponent)
+    local LightComponent = Context:Get(Entity, SPointLightComponent)
     if LightComponent then
         local time = Context:GetTime() * Entity * 0.01
         LightComponent.Intensity = 100 + math.sin(time * 5) * 5

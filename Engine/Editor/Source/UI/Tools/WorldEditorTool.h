@@ -57,6 +57,8 @@
         
         void Update(const FUpdateContext& UpdateContext) override;
         void EndFrame() override;
+        
+        void OnEntityCreated(entt::registry& Registry, entt::entity Entity);
 
         const char* GetTitlebarIcon() const override;
         void DrawToolMenu(const FUpdateContext& UpdateContext) override;

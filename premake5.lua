@@ -40,6 +40,9 @@ workspace "Lumina"
         "GLM_ENABLE_EXPERIMENTAL",
 		"IMGUI_DEFINE_MATH_OPERATORS",
         "IMGUI_IMPL_VULKAN_USE_VOLK",
+        
+        "SOL_NO_EXCEPTIONS",
+        "SOL_DEFAULT_PASS_ON_ERROR",
 
         "TRACY_ALLOW_SHADOW_WARNING",
         "TRACY_ENABLE",
@@ -104,7 +107,7 @@ workspace "Lumina"
         symbols "On"
         runtime "Debug"
         editandcontinue "On"
-        defines { "LE_DEBUG", "LUMINA_DEBUG", "_DEBUG", "SOL_ALL_SAFETIES_ON", "DEBUG", }
+        defines { "LE_DEBUG", "LUMINA_DEBUG", "_DEBUG", "DEBUG", }
 
     filter "configurations:Development"
         targetsuffix "-Development"
@@ -112,7 +115,7 @@ workspace "Lumina"
         symbols "On"
         runtime "Release"
         linktimeoptimization "On"
-        defines { "NDEBUG", "LE_DEVELOPMENT", "LUMINA_DEVELOPMENT", "SOL_ALL_SAFETIES_ON", }
+        defines { "NDEBUG", "LE_DEVELOPMENT", "LUMINA_DEVELOPMENT", }
 
     filter "configurations:Shipping"
         linktimeoptimization "On"

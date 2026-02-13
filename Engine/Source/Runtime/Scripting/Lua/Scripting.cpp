@@ -149,30 +149,60 @@ namespace Lumina::Scripting
     TSharedPtr<FLuaScript> FScriptingContext::LoadUniqueScript(FStringView Path)
     {
         State.collect_gc();
-    
-        sol::environment Environment(State, sol::create, State.globals());
+
         FString ScriptData;
+        if (!VFS::ReadFile(ScriptData, Path))
+        {
+            LOG_ERROR("Lua - Failed to read script file: {}", Path);
+            return {};
+        }
         
-        VFS::ReadFile(ScriptData, Path);
+        if (ScriptData.empty())
+        {
+            LOG_WARN("Lua - Script file is empty: {}", Path);
+            return {};
+        }
+
+        sol::environment Environment(State, sol::create, State.globals());
+        
         sol::protected_function_result Result = State.safe_script(ScriptData.c_str(), Environment);
+        
         if (!Result.valid())
         {
+            sol::error Error = Result;
+            LOG_ERROR("Lua - Failed to execute script '{}': {}", Path, Error.what());
+            return {};
+        }
+
+        if (Result.get_type() == sol::type::none || Result.get_type() == sol::type::lua_nil)
+        {
+            LOG_ERROR("Lua - Script '{}' did not return a value", Path);
             return {};
         }
 
         sol::object ReturnedObject = Result;
+        
         if (!ReturnedObject.is<sol::table>())
         {
+            LOG_ERROR("Lua - Script '{}' must return a table, got: {}", Path, sol::type_name(ReturnedObject.lua_state(), ReturnedObject.get_type()));
             return {};
         }
 
         sol::table ScriptTable = ReturnedObject.as<sol::table>();
         
+        if (ScriptTable.empty())
+        {
+            LOG_WARN("Lua - Script '{}' returned an empty table", Path);
+        }
+        
         auto NewScript = MakeShared<FLuaScript>();
-        NewScript->Environment = Environment;
-        NewScript->ScriptTable = ScriptTable;
+        NewScript->Environment = std::move(Environment);
+        NewScript->ScriptTable = std::move(ScriptTable);
         NewScript->Name = VFS::FileName(Path, true);
+        
         RegisteredScripts[Path].emplace_back(NewScript);
+        
+        LOG_INFO("Lua - Successfully loaded script: {}", Path);
         
         return NewScript;
     }

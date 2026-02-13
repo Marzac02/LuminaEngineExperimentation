@@ -192,9 +192,6 @@ namespace Lumina
 
         
         //------------------------------------------------------------------------------------------------------
-        
-        
-        World->GetEntityRegistry().on_destroy<entt::entity>().connect<&FWorldEditorTool::OnEntityDestroyed>(this);
     }
 
     void FWorldEditorTool::OnDeinitialize(const FUpdateContext& UpdateContext)
@@ -313,6 +310,11 @@ namespace Lumina
                 }
             });
         });
+    }
+
+    void FWorldEditorTool::OnEntityCreated(entt::registry& Registry, entt::entity Entity)
+    {
+        OutlinerListView.MarkTreeDirty();
     }
 
     const char* FWorldEditorTool::GetTitlebarIcon() const
@@ -1805,6 +1807,12 @@ namespace Lumina
             
             OutlinerListView.ClearTree();
             OutlinerListView.MarkTreeDirty();
+            
+            World->GetEntityRegistry().on_construct<entt::entity>().disconnect<&FWorldEditorTool::OnEntityCreated>(this);
+            World->GetEntityRegistry().on_destroy<entt::entity>().disconnect<&FWorldEditorTool::OnEntityCreated>(this);
+
+            World->GetEntityRegistry().on_construct<entt::entity>().connect<&FWorldEditorTool::OnEntityCreated>(this);
+            World->GetEntityRegistry().on_destroy<entt::entity>().connect<&FWorldEditorTool::OnEntityDestroyed>(this);
         }
         else if (bShouldPlay != bGamePreviewRunning && bShouldPlay == false)
         {
@@ -1821,6 +1829,12 @@ namespace Lumina
             
             OutlinerListView.ClearTree();
             OutlinerListView.MarkTreeDirty();
+            
+            World->GetEntityRegistry().on_construct<entt::entity>().disconnect<&FWorldEditorTool::OnEntityCreated>(this);
+            World->GetEntityRegistry().on_destroy<entt::entity>().disconnect<&FWorldEditorTool::OnEntityCreated>(this);
+
+            World->GetEntityRegistry().on_construct<entt::entity>().connect<&FWorldEditorTool::OnEntityCreated>(this);
+            World->GetEntityRegistry().on_destroy<entt::entity>().connect<&FWorldEditorTool::OnEntityDestroyed>(this);
         }
     }
 
@@ -1861,6 +1875,12 @@ namespace Lumina
             
             OutlinerListView.ClearTree();
             OutlinerListView.MarkTreeDirty();
+            
+            World->GetEntityRegistry().on_construct<entt::entity>().disconnect<&FWorldEditorTool::OnEntityCreated>(this);
+            World->GetEntityRegistry().on_destroy<entt::entity>().disconnect<&FWorldEditorTool::OnEntityCreated>(this);
+
+            World->GetEntityRegistry().on_construct<entt::entity>().connect<&FWorldEditorTool::OnEntityCreated>(this);
+            World->GetEntityRegistry().on_destroy<entt::entity>().connect<&FWorldEditorTool::OnEntityDestroyed>(this);
 
         }
         else if (bShouldSimulate != bSimulatingWorld && bShouldSimulate == false)
@@ -2119,6 +2139,8 @@ namespace Lumina
 
     void FWorldEditorTool::RebuildSceneOutliner(FTreeListView& Tree)
     {
+        LUMINA_PROFILE_SCOPE();
+        
         TFunction<void(entt::entity, entt::entity)> AddEntityRecursive;
         
         AddEntityRecursive = [&](entt::entity WorldEntity, entt::entity ParentItem)
@@ -2180,8 +2202,7 @@ namespace Lumina
             AddEntityRecursive(Root, entt::null);
         }
     }
-
-
+    
     void FWorldEditorTool::HandleEntityEditorDragDrop(FTreeListView& Tree, entt::entity DropItem)
     {
         const ImGuiPayload* Payload = ImGui::AcceptDragDropPayload(DragDropID, ImGuiDragDropFlags_AcceptBeforeDelivery);
@@ -2709,7 +2730,6 @@ namespace Lumina
         entt::meta_type MetaType = entt::resolve(entt::hashed_string(Table->GetType()->GetName().c_str()));
         if (!ECS::Utils::HasComponent(World->GetEntityRegistry(), Entity, MetaType))
         {
-            LOG_WARN("Entity does not have component to draw: {}", MetaType.name());
             return;
         }
         
