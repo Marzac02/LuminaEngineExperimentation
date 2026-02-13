@@ -39,7 +39,9 @@ int GuardedMain(int ArgC, char** ArgV)  // NOLINT(misc-use-internal-linkage)
         
         Result = Application.Run(ArgC, ArgV);
         
+#if WITH_EDITOR
         GEditorEngine   = nullptr;
+#endif
         GApp            = nullptr;
         GCommandLine    = nullptr;
         GConfig         = nullptr;
