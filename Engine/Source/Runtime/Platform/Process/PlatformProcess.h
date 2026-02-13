@@ -38,7 +38,7 @@ namespace Lumina::Platform
     RUNTIME_API FVoidFuncPtr LumGetProcAddress(void* Handle, const char* Procedure);
     RUNTIME_API void* LoadLibraryWithSearchPaths(const FString& Filename, const TVector<FString>& SearchPaths);
 
-    RUNTIME_API bool OpenFileDialogue(FFixedString& OutFile, const char* Title = "Open File", const char* Filter = "*.*", const char* InitialDir = nullptr);
+    RUNTIME_API bool OpenFileDialogue(FFixedString& OutFile, const char* Title = "Open File", const char* Filter = nullptr, const char* InitialDir = nullptr);
     
 
     

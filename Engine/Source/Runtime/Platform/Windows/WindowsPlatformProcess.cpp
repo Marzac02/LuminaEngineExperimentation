@@ -10,11 +10,13 @@
 #include <windows.h>
 #endif
 #include <shellapi.h>
+#include <shobjidl.h>
 #include <commdlg.h>
 #include <tchar.h>
 #include <PathCch.h>  // For PathFindFileName
 #include <psapi.h>
 #include <Shlwapi.h>
+
 #pragma comment(lib, "Shlwapi.lib")
 #pragma comment(lib, "PathCch.lib")
 
@@ -242,33 +244,126 @@ namespace Lumina::Platform
 
     bool OpenFileDialogue(FFixedString& OutFile, const char* Title, const char* Filter, const char* InitialDir)
     {
-        OPENFILENAMEA ofn{};
-        char Buffer[MAX_PATH] = {};
+        // ------------------------------------------------------------------
+        // COM Initialization
+        // ------------------------------------------------------------------
+        HRESULT hr = CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED | COINIT_DISABLE_OLE1DDE);
+        if (FAILED(hr))
+            assert(false && "Failed to initialize COM library");
 
-        ofn.lStructSize = sizeof(ofn);
-        ofn.hwndOwner = nullptr;
-        ofn.lpstrFilter = Filter;
-        ofn.lpstrFile = Buffer;
-        ofn.nMaxFile = MAX_PATH;
-        ofn.lpstrTitle = Title;
+        IFileDialog* pFileDialog = nullptr;
+        hr = CoCreateInstance(CLSID_FileOpenDialog, nullptr, CLSCTX_ALL,
+            IID_IFileDialog, reinterpret_cast<void**>(&pFileDialog));
+
+        if (FAILED(hr))
+        {
+            CoUninitialize();
+            assert(false && "Failed to create File Open Dialog");
+            return false;
+        }
+
+        // ------------------------------------------------------------------
+        // Set Dialog Options
+        // ------------------------------------------------------------------
+        DWORD options;
+        pFileDialog->GetOptions(&options);
+
+        // If no filter is provided, we assume folder selection mode
+        if (!Filter)
+            pFileDialog->SetOptions(options | FOS_PICKFOLDERS | FOS_FORCEFILESYSTEM);
+        else
+            pFileDialog->SetOptions(options | FOS_FORCEFILESYSTEM | FOS_FILEMUSTEXIST  );
+
+        if (Title)
+        {
+            std::wstring wTitle(Title, Title + strlen(Title));
+            pFileDialog->SetTitle(wTitle.c_str());
+        }
+
         if (InitialDir)
         {
-            ofn.lpstrInitialDir = InitialDir;
-        }
-        else
-        {
-            ofn.lpstrInitialDir = GetCurrentProcessPath().c_str();
-        }
-        ofn.Flags = OFN_FILEMUSTEXIST | OFN_PATHMUSTEXIST;
-
-        if (GetOpenFileNameA(&ofn))
-        {
-            OutFile = Buffer;
-            eastl::replace(OutFile.begin(), OutFile.end(), '\\', '/');
-            return true;
+            std::wstring wDir(InitialDir, InitialDir + strlen(InitialDir));
+            IShellItem* pFolder = nullptr;
+            if (SUCCEEDED(SHCreateItemFromParsingName(wDir.c_str(), nullptr,
+                IID_PPV_ARGS(&pFolder))))
+            {
+                pFileDialog->SetFolder(pFolder);
+                pFolder->Release();
+            }
         }
 
-        return false;
+        // ------------------------------------------------------------------
+        // FIX: Dynamic Filter Setup
+        // ------------------------------------------------------------------
+        std::vector<COMDLG_FILTERSPEC> fileTypes;
+        // Important: wstrings must remain in memory until the Show() method returns
+        std::vector<std::wstring> wstringStorage;
+
+        if (Filter && strlen(Filter) > 0)
+        {
+            // Expected Filter format: "Description1\0Extension1\0Description2\0Extension2\0"
+            const char* p = Filter;
+            while (*p)
+            {
+                std::wstring name;
+                std::wstring spec;
+
+                // Extract Name
+                size_t len = strlen(p);
+                name.assign(p, p + len);
+                p += len + 1;
+
+                // Extract Extension
+                len = strlen(p);
+                spec.assign(p, p + len);
+                p += len + 1;
+
+                wstringStorage.push_back(name);
+                wstringStorage.push_back(spec);
+
+                // Use c_str() pointers from the storage vector
+                fileTypes.push_back({ wstringStorage[wstringStorage.size() - 2].c_str(),
+                                      wstringStorage[wstringStorage.size() - 1].c_str() });
+            }
+        }
+
+        if (!fileTypes.empty())
+        {
+            pFileDialog->SetFileTypes(static_cast<UINT>(fileTypes.size()), fileTypes.data());
+        }
+        // If no filter is provided, we don't explicitly set file types,
+        // or you could add a default "All Files" here if needed.
+
+        // ------------------------------------------------------------------
+        // Show Dialog
+        // ------------------------------------------------------------------
+        bool result = false;
+        if (SUCCEEDED(pFileDialog->Show(nullptr)))
+        {
+            IShellItem* pItem = nullptr;
+            if (SUCCEEDED(pFileDialog->GetResult(&pItem)))
+            {
+                PWSTR pszPath = nullptr;
+                if (SUCCEEDED(pItem->GetDisplayName(SIGDN_FILESYSPATH, &pszPath)))
+                {
+                    std::wstring wPath = pszPath;
+                    // Convert to string for storage
+                    std::string path(wPath.begin(), wPath.end());
+
+                    OutFile = path.c_str();
+                    // Normalize path separators
+                    eastl::replace(OutFile.begin(), OutFile.end(), '\\', '/');
+
+                    CoTaskMemFree(pszPath);
+                    result = true;
+                }
+                pItem->Release();
+            }
+        }
+
+        pFileDialog->Release();
+        CoUninitialize();
+        return result;
     }
 }
 
