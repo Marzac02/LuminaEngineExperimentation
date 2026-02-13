@@ -22,6 +22,11 @@ project "Runtime"
         --"WITH_AFTERMATH",
     }
 
+    linkoptions
+    {
+        "/NODEFAULTLIB:LIBCMT"
+    }
+
     files
     {
         "**.cpp",
