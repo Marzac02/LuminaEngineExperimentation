@@ -20,6 +20,30 @@ namespace Lumina::Math
     }
 
     template<typename T>
+    FORCEINLINE T Clamp(const T& A, const T& First, const T& Second)
+    {
+        return glm::clamp(A,First,Second);
+    }
+
+    template<typename T>
+    FORCEINLINE T Abs(const T& A)
+    {
+        return glm::abs(A);
+    }
+
+    template<typename T>
+    FORCEINLINE T Floor(const T& A)
+    {
+        return glm::floor(A);
+    }
+
+    template<typename T>
+    FORCEINLINE T Pow(const T& A, const T& B)
+    {
+        return glm::pow(A,B);
+    }
+
+    template<typename T>
     FORCEINLINE T Lerp(const T& A, const T& B, float Alpha)
     {
         return A + (B - A) * Alpha;

@@ -17,7 +17,7 @@ namespace
 		}
 		LOG_CRITICAL("GLFW Error: {0} | {1}", error, description);
 	}
-	
+
 	void* CustomGLFWAllocate(size_t size, void* user)
 	{
 		return Lumina::Memory::Malloc(size);
@@ -46,7 +46,7 @@ namespace
 namespace Lumina
 {
 	FWindowResizeDelegate FWindow::OnWindowResized;
-	
+
 	GLFWmonitor* GetCurrentMonitor(GLFWwindow* window)
 	{
 		int windowX, windowY, windowWidth, windowHeight;
@@ -77,7 +77,7 @@ namespace Lumina
 
 		return bestMonitor;
 	}
-	
+
 	FWindow::~FWindow()
 	{
 		glfwDestroyWindow(Window);
@@ -92,7 +92,7 @@ namespace Lumina
 			glfwInit();
 			glfwSetErrorCallback(GLFWErrorCallback);
 			glfwWindowHint(GLFW_MAXIMIZED, GLFW_TRUE);
-			
+
 			glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
 #if WITH_EDITOR
 			glfwWindowHint(GLFW_TITLEBAR, GLFW_FALSE);
@@ -101,19 +101,19 @@ namespace Lumina
 
 #endif
 			//glfwWindowHint(GLFW_DECORATED, GLFW_FALSE);
-			
+
 			GLFWmonitor* Monitor = glfwGetPrimaryMonitor();
 			const GLFWvidmode* Mode = glfwGetVideoMode(Monitor);
-			
+
 			Specs.Extent.x = Mode->width - 25;
 			Specs.Extent.y = Mode->height - 25;
-			
+
 			Window = glfwCreateWindow(Specs.Extent.x, Specs.Extent.y, Specs.Title.c_str(), nullptr, nullptr);
 			glfwSetWindowAttrib(Window, GLFW_RESIZABLE, GLFW_TRUE);
-			
+
 
 			LOG_TRACE("Initializing Window: {} (Width: {}p Height: {}p)", Specs.Title, Specs.Extent.x, Specs.Extent.y);
-			
+
 			GLFWimage Icon;
 			int Channels;
 			FString IconPathStr = Paths::GetEngineResourceDirectory() + "/Textures/Lumina.png";
@@ -126,6 +126,7 @@ namespace Lumina
 
 			glfwSetMouseButtonCallback(Window, MouseButtonCallback);
 			glfwSetCursorPosCallback(Window, MousePosCallback);
+			glfwSetScrollCallback(Window, MouseScrollCallback);
 			glfwSetKeyCallback(Window, KeyCallback);
 			glfwSetWindowUserPointer(Window, this);
 			glfwSetWindowSizeCallback(Window, WindowResizeCallback);
@@ -176,7 +177,7 @@ namespace Lumina
 	{
 		glfwSetWindowSize(Window, X, Y);
 	}
-	
+
 	bool FWindow::ShouldClose() const
 	{
 		return glfwWindowShouldClose(Window);
@@ -216,16 +217,16 @@ namespace Lumina
 		switch (Action)
 		{
 		case GLFW_PRESS:
-			{
-				GApp->GetEventProcessor().Dispatch<FMouseButtonPressedEvent>(static_cast<EMouseCode>(Button),xpos, ypos);
-			}
-			break;
+		{
+			GApp->GetEventProcessor().Dispatch<FMouseButtonPressedEvent>(static_cast<EMouseCode>(Button), xpos, ypos);
+		}
+		break;
 
 		case GLFW_RELEASE:
-			{
-				GApp->GetEventProcessor().Dispatch<FMouseButtonReleasedEvent>(static_cast<EMouseCode>(Button), xpos, ypos);
-			}
-			break;
+		{
+			GApp->GetEventProcessor().Dispatch<FMouseButtonReleasedEvent>(static_cast<EMouseCode>(Button), xpos, ypos);
+		}
+		break;
 		}
 	}
 
@@ -252,30 +253,36 @@ namespace Lumina
 		GApp->GetEventProcessor().Dispatch<FMouseMovedEvent>(xpos, ypos, DeltaX, DeltaY);
 	}
 
+	void FWindow::MouseScrollCallback(GLFWwindow* window, double xoffset, double yoffset)
+	{
+		//We're only dealing with vertical here.
+		GApp->GetEventProcessor().Dispatch<FMouseScrolledEvent>(EMouseCode::Scroll, yoffset);
+	}
+
 	void FWindow::KeyCallback(GLFWwindow* window, int Key, int Scancode, int Action, int Mods)
 	{
-		bool Ctrl  = Mods & GLFW_MOD_CONTROL;
+		bool Ctrl = Mods & GLFW_MOD_CONTROL;
 		bool Shift = Mods & GLFW_MOD_SHIFT;
-		bool Alt   = Mods & GLFW_MOD_ALT;
+		bool Alt = Mods & GLFW_MOD_ALT;
 		bool Super = Mods & GLFW_MOD_SUPER;
-		
+
 		switch (Action)
 		{
 		case GLFW_RELEASE:
-			{
-				GApp->GetEventProcessor().Dispatch<FKeyReleasedEvent>(static_cast<EKeyCode>(Key), Ctrl, Shift, Alt, Super);
-			}
-			break;
+		{
+			GApp->GetEventProcessor().Dispatch<FKeyReleasedEvent>(static_cast<EKeyCode>(Key), Ctrl, Shift, Alt, Super);
+		}
+		break;
 		case GLFW_PRESS:
-			{
-				GApp->GetEventProcessor().Dispatch<FKeyPressedEvent>(static_cast<EKeyCode>(Key), Ctrl, Shift, Alt, Super);
-			}
-			break;
+		{
+			GApp->GetEventProcessor().Dispatch<FKeyPressedEvent>(static_cast<EKeyCode>(Key), Ctrl, Shift, Alt, Super);
+		}
+		break;
 		case GLFW_REPEAT:
-			{
-				GApp->GetEventProcessor().Dispatch<FKeyPressedEvent>(static_cast<EKeyCode>(Key), Ctrl, Shift, Alt, Super, /* Repeat */ true);
-			}
-			break;
+		{
+			GApp->GetEventProcessor().Dispatch<FKeyPressedEvent>(static_cast<EKeyCode>(Key), Ctrl, Shift, Alt, Super, /* Repeat */ true);
+		}
+		break;
 		}
 	}
 
@@ -284,9 +291,9 @@ namespace Lumina
 		auto WindowHandle = (FWindow*)glfwGetWindowUserPointer(window);
 		WindowHandle->Specs.Extent.x = width;
 		WindowHandle->Specs.Extent.y = height;
-		
+
 		GApp->GetEventProcessor().Dispatch<FWindowResizeEvent>(width, height);
-		
+
 		OnWindowResized.Broadcast(WindowHandle, WindowHandle->Specs.Extent);
 	}
 
@@ -294,14 +301,14 @@ namespace Lumina
 	{
 		double xpos, ypos;
 		glfwGetCursorPos(Window, &xpos, &ypos);
-		
+
 		TVector<FFixedString> StringPaths;
 
 		for (int i = 0; i < PathCount; ++i)
 		{
 			StringPaths.emplace_back(Paths[i]);
 		}
-		
+
 		GApp->GetEventProcessor().Dispatch<FFileDropEvent>(StringPaths, static_cast<float>(xpos), static_cast<float>(ypos));
 	}
 
@@ -309,11 +316,11 @@ namespace Lumina
 	{
 		FApplication::RequestExit();
 	}
-	
+
 	namespace Windowing
 	{
 		FWindow* PrimaryWindow;
-		
+
 		FWindow* GetPrimaryWindowHandle()
 		{
 			ASSERT(PrimaryWindow != nullptr);

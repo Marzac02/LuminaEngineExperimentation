@@ -243,16 +243,17 @@ namespace Lumina
     class FMouseScrolledEvent : public FEvent
     {
     public:
-        FMouseScrolledEvent(float InXOffset, float InYOffset)
-            : XOffset(InXOffset), YOffset(InYOffset) {}
+        FMouseScrolledEvent(EMouseCode InCode, float InXOffset)
+            : Offset(InXOffset), Code(InCode) {}
         
-        float GetXOffset() const { return XOffset; }
-        float GetYOffset() const { return YOffset; }
+        EMouseCode GetCode() const { return Code; }
+        float GetOffset() const { return Offset; }
         
         EVENT_CLASS_TYPE(MouseScrolled)
         
     private:
-        float XOffset, YOffset;
+        EMouseCode Code; 
+        float Offset;
     };
 
     class FMouseButtonEvent : public FEvent
