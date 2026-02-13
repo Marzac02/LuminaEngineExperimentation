@@ -2598,7 +2598,12 @@ namespace Lumina
                 if (ImGui::Button(LE_ICON_FOLDER_OPEN " Browse for Project...", ImVec2(200, 32)))
                 {
                     FFixedString Project;
-                    if (Platform::OpenFileDialogue(Project, "Open Project", "Lumina Project (*.lproject)\0*.lproject\0All Files (*.*)\0*.*\0"))
+                    if (Platform::OpenFileDialogue(
+                        Project,
+                        "Open Project",
+                        "Lumina Project (*.lproject)\0*.lproject\0All Files (*.*)\0*.*\0",
+                        nullptr
+                    ))
                     {
                         GEditorEngine->LoadProject(Project);
                         OnProjectLoaded();
@@ -2648,15 +2653,15 @@ namespace Lumina
             ImGui::Text("Project Location:");
             ImGui::SetNextItemWidth(-120);
             ImGui::InputText("##ProjectPath", NewProjectPath, sizeof(NewProjectPath));
-            //ImGui::SameLine();
-            //if (ImGui::Button("Browse...", ImVec2(110, 0)))
-            //{
-            //    //FFixedString File;
-            //    //if (Platform::OpenFileDialogue(File))
-            //    //{
-            //    //    NewProjectPath = File;
-            //    //}
-            //}
+            ImGui::SameLine();
+            if (ImGui::Button("Browse...", ImVec2(110, 0)))
+            {
+                FFixedString File;
+                if (Platform::OpenFileDialogue(File,"Browse..."))
+                {
+                    strncpy_s(NewProjectPath, sizeof(NewProjectPath), File.c_str(), _TRUNCATE);
+                }
+            }
             
             ImGui::Spacing();
             ImGui::Separator();
