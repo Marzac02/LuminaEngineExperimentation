@@ -65,7 +65,6 @@ namespace Lumina
         void Paused(const FUpdateContext& Context);
         void Render(FRenderGraph& RenderGraph);
         
-        
         entt::entity ConstructEntity(const FName& Name, const FTransform& Transform = FTransform());
         
         void CopyEntity(entt::entity& To, entt::entity From, TFunctionRef<bool(entt::type_info)> Callback);
@@ -78,19 +77,15 @@ namespace Lumina
         SCameraComponent* GetActiveCamera();
         entt::entity GetActiveCameraEntity() const;
         
-        FORCEINLINE entt::entity GetSingletonEntity() const { return SingletonEntity; }
-
         void OnChangeCameraEvent(const FSwitchActiveCameraEvent& Event);
+        
+        void SimulateWorld();
+        void StopSimulation();
         
         double GetWorldDeltaTime() const { return DeltaTime; }
         double GetTimeSinceWorldCreation() const { return TimeSinceCreation; }
         
         NODISCARD EWorldType GetWorldType() const { return WorldType; }
-
-        void InitializeForPlay();
-        
-        void BeginPlay();
-        void EndPlay();
         
         void CreateRenderer();
         void DestroyRenderer();
@@ -101,9 +96,7 @@ namespace Lumina
         void SetActive(bool bNewActive);
         bool IsSuspended() const { return !bActive; }
 
-        void SetSimulating(bool bSim);
-        
-        bool IsSimulating() const { return bSimulating; }
+        bool IsSimulating() const { return WorldType == EWorldType::Simulation; }
 
         static CWorld* DuplicateWorld(CWorld* OwningWorld);
 
@@ -114,6 +107,7 @@ namespace Lumina
 
         void OnRelationshipComponentDestroyed(entt::registry& Registry, entt::entity Entity);
         void OnScriptComponentCreated(entt::registry& Registry, entt::entity Entity);
+        void OnScriptComponentDestroyed(entt::registry& Registry, entt::entity Entity);
 
         void RegisterSystems();
         
@@ -126,8 +120,7 @@ namespace Lumina
         TOptional<FRayResult> CastRay(const glm::vec3& Start, const glm::vec3& End, bool bDrawDebug = false, float DebugDuration = 0.0f, uint32 LayerMask = 0xFFFFFFFF, int64 IgnoreBody = -1);
         TVector<FRayResult> CastSphere(const FSphereCastSettings& Settings);
 
-        void SetIsPlayWorld(bool bValue) { bIsPlayWorld = bValue; }
-        FORCEINLINE bool IsPlayWorld() const { return bIsPlayWorld; }
+        FORCEINLINE bool IsGameWorld() const { return WorldType == EWorldType::Game; }
 
         entt::entity GetEntityByTag(const FName& Tag);
         entt::entity GetEntityByName(const FName& Name);
@@ -151,6 +144,7 @@ namespace Lumina
     
     private:
         
+        FEntityRegistry                                     RegistryPending;
         FEntityRegistry                                     EntityRegistry;
         entt::dispatcher                                    SingletonDispatcher;
         entt::entity                                        SingletonEntity;
@@ -170,9 +164,10 @@ namespace Lumina
         double                                              TimeSinceCreation = 0.0;
         
         uint32                                              bPaused:1 = true;
-        uint32                                              bSimulating:1 = false;
         uint32                                              bActive:1 = true;
-        uint32                                              bIsPlayWorld:1 = false;
+        
+        
+        bool                                                bInitializing = true;
     };
     
     

@@ -239,11 +239,6 @@ namespace Lumina
         return Registry.valid(Entity);
     }
 
-    bool FSystemContext::IsPlayWorld() const
-    {
-        return World->IsPlayWorld();
-    }
-
     void FSystemContext::Lua_DispatchEvent(const sol::object& Event) const
     {
         using namespace entt::literals;

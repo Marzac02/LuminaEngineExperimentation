@@ -164,9 +164,7 @@ namespace Lumina
 
         RUNTIME_API size_t GetNumEntities() const;
         RUNTIME_API bool IsValidEntity(entt::entity Entity) const;
-        
-        RUNTIME_API bool IsPlayWorld() const;
-        
+    
     private:
         
         void Lua_DispatchEvent(const sol::object& Event) const ;

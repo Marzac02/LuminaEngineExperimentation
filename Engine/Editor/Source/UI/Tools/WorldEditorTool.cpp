@@ -1836,8 +1836,8 @@ namespace Lumina
             ProxyWorld = World;
             
             World = CWorld::DuplicateWorld(ProxyWorld);
-            World->InitializeForPlay();
-            World->BeginPlay();
+            World->InitializeWorld(EWorldType::Game);
+            World->SimulateWorld();
             
             OutlinerListView.ClearTree();
             OutlinerListView.MarkTreeDirty();
@@ -1851,6 +1851,7 @@ namespace Lumina
         else if (bShouldPlay != bGamePreviewRunning && bShouldPlay == false)
         {
             World->SetPaused(true);
+            World->StopSimulation();
             bGamePreviewRunning = false;
             
             ProxyWorld->DestroyEntity(EditorEntity);
@@ -1886,7 +1887,8 @@ namespace Lumina
             World->SetActive(false);
             ProxyWorld = World;
             World = CWorld::DuplicateWorld(ProxyWorld);
-            World->SetSimulating(true);
+            World->InitializeWorld(EWorldType::Simulation);
+            World->SimulateWorld();
 
             ProxyWorld->DestroyEntity(EditorEntity);
             EditorEntity = entt::null;
@@ -1921,7 +1923,7 @@ namespace Lumina
         }
         else if (bShouldSimulate != bSimulatingWorld && bShouldSimulate == false)
         {
-            World->SetSimulating(false);
+            World->StopSimulation();
             bSimulatingWorld = false;
 
             STransformComponent TransformCopy = World->GetEntityRegistry().get<STransformComponent>(EditorEntity);
@@ -2255,7 +2257,7 @@ namespace Lumina
 
     void FWorldEditorTool::DrawWorldSettings(bool bFocused)
     {
-        DrawEntityEditor(bFocused, World->GetSingletonEntity());
+        
     }
 
     void FWorldEditorTool::DrawOutliner(bool bFocused)

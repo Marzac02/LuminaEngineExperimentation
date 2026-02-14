@@ -4,13 +4,12 @@ PlayerScript = {
 
 }
 
-
 function PlayerScript:Update(DeltaTime)
 
     local CharacterController = Context:Get(Entity, SCharacterControllerComponent)
     local CharacterMovement = Context:Get(Entity, SCharacterMovementComponent)
 
-    Input.SetMouseMode(EMouseMode.Captured)
+    --Input.SetMouseMode(EMouseMode.Captured)
     
     if Input.IsKeyDown(EKey.W) then
         CharacterController:AddMovementInput(vec3(0, 0, 1))

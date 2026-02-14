@@ -11,6 +11,7 @@ namespace Lumina
     {
         None,
         Game,
+        Simulation,
         Editor,
         Tool,
     };
