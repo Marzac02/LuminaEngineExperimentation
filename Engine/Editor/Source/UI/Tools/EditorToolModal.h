@@ -17,10 +17,8 @@ namespace Lumina
     class FEditorModalManager
     {
     public:
-
-        ~FEditorModalManager();
-
-        void CreateDialogue(const FString& Title, ImVec2 Size, TMoveOnlyFunction<bool()> DrawFunction, bool bBlocking = true);
+        
+        void CreateDialogue(const FString& Title, ImVec2 Size, TMoveOnlyFunction<bool()> DrawFunction, bool bBlocking = true, bool bCloseable = true);
 
         FORCEINLINE bool HasModal() const { return ActiveModal.get() != nullptr; }
 
@@ -40,10 +38,11 @@ namespace Lumina
         
         virtual ~FEditorToolModal() = default;
 
-        FEditorToolModal(const FString& InTitle, ImVec2 InSize)
+        FEditorToolModal(const FString& InTitle, ImVec2 InSize, bool bInClosable)
             : Title(InTitle)
             , Size(InSize)
             , bBlocking(false)
+            , bCloseable(bInClosable)
         {
         }
 
@@ -59,6 +58,7 @@ namespace Lumina
         FString                     Title;
         ImVec2                      Size;
         bool                        bBlocking;
-    
+        bool                        bCloseable = true;
+        bool                        bOpen = true;
     };
 }

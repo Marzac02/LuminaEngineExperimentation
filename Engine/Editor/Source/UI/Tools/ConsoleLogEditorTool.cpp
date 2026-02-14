@@ -196,7 +196,7 @@ namespace Lumina
                 const char* Icon = GetLevelIcon(Message.Level);
                 const bool bIsError = (Message.Level == spdlog::level::err || Message.Level == spdlog::level::critical);
 
-                if (bIsError && !Settings.bColorWholeRow)
+                if (bIsError && Settings.bColorWholeRow)
                 {
                     ImU32 ErrorBgColor = ImGui::ColorConvertFloat4ToU32(ImVec4(0.3f, 0.1f, 0.1f, 0.3f));
                     ImGui::TableSetBgColor(ImGuiTableBgTarget_RowBg0, ErrorBgColor);

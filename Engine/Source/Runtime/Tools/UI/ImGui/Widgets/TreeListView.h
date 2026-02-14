@@ -3,6 +3,7 @@
 #include "Containers/Array.h"
 #include "Containers/Name.h"
 #include "Containers/Function.h"
+#include "Core/Threading/Atomic.h"
 #include "entt/entt.hpp"
 
 namespace Lumina
@@ -108,5 +109,6 @@ namespace Lumina
         
         entt::registry  Registry;
         bool            bDirty = false;
+        TAtomic<bool>   bRebuilding = false;
     };
 }

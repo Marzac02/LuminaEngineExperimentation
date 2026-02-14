@@ -136,6 +136,16 @@ namespace Lumina::ECS::Utils
     }
     
     template<typename TFunc>
+    void ForEachDescendantReverse(entt::registry& Registry, entt::entity Parent, TFunc&& Func)
+    {
+        ForEachChild(Registry, Parent, [&](entt::entity Child)
+        {
+            ForEachDescendantReverse(Registry, Child, Func);
+            eastl::invoke(Func, Child);
+        });
+    }
+    
+    template<typename TFunc>
     void ForEachAncestor(entt::registry& Registry, entt::entity Entity, TFunc&& Func)
     {
         FRelationshipComponent* Relationship = Registry.try_get<FRelationshipComponent>(Entity);
@@ -145,8 +155,6 @@ namespace Lumina::ECS::Utils
             Relationship = Registry.try_get<FRelationshipComponent>(Relationship->Parent);
         }
     }
-    
-    
     
     inline FArchive& operator << (FArchive& Ar, entt::entity& Entity)
     {

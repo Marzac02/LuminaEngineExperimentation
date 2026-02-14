@@ -16,6 +16,7 @@
 #include "Entity/Components/NameComponent.h"
 #include "Entity/Components/ScriptComponent.h"
 #include "Entity/Components/SingletonEntityComponent.h"
+#include "entity/components/tagcomponent.h"
 #include "Events/KeyCodes.h"
 #include "glm/gtx/matrix_decompose.hpp"
 #include "Physics/Physics.h"
@@ -36,13 +37,19 @@ namespace Lumina
     void CWorld::Serialize(FArchive& Ar)
     {
         CObject::Serialize(Ar);
-        ECS::Utils::SerializeRegistry(Ar, EntityRegistry);
-        ECS::Utils::SerializeEntity(Ar, EntityRegistry, SingletonEntity);
+        
+        if (Ar.IsReading())
+        {
+            ECS::Utils::SerializeRegistry(Ar, RegistryPending);
+        }
+        else
+        {
+            ECS::Utils::SerializeRegistry(Ar, EntityRegistry);
+        }
     }
 
     void CWorld::PreLoad()
     {
-        EntityRegistry.on_construct<SScriptComponent>().connect<&ThisClass::OnScriptComponentCreated>(this);
     }
 
     void CWorld::PostLoad()
@@ -55,8 +62,10 @@ namespace Lumina
         using namespace entt::literals;
         
         WorldType = InWorldType;
-        
         GWorldManager->AddWorld(this);
+        
+        EntityRegistry.swap(RegistryPending);
+        RegistryPending = {};
 
         EntityRegistry.ctx().emplace<entt::dispatcher&>(SingletonDispatcher);
         
@@ -84,7 +93,55 @@ namespace Lumina
         });
         
         EntityRegistry.on_destroy<FRelationshipComponent>().connect<&ThisClass::OnRelationshipComponentDestroyed>(this);
+        EntityRegistry.on_construct<SScriptComponent>().connect<&ThisClass::OnScriptComponentCreated>(this);
+        EntityRegistry.on_destroy<SScriptComponent>().connect<&ThisClass::OnScriptComponentDestroyed>(this);
         SystemContext.EventSink<FSwitchActiveCameraEvent>().connect<&ThisClass::OnChangeCameraEvent>(this);
+        
+        auto CameraView = EntityRegistry.view<SCameraComponent>();
+        CameraView.each([&](entt::entity Entity, SCameraComponent& Camera)
+        {
+           if (Camera.bAutoActivate)
+           {
+               SingletonDispatcher.trigger<FSwitchActiveCameraEvent>(FSwitchActiveCameraEvent{Entity});
+           }
+        });
+        
+        auto ScriptView = EntityRegistry.view<SScriptComponent>();
+        ScriptView.each([&](entt::entity Entity, SScriptComponent&)
+        {
+           OnScriptComponentCreated(EntityRegistry, Entity); 
+        });
+        
+        auto RootView = EntityRegistry.view<SScriptComponent>(entt::exclude<FRelationshipComponent>);
+        RootView.each([&](entt::entity RootEntity, SScriptComponent& ScriptComponent)
+        {
+            ScriptComponent.InvokeScriptFunction("OnReady");
+        });
+        
+        auto RelationshipView = EntityRegistry.view<SScriptComponent, FRelationshipComponent>();
+        RelationshipView.each([&](entt::entity Entity, SScriptComponent& Script, FRelationshipComponent& Relationship)
+        {
+            if (Relationship.Parent == entt::null)
+            {
+                ECS::Utils::ForEachDescendantReverse(EntityRegistry, Entity, [&](entt::entity Descendant)
+                {
+                    if (SScriptComponent* ScriptComp = EntityRegistry.try_get<SScriptComponent>(Descendant))
+                    {
+                        ScriptComp->InvokeScriptFunction("OnReady");
+                    }
+                });
+                
+                Script.InvokeScriptFunction("OnReady");
+
+            }
+        });
+        
+        if (IsGameWorld())
+        {
+            bPaused = false;
+        }
+        
+        bInitializing = false;
     }
     
     void CWorld::TeardownWorld()
@@ -272,16 +329,16 @@ namespace Lumina
         SetActiveCamera(Event.NewActiveEntity);
     }
 
-    void CWorld::BeginPlay()
+    void CWorld::SimulateWorld()
     {
         PhysicsScene->OnWorldSimulate();
     }
 
-    void CWorld::EndPlay()
+    void CWorld::StopSimulation()
     {
         PhysicsScene->OnWorldStopSimulate();
     }
-
+    
     void CWorld::CreateRenderer()
     {
         if (!RenderScene)
@@ -318,19 +375,6 @@ namespace Lumina
         }
     }
 
-    void CWorld::SetSimulating(bool bSim)
-    {
-        bSimulating = bSim;
-        if (bSimulating)
-        {
-            PhysicsScene->OnWorldSimulate();
-        }
-        else
-        {
-            PhysicsScene->OnWorldStopSimulate();
-        }
-    }
-
     CWorld* CWorld::DuplicateWorld(CWorld* OwningWorld)
     {
         CPackage* OuterPackage = OwningWorld->GetPackage();
@@ -348,7 +392,6 @@ namespace Lumina
         FObjectProxyArchiver ReaderProxy(Reader, true);
         
         CWorld* PIEWorld = NewObject<CWorld>(OF_Transient);
-        PIEWorld->InitializeWorld(EWorldType::Editor);
         
         PIEWorld->PreLoad();
         PIEWorld->Serialize(ReaderProxy);
@@ -404,7 +447,32 @@ namespace Lumina
                 {
                     (ScriptVarVisitor(Vectors), ...);
                 }, ScriptComponent.CustomData);
+            }
+            
+            if (WorldType == EWorldType::Game)
+            {
+                ScriptComponent.Script->Environment["Entity"]   = Entity;
+                ScriptComponent.Script->Environment["Context"]  = std::ref(SystemContext);
+                ScriptComponent.InvokeScriptFunction("OnAttach");
                 
+                if (!bInitializing)
+                {
+                    ScriptComponent.InvokeScriptFunction("OnReady");
+                }
+            }
+        }
+    }
+
+    void CWorld::OnScriptComponentDestroyed(entt::registry& Registry, entt::entity Entity)
+    {
+        SScriptComponent& ScriptComponent = Registry.get<SScriptComponent>(Entity);
+        if (WorldType == EWorldType::Game || WorldType == EWorldType::Simulation)
+        {
+            if (ScriptComponent.Script != nullptr || !ScriptComponent.Script->ScriptTable.valid())
+            {
+                ScriptComponent.Script->Environment["Entity"]   = Entity;
+                ScriptComponent.Script->Environment["Context"]  = std::ref(SystemContext);
+                ScriptComponent.InvokeScriptFunction("OnDetach");
             }
         }
     }
@@ -518,6 +586,48 @@ namespace Lumina
         
         return PhysicsScene->CastSphere(Settings);
         
+    }
+
+    entt::entity CWorld::GetEntityByTag(const FName& Tag)
+    {
+        auto& Storage = EntityRegistry.storage<STagComponent>(entt::hashed_string(Tag.c_str()));
+        if (Storage.empty())
+        {
+            return entt::null;
+        }
+        
+        return *Storage.data();
+    }
+
+    entt::entity CWorld::GetEntityByName(const FName& Name)
+    {
+        auto View = EntityRegistry.view<SNameComponent>();
+        for (entt::entity Entity : View)
+        {
+            SNameComponent& NameComponent = View.get<SNameComponent>(Entity);
+            if (NameComponent.Name == Name)
+            {
+                return Entity;
+            }
+        }
+        
+        return entt::null;
+    }
+
+    entt::entity CWorld::GetFirstEntityWith(entt::id_type Type)
+    {
+        if (!EntityRegistry.storage(Type))
+        {
+            return entt::null;
+        }
+
+        auto storage = EntityRegistry.storage(Type);
+
+        if (storage->empty())
+        {
+            return entt::null;
+        }
+        return *storage->data();
     }
 
     void CWorld::MarkTransformDirty(entt::entity Entity)

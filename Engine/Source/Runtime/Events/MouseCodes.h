@@ -2,7 +2,14 @@
 
 namespace Lumina
 {
-    enum class EMouseCode : uint16
+    enum class EMouseMode : uint8
+    {
+        Hidden,
+        Normal,
+        Captured,
+    };
+    
+    enum class EMouseKey : uint16
     {
         Button0                = 0,
         Button1                = 1,
@@ -12,12 +19,13 @@ namespace Lumina
         Button5                = 5,
         Button6                = 6,
         Button7                = 7,
-    
+        Scroll                 = 8,
+
         ButtonLast             = Button7,
         ButtonLeft             = Button0,
         ButtonRight            = Button1,
         ButtonMiddle           = Button2,
-    
-        Num = 8,
+
+        Num = 9,
     };
 }

@@ -11,7 +11,7 @@ namespace Lumina
     {
         GENERATED_BODY()
 
-        PROPERTY(Editable)
+        PROPERTY(ReadOnly)
         FName Name;
     };
 }

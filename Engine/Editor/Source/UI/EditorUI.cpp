@@ -84,6 +84,7 @@
 #include "Tools/UI/ImGui/ImGuiDesignIcons.h"
 #include "Tools/UI/ImGui/ImGuiRenderer.h"
 #include "Tools/UI/ImGui/ImGuiX.h"
+#include "World/WorldManager.h"
 #include "World/Entity/Components/EditorComponent.h"
 #include "World/Scene/RenderScene/RenderScene.h"
 
@@ -143,32 +144,7 @@ namespace Lumina
         EditorWindowClass.ParentViewportId              = 0; // Top level window
         EditorWindowClass.DockingAlwaysTabBar           = true;
 
-        CWorld* TemporaryWorld = NewObject<CWorld>(nullptr, "Transient World", FGuid::New(), OF_Transient);
-        WorldEditorTool = CreateTool<FWorldEditorTool>(this, TemporaryWorld);
-        
-        (void)WorldEditorTool->GetOnPreviewStartRequestedDelegate().AddLambda([this]
-        {
-            if (CWorld* PreviewWorld = CWorld::DuplicateWorld(WorldEditorTool->GetWorld()))
-            {
-                PreviewWorld->SetIsPlayWorld(true);
-                PreviewWorld->SetPaused(false);
-                GamePreviewTool = CreateTool<FGamePreviewTool>(this, PreviewWorld);
-                WorldEditorTool->NotifyPlayInEditorStart();
-                PreviewWorld->BeginPlay();
-            }
-        });
-
-        (void)WorldEditorTool->GetOnPreviewStopRequestedDelegate().AddLambda([this]
-        {
-            FInputProcessor::Get().SetCursorMode(GLFW_CURSOR_NORMAL);
-            if (GamePreviewTool)
-            {
-                GamePreviewTool->World->EndPlay();
-                ToolsPendingDestroy.push(GamePreviewTool);   
-            }
-        });
-
-        
+        WorldEditorTool = CreateTool<FWorldEditorTool>(this, NewObject<CWorld>(nullptr, "Transient World", FGuid::New(), OF_Transient));
         ConsoleLogTool = CreateTool<FConsoleLogEditorTool>(this);
         ContentBrowser = CreateTool<FContentBrowserEditorTool>(this);
     }
@@ -280,6 +256,62 @@ namespace Lumina
 
             FocusTargetWindowName.clear();
             
+        }
+        
+        if (bShowContributors)
+        {
+            ImGui::SetNextWindowSize(ImVec2(850, 650), ImGuiCond_FirstUseEver);
+            
+            if (ImGui::Begin("Contributors", &bShowContributors, ImGuiWindowFlags_NoCollapse))
+            {
+                ImGui::TextColored(ImVec4(0.2f, 0.8f, 1.0f, 1.0f), "Project Contributors");
+                
+                ImGui::TextColored(ImVec4(0.6f, 0.6f, 0.6f, 1.0f), "The talented people behind this project");
+                ImGui::Spacing();
+                ImGui::Separator();
+                ImGui::Spacing();
+        
+                ImGuiTableFlags flags = ImGuiTableFlags_BordersInnerV | ImGuiTableFlags_PadOuterX | ImGuiTableFlags_RowBg |ImGuiTableFlags_ScrollY;
+                
+                if (ImGui::BeginTable("##ContributorsTable", 2, flags))
+                {
+                    ImGui::TableSetupColumn("Name", ImGuiTableColumnFlags_WidthFixed, 200);
+                    ImGui::TableSetupColumn("Role", ImGuiTableColumnFlags_WidthStretch);
+                    ImGui::TableSetupScrollFreeze(0, 1);
+                    ImGui::TableHeadersRow();
+                    
+                    auto AddContributor = [](const char* Name, const char* Role, ImVec4 NameColor = ImVec4(0.3f, 0.8f, 1.0f, 1.0f))
+                    {
+                        ImGui::TableNextRow();
+                        
+                        ImGui::TableSetColumnIndex(0);
+                        ImGui::Spacing();
+                        ImGui::TextColored(NameColor, "%s", Name);
+                        
+                        ImGui::TableSetColumnIndex(1);
+                        ImGui::Spacing();
+                        ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.75f, 0.75f, 0.75f, 1.0f));
+                        ImGui::TextWrapped("%s", Role);
+                        ImGui::PopStyleColor();
+                    };
+                    
+                    // Core Team
+                    AddContributor("Bryan Casagrande", "Lead Developer & Engine Architect", ImVec4(1.0f, 0.7f, 0.2f, 1.0f));
+                    
+                    // Contributors
+                    AddContributor("Marzac", "Spark");
+                    AddContributor("Tiny Butch", "Spark");
+        
+                    ImGui::EndTable();
+                }
+                
+                ImGui::Spacing();
+                ImGui::Separator();
+                ImGui::Spacing();
+                ImGui::TextColored(ImVec4(0.5f, 0.5f, 0.5f, 1.0f), "Thank you to everyone who contributed!");
+                
+                ImGui::End();
+            }
         }
 
         if (bShowLuminaInfo)
@@ -394,45 +426,16 @@ namespace Lumina
                 ImGui::BulletText("Hot-reload Shader Compilation");
 
                 ImGui::Spacing();
-                ImGui::Spacing();
-                ImGui::Separator();
-                ImGui::Spacing();
-                ImGui::Spacing();
-
-                // Contributors Section
-                ImGui::TextColored(ImVec4(0.9f, 0.9f, 0.9f, 1.0f), "Development Team");
-                ImGui::Spacing();
-
-                if (ImGui::BeginTable("##ContributorsTable", 2, ImGuiTableFlags_BordersInnerV | ImGuiTableFlags_PadOuterX))
-                {
-                    ImGui::TableSetupColumn("##Name", ImGuiTableColumnFlags_WidthFixed, 180);
-                    ImGui::TableSetupColumn("##Role", ImGuiTableColumnFlags_WidthStretch);
-
-                    ImGui::TableNextRow();
-                    ImGui::TableSetColumnIndex(0);
-                    ImGui::TextColored(ImVec4(0.3f, 0.7f, 1.0f, 1.0f), "Dr. Elliot");
-                    ImGui::TableSetColumnIndex(1);
-                    ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.7f, 0.7f, 0.7f, 1.0f));
-                    ImGui::Text("Lead Developer & Engine Architect");
-                    ImGui::PopStyleColor();
-
-                    ImGui::EndTable();
-                }
-
-                ImGui::Spacing();
-                ImGui::Spacing();
                 ImGui::Separator();
                 ImGui::Spacing();
 
-                // Footer
                 ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.5f, 0.5f, 0.5f, 1.0f));
-                ImGui::Text("Licensed under the MIT License");
+                ImGui::Text("Licensed under the Apache 2.0 License");
                 ImGui::Text("Copyright (c) 2025 Lumina Engine Contributors");
                 ImGui::PopStyleColor();
 
                 ImGui::Spacing();
 
-                // Action Buttons
                 ImGui::Separator();
                 ImGui::Spacing();
 
@@ -685,6 +688,11 @@ namespace Lumina
         }
         else if (Asset->IsA<CWorld>())
         {
+            if (WorldEditorTool->HasSimulatingWorld())
+            {
+                WorldEditorTool->StopAllSimulations();
+            }
+            
             WorldEditorTool->SetWorld(Cast<CWorld>(Asset));
         }
 
@@ -1109,7 +1117,7 @@ namespace Lumina
                     ImGui::TableNextColumn();
                     if (ImGui::SmallButton("Reload"))
                     {
-                        
+                        //Scripting::FScriptingContext::Get().R
                     }
                     ImGui::SameLine();
                     if (ImGui::SmallButton("Edit"))
@@ -2434,6 +2442,11 @@ namespace Lumina
         }
     
         ImGui::Separator();
+        
+        if (ImGui::MenuItem(LE_ICON_GROUP " Contributors"))
+        {
+            bShowContributors = !bShowContributors;
+        }
     
         if (ImGui::MenuItem(LE_ICON_CIRCLE " About Lumina"))
         {
@@ -2566,7 +2579,12 @@ namespace Lumina
                 if (ImGui::Button(LE_ICON_FOLDER_OPEN " Browse for Project...", ImVec2(200, 32)))
                 {
                     FFixedString Project;
-                    if (Platform::OpenFileDialogue(Project, "Open Project", "Lumina Project (*.lproject)\0*.lproject\0All Files (*.*)\0*.*\0"))
+                    if (Platform::OpenFileDialogue(
+                        Project,
+                        "Open Project",
+                        "Lumina Project (*.lproject)\0*.lproject\0All Files (*.*)\0*.*\0",
+                        nullptr
+                    ))
                     {
                         GEditorEngine->LoadProject(Project);
                         OnProjectLoaded();
@@ -2593,7 +2611,7 @@ namespace Lumina
             }
 
             return bShouldClose;
-        });
+        }, true, false);
     }
 
     void FEditorUI::NewProjectDialog()
@@ -2616,15 +2634,15 @@ namespace Lumina
             ImGui::Text("Project Location:");
             ImGui::SetNextItemWidth(-120);
             ImGui::InputText("##ProjectPath", NewProjectPath, sizeof(NewProjectPath));
-            //ImGui::SameLine();
-            //if (ImGui::Button("Browse...", ImVec2(110, 0)))
-            //{
-            //    //FFixedString File;
-            //    //if (Platform::OpenFileDialogue(File))
-            //    //{
-            //    //    NewProjectPath = File;
-            //    //}
-            //}
+            ImGui::SameLine();
+            if (ImGui::Button("Browse...", ImVec2(110, 0)))
+            {
+                FFixedString File;
+                if (Platform::OpenFileDialogue(File,"Browse..."))
+                {
+                    strncpy_s(NewProjectPath, sizeof(NewProjectPath), File.c_str(), _TRUNCATE);
+                }
+            }
             
             ImGui::Spacing();
             ImGui::Separator();

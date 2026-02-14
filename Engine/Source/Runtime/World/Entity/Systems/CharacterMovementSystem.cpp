@@ -47,6 +47,10 @@ namespace Lumina
             SCharacterMovementComponent& Movement       = View.get<SCharacterMovementComponent>(Entity);
             
             JPH::CharacterVirtual* Character            = Physics.Character;
+            if (Character == nullptr)
+            {
+                return;
+            }
 
             JPH::CharacterVirtual::EGroundState GroundState = Character->GetGroundState();
             bool bWasGrounded = Movement.bGrounded;

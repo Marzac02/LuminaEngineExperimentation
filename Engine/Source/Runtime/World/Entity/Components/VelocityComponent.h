@@ -15,6 +15,9 @@ namespace Lumina
 
         PROPERTY(Editable)
         float Speed;
+
+        PROPERTY(Editable)
+        float Scale; 
     };
     
 }

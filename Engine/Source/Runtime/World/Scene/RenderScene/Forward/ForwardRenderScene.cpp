@@ -427,7 +427,7 @@ namespace Lumina
                 const FViewVolume& ViewVolume = SceneViewport->GetViewVolume();
                 
                 #if USING(WITH_EDITOR)
-                if (!World->IsPlayWorld())
+                if (!World->IsGameWorld())
                 {
                     DrawBillboard(GetNamedImage(ENamedImage::DirectionalLightIcon), glm::vec3(0.0f), 0.35f);
                 }
@@ -520,7 +520,7 @@ namespace Lumina
                 Light.Position              = TransformComponent.WorldTransform.Location;
                 
                 #if USING(WITH_EDITOR)
-                if (!World->IsPlayWorld())
+                if (!World->IsGameWorld())
                 {
                     DrawBillboard(GetNamedImage(ENamedImage::PointLightIcon), TransformComponent.GetLocation(), 0.35f);
                 }
@@ -600,7 +600,7 @@ namespace Lumina
                 const FTransform& Transform = TransformComponent.WorldTransform;
                 
                 #if USING(WITH_EDITOR)
-                if (!World->IsPlayWorld())
+                if (!World->IsGameWorld())
                 {
                     DrawBillboard(GetNamedImage(ENamedImage::SpotLightIcon), TransformComponent.GetLocation(), 0.35f);
                 }

@@ -94,9 +94,4 @@ namespace Lumina
         World->WorldIndex = Worlds.size(); 
         Worlds.push_back(MWorld);
     }
-
-    CWorld* FWorldManager::GetCurrentEditorWorld()
-    {
-        return nullptr;
-    }
 }

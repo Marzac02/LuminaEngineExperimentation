@@ -164,9 +164,7 @@ namespace Lumina
 
         RUNTIME_API size_t GetNumEntities() const;
         RUNTIME_API bool IsValidEntity(entt::entity Entity) const;
-        
-        RUNTIME_API bool IsPlayWorld() const;
-        
+    
     private:
         
         void Lua_DispatchEvent(const sol::object& Event) const ;
@@ -182,8 +180,11 @@ namespace Lumina
         
         void Lua_Remove(entt::entity Entity, const sol::object& Component) const;
         sol::object Lua_Emplace(entt::entity Entity, const sol::table& Component) const;
+        sol::variadic_results Lua_GetUnsafe(entt::entity Entity, const sol::variadic_args& Args) const;
         sol::variadic_results Lua_Get(entt::entity Entity, const sol::variadic_args& Args) const;
-        sol::variadic_results Lua_Try_Get(entt::entity Entity, const sol::variadic_args& Args) const;
+        entt::entity Lua_GetEntityByTag(const char* Tag) const;
+        entt::entity Lua_GetEntityByName(const char* Name) const;
+        entt::entity Lua_GetFirstEntityWith(const sol::object& Component) const;
 
     private:
 

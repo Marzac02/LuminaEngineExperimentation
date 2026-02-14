@@ -112,6 +112,7 @@ namespace Lumina::Scripting
         DeferredActions.ProcessAllOf<FScriptLoad>([&](const FScriptLoad& Load)
         {
             OnScriptLoaded.Broadcast(Load.Path);
+            ReloadScripts(Load.Path);
         });
     }
 
@@ -149,30 +150,61 @@ namespace Lumina::Scripting
     TSharedPtr<FLuaScript> FScriptingContext::LoadUniqueScript(FStringView Path)
     {
         State.collect_gc();
-    
-        sol::environment Environment(State, sol::create, State.globals());
+
         FString ScriptData;
+        if (!VFS::ReadFile(ScriptData, Path))
+        {
+            LOG_ERROR("Lua - Failed to read script file: {}", Path);
+            return {};
+        }
         
-        VFS::ReadFile(ScriptData, Path);
+        if (ScriptData.empty())
+        {
+            LOG_WARN("Lua - Script file is empty: {}", Path);
+            return {};
+        }
+
+        sol::environment Environment(State, sol::create, State.globals());
+        
         sol::protected_function_result Result = State.safe_script(ScriptData.c_str(), Environment);
+        
         if (!Result.valid())
         {
+            sol::error Error = Result;
+            LOG_ERROR("Lua - Failed to execute script '{}': {}", Path, Error.what());
+            return {};
+        }
+
+        if (Result.get_type() == sol::type::none || Result.get_type() == sol::type::lua_nil)
+        {
+            LOG_ERROR("Lua - Script '{}' did not return a value", Path);
             return {};
         }
 
         sol::object ReturnedObject = Result;
+        
         if (!ReturnedObject.is<sol::table>())
         {
+            LOG_ERROR("Lua - Script '{}' must return a table, got: {}", Path, sol::type_name(ReturnedObject.lua_state(), ReturnedObject.get_type()));
             return {};
         }
 
         sol::table ScriptTable = ReturnedObject.as<sol::table>();
         
+        if (ScriptTable.empty())
+        {
+            LOG_WARN("Lua - Script '{}' returned an empty table", Path);
+        }
+        
         auto NewScript = MakeShared<FLuaScript>();
-        NewScript->Environment = Environment;
-        NewScript->ScriptTable = ScriptTable;
-        NewScript->Name = VFS::FileName(Path, true);
+        NewScript->Environment  = std::move(Environment);
+        NewScript->ScriptTable  = std::move(ScriptTable);
+        NewScript->Name         = VFS::FileName(Path, true);
+        NewScript->Path         = Path;
+        
         RegisteredScripts[Path].emplace_back(NewScript);
+        
+        LOG_INFO("Lua - Successfully loaded script: {}", Path);
         
         return NewScript;
     }
@@ -518,150 +550,242 @@ namespace Lumina::Scripting
 
     void FScriptingContext::SetupInput()
     {
-        State.set_function("GetMouseX",        [] () { return FInputProcessor::Get().GetMouseX(); }),
-        State.set_function("GetMouseY",        [] () { return FInputProcessor::Get().GetMouseY(); }),
-        State.set_function("GetMouseDeltaX",   [] () { return FInputProcessor::Get().GetMouseDeltaX(); }),
-        State.set_function("GetMouseDeltaY",   [] () { return FInputProcessor::Get().GetMouseDeltaY(); }),
         
-        State.set_function("EnableCursor",     [] () { FInputProcessor::Get().SetCursorMode(GLFW_CURSOR_NORMAL); }),
-        State.set_function("DisableCursor",    [] () { FInputProcessor::Get().SetCursorMode(GLFW_CURSOR_DISABLED); }),
-        State.set_function("HideCursor",       [] () { FInputProcessor::Get().SetCursorMode(GLFW_CURSOR_HIDDEN); }),
+        sol::table InputTable = State.create_named_table("Input");
+        InputTable.set_function("GetMouseX",            [] () { return FInputProcessor::Get().GetMouseX(); });
+        InputTable.set_function("GetMouseY",            [] () { return FInputProcessor::Get().GetMouseY(); });
+        InputTable.set_function("GetMouseZ",            [] () { return FInputProcessor::Get().GetMouseZ(); });
+        InputTable.set_function("GetMouseDeltaX",       [] () { return FInputProcessor::Get().GetMouseDeltaX(); });
+        InputTable.set_function("GetMouseDeltaY",       [] () { return FInputProcessor::Get().GetMouseDeltaY(); });
+                                                        
+        InputTable.set_function("SetMouseMode",         [] (EMouseMode Mode) { FInputProcessor::Get().SetMouseMode(Mode); });
+                                                        
+        InputTable.set_function("IsKeyDown",            [] (EKey Key) { return FInputProcessor::Get().IsKeyDown(Key); });
+        InputTable.set_function("IsKeyUp",              [] (EKey Key) { return FInputProcessor::Get().IsKeyUp(Key); });
+        InputTable.set_function("IsKeyRepeated",        [] (EKey Key) { return FInputProcessor::Get().IsKeyRepeated(Key); });
         
-        State.set_function("IsKeyDown",        [] (EKeyCode Key) { return FInputProcessor::Get().IsKeyDown(Key); }),
-        State.set_function("IsKeyUp",          [] (EKeyCode Key) { return FInputProcessor::Get().IsKeyUp(Key); }),
-        State.set_function("IsKeyRepeated",    [] (EKeyCode Key) { return FInputProcessor::Get().IsKeyRepeated(Key); }),
+        InputTable.set_function("IsMouseButtonDown",    [] (EMouseKey Key) { return FInputProcessor::Get().IsMouseButtonDown(Key); });
+        InputTable.set_function("IsMouseButtonUp",      [] (EMouseKey Key) { return FInputProcessor::Get().IsMouseButtonUp(Key); });
         
-        State.new_enum("EKeyCode",
-            "Space",        EKeyCode::Space,
-            "Apostrophe",   EKeyCode::Apostrophe,
-            "Comma",        EKeyCode::Comma,
-            "Minus",        EKeyCode::Minus,
-            "Period",       EKeyCode::Period,
-            "Slash",        EKeyCode::Slash,
-        
-            "D0",           EKeyCode::D0,
-            "D1",           EKeyCode::D1,
-            "D2",           EKeyCode::D2,
-            "D3",           EKeyCode::D3,
-            "D4",           EKeyCode::D4,
-            "D5",           EKeyCode::D5,
-            "D6",           EKeyCode::D6,
-            "D7",           EKeyCode::D7,
-            "D8",           EKeyCode::D8,
-            "D9",           EKeyCode::D9,
-        
-            "Semicolon",    EKeyCode::Semicolon,
-            "Equal",        EKeyCode::Equal,
-        
-            "A",            EKeyCode::A,
-            "B",            EKeyCode::B,
-            "C",            EKeyCode::C,
-            "D",            EKeyCode::D,
-            "E",            EKeyCode::E,
-            "F",            EKeyCode::F,
-            "G",            EKeyCode::G,
-            "H",            EKeyCode::H,
-            "I",            EKeyCode::I,
-            "J",            EKeyCode::J,
-            "K",            EKeyCode::K,
-            "L",            EKeyCode::L,
-            "M",            EKeyCode::M,
-            "N",            EKeyCode::N,
-            "O",            EKeyCode::O,
-            "P",            EKeyCode::P,
-            "Q",            EKeyCode::Q,
-            "R",            EKeyCode::R,
-            "S",            EKeyCode::S,
-            "T",            EKeyCode::T,
-            "U",            EKeyCode::U,
-            "V",            EKeyCode::V,
-            "W",            EKeyCode::W,
-            "X",            EKeyCode::X,
-            "Y",            EKeyCode::Y,
-            "Z",            EKeyCode::Z,
-        
-            "LeftBracket",  EKeyCode::LeftBracket,
-            "Backslash",    EKeyCode::Backslash,
-            "RightBracket", EKeyCode::RightBracket,
-            "GraveAccent",  EKeyCode::GraveAccent,
-        
-            "World1",       EKeyCode::World1,
-            "World2",       EKeyCode::World2,
-        
-            "Escape",       EKeyCode::Escape,
-            "Enter",        EKeyCode::Enter,
-            "Tab",          EKeyCode::Tab,
-            "Backspace",    EKeyCode::Backspace,
-            "Insert",       EKeyCode::Insert,
-            "Delete",       EKeyCode::Delete,
-            "Right",        EKeyCode::Right,
-            "Left",         EKeyCode::Left,
-            "Down",         EKeyCode::Down,
-            "Up",           EKeyCode::Up,
-            "PageUp",       EKeyCode::PageUp,
-            "PageDown",     EKeyCode::PageDown,
-            "Home",         EKeyCode::Home,
-            "End",          EKeyCode::End,
-            "CapsLock",     EKeyCode::CapsLock,
-            "ScrollLock",   EKeyCode::ScrollLock,
-            "NumLock",      EKeyCode::NumLock,
-            "PrintScreen",  EKeyCode::PrintScreen,
-            "Pause",        EKeyCode::Pause,
-        
-            "F1",           EKeyCode::F1,
-            "F2",           EKeyCode::F2,
-            "F3",           EKeyCode::F3,
-            "F4",           EKeyCode::F4,
-            "F5",           EKeyCode::F5,
-            "F6",           EKeyCode::F6,
-            "F7",           EKeyCode::F7,
-            "F8",           EKeyCode::F8,
-            "F9",           EKeyCode::F9,
-            "F10",          EKeyCode::F10,
-            "F11",          EKeyCode::F11,
-            "F12",          EKeyCode::F12,
-            "F13",          EKeyCode::F13,
-            "F14",          EKeyCode::F14,
-            "F15",          EKeyCode::F15,
-            "F16",          EKeyCode::F16,
-            "F17",          EKeyCode::F17,
-            "F18",          EKeyCode::F18,
-            "F19",          EKeyCode::F19,
-            "F20",          EKeyCode::F20,
-            "F21",          EKeyCode::F21,
-            "F22",          EKeyCode::F22,
-            "F23",          EKeyCode::F23,
-            "F24",          EKeyCode::F24,
-            "F25",          EKeyCode::F25,
-        
-            "KP0",          EKeyCode::KP0,
-            "KP1",          EKeyCode::KP1,
-            "KP2",          EKeyCode::KP2,
-            "KP3",          EKeyCode::KP3,
-            "KP4",          EKeyCode::KP4,
-            "KP5",          EKeyCode::KP5,
-            "KP6",          EKeyCode::KP6,
-            "KP7",          EKeyCode::KP7,
-            "KP8",          EKeyCode::KP8,
-            "KP9",          EKeyCode::KP9,
-            "KPDecimal",    EKeyCode::KPDecimal,
-            "KPDivide",     EKeyCode::KPDivide,
-            "KPMultiply",   EKeyCode::KPMultiply,
-            "KPSubtract",   EKeyCode::KPSubtract,
-            "KPAdd",        EKeyCode::KPAdd,
-            "KPEnter",      EKeyCode::KPEnter,
-            "KPEqual",      EKeyCode::KPEqual,
-        
-            "LeftShift",    EKeyCode::LeftShift,
-            "LeftControl",  EKeyCode::LeftControl,
-            "LeftAlt",      EKeyCode::LeftAlt,
-            "LeftSuper",    EKeyCode::LeftSuper,
-            "RightShift",   EKeyCode::RightShift,
-            "RightControl", EKeyCode::RightControl,
-            "RightAlt",     EKeyCode::RightAlt,
-            "RightSuper",   EKeyCode::RightSuper,
-            "Menu",         EKeyCode::Menu
+        State.new_enum("EMouseMode",
+            "Hidden",   EMouseMode::Hidden,
+            "Normal",   EMouseMode::Normal,
+            "Captured", EMouseMode::Captured
         );
+        
+        State.new_enum("EMouseKey",
+            "Button0",      EMouseKey::Button0,
+            "Button1",      EMouseKey::Button1,
+            "Button2",      EMouseKey::Button2,
+            "Button3",      EMouseKey::Button3,
+            "Button4",      EMouseKey::Button4,
+            "Button5",      EMouseKey::Button5,
+            "Button6",      EMouseKey::Button6,
+            "Button7",      EMouseKey::Button7,
+            "Scroll",       EMouseKey::Scroll,
+    
+            "ButtonLast",   EMouseKey::ButtonLast,
+            "ButtonLeft",   EMouseKey::ButtonLeft,
+            "ButtonRight",  EMouseKey::ButtonRight,
+            "ButtonMiddle", EMouseKey::ButtonMiddle
+        );
+        
+        State.new_enum("EKey",
+            "Space",        EKey::Space,
+            "Apostrophe",   EKey::Apostrophe,
+            "Comma",        EKey::Comma,
+            "Minus",        EKey::Minus,
+            "Period",       EKey::Period,
+            "Slash",        EKey::Slash,
+        
+            "D0",           EKey::D0,
+            "D1",           EKey::D1,
+            "D2",           EKey::D2,
+            "D3",           EKey::D3,
+            "D4",           EKey::D4,
+            "D5",           EKey::D5,
+            "D6",           EKey::D6,
+            "D7",           EKey::D7,
+            "D8",           EKey::D8,
+            "D9",           EKey::D9,
+        
+            "Semicolon",    EKey::Semicolon,
+            "Equal",        EKey::Equal,
+        
+            "A",            EKey::A,
+            "B",            EKey::B,
+            "C",            EKey::C,
+            "D",            EKey::D,
+            "E",            EKey::E,
+            "F",            EKey::F,
+            "G",            EKey::G,
+            "H",            EKey::H,
+            "I",            EKey::I,
+            "J",            EKey::J,
+            "K",            EKey::K,
+            "L",            EKey::L,
+            "M",            EKey::M,
+            "N",            EKey::N,
+            "O",            EKey::O,
+            "P",            EKey::P,
+            "Q",            EKey::Q,
+            "R",            EKey::R,
+            "S",            EKey::S,
+            "T",            EKey::T,
+            "U",            EKey::U,
+            "V",            EKey::V,
+            "W",            EKey::W,
+            "X",            EKey::X,
+            "Y",            EKey::Y,
+            "Z",            EKey::Z,
+        
+            "LeftBracket",  EKey::LeftBracket,
+            "Backslash",    EKey::Backslash,
+            "RightBracket", EKey::RightBracket,
+            "GraveAccent",  EKey::GraveAccent,
+        
+            "World1",       EKey::World1,
+            "World2",       EKey::World2,
+        
+            "Escape",       EKey::Escape,
+            "Enter",        EKey::Enter,
+            "Tab",          EKey::Tab,
+            "Backspace",    EKey::Backspace,
+            "Insert",       EKey::Insert,
+            "Delete",       EKey::Delete,
+            "Right",        EKey::Right,
+            "Left",         EKey::Left,
+            "Down",         EKey::Down,
+            "Up",           EKey::Up,
+            "PageUp",       EKey::PageUp,
+            "PageDown",     EKey::PageDown,
+            "Home",         EKey::Home,
+            "End",          EKey::End,
+            "CapsLock",     EKey::CapsLock,
+            "ScrollLock",   EKey::ScrollLock,
+            "NumLock",      EKey::NumLock,
+            "PrintScreen",  EKey::PrintScreen,
+            "Pause",        EKey::Pause,
+        
+            "F1",           EKey::F1,
+            "F2",           EKey::F2,
+            "F3",           EKey::F3,
+            "F4",           EKey::F4,
+            "F5",           EKey::F5,
+            "F6",           EKey::F6,
+            "F7",           EKey::F7,
+            "F8",           EKey::F8,
+            "F9",           EKey::F9,
+            "F10",          EKey::F10,
+            "F11",          EKey::F11,
+            "F12",          EKey::F12,
+            "F13",          EKey::F13,
+            "F14",          EKey::F14,
+            "F15",          EKey::F15,
+            "F16",          EKey::F16,
+            "F17",          EKey::F17,
+            "F18",          EKey::F18,
+            "F19",          EKey::F19,
+            "F20",          EKey::F20,
+            "F21",          EKey::F21,
+            "F22",          EKey::F22,
+            "F23",          EKey::F23,
+            "F24",          EKey::F24,
+            "F25",          EKey::F25,
+        
+            "KP0",          EKey::KP0,
+            "KP1",          EKey::KP1,
+            "KP2",          EKey::KP2,
+            "KP3",          EKey::KP3,
+            "KP4",          EKey::KP4,
+            "KP5",          EKey::KP5,
+            "KP6",          EKey::KP6,
+            "KP7",          EKey::KP7,
+            "KP8",          EKey::KP8,
+            "KP9",          EKey::KP9,
+            "KPDecimal",    EKey::KPDecimal,
+            "KPDivide",     EKey::KPDivide,
+            "KPMultiply",   EKey::KPMultiply,
+            "KPSubtract",   EKey::KPSubtract,
+            "KPAdd",        EKey::KPAdd,
+            "KPEnter",      EKey::KPEnter,
+            "KPEqual",      EKey::KPEqual,
+        
+            "LeftShift",    EKey::LeftShift,
+            "LeftControl",  EKey::LeftControl,
+            "LeftAlt",      EKey::LeftAlt,
+            "LeftSuper",    EKey::LeftSuper,
+            "RightShift",   EKey::RightShift,
+            "RightControl", EKey::RightControl,
+            "RightAlt",     EKey::RightAlt,
+            "RightSuper",   EKey::RightSuper,
+            "Menu",         EKey::Menu
+        );
+    }
+
+    void FScriptingContext::ReloadScripts(FStringView Path)
+    {
+        TVector<TWeakPtr<FLuaScript>>& ScriptVector = RegisteredScripts[Path];
+        for (const TWeakPtr<FLuaScript>& WeakScript : ScriptVector)
+        {
+            if (TSharedPtr<FLuaScript> Script = WeakScript.lock())
+            {
+                State.collect_gc();
+
+                FString ScriptData;
+                if (!VFS::ReadFile(ScriptData, Path))
+                {
+                    LOG_ERROR("Lua - Failed to read script file: {}", Path);
+                    return;
+                }
+        
+                if (ScriptData.empty())
+                {
+                    LOG_WARN("Lua - Script file is empty: {}", Path);
+                    return;
+                }
+
+                sol::environment Environment(State, sol::create, State.globals());
+        
+                sol::protected_function_result Result = State.safe_script(ScriptData.c_str(), Environment);
+        
+                if (!Result.valid())
+                {
+                    sol::error Error = Result;
+                    LOG_ERROR("Lua - Failed to execute script '{}': {}", Path, Error.what());
+                    return;
+                }
+
+                if (Result.get_type() == sol::type::none || Result.get_type() == sol::type::lua_nil)
+                {
+                    LOG_ERROR("Lua - Script '{}' did not return a value", Path);
+                    return;
+                }
+
+                sol::object ReturnedObject = Result;
+        
+                if (!ReturnedObject.is<sol::table>())
+                {
+                    LOG_ERROR("Lua - Script '{}' must return a table, got: {}", Path, sol::type_name(ReturnedObject.lua_state(), ReturnedObject.get_type()));
+                    return;
+                }
+
+                sol::table ScriptTable = ReturnedObject.as<sol::table>();
+        
+                if (ScriptTable.empty())
+                {
+                    LOG_WARN("Lua - Script '{}' returned an empty table", Path);
+                    return;
+                }
+        
+                Script->Environment  = std::move(Environment);
+                Script->ScriptTable  = std::move(ScriptTable);
+                Script->Name         = VFS::FileName(Path, true);
+                Script->Path         = Path;
+            }
+        }
+        
+        LOG_INFO("Reloaded Scripts: {}", Path);
     }
 
     void FScriptingContext::Lua_Info(const sol::variadic_args& Args)

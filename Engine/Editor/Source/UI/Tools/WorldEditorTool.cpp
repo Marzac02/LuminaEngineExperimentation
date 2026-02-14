@@ -11,6 +11,7 @@
 #include "EASTL/sort.h"
 #include "glm/gtc/type_ptr.hpp"
 #include "glm/gtx/matrix_decompose.hpp"
+#include "Input/InputProcessor.h"
 #include "Memory/SmartPtr.h"
 #include "Tools/ComponentVisualizers/ComponentVisualizer.h"
 #include "Tools/Dialogs/Dialogs.h"
@@ -192,9 +193,6 @@ namespace Lumina
 
         
         //------------------------------------------------------------------------------------------------------
-        
-        
-        World->GetEntityRegistry().on_destroy<entt::entity>().connect<&FWorldEditorTool::OnEntityDestroyed>(this);
     }
 
     void FWorldEditorTool::OnDeinitialize(const FUpdateContext& UpdateContext)
@@ -309,10 +307,14 @@ namespace Lumina
                     {
                         Visualizer->Draw(World, World->GetEntityRegistry(), SelectedEntity);
                     }
-                
                 }
             });
         });
+    }
+
+    void FWorldEditorTool::OnEntityCreated(entt::registry& Registry, entt::entity Entity)
+    {
+        // OutlinerListView.MarkTreeDirty(); @TODO Too expensive to enable.
     }
 
     const char* FWorldEditorTool::GetTitlebarIcon() const
@@ -1103,22 +1105,46 @@ namespace Lumina
 
     void FWorldEditorTool::PushRenameEntityModal(entt::entity Entity)
     {
-        ToolContext->PushModal("Rename Entity", ImVec2(600.0f, 350.0f), [this, Entity] () -> bool
+        ToolContext->PushModal("Rename Entity", ImVec2(450.0f, 250.0f), [this, Entity]() -> bool
         {
-            FName& Name = World->GetEntityRegistry().get<SNameComponent>(Entity).Name;
-            FString CopyName = Name.ToString();
-            
-            if (ImGui::InputText("##Name", const_cast<char*>(CopyName.c_str()), 256, ImGuiInputTextFlags_EnterReturnsTrue))
+            auto& NameComponent = World->GetEntityRegistry().get<SNameComponent>(Entity);
+            static FFixedString InputBuffer;
+    
+            if (ImGui::IsWindowAppearing())
             {
-                Name = CopyName.c_str();
-                return true;
+                InputBuffer = NameComponent.Name.c_str();
             }
-            
-            if (ImGui::Button("Cancel"))
-            {
-                return true;
-            }
+    
+            ImGui::Text("Enter new name:");
+            ImGui::Spacing();
+    
+            ImGui::SetNextItemWidth(-1.0f);
+            bool bShouldClose = ImGui::InputText("##Name", InputBuffer.data(), 
+                                                  InputBuffer.max_size(), 
+                                                  ImGuiInputTextFlags_EnterReturnsTrue);
+    
+            ImGui::Spacing();
+            ImGui::Separator();
+            ImGui::Spacing();
 
+            constexpr float ButtonWidth = 100.0f;
+            const float AvailWidth = ImGui::GetContentRegionAvail().x;
+            ImGui::SetCursorPosX((AvailWidth - ButtonWidth * 2 - ImGui::GetStyle().ItemSpacing.x) * 0.5f);
+    
+            if (ImGui::Button("OK", ImVec2(ButtonWidth, 0.0f)) || bShouldClose)
+            {
+                NameComponent.Name = FName(InputBuffer.c_str());
+                OutlinerListView.MarkTreeDirty();
+                return true;
+            }
+    
+            ImGui::SameLine();
+    
+            if (ImGui::Button("Cancel", ImVec2(ButtonWidth, 0.0f)))
+            {
+                return true;
+            }
+    
             return false;
         });
     }
@@ -1186,7 +1212,6 @@ namespace Lumina
                 if (ImGuiX::IconButton(LE_ICON_PLAY, "##PlayBtn", 0xFFFFFFFF, BtnSize))
                 {
                     SetWorldPlayInEditor(true);
-                    //OnGamePreviewStartRequested.Broadcast();
                 }
                 ImGui::PopStyleColor(2);
                 
@@ -1713,6 +1738,12 @@ namespace Lumina
         ImGui::PopStyleColor();
     }
 
+    void FWorldEditorTool::StopAllSimulations()
+    {
+        SetWorldNewSimulate(false);
+        SetWorldPlayInEditor(false);
+    }
+
     void FWorldEditorTool::AddSelectedEntity(entt::entity Entity, bool bRebuild)
     {
         if (!World->GetEntityRegistry().valid(Entity))
@@ -1732,6 +1763,11 @@ namespace Lumina
 
     void FWorldEditorTool::RemoveSelectedEntity(entt::entity Entity, bool bRebuild)
     {
+        if (World == nullptr)
+        {
+            return;
+        }
+        
         if (World->GetEntityRegistry().valid(Entity))
         {
             return;
@@ -1798,17 +1834,24 @@ namespace Lumina
             
             World->SetActive(false);
             ProxyWorld = World;
+            
             World = CWorld::DuplicateWorld(ProxyWorld);
-            World->SetIsPlayWorld(true);
-            World->SetPaused(false);
-            World->BeginPlay();
+            World->InitializeWorld(EWorldType::Game);
+            World->SimulateWorld();
             
             OutlinerListView.ClearTree();
             OutlinerListView.MarkTreeDirty();
+            
+            World->GetEntityRegistry().on_construct<entt::entity>().disconnect<&FWorldEditorTool::OnEntityCreated>(this);
+            World->GetEntityRegistry().on_destroy<entt::entity>().disconnect<&FWorldEditorTool::OnEntityCreated>(this);
+
+            World->GetEntityRegistry().on_construct<entt::entity>().connect<&FWorldEditorTool::OnEntityCreated>(this);
+            World->GetEntityRegistry().on_destroy<entt::entity>().connect<&FWorldEditorTool::OnEntityDestroyed>(this);
         }
         else if (bShouldPlay != bGamePreviewRunning && bShouldPlay == false)
         {
             World->SetPaused(true);
+            World->StopSimulation();
             bGamePreviewRunning = false;
             
             ProxyWorld->DestroyEntity(EditorEntity);
@@ -1821,6 +1864,14 @@ namespace Lumina
             
             OutlinerListView.ClearTree();
             OutlinerListView.MarkTreeDirty();
+            
+            World->GetEntityRegistry().on_construct<entt::entity>().disconnect<&FWorldEditorTool::OnEntityCreated>(this);
+            World->GetEntityRegistry().on_destroy<entt::entity>().disconnect<&FWorldEditorTool::OnEntityCreated>(this);
+
+            World->GetEntityRegistry().on_construct<entt::entity>().connect<&FWorldEditorTool::OnEntityCreated>(this);
+            World->GetEntityRegistry().on_destroy<entt::entity>().connect<&FWorldEditorTool::OnEntityDestroyed>(this);
+            
+            FInputProcessor::Get().SetMouseMode(EMouseMode::Normal);
         }
     }
 
@@ -1836,7 +1887,8 @@ namespace Lumina
             World->SetActive(false);
             ProxyWorld = World;
             World = CWorld::DuplicateWorld(ProxyWorld);
-            World->SetSimulating(true);
+            World->InitializeWorld(EWorldType::Simulation);
+            World->SimulateWorld();
 
             ProxyWorld->DestroyEntity(EditorEntity);
             EditorEntity = entt::null;
@@ -1861,11 +1913,17 @@ namespace Lumina
             
             OutlinerListView.ClearTree();
             OutlinerListView.MarkTreeDirty();
+            
+            World->GetEntityRegistry().on_construct<entt::entity>().disconnect<&FWorldEditorTool::OnEntityCreated>(this);
+            World->GetEntityRegistry().on_destroy<entt::entity>().disconnect<&FWorldEditorTool::OnEntityCreated>(this);
+
+            World->GetEntityRegistry().on_construct<entt::entity>().connect<&FWorldEditorTool::OnEntityCreated>(this);
+            World->GetEntityRegistry().on_destroy<entt::entity>().connect<&FWorldEditorTool::OnEntityDestroyed>(this);
 
         }
         else if (bShouldSimulate != bSimulatingWorld && bShouldSimulate == false)
         {
-            World->SetSimulating(false);
+            World->StopSimulation();
             bSimulatingWorld = false;
 
             STransformComponent TransformCopy = World->GetEntityRegistry().get<STransformComponent>(EditorEntity);
@@ -1895,6 +1953,8 @@ namespace Lumina
             
             OutlinerListView.ClearTree();
             OutlinerListView.MarkTreeDirty();
+            
+            FInputProcessor::Get().SetMouseMode(EMouseMode::Normal);
         }
     }
 
@@ -2119,6 +2179,8 @@ namespace Lumina
 
     void FWorldEditorTool::RebuildSceneOutliner(FTreeListView& Tree)
     {
+        LUMINA_PROFILE_SCOPE();
+        
         TFunction<void(entt::entity, entt::entity)> AddEntityRecursive;
         
         AddEntityRecursive = [&](entt::entity WorldEntity, entt::entity ParentItem)
@@ -2180,8 +2242,7 @@ namespace Lumina
             AddEntityRecursive(Root, entt::null);
         }
     }
-
-
+    
     void FWorldEditorTool::HandleEntityEditorDragDrop(FTreeListView& Tree, entt::entity DropItem)
     {
         const ImGuiPayload* Payload = ImGui::AcceptDragDropPayload(DragDropID, ImGuiDragDropFlags_AcceptBeforeDelivery);
@@ -2196,7 +2257,7 @@ namespace Lumina
 
     void FWorldEditorTool::DrawWorldSettings(bool bFocused)
     {
-        DrawEntityEditor(bFocused, World->GetSingletonEntity());
+        
     }
 
     void FWorldEditorTool::DrawOutliner(bool bFocused)
@@ -2709,7 +2770,6 @@ namespace Lumina
         entt::meta_type MetaType = entt::resolve(entt::hashed_string(Table->GetType()->GetName().c_str()));
         if (!ECS::Utils::HasComponent(World->GetEntityRegistry(), Entity, MetaType))
         {
-            LOG_WARN("Entity does not have component to draw: {}", MetaType.name());
             return;
         }
         

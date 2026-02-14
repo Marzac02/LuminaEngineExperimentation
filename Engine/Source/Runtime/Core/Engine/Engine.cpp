@@ -84,7 +84,7 @@ namespace Lumina
         // Shutdown core engine state.
         //-------------------------------------------------------------------------
 
-        #if WITH_EDITOR
+        #if USING(WITH_EDITOR)
         DeveloperToolUI->Deinitialize(UpdateContext);
         delete DeveloperToolUI;
         #endif
@@ -342,7 +342,7 @@ namespace Lumina
         
         OnProjectLoaded.Broadcast();
     }
-    
+
     FFixedString FEngine::GetProjectScriptDirectory() const
     {
         if (!HasLoadedProject())

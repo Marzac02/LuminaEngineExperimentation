@@ -4,34 +4,34 @@ PlayerScript = {
 
 }
 
-
 function PlayerScript:Update(DeltaTime)
 
-    local CharacterController = Context:TryGet(Entity, SCharacterControllerComponent)
-    local CharacterMovement = Context:TryGet(Entity, SCharacterMovementComponent)
-    local InputComponent = Context:TryGet(Entity, SInputComponent)
+    local CharacterController = Context:Get(Entity, SCharacterControllerComponent)
+    local CharacterMovement = Context:Get(Entity, SCharacterMovementComponent)
+
+    --Input.SetMouseMode(EMouseMode.Captured)
     
-    if InputComponent:IsKeyDown(EKeyCode.W) then
+    if Input.IsKeyDown(EKey.W) then
         CharacterController:AddMovementInput(vec3(0, 0, 1))
     end
 
-    if InputComponent:IsKeyDown(EKeyCode.S) then
+    if Input.IsKeyDown(EKey.S) then
         CharacterController:AddMovementInput(vec3(0, 0, -1))
     end
 
-    if InputComponent:IsKeyDown(EKeyCode.A) then
+    if Input.IsKeyDown(EKey.A) then
         CharacterController:AddMovementInput(vec3(1, 0, 0))
     end
 
-    if InputComponent:IsKeyDown(EKeyCode.D) then
+    if Input.IsKeyDown(EKey.D) then
         CharacterController:AddMovementInput(vec3(-1, 0, 0))
     end
 
-    if InputComponent:IsKeyDown(EKeyCode.Space) then
+    if Input.IsKeyDown(EKey.Space) then
         CharacterController:Jump()
     end
 
-    if InputComponent:IsKeyDown(EKeyCode.LeftShift) then
+    if Input.IsKeyDown(EKey.LeftShift) then
         CharacterMovement.MoveSpeed = 15
     else
         CharacterMovement.MoveSpeed = 5

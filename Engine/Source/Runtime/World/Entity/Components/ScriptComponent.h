@@ -11,6 +11,23 @@ namespace Lumina
     {
         GENERATED_BODY()
         
+        template<typename... TArgs>
+        void InvokeScriptFunction(FStringView Name, TArgs&&... Args)
+        {
+            if (Script && Script->ScriptTable.valid())
+            {
+                if (sol::optional<sol::function> ScriptFunc = Script->ScriptTable[Name.data()])
+                {
+                    sol::protected_function_result Result = (*ScriptFunc)(Script->ScriptTable, Forward<TArgs>(Args)...);
+                    if (!Result.valid())
+                    {
+                        sol::error Error = Result;
+                        LOG_ERROR("Script Error: {} - {}", Script->Path, Error.what());
+                    }
+                }
+            }
+        }
+        
         PROPERTY(Editable)
         FScriptPath ScriptPath;
         

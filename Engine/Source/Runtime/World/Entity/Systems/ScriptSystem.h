@@ -15,8 +15,6 @@ namespace Lumina
             , RequiresUpdate(EUpdateStage::PostPhysics)
             , RequiresUpdate(EUpdateStage::FrameEnd))
 
-        static void Startup(const FSystemContext& Context) noexcept;
         static void Update(const FSystemContext& Context) noexcept;
-        static void Teardown(const FSystemContext& Context) noexcept;
     };
 }

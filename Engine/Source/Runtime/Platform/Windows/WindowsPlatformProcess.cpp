@@ -10,11 +10,13 @@
 #include <windows.h>
 #endif
 #include <shellapi.h>
+#include <shobjidl.h>
 #include <commdlg.h>
 #include <tchar.h>
 #include <PathCch.h>  // For PathFindFileName
 #include <psapi.h>
 #include <Shlwapi.h>
+
 #pragma comment(lib, "Shlwapi.lib")
 #pragma comment(lib, "PathCch.lib")
 
@@ -242,33 +244,98 @@ namespace Lumina::Platform
 
     bool OpenFileDialogue(FFixedString& OutFile, const char* Title, const char* Filter, const char* InitialDir)
     {
-        OPENFILENAMEA ofn{};
-        char Buffer[MAX_PATH] = {};
 
-        ofn.lStructSize = sizeof(ofn);
-        ofn.hwndOwner = nullptr;
-        ofn.lpstrFilter = Filter;
-        ofn.lpstrFile = Buffer;
-        ofn.nMaxFile = MAX_PATH;
-        ofn.lpstrTitle = Title;
-        if (InitialDir)
+        IFileDialog* FileDialog = nullptr;
+        HRESULT Result = CoCreateInstance(CLSID_FileOpenDialog, nullptr, CLSCTX_ALL, IID_IFileDialog, reinterpret_cast<void**>(&FileDialog));
+
+        if (FAILED(Result))
         {
-            ofn.lpstrInitialDir = InitialDir;
+            CoUninitialize();
+            PANIC("Failed to create File Open Dialog");
+        }
+        
+        DWORD Options;
+        FileDialog->GetOptions(&Options);
+
+        if (!Filter)
+        {
+            FileDialog->SetOptions(Options | FOS_PICKFOLDERS | FOS_FORCEFILESYSTEM);
         }
         else
         {
-            ofn.lpstrInitialDir = GetCurrentProcessPath().c_str();
+            FileDialog->SetOptions(Options | FOS_FORCEFILESYSTEM | FOS_FILEMUSTEXIST);
         }
-        ofn.Flags = OFN_FILEMUSTEXIST | OFN_PATHMUSTEXIST;
 
-        if (GetOpenFileNameA(&ofn))
+        if (Title)
         {
-            OutFile = Buffer;
-            eastl::replace(OutFile.begin(), OutFile.end(), '\\', '/');
-            return true;
+            FileDialog->SetTitle(UTF8_TO_TCHAR(Title));
         }
 
-        return false;
+        if (InitialDir)
+        {
+            IShellItem* pFolder = nullptr;
+            if (SUCCEEDED(SHCreateItemFromParsingName(UTF8_TO_TCHAR(InitialDir), nullptr, IID_PPV_ARGS(&pFolder))))
+            {
+                FileDialog->SetFolder(pFolder);
+                pFolder->Release();
+            }
+        }
+        
+        TVector<COMDLG_FILTERSPEC> fileTypes;
+        TVector<FString> StringStorage;
+
+        if (Filter && strlen(Filter) > 0)
+        {
+            const char* p = Filter;
+            while (*p)
+            {
+                FString Name;
+                FString Spec;
+
+                size_t len = strlen(p);
+                Name.assign(p, p + len);
+                p += len + 1;
+
+                len = strlen(p);
+                Spec.assign(p, p + len);
+                p += len + 1;
+
+                StringStorage.push_back(Name);
+                StringStorage.push_back(Spec);
+
+                fileTypes.push_back({ UTF8_TO_TCHAR(StringStorage[StringStorage.size() - 2].c_str()),
+                                      UTF8_TO_TCHAR(StringStorage[StringStorage.size() - 1].c_str()) });
+            }
+        }
+
+        if (!fileTypes.empty())
+        {
+            FileDialog->SetFileTypes(static_cast<UINT>(fileTypes.size()), fileTypes.data());
+        }
+        bool bResult = false;
+        if (SUCCEEDED(FileDialog->Show(nullptr)))
+        {
+            IShellItem* Item = nullptr;
+            if (SUCCEEDED(FileDialog->GetResult(&Item)))
+            {
+                PWSTR pszPath = nullptr;
+                if (SUCCEEDED(Item->GetDisplayName(SIGDN_FILESYSPATH, &pszPath)))
+                {
+                    FWString wPath = pszPath;
+
+                    OutFile = TCHAR_TO_UTF8(wPath.c_str());
+                    eastl::replace(OutFile.begin(), OutFile.end(), '\\', '/');
+
+                    CoTaskMemFree(pszPath);
+                    bResult = true;
+                }
+                Item->Release();
+            }
+        }
+
+        FileDialog->Release();
+        CoUninitialize();
+        return bResult;
     }
 }
 

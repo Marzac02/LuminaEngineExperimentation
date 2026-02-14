@@ -115,6 +115,7 @@ namespace Lumina
         TQueue<FEditorTool*>                            ToolsPendingAdd;
         TQueue<FEditorTool*>                            ToolsPendingDestroy;
         
+        bool                                            bShowContributors = false;
         bool                                            bShowLuminaInfo = false;
         bool                                            bShowDearImGuiDemoWindow = false;
         bool                                            bShowImGuiStyleEditor = false;

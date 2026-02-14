@@ -4,19 +4,14 @@
 
 namespace Lumina
 {
-    FEditorModalManager::~FEditorModalManager()
-    {
-
-    }
-
-    void FEditorModalManager::CreateDialogue(const FString& Title, ImVec2 Size, TMoveOnlyFunction<bool()> DrawFunction, bool bBlocking)
+    void FEditorModalManager::CreateDialogue(const FString& Title, ImVec2 Size, TMoveOnlyFunction<bool()> DrawFunction, bool bBlocking, bool bCloseable)
     {
         if (ActiveModal != nullptr)
         {
             return;
         }
         
-        ActiveModal = MakeUnique<FEditorToolModal>(Title, Size);
+        ActiveModal = MakeUnique<FEditorToolModal>(Title, Size, bCloseable);
         ActiveModal->DrawFunction = Move(DrawFunction);
         ActiveModal->bBlocking = bBlocking;
     }
@@ -39,12 +34,13 @@ namespace Lumina
         ImGui::SetNextWindowPos(Center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
         ImGui::SetNextWindowSize(ActiveModal->Size, ImGuiCond_Appearing);
 
+        bool* bOpen = ActiveModal->bCloseable ? &ActiveModal->bOpen : nullptr;
+        
         if (ActiveModal->bBlocking)
         {
-            bool bOpen = true;
-            if (ImGui::BeginPopupModal(ActiveModal->Title.c_str(), &bOpen))
+            if (ImGui::BeginPopupModal(ActiveModal->Title.c_str(), bOpen, ImGuiWindowFlags_NoCollapse))
             {
-                if (ActiveModal->DrawModal() || !bOpen)
+                if (ActiveModal->DrawModal() || !ActiveModal->bOpen)
                 {
                     ImGui::CloseCurrentPopup();
                     ActiveModal.reset();
@@ -54,10 +50,9 @@ namespace Lumina
         }
         else
         {
-            bool bOpen = true;
-            if (ImGui::Begin(ActiveModal->Title.c_str(), &bOpen, ImGuiWindowFlags_NoCollapse))
+            if (ImGui::Begin(ActiveModal->Title.c_str(), bOpen, ImGuiWindowFlags_NoCollapse))
             {
-                if (ActiveModal->DrawModal() || !bOpen)
+                if (ActiveModal->DrawModal() || !ActiveModal->bOpen)
                 {
                     ActiveModal.reset();
                 }
