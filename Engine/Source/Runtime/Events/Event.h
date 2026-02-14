@@ -90,23 +90,23 @@ namespace Lumina
     class FKeyEvent : public FEvent
     {
     public:
-        EKeyCode GetKeyCode() const { return KeyCode; }
+        EKey GetKeyCode() const { return KeyCode; }
         
-        bool IsModifierDown(EKeyCode Modifier) const
+        bool IsModifierDown(EKey Modifier) const
         {
             switch (Modifier)
             {
-                case EKeyCode::LeftControl:
-                case EKeyCode::RightControl:
+                case EKey::LeftControl:
+                case EKey::RightControl:
                     return bCtrl;
-                case EKeyCode::LeftShift:
-                case EKeyCode::RightShift:
+                case EKey::LeftShift:
+                case EKey::RightShift:
                     return bShift;
-                case EKeyCode::LeftAlt:
-                case EKeyCode::RightAlt:
+                case EKey::LeftAlt:
+                case EKey::RightAlt:
                     return bAlt;
-                case EKeyCode::LeftSuper:
-                case EKeyCode::RightSuper:
+                case EKey::LeftSuper:
+                case EKey::RightSuper:
                     return bSuper;
                 default:
                     return false;
@@ -119,10 +119,10 @@ namespace Lumina
         bool IsSuperDown() const { return bSuper; }
         
     protected:
-        FKeyEvent(EKeyCode InKeyCode, bool InCtrl, bool InShift, bool InAlt, bool InSuper)
+        FKeyEvent(EKey InKeyCode, bool InCtrl, bool InShift, bool InAlt, bool InSuper)
             : KeyCode(InKeyCode), bCtrl(InCtrl), bShift(InShift), bAlt(InAlt), bSuper(InSuper) {}
         
-        EKeyCode KeyCode;
+        EKey KeyCode;
         bool bCtrl;
         bool bShift;
         bool bAlt;
@@ -132,7 +132,7 @@ namespace Lumina
     class FKeyPressedEvent : public FKeyEvent
     {
     public:
-        FKeyPressedEvent(EKeyCode InKeyCode, bool InCtrl, bool InShift, bool InAlt, bool InSuper, bool InRepeat = false)
+        FKeyPressedEvent(EKey InKeyCode, bool InCtrl, bool InShift, bool InAlt, bool InSuper, bool InRepeat = false)
             : FKeyEvent(InKeyCode, InCtrl, InShift, InAlt, InSuper), bRepeat(InRepeat) {}
         
         bool IsRepeat() const { return bRepeat; }
@@ -146,7 +146,7 @@ namespace Lumina
     class FKeyReleasedEvent : public FKeyEvent
     {
     public:
-        FKeyReleasedEvent(EKeyCode InKeyCode, bool InCtrl, bool InShift, bool InAlt, bool InSuper)
+        FKeyReleasedEvent(EKey InKeyCode, bool InCtrl, bool InShift, bool InAlt, bool InSuper)
             : FKeyEvent(InKeyCode, InCtrl, InShift, InAlt, InSuper) {}
         
         EVENT_CLASS_TYPE(KeyReleased)
@@ -243,38 +243,38 @@ namespace Lumina
     class FMouseScrolledEvent : public FEvent
     {
     public:
-        FMouseScrolledEvent(EMouseCode InCode, float InXOffset)
+        FMouseScrolledEvent(EMouseKey InCode, float InXOffset)
             : Offset(InXOffset), Code(InCode) {}
         
-        EMouseCode GetCode() const { return Code; }
+        EMouseKey GetCode() const { return Code; }
         float GetOffset() const { return Offset; }
         
         EVENT_CLASS_TYPE(MouseScrolled)
         
     private:
-        EMouseCode Code; 
+        EMouseKey Code; 
         float Offset;
     };
 
     class FMouseButtonEvent : public FEvent
     {
     public:
-        EMouseCode GetButton() const { return Button; }
+        EMouseKey GetButton() const { return Button; }
         float GetX() const { return X; }
         float GetY() const { return Y; }
         
     protected:
-        FMouseButtonEvent(EMouseCode InButton, float InX, float InY)
+        FMouseButtonEvent(EMouseKey InButton, float InX, float InY)
             : Button(InButton), X(InX), Y(InY) {}
         
-        EMouseCode Button;
+        EMouseKey Button;
         float X, Y;
     };
 
     class FMouseButtonPressedEvent : public FMouseButtonEvent
     {
     public:
-        FMouseButtonPressedEvent(EMouseCode InButton, float InX, float InY)
+        FMouseButtonPressedEvent(EMouseKey InButton, float InX, float InY)
             : FMouseButtonEvent(InButton, InX, InY) {}
         
         EVENT_CLASS_TYPE(MouseButtonPressed)
@@ -283,7 +283,7 @@ namespace Lumina
     class FMouseButtonReleasedEvent : public FMouseButtonEvent
     {
     public:
-        FMouseButtonReleasedEvent(EMouseCode InButton, float InX, float InY)
+        FMouseButtonReleasedEvent(EMouseKey InButton, float InX, float InY)
             : FMouseButtonEvent(InButton, InX, InY) {}
         
         EVENT_CLASS_TYPE(MouseButtonReleased)

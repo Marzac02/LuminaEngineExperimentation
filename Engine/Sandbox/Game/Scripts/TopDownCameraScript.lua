@@ -2,13 +2,13 @@
 
 
 TopDownCameraScript = {
-    PlayerEntity = 0,
 }
 
 
 function TopDownCameraScript:Update(DeltaTime)
-    local PlayerTransform = Context:Get(self.PlayerEntity, STransformComponent)
-    local CameraTransform = Context:Get(Entity, STransformComponent)
+    local PlayerEntity      = Context:GetByTag("Player")
+    local PlayerTransform   = Context:Get(PlayerEntity, STransformComponent)
+    local CameraTransform   = Context:Get(Entity, STransformComponent)
     
     if PlayerTransform and CameraTransform then
         CameraTransform:SetLocation(vec3(PlayerTransform:GetLocation().x, PlayerTransform:GetLocation().y + 50, PlayerTransform:GetLocation().z))

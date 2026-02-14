@@ -47,6 +47,9 @@ namespace Lumina
             "Emplace",              &FSystemContext::Lua_Emplace,
             "GetUnsafe",            &FSystemContext::Lua_GetUnsafe,
             "Get",                  &FSystemContext::Lua_Get,
+            "GetByTag",             &FSystemContext::Lua_GetEntityByTag,
+            "GetByName",            &FSystemContext::Lua_GetEntityByName,
+            "GetFirstWith",         &FSystemContext::Lua_GetFirstEntityWith,
 
             "Remove",               &FSystemContext::Lua_Remove,
             "SetActiveCamera",      &FSystemContext::Lua_SetActiveCamera,
@@ -54,6 +57,7 @@ namespace Lumina
             "SetEntityLocation",    &FSystemContext::SetEntityLocation,
             "SetEntityRotation",    &FSystemContext::SetEntityRotation,
             "SetEntityScale",       &FSystemContext::SetEntityScale,
+            
             
             "Create",               sol::overload(
                 [&](const FSystemContext& Self) { return Self.Create(); },
@@ -92,8 +96,6 @@ namespace Lumina
 
                 
             "CastSphere",           &FSystemContext::CastSphere);
-        
-        
     }
     
     entt::runtime_view FSystemContext::CreateRuntimeView(const THashSet<entt::id_type>& Components) const
@@ -398,5 +400,20 @@ namespace Lumina
         }
         
         return Results;
+    }
+
+    entt::entity FSystemContext::Lua_GetEntityByTag(const char* Tag) const
+    {
+        return World->GetEntityByTag(Tag);
+    }
+
+    entt::entity FSystemContext::Lua_GetEntityByName(const char* Name) const
+    {
+        return World->GetEntityByName(Name);
+    }
+
+    entt::entity FSystemContext::Lua_GetFirstEntityWith(const sol::object& Component) const
+    {
+        return World->GetFirstEntityWith(ECS::Utils::DeduceType(Component));
     }
 }

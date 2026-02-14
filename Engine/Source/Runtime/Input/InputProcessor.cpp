@@ -26,25 +26,25 @@ namespace Lumina
 		{
 			FMouseButtonEvent& MouseButtonEvent = Event.As<FMouseButtonPressedEvent>();
 			uint32 MouseCode = static_cast<uint32>(MouseButtonEvent.GetButton());
-			MouseStates[MouseCode] = (Input::EMouseState)GLFW_PRESS;
+			MouseStates[MouseCode] = static_cast<Input::EMouseState>(GLFW_PRESS);
 		}
 		else if (Event.IsA<FMouseButtonReleasedEvent>())
 		{
 			FMouseButtonEvent& MouseButtonEvent = Event.As<FMouseButtonPressedEvent>();
 			uint32 MouseCode = static_cast<uint32>(MouseButtonEvent.GetButton());
-			MouseStates[MouseCode] = (Input::EMouseState)GLFW_RELEASE;
+			MouseStates[MouseCode] = static_cast<Input::EMouseState>(GLFW_RELEASE);
 		}
 		else if (Event.IsA<FKeyPressedEvent>())
 		{
 			FKeyPressedEvent& KeyEvent = Event.As<FKeyPressedEvent>();
 			uint32 KeyCode = static_cast<uint32>(KeyEvent.GetKeyCode());
-			KeyStates[KeyCode] = KeyEvent.IsRepeat() ? (Input::EKeyState)GLFW_REPEAT : (Input::EKeyState)GLFW_PRESS;
+			KeyStates[KeyCode] = KeyEvent.IsRepeat() ? static_cast<Input::EKeyState>(GLFW_REPEAT) : static_cast<Input::EKeyState>(GLFW_PRESS);
 		}
 		else if (Event.IsA<FKeyReleasedEvent>())
 		{
 			FKeyReleasedEvent& KeyEvent = Event.As<FKeyReleasedEvent>();
 			uint32 KeyCode = static_cast<uint32>(KeyEvent.GetKeyCode());
-			KeyStates[KeyCode] = (Input::EKeyState)GLFW_RELEASE;
+			KeyStates[KeyCode] = static_cast<Input::EKeyState>(GLFW_RELEASE);
 		}
 		else if (Event.IsA<FMouseScrolledEvent>())
 		{
@@ -60,19 +60,28 @@ namespace Lumina
 		// We never want to absorb here.
 		return false;
 	}
-
-	void FInputProcessor::SetCursorMode(int Mode)
+	
+	void FInputProcessor::SetMouseMode(EMouseMode Mode)
 	{
-		DesiredInputMode = Mode;
+		int DesiredInputMode = GLFW_CURSOR_NORMAL;
+		switch (Mode)
+		{
+		case EMouseMode::Hidden:
+			DesiredInputMode = GLFW_CURSOR_HIDDEN;
+			break;
+		case EMouseMode::Normal:
+			DesiredInputMode = GLFW_CURSOR_NORMAL;
+			break;
+		case EMouseMode::Captured:
+			DesiredInputMode = GLFW_CURSOR_DISABLED;
+			break;
+		}
+		
+		glfwSetInputMode(Windowing::GetPrimaryWindowHandle()->GetWindow(), GLFW_CURSOR, DesiredInputMode);
 	}
 
 	void FInputProcessor::EndFrame()
 	{
-		if (DesiredInputMode != glfwGetInputMode(Windowing::GetPrimaryWindowHandle()->GetWindow(), GLFW_CURSOR))
-		{
-			glfwSetInputMode(Windowing::GetPrimaryWindowHandle()->GetWindow(), GLFW_CURSOR, DesiredInputMode);
-		}
-
 		MouseDeltaX = 0.0;
 		MouseDeltaY = 0.0;
 

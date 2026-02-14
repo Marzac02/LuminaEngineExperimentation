@@ -129,29 +129,17 @@ namespace Lumina
         void SetIsPlayWorld(bool bValue) { bIsPlayWorld = bValue; }
         FORCEINLINE bool IsPlayWorld() const { return bIsPlayWorld; }
 
+        entt::entity GetEntityByTag(const FName& Tag);
+        entt::entity GetEntityByName(const FName& Name);
+        entt::entity GetFirstEntityWith(entt::id_type Type);
+        
         void MarkTransformDirty(entt::entity Entity);
         void SetEntityTransform(entt::entity Entity, const FTransform& NewTransform);
-
         TVector<entt::entity> GetSelectedEntities() const;
         bool IsSelected(entt::entity Entity) const;
 
         template<typename TFunc>
-        void ForEachUniqueSystem(TFunc&& Func)
-        {
-            THashSet<uint64> UniqueSystems;
-            for (uint8 i = 0; i < (uint8)EUpdateStage::Max; i++)
-            {
-                for (const FSystemVariant& System : SystemUpdateList[i])
-                {
-                    uint64 Hash = eastl::visit([&](const auto& Sys) { return Sys.GetHash(); }, System);
-                    if (UniqueSystems.count(Hash) == 0)
-                    {
-                        Func(System);
-                        UniqueSystems.emplace(Hash);
-                    }
-                }
-            }
-        }
+        void ForEachUniqueSystem(TFunc&& Func);
         
         const FSystemContext& GetSystemContext() const { return SystemContext; }
         
@@ -186,5 +174,33 @@ namespace Lumina
         uint32                                              bActive:1 = true;
         uint32                                              bIsPlayWorld:1 = false;
     };
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+
+    template <typename TFunc>
+    void CWorld::ForEachUniqueSystem(TFunc&& Func)
+    {
+        THashSet<uint64> UniqueSystems;
+        for (auto& i : SystemUpdateList)
+        {
+            for (const FSystemVariant& System : i)
+            {
+                uint64 Hash = eastl::visit([&](const auto& Sys) { return Sys.GetHash(); }, System);
+                if (UniqueSystems.count(Hash) == 0)
+                {
+                    Func(System);
+                    UniqueSystems.emplace(Hash);
+                }
+            }
+        }
+    }
 }
 

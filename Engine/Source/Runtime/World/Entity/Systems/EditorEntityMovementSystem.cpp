@@ -41,34 +41,34 @@ namespace Lumina
 			glm::vec3 Up = Transform.GetUp();
 
 			float Speed = Velocity.Speed;
-			if (FInputProcessor::Get().IsKeyDown(EKeyCode::LeftShift))
+			if (FInputProcessor::Get().IsKeyDown(EKey::LeftShift))
 			{
 				Speed *= 10.0f;
 			}
 
 			glm::vec3 Acceleration(0.0f);
 
-			if (FInputProcessor::Get().IsKeyDown(EKeyCode::W))
+			if (FInputProcessor::Get().IsKeyDown(EKey::W))
 			{
 				Acceleration += Forward; // W = forward (+Z)
 			}
-			if (FInputProcessor::Get().IsKeyDown(EKeyCode::S))
+			if (FInputProcessor::Get().IsKeyDown(EKey::S))
 			{
 				Acceleration -= Forward; // S = backward (-Z)
 			}
-			if (FInputProcessor::Get().IsKeyDown(EKeyCode::D))
+			if (FInputProcessor::Get().IsKeyDown(EKey::D))
 			{
 				Acceleration -= Right; // D = right (+X)
 			}
-			if (FInputProcessor::Get().IsKeyDown(EKeyCode::A))
+			if (FInputProcessor::Get().IsKeyDown(EKey::A))
 			{
 				Acceleration += Right; // A = left (-X)
 			}
-			if (FInputProcessor::Get().IsKeyDown(EKeyCode::E))
+			if (FInputProcessor::Get().IsKeyDown(EKey::E))
 			{
 				Acceleration += Up; // E = up (+Y)
 			}
-			if (FInputProcessor::Get().IsKeyDown(EKeyCode::Q))
+			if (FInputProcessor::Get().IsKeyDown(EKey::Q))
 			{
 				Acceleration -= Up; // Q = down (-Y)
 			}
@@ -87,9 +87,9 @@ namespace Lumina
 
 			Transform.Transform.Location += Velocity.Velocity * static_cast<float>(DeltaTime) * Velocity.Scale;
 
-			if (FInputProcessor::Get().IsMouseButtonDown(EMouseCode::ButtonRight))
+			if (FInputProcessor::Get().IsMouseButtonDown(EMouseKey::ButtonRight))
 			{
-				FInputProcessor::Get().SetCursorMode(GLFW_CURSOR_DISABLED);
+				FInputProcessor::Get().SetMouseMode(EMouseMode::Captured);
 
 				double MouseDeltaX = FInputProcessor::Get().GetMouseDeltaX();
 				double MouseDeltaY = FInputProcessor::Get().GetMouseDeltaY();
@@ -102,9 +102,9 @@ namespace Lumina
 				Velocity.Scale = Math::Clamp(Velocity.Scale, 1.0f, 50.0f);
 			}
 
-			if (FInputProcessor::Get().IsMouseButtonUp(EMouseCode::ButtonRight))
+			if (FInputProcessor::Get().IsMouseButtonUp(EMouseKey::ButtonRight))
 			{
-				FInputProcessor::Get().SetCursorMode(GLFW_CURSOR_NORMAL);
+				FInputProcessor::Get().SetMouseMode(EMouseMode::Normal);
 
 				//"Zoom".
 				Transform.Transform.Location += Forward * static_cast<float>(MouseDeltaZ);

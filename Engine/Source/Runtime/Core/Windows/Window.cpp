@@ -218,13 +218,13 @@ namespace Lumina
 		{
 		case GLFW_PRESS:
 		{
-			GApp->GetEventProcessor().Dispatch<FMouseButtonPressedEvent>(static_cast<EMouseCode>(Button), xpos, ypos);
+			GApp->GetEventProcessor().Dispatch<FMouseButtonPressedEvent>(static_cast<EMouseKey>(Button), xpos, ypos);
 		}
 		break;
 
 		case GLFW_RELEASE:
 		{
-			GApp->GetEventProcessor().Dispatch<FMouseButtonReleasedEvent>(static_cast<EMouseCode>(Button), xpos, ypos);
+			GApp->GetEventProcessor().Dispatch<FMouseButtonReleasedEvent>(static_cast<EMouseKey>(Button), xpos, ypos);
 		}
 		break;
 		}
@@ -256,7 +256,7 @@ namespace Lumina
 	void FWindow::MouseScrollCallback(GLFWwindow* window, double xoffset, double yoffset)
 	{
 		//We're only dealing with vertical here.
-		GApp->GetEventProcessor().Dispatch<FMouseScrolledEvent>(EMouseCode::Scroll, yoffset);
+		GApp->GetEventProcessor().Dispatch<FMouseScrolledEvent>(EMouseKey::Scroll, yoffset);
 	}
 
 	void FWindow::KeyCallback(GLFWwindow* window, int Key, int Scancode, int Action, int Mods)
@@ -270,17 +270,17 @@ namespace Lumina
 		{
 		case GLFW_RELEASE:
 		{
-			GApp->GetEventProcessor().Dispatch<FKeyReleasedEvent>(static_cast<EKeyCode>(Key), Ctrl, Shift, Alt, Super);
+			GApp->GetEventProcessor().Dispatch<FKeyReleasedEvent>(static_cast<EKey>(Key), Ctrl, Shift, Alt, Super);
 		}
 		break;
 		case GLFW_PRESS:
 		{
-			GApp->GetEventProcessor().Dispatch<FKeyPressedEvent>(static_cast<EKeyCode>(Key), Ctrl, Shift, Alt, Super);
+			GApp->GetEventProcessor().Dispatch<FKeyPressedEvent>(static_cast<EKey>(Key), Ctrl, Shift, Alt, Super);
 		}
 		break;
 		case GLFW_REPEAT:
 		{
-			GApp->GetEventProcessor().Dispatch<FKeyPressedEvent>(static_cast<EKeyCode>(Key), Ctrl, Shift, Alt, Super, /* Repeat */ true);
+			GApp->GetEventProcessor().Dispatch<FKeyPressedEvent>(static_cast<EKey>(Key), Ctrl, Shift, Alt, Super, /* Repeat */ true);
 		}
 		break;
 		}

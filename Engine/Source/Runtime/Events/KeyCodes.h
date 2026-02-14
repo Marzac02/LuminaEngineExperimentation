@@ -4,7 +4,7 @@
 
 namespace Lumina
 {
-	enum class EKeyCode : uint16
+	enum class EKey : uint16
 	{
 		// From glfw3.h
 		Space               = 32,

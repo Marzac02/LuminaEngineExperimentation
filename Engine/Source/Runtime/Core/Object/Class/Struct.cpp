@@ -191,7 +191,7 @@ namespace Lumina
                 FProperty* FoundProperty = nullptr;
 
                 // First try for an O(n) search, as the order may still match.
-                if (Current->GetPropertyName() == Tag.Name)
+                if (Current && Current->GetPropertyName() == Tag.Name)
                 {
                     FoundProperty = Current;
                     Current = (FProperty*)Current->Next;

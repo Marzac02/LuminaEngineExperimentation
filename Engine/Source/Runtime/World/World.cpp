@@ -16,6 +16,7 @@
 #include "Entity/Components/NameComponent.h"
 #include "Entity/Components/ScriptComponent.h"
 #include "Entity/Components/SingletonEntityComponent.h"
+#include "entity/components/tagcomponent.h"
 #include "Entity/Events/WorldEvents.h"
 #include "Events/KeyCodes.h"
 #include "glm/gtx/matrix_decompose.hpp"
@@ -526,6 +527,48 @@ namespace Lumina
         
         return PhysicsScene->CastSphere(Settings);
         
+    }
+
+    entt::entity CWorld::GetEntityByTag(const FName& Tag)
+    {
+        auto& Storage = EntityRegistry.storage<STagComponent>(entt::hashed_string(Tag.c_str()));
+        if (Storage.empty())
+        {
+            return entt::null;
+        }
+        
+        return *Storage.data();
+    }
+
+    entt::entity CWorld::GetEntityByName(const FName& Name)
+    {
+        auto View = EntityRegistry.view<SNameComponent>();
+        for (entt::entity Entity : View)
+        {
+            SNameComponent& NameComponent = View.get<SNameComponent>(Entity);
+            if (NameComponent.Name == Name)
+            {
+                return Entity;
+            }
+        }
+        
+        return entt::null;
+    }
+
+    entt::entity CWorld::GetFirstEntityWith(entt::id_type Type)
+    {
+        if (!EntityRegistry.storage(Type))
+        {
+            return entt::null;
+        }
+
+        auto storage = EntityRegistry.storage(Type);
+
+        if (storage->empty())
+        {
+            return entt::null;
+        }
+        return *storage->data();
     }
 
     void CWorld::MarkTransformDirty(entt::entity Entity)

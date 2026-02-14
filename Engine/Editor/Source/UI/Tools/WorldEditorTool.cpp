@@ -11,6 +11,7 @@
 #include "EASTL/sort.h"
 #include "glm/gtc/type_ptr.hpp"
 #include "glm/gtx/matrix_decompose.hpp"
+#include "Input/InputProcessor.h"
 #include "Memory/SmartPtr.h"
 #include "Tools/ComponentVisualizers/ComponentVisualizer.h"
 #include "Tools/Dialogs/Dialogs.h"
@@ -1104,22 +1105,46 @@ namespace Lumina
 
     void FWorldEditorTool::PushRenameEntityModal(entt::entity Entity)
     {
-        ToolContext->PushModal("Rename Entity", ImVec2(600.0f, 350.0f), [this, Entity] () -> bool
+        ToolContext->PushModal("Rename Entity", ImVec2(450.0f, 250.0f), [this, Entity]() -> bool
         {
-            FName& Name = World->GetEntityRegistry().get<SNameComponent>(Entity).Name;
-            FString CopyName = Name.ToString();
-            
-            if (ImGui::InputText("##Name", const_cast<char*>(CopyName.c_str()), 256, ImGuiInputTextFlags_EnterReturnsTrue))
+            auto& NameComponent = World->GetEntityRegistry().get<SNameComponent>(Entity);
+            static FFixedString InputBuffer;
+    
+            if (ImGui::IsWindowAppearing())
             {
-                Name = CopyName.c_str();
-                return true;
+                InputBuffer = NameComponent.Name.c_str();
             }
-            
-            if (ImGui::Button("Cancel"))
-            {
-                return true;
-            }
+    
+            ImGui::Text("Enter new name:");
+            ImGui::Spacing();
+    
+            ImGui::SetNextItemWidth(-1.0f);
+            bool bShouldClose = ImGui::InputText("##Name", InputBuffer.data(), 
+                                                  InputBuffer.max_size(), 
+                                                  ImGuiInputTextFlags_EnterReturnsTrue);
+    
+            ImGui::Spacing();
+            ImGui::Separator();
+            ImGui::Spacing();
 
+            constexpr float ButtonWidth = 100.0f;
+            const float AvailWidth = ImGui::GetContentRegionAvail().x;
+            ImGui::SetCursorPosX((AvailWidth - ButtonWidth * 2 - ImGui::GetStyle().ItemSpacing.x) * 0.5f);
+    
+            if (ImGui::Button("OK", ImVec2(ButtonWidth, 0.0f)) || bShouldClose)
+            {
+                NameComponent.Name = FName(InputBuffer.c_str());
+                OutlinerListView.MarkTreeDirty();
+                return true;
+            }
+    
+            ImGui::SameLine();
+    
+            if (ImGui::Button("Cancel", ImVec2(ButtonWidth, 0.0f)))
+            {
+                return true;
+            }
+    
             return false;
         });
     }
@@ -1844,6 +1869,8 @@ namespace Lumina
 
             World->GetEntityRegistry().on_construct<entt::entity>().connect<&FWorldEditorTool::OnEntityCreated>(this);
             World->GetEntityRegistry().on_destroy<entt::entity>().connect<&FWorldEditorTool::OnEntityDestroyed>(this);
+            
+            FInputProcessor::Get().SetMouseMode(EMouseMode::Normal);
         }
     }
 
@@ -1924,6 +1951,8 @@ namespace Lumina
             
             OutlinerListView.ClearTree();
             OutlinerListView.MarkTreeDirty();
+            
+            FInputProcessor::Get().SetMouseMode(EMouseMode::Normal);
         }
     }
 
