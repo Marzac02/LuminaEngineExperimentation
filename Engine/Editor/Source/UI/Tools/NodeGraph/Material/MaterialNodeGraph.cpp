@@ -130,6 +130,10 @@ namespace Lumina
         RegisterGraphNode(CMaterialExpression_ConstantFloat3::StaticClass());
         RegisterGraphNode(CMaterialExpression_ConstantFloat4::StaticClass());
 
+        RegisterGraphNode(CMaterialExpression_BreakFloat2::StaticClass());
+        RegisterGraphNode(CMaterialExpression_BreakFloat3::StaticClass());
+        RegisterGraphNode(CMaterialExpression_BreakFloat4::StaticClass());
+
         RegisterGraphNode(CMaterialExpression_TextureSample::StaticClass());
 
         ValidateGraph();

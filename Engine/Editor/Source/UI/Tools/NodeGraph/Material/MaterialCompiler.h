@@ -83,6 +83,11 @@ namespace Lumina
         void DefineConstantFloat2(const FString& ID, float Value[2]);
         void DefineConstantFloat3(const FString& ID, float Value[3]);
         void DefineConstantFloat4(const FString& ID, float Value[4]);
+        
+        // Data Type operations.
+        void BreakFloat2(CMaterialInput* A, CMaterialOutput* B[2]);
+        void BreakFloat3(CMaterialInput* A, CMaterialOutput* B[3]);
+        void BreakFloat4(CMaterialInput* A, CMaterialOutput* B[4]);
 
         // Texture operations
         void DefineTextureSample(const FString& ID);

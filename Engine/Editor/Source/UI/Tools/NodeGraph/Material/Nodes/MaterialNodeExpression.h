@@ -458,6 +458,62 @@ namespace Lumina
     };
 
     REFLECT()
+        class CMaterialExpression_BreakFloat2 : public CMaterialExpression
+    {
+        GENERATED_BODY()
+    public:
+
+        void BuildNode() override;
+
+        FFixedString GetNodeCategory() const override { return "Utility"; }
+        FString GetNodeDisplayName() const override { return "BreakVec2"; }
+        void* GetNodeDefaultValue() override { return nullptr; }
+        uint32 GenerateExpression(FMaterialCompiler& Compiler) override { return 0; }
+        void GenerateDefinition(FMaterialCompiler& Compiler) override;
+
+
+        CMaterialInput* InputPin = nullptr;
+        CMaterialOutput* R = nullptr;
+        CMaterialOutput* G = nullptr;
+    };
+
+    REFLECT()
+        class CMaterialExpression_BreakFloat3 : public CMaterialExpression_BreakFloat2
+    {
+        GENERATED_BODY()
+    public:
+
+        void BuildNode() override;
+
+        FFixedString GetNodeCategory() const override { return "Utility"; }
+        FString GetNodeDisplayName() const override { return "BreakVec3"; }
+        void* GetNodeDefaultValue() override { return nullptr; }
+        uint32 GenerateExpression(FMaterialCompiler& Compiler) override { return 0; }
+        void GenerateDefinition(FMaterialCompiler& Compiler) override;
+
+
+        CMaterialOutput* B = nullptr;
+    };
+
+    REFLECT()
+        class CMaterialExpression_BreakFloat4 : public CMaterialExpression_BreakFloat3
+    {
+        GENERATED_BODY()
+    public:
+
+        void BuildNode() override;
+
+        FFixedString GetNodeCategory() const override { return "Utility"; }
+        FString GetNodeDisplayName() const override { return "BreakVec4"; }
+        void* GetNodeDefaultValue() override { return nullptr; }
+        uint32 GenerateExpression(FMaterialCompiler& Compiler) override { return 0; }
+        void GenerateDefinition(FMaterialCompiler& Compiler) override;
+
+
+        CMaterialOutput* A = nullptr;
+    };
+
+    REFLECT()
     class CMaterialExpression_WorldPos : public CMaterialExpression
     {
         GENERATED_BODY()
