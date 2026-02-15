@@ -1010,4 +1010,110 @@ namespace Lumina
     {
         Compiler.Divide(A, B);
     }
+    
+    void CMaterialExpression_BreakFloat2::BuildNode()
+    {
+        InputPin = Cast<CMaterialInput>(CreatePin(CMaterialInput::StaticClass(), "Vec2", ENodePinDirection::Input, EMaterialInputType::Float2));
+        InputPin->SetPinName("Vec2");
+        InputPin->SetShouldDrawEditor(true);
+        InputPin->SetIndex(0);
+
+        R = Cast<CMaterialOutput>(CreatePin(CMaterialOutput::StaticClass(), "R", ENodePinDirection::Output, EMaterialInputType::Float));
+        R->SetShouldDrawEditor(true);
+        R->SetHideDuringConnection(false);
+        R->SetPinName("R");
+        R->SetPinColor(IM_COL32(255, 10, 10, 255));
+        R->SetComponentMask(EComponentMask::R);
+        R->InputType = EMaterialInputType::Float;
+
+        G = Cast<CMaterialOutput>(CreatePin(CMaterialOutput::StaticClass(), "G", ENodePinDirection::Output, EMaterialInputType::Float));
+        G->SetShouldDrawEditor(true);
+        G->SetHideDuringConnection(false);
+        G->SetPinName("G");
+        G->SetPinColor(IM_COL32(10, 255, 10, 255));
+        G->SetComponentMask(EComponentMask::G);
+        G->InputType = EMaterialInputType::Float;
+    }
+    
+    void CMaterialExpression_BreakFloat2::GenerateDefinition(FMaterialCompiler& Compiler)
+    {
+        Compiler.BreakFloat2(InputPin);
+    }
+    void CMaterialExpression_BreakFloat3::BuildNode()
+    {
+        InputPin = Cast<CMaterialInput>(CreatePin(CMaterialInput::StaticClass(), "Vec3", ENodePinDirection::Input, EMaterialInputType::Float3));
+        InputPin->SetPinName("Vec3");
+        InputPin->SetShouldDrawEditor(true);
+        InputPin->SetIndex(0);
+
+        R = Cast<CMaterialOutput>(CreatePin(CMaterialOutput::StaticClass(), "R", ENodePinDirection::Output, EMaterialInputType::Float));
+        R->SetShouldDrawEditor(true);
+        R->SetHideDuringConnection(false);
+        R->SetPinName("R");
+        R->SetPinColor(IM_COL32(255, 10, 10, 255));
+        R->SetComponentMask(EComponentMask::R);
+        R->InputType = EMaterialInputType::Float;
+
+        G = Cast<CMaterialOutput>(CreatePin(CMaterialOutput::StaticClass(), "G", ENodePinDirection::Output, EMaterialInputType::Float));
+        G->SetShouldDrawEditor(true);
+        G->SetHideDuringConnection(false);
+        G->SetPinName("G");
+        G->SetPinColor(IM_COL32(10, 255, 10, 255));
+        G->SetComponentMask(EComponentMask::G);
+        G->InputType = EMaterialInputType::Float;
+
+        B = Cast<CMaterialOutput>(CreatePin(CMaterialOutput::StaticClass(), "B", ENodePinDirection::Output, EMaterialInputType::Float));
+        B->SetShouldDrawEditor(true);
+        B->SetHideDuringConnection(false);
+        B->SetPinName("B");
+        B->SetPinColor(IM_COL32(10, 10, 255, 255));
+        B->SetComponentMask(EComponentMask::B);
+        B->InputType = EMaterialInputType::Float;
+    }
+    void CMaterialExpression_BreakFloat3::GenerateDefinition(FMaterialCompiler& Compiler)
+    {
+        Compiler.BreakFloat3(InputPin);
+    }
+    void CMaterialExpression_BreakFloat4::BuildNode()
+    {
+        InputPin = Cast<CMaterialInput>(CreatePin(CMaterialInput::StaticClass(), "Vec4", ENodePinDirection::Input, EMaterialInputType::Float4));
+        InputPin->SetPinName("Vec4");
+        InputPin->SetShouldDrawEditor(true);
+        InputPin->SetIndex(0);
+
+        R = Cast<CMaterialOutput>(CreatePin(CMaterialOutput::StaticClass(), "R", ENodePinDirection::Output, EMaterialInputType::Float));
+        R->SetShouldDrawEditor(true);
+        R->SetHideDuringConnection(false);
+        R->SetPinName("R");
+        R->SetPinColor(IM_COL32(255, 10, 10, 255)); 
+        R->SetComponentMask(EComponentMask::R);
+        R->InputType = EMaterialInputType::Float;
+
+        G = Cast<CMaterialOutput>(CreatePin(CMaterialOutput::StaticClass(), "G", ENodePinDirection::Output, EMaterialInputType::Float));
+        G->SetShouldDrawEditor(true);
+        G->SetHideDuringConnection(false);
+        G->SetPinName("G");
+        G->SetPinColor(IM_COL32(10, 255, 10, 255));
+        G->SetComponentMask(EComponentMask::G);
+        G->InputType = EMaterialInputType::Float;
+
+        B = Cast<CMaterialOutput>(CreatePin(CMaterialOutput::StaticClass(), "B", ENodePinDirection::Output, EMaterialInputType::Float));
+        B->SetShouldDrawEditor(true);
+        B->SetHideDuringConnection(false);
+        B->SetPinName("B");
+        B->SetPinColor(IM_COL32(10, 10, 255, 255));
+        B->SetComponentMask(EComponentMask::B);
+        B->InputType = EMaterialInputType::Float;
+
+        A = Cast<CMaterialOutput>(CreatePin(CMaterialOutput::StaticClass(), "A", ENodePinDirection::Output, EMaterialInputType::Float));
+        A->SetShouldDrawEditor(true);
+        A->SetHideDuringConnection(false);
+        A->SetPinName("A");
+        A->SetComponentMask(EComponentMask::A);
+        A->InputType = EMaterialInputType::Float;
+    }
+    void CMaterialExpression_BreakFloat4::GenerateDefinition(FMaterialCompiler& Compiler)
+    {
+        Compiler.BreakFloat4(InputPin);
+    }
 }
