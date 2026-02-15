@@ -1026,7 +1026,14 @@ namespace Lumina
     {
         if (PendingState.IsRecording())
         {
-            
+            VkDebugUtilsLabelEXT Label = {};
+            Label.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_LABEL_EXT;
+            Label.pLabelName = Name;
+            Label.color[0] = Color.R;
+            Label.color[1] = Color.G;
+            Label.color[2] = Color.B;
+            Label.color[3] = Color.A;
+            vkCmdBeginDebugUtilsLabelEXT(CurrentCommandBuffer->CommandBuffer, &Label);
         }
     }
 
@@ -1034,14 +1041,14 @@ namespace Lumina
     {
         if(PendingState.IsRecording())
         {
-            
+            vkCmdEndDebugUtilsLabelEXT(CurrentCommandBuffer->CommandBuffer);
         }
     }
     
     void FVulkanCommandList::BeginRenderPass(const FRenderPassDesc& PassInfo)
     {
         LUMINA_PROFILE_SCOPE();
-
+        
         if (CurrentGraphicsState.RenderPass.IsValid())
         {
             EndRenderPass();
@@ -1151,7 +1158,6 @@ namespace Lumina
         RenderInfo.layerCount               = 1;//NumArraySlices;
         RenderInfo.viewMask                 = PassInfo.ViewMask;
 
-        TracyVkZone(CurrentCommandBuffer->TracyContext, CurrentCommandBuffer->CommandBuffer, "vkCmdBeginRendering")        
         vkCmdBeginRendering(CurrentCommandBuffer->CommandBuffer, &RenderInfo);
         CurrentGraphicsState.RenderPass = PassInfo;
         
@@ -1162,7 +1168,7 @@ namespace Lumina
         if (CurrentGraphicsState.RenderPass.IsValid())
         {
             LUMINA_PROFILE_SCOPE();
-            TracyVkZone(CurrentCommandBuffer->TracyContext, CurrentCommandBuffer->CommandBuffer, "vkCmdEndRendering")        
+            
             vkCmdEndRendering(CurrentCommandBuffer->CommandBuffer);
             CurrentGraphicsState.RenderPass = {};
         }
@@ -1194,7 +1200,6 @@ namespace Lumina
         Range.baseArrayLayer = 0;                           // First layer in the image
         Range.layerCount     = 1;                           // Only clearing one layer
         
-        TracyVkZone(CurrentCommandBuffer->TracyContext, CurrentCommandBuffer->CommandBuffer, "vkCmdClearColorImage")        
         vkCmdClearColorImage(CurrentCommandBuffer->CommandBuffer, Image->GetAPI<VkImage, EAPIResourceType::Image>(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &Value, 1, &Range);
     }
 
@@ -1256,8 +1261,6 @@ namespace Lumina
         // Final flush
         if (!CurrentDescriptorBatch.empty())
         {
-            TracyVkZone(CurrentCommandBuffer->TracyContext, CurrentCommandBuffer->CommandBuffer, "vkCmdBindDescriptorSets")
-            
             CommandListStats.NumBindings += CurrentDescriptorBatch.size();
             vkCmdBindDescriptorSets(CurrentCommandBuffer->CommandBuffer,
                 BindPoint,
@@ -1328,7 +1331,6 @@ namespace Lumina
         if (CurrentGraphicsState.Pipeline != State.Pipeline)
         {
             CommandListStats.NumPipelineSwitches++;
-            TracyVkZone(CurrentCommandBuffer->TracyContext, CurrentCommandBuffer->CommandBuffer, "vkCmdBindPipeline")
             vkCmdBindPipeline(VkCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, State.Pipeline->GetAPI<VkPipeline, EAPIResourceType::Pipeline>());
             CurrentCommandBuffer->AddReferencedResource(State.Pipeline);
         }
@@ -1361,7 +1363,6 @@ namespace Lumina
                 Viewports.emplace_back(ToVkViewport(Viewport.MinX, Viewport.MinY, Viewport.MinZ, Viewport.MaxX, Viewport.MaxY, Viewport.MaxZ));
             }
             
-            TracyVkZone(CurrentCommandBuffer->TracyContext, CurrentCommandBuffer->CommandBuffer, "vkCmdSetViewport")        
             vkCmdSetViewport(CurrentCommandBuffer->CommandBuffer, 0, (uint32)Viewports.size(), Viewports.data());
         }
 
@@ -1374,13 +1375,11 @@ namespace Lumina
                 Scissors.emplace_back(ToVkScissorRect(Rect.MinX, Rect.MinY, Rect.MaxX, Rect.MaxY));
             }
 
-            TracyVkZone(CurrentCommandBuffer->TracyContext, CurrentCommandBuffer->CommandBuffer, "vkCmdSetScissor")
             vkCmdSetScissor(CurrentCommandBuffer->CommandBuffer, 0, Scissors.size(), Scissors.data());
         }
         
         if (State.IndexBuffer.Buffer && CurrentGraphicsState.IndexBuffer != State.IndexBuffer)
         {
-            TracyVkZone(CurrentCommandBuffer->TracyContext, CurrentCommandBuffer->CommandBuffer, "vkCmdBindIndexBuffer")
             vkCmdBindIndexBuffer(VkCmdBuffer, State.IndexBuffer.Buffer->GetAPI<VkBuffer>(), State.IndexBuffer.Offset
                 , State.IndexBuffer.Format == EFormat::R16_UINT ?
                 VK_INDEX_TYPE_UINT16 : VK_INDEX_TYPE_UINT32);
@@ -1403,7 +1402,6 @@ namespace Lumina
                 CurrentCommandBuffer->AddReferencedResource(Binding.Buffer);
             }
 
-            TracyVkZone(CurrentCommandBuffer->TracyContext, CurrentCommandBuffer->CommandBuffer, "vkCmdBindVertexBuffers")
             vkCmdBindVertexBuffers(VkCmdBuffer, 0, BindingIndex + 1, VertexBuffer, VertexBufferOffsets);
         }
 
@@ -1422,7 +1420,6 @@ namespace Lumina
         UpdateGraphicsDynamicBuffers();
         
         CommandListStats.NumDrawCalls++;
-        TracyVkZone(CurrentCommandBuffer->TracyContext, CurrentCommandBuffer->CommandBuffer, "vkCmdDraw")
         vkCmdDraw(CurrentCommandBuffer->CommandBuffer, VertexCount, InstanceCount, FirstVertex, FirstInstance);
     }
 
@@ -1433,7 +1430,7 @@ namespace Lumina
         UpdateGraphicsDynamicBuffers();
 
         CommandListStats.NumDrawCalls++;
-        TracyVkZone(CurrentCommandBuffer->TracyContext, CurrentCommandBuffer->CommandBuffer, "vkCmdDrawIndexed")
+
         vkCmdDrawIndexed(CurrentCommandBuffer->CommandBuffer, IndexCount, InstanceCount, FirstIndex, VertexOffset, FirstInstance);
     }
 
@@ -1445,7 +1442,6 @@ namespace Lumina
 
         CommandListStats.NumDrawCalls++;
         
-        TracyVkZone(CurrentCommandBuffer->TracyContext, CurrentCommandBuffer->CommandBuffer, "vkCmdDrawIndirect")
         vkCmdDrawIndirect(CurrentCommandBuffer->CommandBuffer, CurrentGraphicsState.IndirectParams->GetAPI<VkBuffer>(), Offset, DrawCount, sizeof(FDrawIndirectArguments));
     }
 
@@ -1456,7 +1452,7 @@ namespace Lumina
         UpdateGraphicsDynamicBuffers();
 
         CommandListStats.NumDrawCalls++;
-        TracyVkZone(CurrentCommandBuffer->TracyContext, CurrentCommandBuffer->CommandBuffer, "vkCmdDrawIndexedIndirect")
+
         vkCmdDrawIndexedIndirect(CurrentCommandBuffer->CommandBuffer, CurrentGraphicsState.IndirectParams->GetAPI<VkBuffer>(), Offset, DrawCount, sizeof(FDrawIndexedIndirectArguments));
     }
 
@@ -1524,7 +1520,7 @@ namespace Lumina
         
         UpdateComputeDynamicBuffers();
 
-        TracyVkZone(CurrentCommandBuffer->TracyContext, CurrentCommandBuffer->CommandBuffer, "vkCmdDispatch")
+
         vkCmdDispatch(CurrentCommandBuffer->CommandBuffer, GroupCountX, GroupCountY, GroupCountZ);
     }
 
