@@ -53,7 +53,9 @@ namespace Lumina
                         }
             
                         LocalCommandList->Open();
+                        LocalCommandList->AddMarker(Pass->GetEvent().Get(), FColor::MakeRandom());
                         Pass->Execute(*LocalCommandList);
+                        LocalCommandList->PopMarker();
                         LocalCommandList->Close();
                     });
                     
@@ -61,7 +63,9 @@ namespace Lumina
                 }
                 else // Run the pass serially.
                 {
+                    CommandList->AddMarker(Pass->GetEvent().Get(), FColor::MakeRandom());
                     Pass->Execute(*CommandList);
+                    CommandList->PopMarker();
                 }
             }
         }

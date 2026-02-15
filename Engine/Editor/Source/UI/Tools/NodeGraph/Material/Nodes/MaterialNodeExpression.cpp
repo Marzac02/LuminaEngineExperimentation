@@ -1037,8 +1037,7 @@ namespace Lumina
     
     void CMaterialExpression_BreakFloat2::GenerateDefinition(FMaterialCompiler& Compiler)
     {
-        CMaterialOutput* arr[2] = { R,G };
-        Compiler.BreakFloat2(InputPin, arr);
+        Compiler.BreakFloat2(InputPin);
     }
     void CMaterialExpression_BreakFloat3::BuildNode()
     {
@@ -1073,8 +1072,7 @@ namespace Lumina
     }
     void CMaterialExpression_BreakFloat3::GenerateDefinition(FMaterialCompiler& Compiler)
     {
-        CMaterialOutput* arr[3] = { R,G,B };
-        Compiler.BreakFloat3(InputPin, arr);
+        Compiler.BreakFloat3(InputPin);
     }
     void CMaterialExpression_BreakFloat4::BuildNode()
     {
@@ -1116,7 +1114,6 @@ namespace Lumina
     }
     void CMaterialExpression_BreakFloat4::GenerateDefinition(FMaterialCompiler& Compiler)
     {
-        CMaterialOutput* arr[4] = { R,G,B,A };
-        Compiler.BreakFloat4(InputPin, arr);
+        Compiler.BreakFloat4(InputPin);
     }
 }

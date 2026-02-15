@@ -147,6 +147,11 @@ namespace Lumina
         WorldEditorTool = CreateTool<FWorldEditorTool>(this, NewObject<CWorld>(nullptr, "Transient World", FGuid::New(), OF_Transient));
         ConsoleLogTool = CreateTool<FConsoleLogEditorTool>(this);
         ContentBrowser = CreateTool<FContentBrowserEditorTool>(this);
+        
+        if (GEditorEngine->GetProjectName().empty())
+        {
+            OpenProjectDialog();
+        }
     }
 
     void FEditorUI::Deinitialize(const FUpdateContext& UpdateContext)
@@ -545,11 +550,6 @@ namespace Lumina
             ToolsPendingAdd.pop();
 
             EditorTools.push_back(NewTool);
-        }
-
-        if (GEditorEngine->GetProjectName().empty())
-        {
-            OpenProjectDialog();
         }
         
         ModalManager.DrawDialogue();

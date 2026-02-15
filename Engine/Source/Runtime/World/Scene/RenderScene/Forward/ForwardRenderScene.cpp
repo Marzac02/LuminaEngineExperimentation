@@ -920,7 +920,7 @@ namespace Lumina
             uint32 NumWorkGroups = (Num + 255) / 256;
                 
             CmdList.Dispatch(NumWorkGroups, 1, 1);
-                
+            
         });
     }
 
@@ -935,7 +935,7 @@ namespace Lumina
         RenderGraph.AddPass(RG_Raster, FRGEvent("Pre-Depth Pass"), Descriptor, [&] (ICommandList& CmdList)
         {
             LUMINA_PROFILE_SECTION_COLORED("Pre-Depth Pass", tracy::Color::Orange);
-            
+        
             FRenderPassDesc::FAttachment Depth; Depth
                 .SetImage(GetNamedImage(ENamedImage::DepthAttachment))
                 .SetDepthClearValue(0.0f);

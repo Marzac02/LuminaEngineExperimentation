@@ -320,78 +320,72 @@ namespace Lumina
 		FString ValueStringY = eastl::to_string(Value[1]);
 		FString ValueStringZ = eastl::to_string(Value[2]);
 		FString ValueStringW = eastl::to_string(Value[3]);
-		ShaderChunks.append("vec4 " + ID + " = vec4(" + ValueStringX + ", " + ValueStringY + ", " +
-			ValueStringZ + ", " + ValueStringW + ");\n");
+		ShaderChunks.append("vec4 " + ID + " = vec4(" + ValueStringX + ", " + ValueStringY + ", " + ValueStringZ + ", " + ValueStringW + ");\n");
 		RegisterNodeOutput(ID, EMaterialValueType::Float4, EComponentMask::RGBA);
 	}
 
-	void FMaterialCompiler::BreakFloat2(CMaterialInput* A, CMaterialOutput* B[2])
+	void FMaterialCompiler::BreakFloat2(CMaterialInput* A)
 	{
 		const FString OwningNode = A->GetOwningNode()->GetNodeFullName();
-		CMaterialExpression_BreakFloat2* Node = A->GetOwningNode<CMaterialExpression_BreakFloat2>();
 
-
-		FInputValue ValueStringXY = GetTypedInputValue(A, 0.0);
+		FInputValue ValueString = GetTypedInputValue(A, 0.0);
 		
 		const FString TypeStr = GetVectorType(EMaterialValueType::Float2);
 
-		switch (ValueStringXY.Type)
+		if (ValueString.Type != EMaterialValueType::Float2)
 		{
-		case EMaterialValueType::Float:
-			ShaderChunks.append(TypeStr + " " + OwningNode + " = "  + "vec2(" + ValueStringXY.Value + ", 0.0f)"+ "; \n");
-			break;
-		default:
-			ShaderChunks.append(TypeStr + " " + OwningNode + " = " + ValueStringXY.Value + ".xy" + ";\n");
+			FError Error;
+			Error.ErrorNode = A->GetOwningNode<CMaterialGraphNode>();
+			Error.ErrorName = "Type Mismatch";
+			Error.ErrorDescription = "Cannot perform BreakFloat2 on " + GetVectorType(ValueString.Type);
+			AddError(Error);
+			ShaderChunks.append("// ERROR: Type mismatch\n");
 		}
+		
+		ShaderChunks.append(TypeStr + " " + OwningNode + " = " + ValueString.Value + ".xy" + ";\n");
 		RegisterNodeOutput(OwningNode, EMaterialValueType::Float2, EComponentMask::RG);
 	}
 
-	void FMaterialCompiler::BreakFloat3(CMaterialInput* A, CMaterialOutput* B[3])
+	void FMaterialCompiler::BreakFloat3(CMaterialInput* A)
 	{
 		const FString OwningNode = A->GetOwningNode()->GetNodeFullName();
-		CMaterialExpression_BreakFloat3* Node = A->GetOwningNode<CMaterialExpression_BreakFloat3>();
 
-		FInputValue ValueStringXY = GetTypedInputValue(A, 0.0);
-
+		FInputValue ValueString = GetTypedInputValue(A, 0.0);
 		const FString TypeStr = GetVectorType(EMaterialValueType::Float3);
-
-		switch (ValueStringXY.Type)
+		
+		if (ValueString.Type != EMaterialValueType::Float3)
 		{
-		case EMaterialValueType::Float:
-			ShaderChunks.append(TypeStr + " " + OwningNode + " = " + "vec3(" + ValueStringXY.Value + ", 0.0f, 0.0f)" + "; \n");
-			break;
-		case EMaterialValueType::Float2:
-			ShaderChunks.append(TypeStr + " " + OwningNode + " = " + "vec3(" + ValueStringXY.Value + ".xy, " + "0.0f)" + "; \n");
-			break;
-		default:
-			ShaderChunks.append(TypeStr + " " + OwningNode + " = " + ValueStringXY.Value + ".xyz" + ";\n");
+			FError Error;
+			Error.ErrorNode = A->GetOwningNode<CMaterialGraphNode>();
+			Error.ErrorName = "Type Mismatch";
+			Error.ErrorDescription = "Cannot perform BreakFloat3 on " + GetVectorType(ValueString.Type);
+			AddError(Error);
+			ShaderChunks.append("// ERROR: Type mismatch\n");
 		}
+		
+		ShaderChunks.append(TypeStr + " " + OwningNode + " = " + ValueString.Value + ".xyz" + ";\n");
 		RegisterNodeOutput(OwningNode, EMaterialValueType::Float3, EComponentMask::RGB);
 	}
 
-	void FMaterialCompiler::BreakFloat4(CMaterialInput* A, CMaterialOutput* B[4])
+	void FMaterialCompiler::BreakFloat4(CMaterialInput* A)
 	{
 		const FString OwningNode = A->GetOwningNode()->GetNodeFullName();
-		CMaterialExpression_BreakFloat4* Node = A->GetOwningNode<CMaterialExpression_BreakFloat4>();
 
-		FInputValue ValueStringXY = GetTypedInputValue(A, 0.0);
+		FInputValue ValueString = GetTypedInputValue(A, 0.0);
 
 		const FString TypeStr = GetVectorType(EMaterialValueType::Float4);
-
-		switch (ValueStringXY.Type)
+		
+		if (ValueString.Type != EMaterialValueType::Float4)
 		{
-		case EMaterialValueType::Float:
-			ShaderChunks.append(TypeStr + " " + OwningNode + " = " + "vec4(" + ValueStringXY.Value + ", 0.0f, 0.0f, 0.0f)" + "; \n");
-			break;
-		case EMaterialValueType::Float2:
-			ShaderChunks.append(TypeStr + " " + OwningNode + " = " + "vec4(" + ValueStringXY.Value + ".xy, " + "0.0f, 0.0f)" + "; \n");
-			break;
-		case EMaterialValueType::Float3:
-			ShaderChunks.append(TypeStr + " " + OwningNode + " = " + "vec4(" + ValueStringXY.Value + ".xyz, " + "0.0f)" + "; \n");
-			break;
-		default:
-			ShaderChunks.append(TypeStr + " " + OwningNode + " = " + ValueStringXY.Value + ".xyzw" + ";\n");
+			FError Error;
+			Error.ErrorNode = A->GetOwningNode<CMaterialGraphNode>();
+			Error.ErrorName = "Type Mismatch";
+			Error.ErrorDescription = "Cannot perform BreakFloat4 on " + GetVectorType(ValueString.Type);
+			AddError(Error);
+			ShaderChunks.append("// ERROR: Type mismatch\n");
 		}
+		
+		ShaderChunks.append(TypeStr + " " + OwningNode + " = " + ValueString.Value + ".xyzw" + ";\n");
 		RegisterNodeOutput(OwningNode, EMaterialValueType::Float4, EComponentMask::RGBA);
 	}
 
@@ -655,7 +649,6 @@ namespace Lumina
 		EMaterialValueType ResultType = DetermineResultType(AValue.Type, BValue.Type, true);
 		FString TypeStr = GetVectorType(ResultType);
 
-		// Check for invalid operations
 		if (AValue.ComponentCount > 1 && BValue.ComponentCount > 1 && AValue.ComponentCount != BValue.ComponentCount)
 		{
 			FError Error;
@@ -682,7 +675,6 @@ namespace Lumina
 		EMaterialValueType ResultType = DetermineResultType(AValue.Type, BValue.Type, true);
 		FString TypeStr = GetVectorType(ResultType);
 
-		// Check for invalid operations
 		if (AValue.ComponentCount > 1 && BValue.ComponentCount > 1 && AValue.ComponentCount != BValue.ComponentCount)
 		{
 			FError Error;
